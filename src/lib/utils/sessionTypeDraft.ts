@@ -486,8 +486,8 @@ export const breakLabel = (m: number) => (m ? `${m} min` : 'None');
 
 /**
  * The design's choices, plus the stored value when it isn't one of them (set
- * elsewhere, e.g. 21 days): a native select would otherwise show its first
- * option while keeping the real value (review of #60).
+ * elsewhere, e.g. 21 days): the Select would otherwise show no label
+ * while keeping the real value (review of #60).
  */
 const choices = (list: number[], label: (n: number) => string) => (current: number) =>
   (list.includes(current) ? list : [...list, current].sort((a, b) => a - b)).map((n) => ({

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { COVER_KEYS } from '@/lib/utils/cover';
 import { Avatar } from './Avatar/Avatar';
@@ -275,17 +275,56 @@ export const Radios: Story = {
   },
 };
 
+/** Holds its own value, so the stories can be clicked through. */
+function DemoSelect({
+  defaultValue = '',
+  ...p
+}: Omit<ComponentProps<typeof Select>, 'value'> & { defaultValue?: string }) {
+  const [value, setValue] = useState(defaultValue || p.options[0]?.value || '');
+  return <Select {...p} value={value} onChange={(e) => setValue(e.target.value)} />;
+}
+
+/** Searchable, with grey meta and typed text kept (school, field of study). */
+function DemoSearch() {
+  const [query, setQuery] = useState('');
+  const [value, setValue] = useState('');
+  return (
+    <Select
+      aria-label="School"
+      width={320}
+      searchable
+      allowCustom
+      placeholder="Which school did you attend?"
+      query={query}
+      onQueryChange={(q) => {
+        setQuery(q);
+        setValue('');
+      }}
+      value={value}
+      onChange={(e, o) => {
+        setValue(e.target.value);
+        setQuery(o.label);
+      }}
+      options={[
+        { value: 'u1', label: 'University of Lagos', meta: 'Nigeria' },
+        { value: 'u2', label: 'University of Ghana', meta: 'Ghana' },
+        { value: 'u3', label: 'University College London', meta: 'United Kingdom' },
+      ]}
+    />
+  );
+}
+
 /** Session Types rule rows (160px) and overrides (240px). */
 export const Selects: Story = {
   render: () => (
     <div style={row}>
-      <Select
+      <DemoSelect
         aria-label="Session length"
         width={160}
         defaultValue="60"
         options={[30, 45, 60, 90].map((m) => ({ value: String(m), label: `${m} min` }))}
       />
-      <Select
+      <DemoSelect
         aria-label="Approve bookings"
         width={240}
         options={[
@@ -293,13 +332,13 @@ export const Selects: Story = {
           { value: 'on', label: 'You approve each booking' },
         ]}
       />
-      <Select
+      <DemoSelect
         aria-label="Disabled"
         width={160}
         disabled
         options={[{ value: 'x', label: 'Disabled' }]}
       />
-      <Select
+      <DemoSelect
         aria-label="Compact (weekly hours modal)"
         density="compact"
         width={104}
@@ -309,12 +348,11 @@ export const Selects: Story = {
           { value: '1200', label: '8:00 pm' },
         ]}
       />
-      <Select
+      <DemoSelect
         aria-label="Form select, nothing picked (text sm)"
         text="sm"
         width={240}
-        value=""
-        onChange={() => {}}
+        defaultValue=""
         options={[
           { value: '', label: 'Select' },
           { value: 'Woman', label: 'Woman' },
@@ -323,6 +361,8 @@ export const Selects: Story = {
     </div>
   ),
 };
+
+export const SelectSearchable: Story = { render: () => <DemoSearch /> };
 
 /** Social platform marks (Mentor Settings.dc.html assets/icons + DS marks), at the drawn sizes. */
 export const BrandIcons: Story = {

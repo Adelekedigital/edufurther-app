@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { emptyWeek, type BookingDefaults, type DayHours } from '@/lib/utils/sessionTypeDraft';
 import { BookingRulesForm } from './BookingRulesForm';
+import { pickOption } from '@/test-utils/select';
 
 const initial: BookingDefaults = {
   durationMin: 60,
@@ -54,7 +55,7 @@ describe('BookingRulesForm', () => {
     expect(screen.getByRole('switch', { name: 'Approve bookings' })).toHaveAccessibleDescription(
       'You accept each request first. If it’s still waiting 12 hours before the session, it expires and the mentee is told.',
     );
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
+    await pickOption(userEvent, screen.getByRole('combobox', { name: 'Session length' }), '90');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({ durationMin: 90, requiresApproval: true }),
@@ -89,7 +90,7 @@ describe('BookingRulesForm', () => {
         'Your weekly hours are too short for this session length. Add longer hours or pick a shorter length.',
       ),
     ).not.toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
+    await pickOption(userEvent, screen.getByRole('combobox', { name: 'Session length' }), '90');
     expect(
       screen.getByText(
         'Your weekly hours are too short for this session length. Add longer hours or pick a shorter length.',

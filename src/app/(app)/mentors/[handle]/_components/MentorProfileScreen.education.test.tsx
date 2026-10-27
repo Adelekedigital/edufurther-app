@@ -10,6 +10,7 @@ import {
   state,
 } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
+import { pickOption } from '@/test-utils/select';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
@@ -78,10 +79,11 @@ describe('MentorProfileScreen — education', () => {
       within(dialog).getByRole('checkbox', { name: 'This is my current or most recent education' }),
     ).not.toBeChecked();
     await user.type(within(dialog).getByRole('textbox', { name: 'School' }), 'Unilag');
-    await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Degree' }), 'BSc');
+    await pickOption(user, within(dialog).getByRole('combobox', { name: 'Degree' }), 'BSc');
     await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Sociology');
-    await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Start year' }), '2015');
-    await user.selectOptions(
+    await pickOption(user, within(dialog).getByRole('combobox', { name: 'Start year' }), '2015');
+    await pickOption(
+      user,
       within(dialog).getByRole('combobox', { name: 'End year (or expected)' }),
       '2019',
     );
@@ -105,7 +107,8 @@ describe('MentorProfileScreen — education', () => {
     await user.click(screen.getByRole('button', { name: /^Edit MSc, Sociology/ }));
     const dialog = screen.getByRole('dialog', { name: 'Edit education' });
     expect(within(dialog).getByRole('combobox', { name: 'Degree' })).toHaveValue('MSc');
-    await user.selectOptions(
+    await pickOption(
+      user,
       within(dialog).getByRole('combobox', { name: 'End year (or expected)' }),
       '2024',
     );

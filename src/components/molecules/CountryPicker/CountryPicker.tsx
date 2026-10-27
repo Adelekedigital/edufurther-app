@@ -1,10 +1,7 @@
 'use client';
 
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
-import { Icon } from '@/components/atoms/Icon/Icon';
+import { Select } from '@/components/atoms/Select/Select';
 import type { FieldControlProps } from '@/components/molecules/FormField/FormField';
-import { cx } from '@/lib/utils/cx';
-import styles from './CountryPicker.module.css';
 
 type Option = { id: string; label: string };
 
@@ -20,14 +17,16 @@ type CountryPickerProps = FieldControlProps & {
   focusKey?: string;
 };
 
-/** Case- and accent-insensitive, so "cote" finds Côte d’Ivoire. */
-const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const COPY = {
+  noMatch: (q: string) => `No countries match “${q}”.`,
+  count: (n: number) => `${n} ${n === 1 ? 'country' : 'countries'}`,
+};
 
 /**
  * Type to find a country (product 2026-09-29: about 250 is too long to
- * scroll; the design draws a select, design-divergence.md). An ARIA 1.2
- * combobox: arrows move through the matches, Enter picks, Escape closes.
- * Leaving the field without picking puts the chosen country back.
+ * scroll; the design draws a select, design-divergence.md): the shared
+ * Select, searchable. Leaving the field without picking puts the chosen
+ * country back.
  */
 export function CountryPicker({
   id,
@@ -40,140 +39,21 @@ export function CountryPicker({
   size = 'default',
   focusKey,
 }: CountryPickerProps) {
-  const listId = useId();
-  const chosen = options.find((o) => o.id === value)?.label ?? '';
-  const [text, setText] = useState<string | null>(null);
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(0);
-  const listRef = useRef<HTMLUListElement>(null);
-
-  const query = text ?? '';
-  const matches =
-    text === null ? options : options.filter((o) => norm(o.label).includes(norm(query.trim())));
-
-  const pick = (o: Option) => {
-    onChange(o.id);
-    setText(null);
-    setOpen(false);
-  };
-  const show = (i: number) => {
-    setActive(i);
-    listRef.current?.children[i]?.scrollIntoView?.({ block: 'nearest' });
-  };
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (!open) {
-        setOpen(true);
-        return show(
-          Math.max(
-            0,
-            matches.findIndex((o) => o.id === value),
-          ),
-        );
-      }
-      const n = matches.length;
-      if (n) show((active + (e.key === 'ArrowDown' ? 1 : n - 1)) % n);
-    } else if (e.key === 'Enter' && open) {
-      // Picks; doesn't submit the form.
-      e.preventDefault();
-      const o = matches[active];
-      if (o) pick(o);
-    } else if (e.key === 'Escape' && open) {
-      // Closes the list, not the modal.
-      e.preventDefault();
-      e.stopPropagation();
-      setOpen(false);
-      setText(null);
-    }
-  };
-
   return (
-    <div className={styles.wrap}>
-      <input
-        id={id}
-        data-ff={focusKey}
-        role="combobox"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-activedescendant={
-          open && matches[active] ? `${listId}-${matches[active].id}` : undefined
-        }
-        aria-describedby={describedBy}
-        aria-invalid={invalid || undefined}
-        autoComplete="off"
-        className={cx(styles.input, size === 'xl' && styles.xl, invalid && styles.invalid)}
-        placeholder={placeholder}
-        value={text ?? chosen}
-        onChange={(e) => {
-          setText(e.target.value);
-          setOpen(true);
-          setActive(0);
-        }}
-        onFocus={(e) => e.target.select()}
-        onClick={() => {
-          if (open) return;
-          setOpen(true);
-          // Start on the chosen country (review of #85).
-          show(
-            Math.max(
-              0,
-              matches.findIndex((o) => o.id === value),
-            ),
-          );
-        }}
-        onBlur={() => {
-          setOpen(false);
-          setText(null);
-        }}
-        onKeyDown={onKeyDown}
-      />
-      <Icon
-        name={open ? 'expand_less' : 'expand_more'}
-        size={size === 'xl' ? 24 : 18}
-        className={cx(styles.chevron, size === 'xl' && styles.chevronXl)}
-      />
-      <ul
-        id={listId}
-        ref={listRef}
-        role="listbox"
-        aria-label="Countries"
-        className={styles.list}
-        hidden={!open || matches.length === 0}
-      >
-        {matches.map((o, i) => (
-          <li
-            key={o.id}
-            id={`${listId}-${o.id}`}
-            role="option"
-            aria-selected={o.id === value}
-            className={cx(styles.option, i === active && styles.active)}
-            // Before the input's blur, so the pick lands.
-            onMouseDown={(e) => {
-              e.preventDefault();
-              pick(o);
-            }}
-          >
-            {o.label}
-            {o.id === value && <Icon name="check" size={16} className={styles.tick} />}
-          </li>
-        ))}
-      </ul>
-      {/* Beside the list, not in it: a listbox holds only options (review of #85). */}
-      {open && matches.length === 0 && (
-        <p aria-hidden="true" className={cx(styles.list, styles.none)}>
-          No countries match “{query.trim()}”.
-        </p>
-      )}
-      {/* Always in the DOM, so it's heard (failure-modes #32). */}
-      <p role="status" className="sr-only">
-        {open && text !== null
-          ? matches.length === 0
-            ? `No countries match “${query.trim()}”.`
-            : `${matches.length} ${matches.length === 1 ? 'country' : 'countries'}`
-          : ''}
-      </p>
-    </div>
+    <Select
+      id={id}
+      data-ff={focusKey}
+      aria-describedby={describedBy}
+      invalid={invalid}
+      searchable
+      text="sm"
+      density={size === 'xl' ? 'xl' : 'default'}
+      placeholder={placeholder}
+      listLabel="Countries"
+      copy={COPY}
+      value={value}
+      options={options.map((o) => ({ value: o.id, label: o.label }))}
+      onChange={(e) => onChange(e.target.value)}
+    />
   );
 }

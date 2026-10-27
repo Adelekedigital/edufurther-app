@@ -89,7 +89,7 @@ export function SessionTypeWizard(p: SessionTypeWizardProps) {
     if (!gap) return;
     // A field takes focus itself; the topics group gives it to its first chip.
     // `attempt` also rises when Save on Review sends the mentor back here.
-    const target = gap.matches('input, textarea, select')
+    const target = gap.matches('input, textarea, [role="combobox"]')
       ? gap
       : gap.querySelector<HTMLElement>('button:not(:disabled)');
     target?.focus();

@@ -4,8 +4,9 @@
   grid-template-columns: 120px minmax(0, 1fr);
   gap: var(--space-3);
 }
-/* The modal's selects are 14px (the atom's default is 12px). */
-.year select {
+/* The modal's selects are 14px (the atom's default is 12px). Not the atom's
+   text="sm": "No year" is a real answer, not a grey placeholder. */
+.year [role='combobox'] {
   font-size: var(--text-p-sm);
 }
 .funding {

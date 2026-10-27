@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { EDUCATION_COPY, SETTINGS_COPY } from '@/lib/copy/settings';
 import type { EducationEntry } from '@/types/mentor';
 import { EducationPanel, rowOf } from './EducationPanel';
+import { pickOption } from '@/test-utils/select';
 
 let read: {
   entries: EducationEntry[];
@@ -145,7 +146,7 @@ describe('EducationPanel', () => {
       'Marks the degree you’re studying now or finished most recently.',
     );
     await user.type(within(dialog).getByRole('textbox', { name: 'School' }), 'UCL');
-    await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Degree' }), 'MSc');
+    await pickOption(user, within(dialog).getByRole('combobox', { name: 'Degree' }), 'MSc');
     await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Data');
     await user.click(within(dialog).getByRole('button', { name: 'Add education' }));
     expect(addEducation).toHaveBeenCalledWith(

@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BOOKING_COPY } from '@/lib/copy/mentorSettings';
 import { BookingRulesRows } from './BookingRulesRows';
+import { pickOption } from '@/test-utils/select';
 
 describe('BookingRulesRows', () => {
   // A caller may pass a wider object (the session wizard passes its whole
@@ -25,7 +26,7 @@ describe('BookingRulesRows', () => {
         selectWidth={150}
       />,
     );
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Minimum notice' }), '48');
+    await pickOption(userEvent, screen.getByRole('combobox', { name: 'Minimum notice' }), '48');
     expect(onChange).toHaveBeenCalledWith({
       durationMin: 60,
       noticeHours: 48,

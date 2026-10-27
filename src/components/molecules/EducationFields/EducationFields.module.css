@@ -9,10 +9,6 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3);
 }
-/* The modal's selects are 14px (the atom's default is 12px). */
-.select select {
-  font-size: var(--text-p-sm);
-}
 /* The "current or most recent" card: the whole card toggles it. */
 .current {
   display: flex;

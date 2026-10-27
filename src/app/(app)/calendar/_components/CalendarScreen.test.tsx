@@ -23,6 +23,7 @@ import {
   shortMonday,
   tuesdaySwitch,
 } from './calendarScreen.harness';
+import { optionValues, pickOption } from '@/test-utils/select';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
@@ -178,20 +179,19 @@ describe('CalendarScreen', () => {
 
   describe('hours fit the shortest session (product, 2026-10-01)', () => {
     const endTimes = () =>
-      within(
+      optionValues(
+        userEvent.setup(),
         within(screen.getByRole('group', { name: 'Monday' })).getByRole('combobox', {
           name: /end time/i,
         }),
-      )
-        .getAllByRole('option')
-        .map((o) => (o as HTMLOptionElement).value);
+      );
 
-    it('end times start a default length after the start', () => {
+    it('end times start a default length after the start', async () => {
       render(<CalendarScreen />);
-      expect(endTimes()[0]).toBe('1080');
+      expect((await endTimes())[0]).toBe('1080');
     });
 
-    it('a shorter live session type lowers it; a hidden one doesn’t', () => {
+    it('a shorter live session type lowers it; a hidden one doesn’t', async () => {
       h.ownTypes = {
         data: [
           { durationMin: 30, isLive: true, usesOwnWindows: false },
@@ -199,23 +199,20 @@ describe('CalendarScreen', () => {
         ],
       };
       render(<CalendarScreen />);
-      expect(endTimes()[0]).toBe('1050');
+      expect((await endTimes())[0]).toBe('1050');
     });
 
-    it('a shorter type with its own windows doesn’t lower it (#146)', () => {
+    it('a shorter type with its own windows doesn’t lower it (#146)', async () => {
       h.ownTypes = { data: [{ durationMin: 30, isLive: true, usesOwnWindows: true }] };
       render(<CalendarScreen />);
-      expect(endTimes()[0]).toBe('1080');
+      expect((await endTimes())[0]).toBe('1080');
     });
 
     it('a moved start moves the slot, keeping its length (design setFrom)', async () => {
       const user = userEvent.setup();
       render(<CalendarScreen />);
       const monday = screen.getByRole('group', { name: 'Monday' });
-      await user.selectOptions(
-        within(monday).getByRole('combobox', { name: /start time/i }),
-        '1200',
-      );
+      await pickOption(user, within(monday).getByRole('combobox', { name: /start time/i }), '1200');
       // 5–8 pm moved to start at 8 pm stays three hours: 8–11 pm.
       expect(within(monday).getByRole('combobox', { name: /end time/i })).toHaveValue('1380');
     });
@@ -261,10 +258,7 @@ describe('CalendarScreen', () => {
     const approve = within(dialog).getByRole('switch', { name: 'Approve bookings' });
     expect(approve).toBeChecked();
     await user.click(approve);
-    await user.selectOptions(
-      within(dialog).getByRole('combobox', { name: 'Minimum notice' }),
-      '48',
-    );
+    await pickOption(user, within(dialog).getByRole('combobox', { name: 'Minimum notice' }), '48');
     await user.click(within(dialog).getByRole('button', { name: 'Save' }));
     expect(saveDefaults).toHaveBeenCalledWith(
       expect.objectContaining({ noticeHours: 48, requiresApproval: false }),
