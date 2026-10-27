@@ -1,7 +1,7 @@
 'use client';
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
 import { ApiError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
@@ -52,11 +52,7 @@ export function useCountries(enabled: boolean) {
  * while the next ones load.
  */
 export function useLanguageSearch(q: string, enabled: boolean) {
-  const [term, setTerm] = useState(q.trim());
-  useEffect(() => {
-    const t = setTimeout(() => setTerm(q.trim()), 250);
-    return () => clearTimeout(t);
-  }, [q]);
+  const term = useDebouncedValue(q.trim(), 250);
   const query = useQuery({
     queryKey: keys.catalog.languages(term),
     queryFn: ({ signal }) =>

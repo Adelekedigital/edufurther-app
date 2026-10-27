@@ -3,7 +3,8 @@
   position: fixed;
   left: 50%;
   bottom: var(--space-6);
-  z-index: 30;
+  /* Above SideDrawer (44), below ModalShell (50): a drawer's toast stays visible. */
+  z-index: 46;
   transform: translateX(-50%);
   width: max-content;
   max-width: calc(100% - var(--space-8));

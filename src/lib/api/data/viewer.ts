@@ -11,6 +11,7 @@ import { coverKey } from '@/lib/utils/cover';
 import { readMockParam } from '@/lib/utils/mockViewerParam';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { clampFocus, personInitials } from '@/lib/utils/person';
+import { toCredits } from './credits';
 import { ApiError } from './errors';
 import { api } from './http';
 import type { PendingMe } from './pending';
@@ -51,26 +52,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
     createdAt: me.created_at,
-    credits: me.credits
-      ? {
-          balance: me.credits.balance,
-          state: me.credits.state,
-          nextResetAt: me.credits.next_reset_at ?? null,
-          monthly: {
-            balance: me.credits.monthly.balance,
-            ceiling: me.credits.monthly.ceiling,
-            expiresAt: me.credits.monthly.expires_at,
-            unlocked: me.credits.monthly.unlocked,
-          },
-          bonus: {
-            balance: me.credits.bonus.balance,
-            groups: me.credits.bonus.groups.map((g) => ({
-              count: g.count,
-              expiresAt: g.expires_at,
-            })),
-          },
-        }
-      : null,
+    credits: me.credits ? toCredits(me.credits) : null,
     avatarUrl: me.profile?.avatar_url ?? null,
     avatarFocus: clampFocus(me.profile?.avatar_focus),
     coverKey: coverKey(me.profile?.cover_color),

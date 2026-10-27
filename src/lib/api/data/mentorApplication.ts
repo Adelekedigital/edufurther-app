@@ -1,7 +1,7 @@
 'use client';
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { components } from '@/lib/api/generated/schema';
 import { HOURS_COPY, introDescription } from '@/lib/copy/mentorOnboarding';
 import {
@@ -34,6 +34,7 @@ import { useTopics } from './mentors';
 import { aboutBody } from './profileEdit';
 import type { SessionTypeWriteBody } from './sessionTypes';
 import { STARTER_COPY } from '@/lib/copy/sessionTypes';
+import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
 import { toWeeklyHours, useSaveWeeklyHours, useWeeklyHours, type WeeklyHours } from './weeklyHours';
 
 type Me = components['schemas']['UserRead'];
@@ -208,11 +209,7 @@ export type InstitutionOption = {
 
 /** University suggestions (GET /institutions?q=), 250ms after typing stops. */
 export function useInstitutionSearch(q: string, countries: CatalogOption[]) {
-  const [term, setTerm] = useState(q.trim());
-  useEffect(() => {
-    const t = setTimeout(() => setTerm(q.trim()), 250);
-    return () => clearTimeout(t);
-  }, [q]);
+  const term = useDebouncedValue(q.trim(), 250);
   const query = useQuery({
     queryKey: keys.mentorApplication.institutions(term),
     queryFn: async ({ signal }) => {
