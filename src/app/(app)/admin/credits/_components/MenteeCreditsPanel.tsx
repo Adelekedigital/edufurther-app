@@ -119,6 +119,8 @@ function AddForm({ amount, onAmount, reason, onReason, onAdd }: PanelBodyProps) 
             aria-labelledby={`${id}-reason`}
             options={options}
             value={reason}
+            density="lg"
+            radius="sm"
             text="sm"
             onChange={(e) => onReason(e.target.value)}
           />

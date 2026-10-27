@@ -58,8 +58,8 @@ describe('CreditLog', () => {
     render(<CreditLog {...props} />);
     await userEvent.click(screen.getAllByRole('button', { name: 'Amara Okafor' })[0]!);
     expect(props.onOpen).toHaveBeenCalledWith(ENTRIES[0]);
-    expect(screen.queryByRole('button', { name: 'Deleted account' })).toBeNull();
-    expect(screen.getByText('Deleted account')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Deleted user' })).toBeNull();
+    expect(screen.getByText('Deleted user')).toBeInTheDocument();
   });
 
   it('loading, error before empty, empty', () => {

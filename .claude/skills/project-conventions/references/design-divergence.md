@@ -871,7 +871,7 @@ SVG ring — neutral `--ink-100` track, a value arc (`--action-primary` /
 
 ### Admin — Credits page (`creditLayout=lookup`, route `/admin/credits`, PR 6), 2026-10-27
 
-Measured at 1440 against the design's inline values: 182 of 185 checks match (98.38%). The three misses are a shared-atom gap, not a divergence. **Pending follow-up:** `Select` gains a 44px density and `--radius-sm` in PR 5 (Mentors); Credits adopts it right after for the reason select (now 37px, `--radius-md`), and the "Find a mentee" field (the `Input` `lg` field, now `--radius-lg`) follows the same radius.
+Measured at 1440 against the design's inline values. The three field-shape misses of the first build are closed: the reason select is `Select density="lg" radius="sm"` (44px, `--radius-sm`) and the "Find a mentee" field is `SearchField radius="sm"` (`Input` `radius="sm"`).
 
 | Design says | We do | Why | Reopen if |
 | --- | --- | --- | --- |
@@ -882,8 +882,8 @@ Measured at 1440 against the design's inline values: 182 of 185 checks match (98
 | Credit log: Mentee is a link (`<a href="#">`) | A button drawn as the link | It opens a dialog, it goes nowhere | — |
 | No load error, empty log or empty history drawn | Q12: "We couldn’t load credits" with the Mentors error body and Try again (the design's `listError` card); "No credit changes yet" (an EmptyState with `search-results` in the log, a line in the history) | PRD defaults | design draws them |
 | No paging drawn | The shared `LoadMore`, "Show older changes", only when the API returns a cursor (log, and a history past 50) | 50 a page (backend) | — |
-| Entries the design doesn't draw | "Unlocked: invited a friend", "Opening balance", "Credits expired" (All only), "Refunded: session canceled", "Refunded: {mentor} didn’t join", "Refunded: request not accepted" | PRD Q6 and Q12, backend PR 3's refund reasons | design or ux-writer words them |
-| Names are always present | A deleted mentee reads "Deleted account" with no drawer link; a deleted mentor leaves the sentence ("Booked a session", "Refunded: mentor canceled") | The API keeps entries with null names | — |
+| Entries the design doesn't draw | "Monthly credits unlocked", "Opening balance", "Credits expired" (All only), "Refunded: session canceled", "Refunded: {mentor} didn’t join", "Refunded: request not accepted" | PRD Q6 and Q12, backend PR 3's refund reasons | design or ux-writer words them |
+| Names are always present | A deleted mentee reads "Deleted user" (the shared `DELETED_NAME`, as Bookings and Mentors) with no drawer link; a deleted mentor leaves the sentence ("Booked a session", "Refunded: mentor canceled") | The API keeps entries with null names | — |
 | User ids like "U-20418" | The first 8 characters of the UUID; search takes the full one | PRD Q2 | — |
 
 ## Mentee home / dashboard (Mentee Dashboard v2.dc.html, route `/home`, PR 1)

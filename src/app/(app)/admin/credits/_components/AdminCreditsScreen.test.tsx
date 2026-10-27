@@ -280,6 +280,6 @@ describe('AdminCreditsScreen', () => {
     expect(
       screen.getByText('What every new mentee gets once, when they finish their profile.'),
     ).toBeInTheDocument();
-    expect(screen.getByText(/A friend they invited finishes their profile/)).toBeInTheDocument();
+    expect(screen.getByText(/Monthly credits start once both happen/)).toBeInTheDocument();
   });
 });

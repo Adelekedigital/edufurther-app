@@ -20,6 +20,7 @@ import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { sessionKey, useSession } from './session';
+import { DELETED_NAME } from '@/lib/copy/bookings';
 
 type SessionRead = components['schemas']['SessionRead'];
 type PartyRead = components['schemas']['PartyRead'];
@@ -53,8 +54,8 @@ export function toApiStatuses(statuses: readonly BookingStatus[]): ApiStatus[] {
   return statuses.map((s) => API_STATUS[s]);
 }
 
-/** What a party is called once their account is gone, or when it has no name at all. */
-export const DELETED_NAME = 'Deleted user';
+/** What a party is called once their account is gone (the words live in lib/copy). */
+export { DELETED_NAME };
 
 export function toParty(p: PartyRead): BookingParty {
   const first = (!p.deleted && p.first_name?.trim()) || '';

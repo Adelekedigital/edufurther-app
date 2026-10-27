@@ -4,6 +4,8 @@
  * the ux-writer rules: sentence case, US English, no em dashes.
  */
 
+import { DELETED_NAME } from './bookings';
+
 const credits = (n: number) => `${n} ${n === 1 ? 'credit' : 'credits'}`;
 
 export const CREDITS_TABS = {
@@ -89,7 +91,7 @@ export const RULES_COPY = {
   },
   unlockTitle: 'How monthly credits unlock',
   unlock:
-    'A friend they invited finishes their profile, and they attend their first session, in either order. Credits don’t roll over. This rule isn’t editable here; ask engineering to change it.',
+    'Monthly credits start once both happen, in either order: a friend they invited finishes their profile, and they attend their first session. Credits don’t roll over. This rule isn’t editable here; ask engineering to change it.',
   loading: 'Loading credit rules',
 } as const;
 
@@ -102,7 +104,6 @@ export const CREDITS_STATES = {
 } as const;
 
 /** A person whose account is gone: the entry stays, the name doesn't. */
-export const DELETED_ACCOUNT = 'Deleted account';
 export const SYSTEM = 'System';
 
 export type CreditKind =
@@ -149,7 +150,7 @@ export function entryWording(e: EntryFacts): EntryWording {
     case 'booking':
       return {
         what: mentor ? `Booked a session with ${mentor}` : 'Booked a session',
-        by: e.menteeFirstName ?? DELETED_ACCOUNT,
+        by: e.menteeFirstName ?? DELETED_NAME,
         type: 'bookings',
       };
     case 'refund':
@@ -157,7 +158,7 @@ export function entryWording(e: EntryFacts): EntryWording {
     case 'admin_grant':
       return {
         what: e.note ? `Added by admin · ${e.note}` : 'Added by admin',
-        by: e.adminName ?? DELETED_ACCOUNT,
+        by: e.adminName ?? DELETED_NAME,
         type: 'admin',
       };
     case 'monthly_free':
@@ -165,7 +166,7 @@ export function entryWording(e: EntryFacts): EntryWording {
     case 'profile_completed':
       return { what: 'Starter credit', by: SYSTEM, type: 'monthly' };
     case 'referral_unlock':
-      return { what: 'Unlocked: invited a friend', by: SYSTEM, type: 'monthly' };
+      return { what: 'Monthly credits unlocked', by: SYSTEM, type: 'monthly' };
     case 'opening_balance':
       return { what: 'Opening balance', by: SYSTEM, type: 'monthly' };
     case 'expired':

@@ -43,7 +43,7 @@ describe('entryWording', () => {
   it.each([
     ['monthly_free', 'Monthly reset'],
     ['profile_completed', 'Starter credit'],
-    ['referral_unlock', 'Unlocked: invited a friend'],
+    ['referral_unlock', 'Monthly credits unlocked'],
     ['opening_balance', 'Opening balance'],
   ] as const)('%s is "%s" under Monthly and starter', (kind, what) => {
     expect(entryWording(facts({ kind }))).toEqual({ what, by: 'System', type: 'monthly' });
@@ -72,15 +72,13 @@ describe('entryWording', () => {
   it('a deleted account is never "null"', () => {
     expect(entryWording(facts({ mentorName: null, menteeFirstName: null }))).toMatchObject({
       what: 'Booked a session',
-      by: 'Deleted account',
+      by: 'Deleted user',
     });
     expect(
       entryWording(facts({ kind: 'refund', refundReason: 'mentor_canceled', mentorName: null }))
         .what,
     ).toBe('Refunded: mentor canceled');
-    expect(entryWording(facts({ kind: 'admin_grant', adminName: null })).by).toBe(
-      'Deleted account',
-    );
+    expect(entryWording(facts({ kind: 'admin_grant', adminName: null })).by).toBe('Deleted user');
   });
 });
 

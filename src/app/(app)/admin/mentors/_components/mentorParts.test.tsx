@@ -129,7 +129,9 @@ describe('MentorNotes', () => {
     await user.type(box, 'Called him');
     await user.click(screen.getByRole('button', { name: 'Add note' }));
     expect(onAdd).toHaveBeenCalledWith('Called him');
-    expect(await screen.findByText('We couldn’t add that note. Try again.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('We couldn’t add that note. Your text is still here, so try again.'),
+    ).toBeInTheDocument();
     expect(box).toHaveValue('Called him');
     expect(box).toHaveAttribute('aria-invalid', 'true');
   });

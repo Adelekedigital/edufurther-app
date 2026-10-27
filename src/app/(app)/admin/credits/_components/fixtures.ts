@@ -65,7 +65,7 @@ export const ENTRIES: CreditEntry[] = [
     balanceAfter: 3,
     kind: 'admin_grant',
     menteeId: 'gone',
-    menteeName: 'Deleted account',
+    menteeName: 'Deleted user',
     menteeGone: true,
     what: 'Added by admin · Mentor no-show',
     by: 'Kemi Ade',
