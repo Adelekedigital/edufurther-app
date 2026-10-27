@@ -97,6 +97,25 @@ describe('LanguageChips', () => {
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 
+  it('Enter after Escape closed the list still adds the match', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 'tw{Escape}');
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard('{Enter}');
+    expect(screen.getByRole('button', { name: 'Twi' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('Enter on Cancel cancels, adding nothing', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 'tw');
+    screen.getByRole('button', { name: 'Cancel' }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByRole('button', { name: 'Twi' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
   it('says when nothing matches, and when the search failed', async () => {
     const { unmount } = render(<Chips />);
     await openAdder();

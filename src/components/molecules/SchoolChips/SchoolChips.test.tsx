@@ -126,6 +126,14 @@ describe('SchoolChips', () => {
     expect(added).toEqual([school('L')]);
   });
 
+  it('Enter after Escape closed the list still keeps the typed name', async () => {
+    render(<Schools />);
+    await userEvent.type(field(), 'Lagos{Escape}');
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard('{Enter}');
+    expect(added).toEqual([school('Lagos')]);
+  });
+
   it('the same school twice is not added', async () => {
     render(<Schools initial={[school('Lagos Business School')]} />);
     await userEvent.type(field(), 'lagos business school{Enter}');

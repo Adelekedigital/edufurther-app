@@ -113,12 +113,18 @@ export function LanguageChips({
     if (!isOn(l) && !full) onToggle(l);
     close();
   };
-  // The Select keeps the Escape that closes its list; the next one closes the adder.
+  // The keys the Select leaves alone while its list is closed: Enter adds the
+  // match, Escape closes the adder (the one that closes the list stays there).
   const onKey = (e: KeyboardEvent) => {
-    if (e.key !== 'Escape' || e.defaultPrevented) return;
-    e.preventDefault();
-    e.stopPropagation();
-    close();
+    if (e.defaultPrevented) return;
+    if (e.key === 'Enter' && chosen && e.target === field.current) {
+      e.preventDefault();
+      pick(chosen);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      close();
+    }
   };
 
   const noneChip = (n: NonNullable<typeof none>) => (

@@ -128,6 +128,12 @@ export function SchoolChips({
           (asked.current = e.target instanceof Element && !!e.target.closest('[role="option"]'))
         }
         onBlurCapture={() => (asked.current = false)}
+        // Enter with the list closed (after Escape), which the Select leaves alone.
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' || e.defaultPrevented || e.target !== input.current) return;
+          e.preventDefault();
+          add();
+        }}
       >
         <Select
           ref={input}
