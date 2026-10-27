@@ -8,6 +8,7 @@ import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { IntegrationRow } from '@/components/molecules/IntegrationRow/IntegrationRow';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { IntegrationGroup } from '@/components/organisms/IntegrationGroup/IntegrationGroup';
 import { VideoSection } from '@/components/organisms/VideoSection/VideoSection';
 import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
@@ -418,10 +419,7 @@ export function IntegrationsScreen() {
     memberGate(viewer, '/integrations', INTEGRATIONS_GATE) ?? lockedPageGate(access, 'Integration');
   const body: ReactNode = gate ?? (
     <div className={styles.page}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>{INTEGRATIONS_COPY.title}</h1>
-        <p className={styles.subtitle}>{INTEGRATIONS_COPY.sub}</p>
-      </div>
+      <PageHeader title={INTEGRATIONS_COPY.title} subtitle={INTEGRATIONS_COPY.sub} measure="wide" />
       {content}
     </div>
   );

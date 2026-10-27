@@ -8,7 +8,19 @@
 .text {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+}
+.narrow {
+  max-width: 460px;
+}
+.wide {
+  max-width: 520px;
+}
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
 }
 .title {
   margin: 0;
@@ -19,7 +31,7 @@
 }
 .subtitle {
   margin: 0;
-  font-size: var(--text-p-sm);
+  font-size: var(--text-p-xs);
   line-height: var(--lh-p);
-  color: var(--ink-600);
+  color: var(--ink-700);
 }
