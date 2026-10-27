@@ -215,6 +215,21 @@ const education = (over: Partial<ProfileItemModalProps> = {}) => (
     thisYear={2026}
     hasOther={false}
     audience="mentor"
+    schools={{
+      options: [
+        {
+          id: 'inst-msu',
+          name: 'Mississippi State University',
+          countryId: null,
+          countryLabel: 'United States',
+        },
+        { id: 'inst-lagos', name: 'University of Lagos', countryId: null, countryLabel: 'Nigeria' },
+      ],
+      isLoading: false,
+      isError: false,
+      retry: fn(),
+      onQueryChange: fn(),
+    }}
     saving={false}
     error={null}
     onSave={fn()}
@@ -225,6 +240,7 @@ const education = (over: Partial<ProfileItemModalProps> = {}) => (
 );
 const degree = {
   school: 'Mississippi State University',
+  institutionId: 'inst-msu',
   degree: 'PhD',
   course: 'Sociology',
   start: 2023,

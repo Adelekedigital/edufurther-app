@@ -13,8 +13,12 @@ import {
   useEducationEdit,
   useOwnEducation,
 } from '@/lib/api/data/profileEntries';
+import { useInstitutionSearch } from '@/lib/api/data/mentorApplication';
 import type { EducationAudience } from '@/lib/copy/education';
 import { levelCodeFor } from '@/lib/utils/degrees';
+
+// The form has no country row (the meta shows the school's country), so no ids to map.
+const NO_COUNTRIES: never[] = [];
 
 /** The modal frame ProfileItemModal asks its page for. */
 export function itemFrame(onClose: () => void) {
@@ -48,6 +52,9 @@ export function EducationEditor({ userId, id, onClose, onSaved, audience }: Prop
   // The owner's own list carries what the form needs (backend reply).
   const own = useOwnEducation(userId, true);
   const levels = useDegreeLevels(true);
+  // What's typed into School; a saved school isn't searched until it's changed.
+  const [schoolQ, setSchoolQ] = useState('');
+  const schools = useInstitutionSearch(schoolQ, NO_COUNTRIES);
   const [thisYear] = useState(() => new Date().getFullYear());
   const close = () => {
     edu.reset();
@@ -78,6 +85,7 @@ export function EducationEditor({ userId, id, onClose, onSaved, audience }: Prop
       thisYear={thisYear}
       hasOther={own.entries.some((e) => e.values.current && e.id !== id)}
       audience={audience}
+      schools={{ ...schools, onQueryChange: setSchoolQ }}
       catalog={{
         status,
         onRetry: () => {

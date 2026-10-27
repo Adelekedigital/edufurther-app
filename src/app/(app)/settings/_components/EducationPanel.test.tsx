@@ -56,11 +56,35 @@ vi.mock('@/lib/api/data/catalog', () => ({
     retry: vi.fn(),
   }),
 }));
+/** GET /institutions answers with one school, whatever is typed (2+ characters). */
+const searched = vi.fn();
+vi.mock('@/lib/api/data/mentorApplication', () => ({
+  useInstitutionSearch: (q: string) => {
+    searched(q);
+    return {
+      options:
+        q.length >= 2
+          ? [
+              {
+                id: 'inst-lagos',
+                name: 'University of Lagos',
+                countryId: null,
+                countryLabel: 'Nigeria',
+              },
+            ]
+          : [],
+      isLoading: false,
+      isError: false,
+      retry: vi.fn(),
+    };
+  },
+}));
 
 const entry = (over: Partial<EducationEntry> = {}): EducationEntry => ({
   id: 'e1',
   values: {
     school: 'University of Lagos',
+    institutionId: null,
     degree: 'BSc',
     course: 'Microbiology',
     start: 2018,
@@ -145,13 +169,15 @@ describe('EducationPanel', () => {
     ).toHaveAccessibleDescription(
       'Marks the degree you’re studying now or finished most recently.',
     );
-    await user.type(within(dialog).getByRole('textbox', { name: 'School' }), 'UCL');
+    await user.type(within(dialog).getByRole('combobox', { name: 'School' }), 'UCL');
     await pickOption(user, within(dialog).getByRole('combobox', { name: 'Degree' }), 'MSc');
     await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Data');
     await user.click(within(dialog).getByRole('button', { name: 'Add education' }));
     expect(addEducation).toHaveBeenCalledWith(
       expect.objectContaining({
+        // Typed, not picked: the server matches the name or queues it for review.
         school_name_raw: 'UCL',
+        institution_id: null,
         degree_abbreviation: 'MSc',
         degree_level_id: 'dl-masters',
         study_course: 'Data',
@@ -162,6 +188,25 @@ describe('EducationPanel', () => {
     // The empty state's Add is gone: focus lands on the header's.
     await waitFor(() =>
       expect(screen.getByRole('button', { name: EDUCATION_COPY.add })).toHaveFocus(),
+    );
+  });
+
+  it('School searches our list on what’s typed; picking one saves its id and name', async () => {
+    ready([]);
+    const user = userEvent.setup();
+    render(<EducationPanel userId="u1" />);
+    await user.click(screen.getByRole('button', { name: EDUCATION_COPY.add }));
+    const dialog = screen.getByRole('dialog', { name: 'Add education' });
+    await user.type(within(dialog).getByRole('combobox', { name: 'School' }), 'Lagos');
+    expect(searched).toHaveBeenLastCalledWith('Lagos');
+    await user.click(screen.getByRole('option', { name: /University of Lagos/ }));
+    await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Data');
+    await user.click(within(dialog).getByRole('button', { name: 'Add education' }));
+    expect(addEducation).toHaveBeenCalledWith(
+      expect.objectContaining({
+        school_name_raw: 'University of Lagos',
+        institution_id: 'inst-lagos',
+      }),
     );
   });
 

@@ -55,6 +55,10 @@ vi.mock('@/lib/api/data/profileEntries', async () =>
 vi.mock('@/lib/api/data/catalog', async () =>
   (await import('./profileScreen.harness')).mocks.catalog(),
 );
+vi.mock('@/lib/api/data/mentorApplication', async (orig) => ({
+  ...(await orig<object>()),
+  useInstitutionSearch: () => ({ options: [], isLoading: false, isError: false, retry: vi.fn() }),
+}));
 
 const owner = { approval: 'approved' as const, listed: true };
 const own = { ...fullProfile, owner };
@@ -78,7 +82,7 @@ describe('MentorProfileScreen — education', () => {
     expect(
       within(dialog).getByRole('checkbox', { name: 'This is my current or most recent education' }),
     ).not.toBeChecked();
-    await user.type(within(dialog).getByRole('textbox', { name: 'School' }), 'Unilag');
+    await user.type(within(dialog).getByRole('combobox', { name: 'School' }), 'Unilag');
     await pickOption(user, within(dialog).getByRole('combobox', { name: 'Degree' }), 'BSc');
     await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Sociology');
     await pickOption(user, within(dialog).getByRole('combobox', { name: 'Start year' }), '2015');
@@ -90,6 +94,7 @@ describe('MentorProfileScreen — education', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Add education' }));
     expect(addEducation).toHaveBeenCalledWith({
       school_name_raw: 'Unilag',
+      institution_id: null,
       degree_abbreviation: 'BSc',
       degree_level_id: 'dl-undergraduate',
       study_course: 'Sociology',
@@ -157,11 +162,15 @@ describe('MentorProfileScreen — education, review of #93', () => {
       render(<MentorProfileScreen handle="gbenga" />);
       await user.click(screen.getByRole('button', { name: /^Edit MSc, Sociology/ }));
       const dialog = screen.getByRole('dialog', { name: 'Edit education' });
-      const school = within(dialog).getByRole('textbox', { name: 'School' });
+      const school = within(dialog).getByRole('combobox', { name: 'School' });
       await user.clear(school);
       await user.type(school, 'Mississippi State');
       await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
-      expect(editEducation).toHaveBeenCalledWith('e2', { school_name_raw: 'Mississippi State' });
+      // A changed school drops the saved one's id.
+      expect(editEducation).toHaveBeenCalledWith('e2', {
+        school_name_raw: 'Mississippi State',
+        institution_id: null,
+      });
     } finally {
       ownEducation[1]!.levelId = saved;
     }

@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { FormField } from '@/components/molecules/FormField/FormField';
+import { SchoolSelect, type SchoolSearch } from '@/components/molecules/SchoolSelect/SchoolSelect';
 import { EDUCATION_FIELD_COPY, type EducationAudience } from '@/lib/copy/education';
 import { DEGREES } from '@/lib/utils/degrees';
 import { cx } from '@/lib/utils/cx';
@@ -9,6 +10,9 @@ import type { EducationValues } from '@/types/mentor';
 import styles from './EducationFields.module.css';
 
 export type EducationErrors = Partial<Record<'school' | 'course' | 'end', string>>;
+
+/** The school search, run by the page on what's typed into School. */
+export type SchoolSearchProps = SchoolSearch & { onQueryChange: (q: string) => void };
 
 type EducationFieldsProps = {
   values: EducationValues;
@@ -20,6 +24,7 @@ type EducationFieldsProps = {
   hasOther: boolean;
   /** Who is editing: only a mentor has a mentor card to mention. */
   audience: EducationAudience;
+  schools: SchoolSearchProps;
 };
 
 /**
@@ -34,6 +39,7 @@ export function EducationFields({
   thisYear,
   hasOther,
   audience,
+  schools,
 }: EducationFieldsProps) {
   const hintId = useId();
   // The design's 40 years, plus a saved year outside them (review of #93), newest first.
@@ -57,13 +63,17 @@ export function EducationFields({
     <>
       <FormField label="School" error={errors.school}>
         {(c) => (
-          <Input
+          <SchoolSelect
             {...c}
-            value={values.school}
-            onChange={(e) => set('school', e.target.value)}
+            text="sm"
             placeholder="e.g. Mississippi State University"
-            maxLength={200}
-            aria-required
+            value={{ name: values.school, institutionId: values.institutionId }}
+            onChange={({ name, institutionId }) => {
+              onChange({ ...values, school: name, institutionId });
+              schools.onQueryChange(name);
+            }}
+            search={schools}
+            failedCopy={EDUCATION_FIELD_COPY.schoolSearchFailed}
           />
         )}
       </FormField>

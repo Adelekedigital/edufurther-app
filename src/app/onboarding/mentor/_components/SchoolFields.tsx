@@ -5,6 +5,7 @@ import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
+import { SchoolSelect } from '@/components/molecules/SchoolSelect/SchoolSelect';
 import type { CatalogOption } from '@/lib/api/data/catalog';
 import { useInstitutionSearch } from '@/lib/api/data/mentorApplication';
 import { EDUCATION_COPY } from '@/lib/copy/mentorOnboarding';
@@ -93,48 +94,22 @@ export function SchoolFields({
         <label htmlFor={fid('school')} className={step.label}>
           {EDUCATION_COPY.university}
         </label>
-        <Select
+        <SchoolSelect
           id={fid('school')}
-          searchable
-          remote
-          minChars={2}
-          allowCustom
           density="xl"
-          maxLength={200}
           placeholder={EDUCATION_COPY.universityPlaceholder}
-          query={s.school}
-          onQueryChange={(name) => {
-            // A name typed in full that the catalogue knows is that school.
-            const hit = search.options.find(
-              (o) => o.name.toLowerCase() === name.trim().toLowerCase(),
-            );
+          value={{ name: s.school, institutionId: s.institutionId }}
+          onChange={({ name, institutionId }, hit) =>
             set({
               school: name,
-              institutionId: hit?.id ?? null,
+              institutionId,
               catalogCountryId: hit?.countryId ?? null,
               countryId: '',
               countryOpen: false,
-            });
-          }}
-          value={s.institutionId ?? ''}
-          options={search.options.map((o) => ({
-            value: o.id,
-            label: o.name,
-            meta: o.countryLabel ?? undefined,
-          }))}
-          onChange={(e, o) => {
-            const hit = search.options.find((x) => x.id === e.target.value);
-            set({
-              school: o.label,
-              institutionId: e.target.value,
-              catalogCountryId: hit?.countryId ?? null,
-              countryId: '',
-              countryOpen: false,
-            });
-          }}
-          status={search.isLoading ? 'loading' : search.isError ? 'error' : 'ready'}
-          onRetry={search.retry}
-          copy={{ failed: EDUCATION_COPY.schoolSearchFailed }}
+            })
+          }
+          search={search}
+          failedCopy={EDUCATION_COPY.schoolSearchFailed}
         />
       </div>
 
