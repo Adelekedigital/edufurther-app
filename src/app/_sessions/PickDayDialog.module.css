@@ -11,11 +11,11 @@
   gap: var(--space-2);
 }
 
-/* The suggest step's own label: 12px semibold. */
+/* SuggestTime.dc.html: 12px regular, ink-600 (not the step's semibold label). */
 .timesLabel {
   font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--ink-900);
+  font-weight: var(--weight-regular);
+  color: var(--ink-600);
 }
 
 .chips {
@@ -31,12 +31,19 @@
   color: var(--ink-600);
 }
 
-/* Two equal buttons, as the cancel dialog's footer. */
+/* SuggestTime.dc.html: two equal buttons, 16px apart. */
 .footer {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 .footer > * {
   width: 100%;
+}
+/* The design keeps the large button's 24px sides on phones too (the atom drops
+   them to 16px there). Full width, so only a long label would notice. */
+@media (max-width: 767px) {
+  .footer > * {
+    padding-inline: var(--space-6);
+  }
 }

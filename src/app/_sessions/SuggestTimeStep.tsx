@@ -137,7 +137,7 @@ export function SuggestTimeStep({
       {value && (
         <>
           <span className={styles.hold}>
-            <Icon name="lock_clock" size={14} />
+            <Icon name="lock_clock" size={14} className={styles.holdIcon} />
             Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others again.
           </span>
           {/* Last in the step, where the design puts it — and behind the same

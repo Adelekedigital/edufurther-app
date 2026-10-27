@@ -15,6 +15,11 @@
   line-height: var(--lh-p);
   color: var(--ink-600);
 }
+/* SuggestTime.dc.html: the lock_clock glyph is a shade lighter than its text. */
+.holdIcon {
+  flex: none;
+  color: var(--ink-500);
+}
 
 /* The message, last in the step. `SuggestTime.dc.html` draws the <label> as the
    column that holds the box, so the gap here is the one between the label text
