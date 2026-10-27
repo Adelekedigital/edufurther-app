@@ -43,7 +43,6 @@ export function VideoSwitchConfirm({
       icon="swap_horiz"
       tone="default"
       layout="stack"
-      mobile="sheet"
       keepLabel={copy.keep}
       confirmLabel={copy.confirm}
       pendingLabel={SWITCHING}

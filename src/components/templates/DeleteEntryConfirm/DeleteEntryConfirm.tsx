@@ -29,7 +29,6 @@ export function DeleteEntryConfirm({ kind, subtitle, pending, error, onKeep, onC
       title={`Delete this ${noun}?`}
       subtitle={subtitle ?? 'This can’t be undone.'}
       icon="delete"
-      mobile="sheet"
       keepLabel="Keep it"
       confirmLabel={`Delete ${noun}`}
       pendingLabel="Deleting…"

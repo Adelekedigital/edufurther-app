@@ -79,7 +79,6 @@ export function LinksPanel({ userId }: { userId: string }) {
           title={C.removeTitle}
           subtitle={C.removeSub(markLabel(pending.mark))}
           icon="link_off"
-          mobile="sheet"
           keepLabel={C.keep}
           confirmLabel={C.remove}
           pendingLabel={C.removing}

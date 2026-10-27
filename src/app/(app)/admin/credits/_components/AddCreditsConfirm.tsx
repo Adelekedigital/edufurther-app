@@ -35,7 +35,6 @@ export function AddCreditsConfirm({
       pending={pending}
       onKeep={onCancel}
       onConfirm={onConfirm}
-      mobile="sheet"
     >
       <div className={styles.box}>
         <div className={styles.side}>

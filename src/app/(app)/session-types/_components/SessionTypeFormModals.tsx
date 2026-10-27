@@ -15,6 +15,7 @@ export function SavedModal(p: {
 }) {
   return (
     <ModalShell
+      mobile="sheet"
       title="Changes saved"
       subtitle={
         p.live
@@ -58,6 +59,7 @@ export function PublishedModal(p: {
   const failed = p.created.failedWindows.length > 0;
   return (
     <ModalShell
+      mobile="sheet"
       title={PUBLISHED_TITLE}
       subtitle={
         failed

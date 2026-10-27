@@ -25,7 +25,7 @@ type ConfirmDialogProps = ConfirmActionsProps & {
   icon?: IconName;
   /** Closing while the request runs dismisses it and lets the request carry on. */
   onDismissWhilePending?: () => void;
-  /** Under 768px: full screen (default), or a bottom sheet (Modal.dc.html `kind="confirm"`). */
+  /** Under 768px: a bottom sheet (default, Modal.dc.html `kind="confirm"`), or full screen. */
   mobile?: 'full' | 'sheet';
   /**
    * More of the body, between the explanation and the buttons: what the
@@ -48,7 +48,7 @@ export function ConfirmDialog({
   body,
   icon,
   onDismissWhilePending,
-  mobile,
+  mobile = 'sheet',
   children,
   ...actions
 }: ConfirmDialogProps) {
