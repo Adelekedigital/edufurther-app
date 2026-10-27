@@ -397,7 +397,9 @@
     min-height: 0;
     max-height: calc(100vh - var(--space-12));
     border-radius: var(--radius-2xl);
-    padding: var(--space-6);
+    /* SuggestTime.dc.html: 24px all round. The X's top follows from it (PR 425). */
+    --modal-pad-top: var(--space-6);
+    padding: var(--modal-pad-top) var(--space-6) var(--space-6);
   }
   .dialog.phoneCentred.sm {
     max-width: 400px;
@@ -409,7 +411,6 @@
     max-width: 560px;
   }
   .phoneCentred .close {
-    top: var(--space-4);
     right: var(--space-4);
   }
   .phoneCentred .header {
