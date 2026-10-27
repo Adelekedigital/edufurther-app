@@ -1,7 +1,7 @@
 import { locationLine } from '@/lib/utils/format';
 /**
  * Mentor Settings (Mentor Settings.dc.html, PRD 19 Oct). Copy reviewed with
- * edufurther-ux-writer, 2026-10-19 (review freeze: 2026-10-20).
+ * edufurther-ux-writer, 2026-10-19.
  */
 
 /** The screen's subline for a mentor (design `mentorView`). */
@@ -172,38 +172,4 @@ export const MENTOR_EXPERTISE_COPY = {
   awardDeleted: 'Award deleted',
   loadError: 'We couldn’t load this. Check your connection and try again.',
   retry: 'Try again',
-} as const;
-
-/**
- * While the mentor application is in review (Mentor Settings.dc.html
- * reviewFreeze=on): what the reviewer judges holds still. Owner 2026-10-20:
- * name and gender stay editable, so Profile's banner says so (the design's
- * "You can edit these" is Expertise's, where nothing is editable).
- */
-export const FREEZE_COPY = {
-  lead: 'We’re reviewing your application.',
-  profile: 'You can edit your name and gender now, and the rest once it’s reviewed.',
-  expertise: 'You can edit these once it’s reviewed.',
-  mistake: 'Spotted a mistake?',
-  contact: 'Contact us',
-  /** The design's request to support (`freezeMail`), ready to send. */
-  subject: (name: string) => `Mentor application: please change something (${name})`,
-  body: (p: { name: string; firstName: string; email: string }) =>
-    [
-      'Hi EduFurther team,',
-      '',
-      'Please change this in my mentor application while it’s in review.',
-      '',
-      'What to change:',
-      '- ',
-      '',
-      `Name: ${p.name}`,
-      `Account email: ${p.email}`,
-      '',
-      'Thanks,',
-      p.firstName,
-      // CRLF: line breaks in a mailto body (RFC 6068).
-    ].join('\r\n'),
-  linkedinLock: 'You can edit LinkedIn, but not remove it, while we review your application.',
-  linkedinUpdated: 'LinkedIn updated. Your reviewer sees the new link.',
 } as const;

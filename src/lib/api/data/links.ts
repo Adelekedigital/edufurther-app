@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { SAVE_COPY } from '@/lib/copy/settings';
-import { FREEZE_COPY } from '@/lib/copy/mentorSettings';
 import { SOCIAL_LINKS_COPY as C } from '@/lib/copy/socialLinks';
 import { linkedInHandle, linkedInUrl, markLabel, markOf } from '@/lib/utils/socialLinks';
 import type { SocialKind } from '@/types/mentor';
@@ -84,8 +83,6 @@ export function useMyLinks(userId: string | null) {
 function saveCopy(e: unknown, kind: SocialKind): string {
   const err = normaliseError(e);
   if (err.kind === 'offline') return SAVE_COPY.profileOffline;
-  // A stale page while the application is in review: the reason, not "try again".
-  if (err.kind === 'inReview' && kind === 'linkedin') return FREEZE_COPY.linkedinLock;
   if (e instanceof ApiError) {
     // LinkedIn is the profile, never "removed elsewhere".
     if (e.status === 404 && kind !== 'linkedin') return C.gone;
@@ -188,14 +185,8 @@ export function useRemoveSocial(userId: string | null) {
         // Already gone is what was asked for.
         if (!response.ok && response.status !== 404) throw apiError(response.status, error);
       } catch (e) {
-        const kind = normaliseError(e).kind;
         throw {
-          copy:
-            kind === 'inReview' && row.id === LINKEDIN_ROW
-              ? FREEZE_COPY.linkedinLock
-              : kind === 'offline'
-                ? SAVE_COPY.profileOffline
-                : C.removeFailed,
+          copy: normaliseError(e).kind === 'offline' ? SAVE_COPY.profileOffline : C.removeFailed,
         };
       }
       return row.id;
@@ -210,9 +201,6 @@ export function useRemoveSocial(userId: string | null) {
       });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
-    // A refusal may mean the page is stale (the application went into review
-    // elsewhere): re-read the viewer, so LinkedIn locks and the banner shows.
-    onError: () => void qc.invalidateQueries({ queryKey: keys.viewer.all }),
   });
   return {
     remove: mutation.mutateAsync,

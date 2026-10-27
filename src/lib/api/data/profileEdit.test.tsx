@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { useInReviewRefusal } from './freeze';
 import { introProblems, useProfileEdit, type IntroEdit } from './profileEdit';
 import { keys } from './keys';
 
@@ -150,57 +149,17 @@ describe('useProfileEdit', () => {
     await waitFor(() => expect(result.current.aboutError).toBe('That didn’t save. Try again.'));
     expect(PATCH.mock.calls[1]![1].body).toEqual({ about_me: null });
   });
-});
-const IN_REVIEW = {
-  type: '/problems/mentor-application-in-review',
-  title: 'MentorApplicationInReviewError',
-  status: 409,
-  detail: 'Your application is in review, so these can’t change until it is decided.',
-  fields: ['headline'],
-};
-const refused = (error: unknown = IN_REVIEW) => ({
-  data: undefined,
-  error,
-  response: new Response(null, { status: 409 }),
-});
 
-describe('useProfileEdit — refused for the review (409 in review)', () => {
-  function withFreeze() {
-    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-    const wrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-    );
-    return renderHook(() => ({ edit: useProfileEdit('u1'), refused: useInReviewRefusal() }), {
-      wrapper,
+  it('a 409 of any type, the old review one included, is the normal save error', async () => {
+    PATCH.mockResolvedValue({
+      data: undefined,
+      error: { type: '/problems/mentor-application-in-review', status: 409 },
+      response: new Response(null, { status: 409 }),
     });
-  }
-
-  it('the headline: the page sees the refusal, and the form says no “try again”', async () => {
-    PATCH.mockResolvedValue(refused());
-    const { result } = withFreeze();
-    act(() => result.current.edit.saveIntro(before, { ...before, headline: 'New' }, vi.fn()));
-    await waitFor(() => expect(result.current.refused).not.toBeNull());
-    expect(result.current.edit.introErrors.general).toBeUndefined();
-  });
-
-  it('the names saved, the headline refused: still seen, still no “try again”', async () => {
-    PATCH.mockResolvedValueOnce(ok).mockResolvedValueOnce(refused());
-    const { result } = withFreeze();
-    act(() =>
-      result.current.edit.saveIntro(
-        before,
-        { ...before, firstName: 'Ade', headline: 'New' },
-        vi.fn(),
-      ),
+    const { result } = setup();
+    act(() => result.current.saveIntro(before, { ...before, headline: 'New' }, vi.fn()));
+    await waitFor(() =>
+      expect(result.current.introErrors.general).toBe('That didn’t save. Try again.'),
     );
-    await waitFor(() => expect(result.current.refused).not.toBeNull());
-    expect(result.current.edit.introErrors.general).toBeUndefined();
-  });
-
-  it('About: the page sees the refusal', async () => {
-    PATCH.mockResolvedValue(refused({ ...IN_REVIEW, fields: ['about_me'] }));
-    const { result } = withFreeze();
-    act(() => result.current.edit.saveAbout('Changed', vi.fn()));
-    await waitFor(() => expect(result.current.refused).not.toBeNull());
   });
 });

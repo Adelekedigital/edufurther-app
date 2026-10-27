@@ -23,7 +23,7 @@
 .field[aria-invalid='true'] {
   border-color: var(--border-danger);
 }
-.field:disabled:not(fieldset:disabled *) {
+.field:disabled {
   background: var(--surface-subtle);
   color: var(--ink-500);
   cursor: not-allowed;

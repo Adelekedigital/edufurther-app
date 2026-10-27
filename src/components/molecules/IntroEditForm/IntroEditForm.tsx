@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useRequiredFields } from '@/lib/utils/useRequiredFields';
 import { Button } from '@/components/atoms/Button/Button';
-import { FrozenGroup } from '@/components/atoms/FrozenGroup/FrozenGroup';
 import { Input } from '@/components/atoms/Input/Input';
 import { FormField } from '@/components/molecules/FormField/FormField';
 import { headlineProblem } from '@/lib/api/data/mentorSettings';
@@ -22,11 +21,6 @@ type IntroEditFormProps = {
   onCancel: () => void;
   saving: boolean;
   errors?: IntroErrors;
-  /**
-   * The application is in review: the headline holds still (the review
-   * freeze), and only the names change (owner, 21 Oct).
-   */
-  headlineFrozen?: boolean;
 };
 
 type Gap = 'firstName' | 'lastName' | 'headline';
@@ -45,16 +39,9 @@ export function IntroEditForm({
   onCancel,
   saving,
   errors = {},
-  headlineFrozen = false,
 }: IntroEditFormProps) {
   const [v, setV] = useState(initial);
-  // Frozen while open: the field shows what will save (adjusted during render).
-  const [wasFrozen, setWasFrozen] = useState(headlineFrozen);
-  if (headlineFrozen !== wasFrozen) {
-    setWasFrozen(headlineFrozen);
-    if (headlineFrozen) setV((x) => ({ ...x, headline: initial.headline }));
-  }
-  const headline = headlineFrozen ? null : headlineProblem(initial.headline, v.headline);
+  const headline = headlineProblem(initial.headline, v.headline);
   const gaps: Gap[] = [
     ...(v.firstName.trim() ? [] : ['firstName' as const]),
     ...(v.lastName.trim() ? [] : ['lastName' as const]),
@@ -89,8 +76,7 @@ export function IntroEditForm({
   const submit = (e: FormEvent) => {
     e.preventDefault();
     if (saving || !required.check()) return;
-    // A frozen headline goes back as it was: the save never sends it.
-    onSave(headlineFrozen ? { ...v, headline: initial.headline } : v);
+    onSave(v);
   };
   return (
     <form
@@ -135,20 +121,18 @@ export function IntroEditForm({
             />
           )}
         </FormField>
-        <FrozenGroup frozen={headlineFrozen}>
-          <FormField compact label="Headline" error={errorOf('headline')}>
-            {(c) => (
-              <Input
-                {...c}
-                data-ff="headline"
-                value={v.headline}
-                onChange={set('headline')}
-                maxLength={HEADLINE_MAX}
-                aria-required
-              />
-            )}
-          </FormField>
-        </FrozenGroup>
+        <FormField compact label="Headline" error={errorOf('headline')}>
+          {(c) => (
+            <Input
+              {...c}
+              data-ff="headline"
+              value={v.headline}
+              onChange={set('headline')}
+              maxLength={HEADLINE_MAX}
+              aria-required
+            />
+          )}
+        </FormField>
       </div>
       {errors.general && (
         <p role="alert" className={styles.general}>

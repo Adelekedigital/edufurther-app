@@ -102,33 +102,6 @@ describe('IntroEditForm', () => {
     });
   });
 
-  describe('in review: the headline holds still (owner, 21 Oct)', () => {
-    it('frozen while open: an edited headline goes back to the saved one, which is what saves', async () => {
-      const onSave = vi.fn();
-      const user = userEvent.setup();
-      const props = { initial, onSave, onCancel: vi.fn(), saving: false };
-      const { rerender } = render(<IntroEditForm {...props} />);
-      const headline = screen.getByRole('textbox', { name: 'Headline' });
-      await user.clear(headline);
-      await user.type(headline, 'Edited');
-      rerender(<IntroEditForm {...props} headlineFrozen />);
-      expect(screen.getByRole('textbox', { name: 'Headline' })).toHaveValue(initial.headline);
-      await user.click(screen.getByRole('button', { name: 'Save' }));
-      expect(onSave).toHaveBeenCalledWith(initial);
-    });
-
-    it('the headline can’t be changed or block the save; the names save', async () => {
-      const { user, onSave } = setup({
-        headlineFrozen: true,
-        initial: { ...initial, headline: '' },
-      });
-      expect(screen.getByRole('textbox', { name: 'Headline' })).toBeDisabled();
-      await user.type(screen.getByRole('textbox', { name: 'Last name' }), 'x');
-      await user.click(screen.getByRole('button', { name: 'Save' }));
-      expect(onSave).toHaveBeenCalledWith({ ...initial, lastName: 'Elufisanx', headline: '' });
-    });
-  });
-
   it('a failed save puts focus on the first field it names; typing elsewhere keeps focus', async () => {
     const onSave = vi.fn();
     const user = userEvent.setup();

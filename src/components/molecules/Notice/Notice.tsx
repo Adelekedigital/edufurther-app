@@ -11,8 +11,7 @@ type NoticeProps = {
    * always shows the DS's trailing `error` icon, so `icon` is ignored.
    * danger: the same DS callout in red (Mentor Onboarding `submitErr`).
    */
-  /** subtle: outlined grey, top-aligned (Mentor Settings.dc.html review freeze banner). */
-  tone: 'neutral' | 'subtle' | 'info' | 'warning' | 'danger';
+  tone: 'neutral' | 'info' | 'warning' | 'danger';
   /** Omit for a plain tip (Session Types' "Every extra question lowers bookings"). */
   icon?: IconName;
   /** Bold lead-in, e.g. "You're offline." */

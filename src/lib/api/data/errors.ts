@@ -88,14 +88,6 @@ export function normaliseError(error: unknown): AppError {
         message: 'Finish setting up your account before booking.',
         status: s,
       };
-    // A submitted mentor application holds what's reviewed (decision 273,
-    // amended): the page shows the review banner, never an error.
-    if (s === 409 && error.type?.endsWith('/problems/mentor-application-in-review'))
-      return {
-        kind: 'inReview',
-        message: 'You can change this once your application is reviewed.',
-        status: s,
-      };
     if (s === 409 && error.type?.endsWith('/problems/insufficient-credit'))
       return { kind: 'noCredit', message: 'You’re out of credits.', status: s };
     // The mentee booking limits. Kept apart from plain `conflict` because the

@@ -71,9 +71,7 @@ vi.mock('./EducationPanel', () => ({
   EducationPanel: () => <div data-testid="education-panel" />,
 }));
 vi.mock('./LinksPanel', () => ({
-  LinksPanel: ({ frozen }: { frozen?: boolean }) => (
-    <div data-testid="links-panel" data-frozen={String(!!frozen)} />
-  ),
+  LinksPanel: () => <div data-testid="links-panel" />,
 }));
 vi.mock('./SecurityPanel', () => ({
   SecurityPanel: ({ role = 'mentee' }: { role?: string }) => (
@@ -84,18 +82,14 @@ vi.mock('./SecurityPanel', () => ({
 vi.mock('./ExpertisePanel', async () => {
   const { forwardRef } = await import('react');
   return {
-    ExpertisePanel: forwardRef(({ frozen }: { frozen?: boolean }, _ref) => (
-      <div data-testid="expertise-panel" data-frozen={String(!!frozen)} />
-    )),
+    ExpertisePanel: forwardRef((_props, _ref) => <div data-testid="expertise-panel" />),
   };
 });
 
 vi.mock('./MentorProfilePanel', async () => {
   const { forwardRef } = await import('react');
   return {
-    MentorProfilePanel: forwardRef(({ frozen }: { frozen?: boolean }, _ref) => (
-      <div data-testid="mentor-profile-panel" data-frozen={String(!!frozen)} />
-    )),
+    MentorProfilePanel: forwardRef((_props, _ref) => <div data-testid="mentor-profile-panel" />),
   };
 });
 
@@ -411,25 +405,16 @@ describe('the mentee’s tabs as shipped', () => {
     expect(screen.getByTestId('security-panel')).toHaveAttribute('data-role', 'mentor');
   });
 
-  it('in review, Profile and Expertise are frozen; approved, declined or not sent, they aren’t', () => {
-    for (const [stage, frozen] of [
-      ['pending', 'true'],
-      ['approved', 'false'],
-      ['declined', 'false'],
-      ['unsubmitted', 'false'],
-    ] as const) {
-      viewer = { ...member(true), mentorStage: stage } as Viewer;
-      segment = 'profile';
-      const { unmount } = render(<SettingsScreen />);
-      expect(screen.getByTestId('mentor-profile-panel')).toHaveAttribute('data-frozen', frozen);
-      expect(screen.getByTestId('expertise-panel')).toHaveAttribute('data-frozen', frozen);
-      unmount();
-      // Social links: LinkedIn locks the same way.
-      segment = 'links';
-      const links = render(<SettingsScreen />);
-      expect(screen.getByTestId('links-panel')).toHaveAttribute('data-frozen', frozen);
-      links.unmount();
-    }
+  it('in review, Profile, Expertise and Social links are all there to edit (no review lock)', () => {
+    viewer = { ...member(true), mentorStage: 'pending' } as Viewer;
+    segment = 'profile';
+    const { unmount } = render(<SettingsScreen />);
+    expect(screen.getByTestId('mentor-profile-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('expertise-panel')).toBeInTheDocument();
+    unmount();
+    segment = 'links';
+    render(<SettingsScreen />);
+    expect(screen.getByTestId('links-panel')).toBeInTheDocument();
   });
 });
 

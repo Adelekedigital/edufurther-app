@@ -54,7 +54,7 @@
   box-sizing: border-box;
 }
 
-/* In review: what stays open while the reviewed fields are frozen. */
+/* In review: what can be set up while the application is reviewed. */
 .waitLine {
   margin: 0;
   font-size: var(--text-p-sm);

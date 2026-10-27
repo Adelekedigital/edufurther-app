@@ -313,7 +313,7 @@ describe('MentorOnboardingScreen', () => {
     );
   });
 
-  it('an application in review stays on the status page: the reviewed answers are frozen', async () => {
+  it('an application in review stays on the status page, not the form', async () => {
     appState = stateWith({ approvalStatus: 'pending', submitted: true, lastStep: 'hours' });
     render(<MentorOnboardingScreen />);
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/mentor-application'));

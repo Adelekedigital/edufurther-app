@@ -30,9 +30,6 @@ vi.mock('@/lib/api/data/freeSoon', async () =>
 vi.mock('@/lib/api/data/profile', async () =>
   (await import('./profileScreen.harness')).mocks.profile(),
 );
-vi.mock('@/lib/api/data/freeze', async () =>
-  (await import('./profileScreen.harness')).mocks.freeze(),
-);
 vi.mock('@/lib/api/data/cover', async () =>
   (await import('./profileScreen.harness')).mocks.cover(),
 );
@@ -103,6 +100,17 @@ describe('MentorProfileScreen: the owner in setup (owner, 2026-10-20)', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     expect(replace).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Edit profile' })).toBeInTheDocument();
+  });
+
+  it('in review, the reviewed parts stay editable: topics, photo, cover and education', () => {
+    h.viewerIsMentor = true;
+    h.viewerExtra = { mentorStage: 'pending' };
+    h.profile = state({ data: own });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('button', { name: /Edit topics/ })).toBeInTheDocument();
+    expect(screen.getAllByLabelText(/Photo options|Add photo/).length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Change cover/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Add education$/ })).toBeInTheDocument();
   });
 
   it('with mentor onboarding off, the owner keeps their profile', () => {

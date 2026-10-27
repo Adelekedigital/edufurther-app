@@ -89,8 +89,6 @@ export class MentorProfileSaveError extends Error {
   constructor(
     readonly copy: string,
     readonly saved: Part[],
-    /** The review freeze refused it: the page shows the review banner. */
-    readonly inReview = false,
   ) {
     super(copy);
   }
@@ -190,11 +188,7 @@ export function useSaveMentorProfile(userId: string | null) {
           const { error, response } = await run();
           if (!response.ok) throw apiError(response.status, error);
         } catch (e) {
-          throw new MentorProfileSaveError(
-            saveCopy(e, saved, part),
-            saved,
-            normaliseError(e).kind === 'inReview',
-          );
+          throw new MentorProfileSaveError(saveCopy(e, saved, part), saved);
         }
         saved.push(part);
       }
@@ -252,38 +246,36 @@ export function useGuideCountries(userId: string | null) {
 /** PATCH guide_country_ids: the whole list, in the mentor's order (it replaces the saved one). */
 export function useSaveGuideCountries(userId: string | null) {
   const qc = useQueryClient();
-  const mutation = useMutation<GuideCountry[], { copy: string; inReview: boolean }, GuideCountry[]>(
-    {
-      networkMode: 'always',
-      // A read already on its way would land after the save and put the old list back.
-      onMutate: () =>
-        userId ? qc.cancelQueries({ queryKey: keys.viewer.guideCountries(userId) }) : undefined,
-      mutationFn: async (next) => {
-        try {
-          if (!userId) throw new Error('no user');
-          const { error, response } = await api.PATCH('/api/v1/users/{user_id}/mentor-profile', {
-            params: { path: { user_id: userId } },
-            // A partial update: only the countries (the generated type lists every field).
-            body: { guide_country_ids: next.map((c) => c.id) } as never,
-          });
-          if (!response.ok) throw apiError(response.status, error);
-        } catch (e) {
-          const kind = normaliseError(e).kind;
-          throw {
-            copy:
-              kind === 'offline' ? SAVE_COPY.profileOffline : MENTOR_EXPERTISE_COPY.guideSaveFailed,
-            inReview: kind === 'inReview',
-          };
-        }
-        return next;
-      },
-      onSuccess: (saved) => {
-        // What saved shows straight away; a failed refetch can't put the old list back.
-        if (userId) qc.setQueryData(keys.viewer.guideCountries(userId), saved);
-        void qc.invalidateQueries({ queryKey: keys.mentors.all });
-      },
+  const mutation = useMutation<GuideCountry[], { copy: string }, GuideCountry[]>({
+    networkMode: 'always',
+    // A read already on its way would land after the save and put the old list back.
+    onMutate: () =>
+      userId ? qc.cancelQueries({ queryKey: keys.viewer.guideCountries(userId) }) : undefined,
+    mutationFn: async (next) => {
+      try {
+        if (!userId) throw new Error('no user');
+        const { error, response } = await api.PATCH('/api/v1/users/{user_id}/mentor-profile', {
+          params: { path: { user_id: userId } },
+          // A partial update: only the countries (the generated type lists every field).
+          body: { guide_country_ids: next.map((c) => c.id) } as never,
+        });
+        if (!response.ok) throw apiError(response.status, error);
+      } catch (e) {
+        throw {
+          copy:
+            normaliseError(e).kind === 'offline'
+              ? SAVE_COPY.profileOffline
+              : MENTOR_EXPERTISE_COPY.guideSaveFailed,
+        };
+      }
+      return next;
     },
-  );
+    onSuccess: (saved) => {
+      // What saved shows straight away; a failed refetch can't put the old list back.
+      if (userId) qc.setQueryData(keys.viewer.guideCountries(userId), saved);
+      void qc.invalidateQueries({ queryKey: keys.mentors.all });
+    },
+  });
   return {
     mutateAsync: mutation.mutateAsync,
     isPending: mutation.isPending,

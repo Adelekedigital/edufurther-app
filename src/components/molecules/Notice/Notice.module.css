@@ -20,25 +20,6 @@
 .info {
   background: var(--surface-info-subtle);
 }
-/* Mentor Settings.dc.html review freeze: 1px ink-200 outline on ink-50,
-   top-aligned (its words wrap), ink-700 copy with an ink-900 lead. */
-.subtle {
-  flex-wrap: wrap;
-  align-items: flex-start;
-  border: var(--border-hairline) solid var(--border-subtle);
-  background: var(--ink-50);
-  color: var(--text-secondary);
-}
-.subtle .text {
-  flex: 1 1 260px;
-  min-width: 0;
-}
-.subtle strong {
-  color: var(--text-primary);
-}
-.subtle .icon {
-  color: var(--ink-600);
-}
 .info .icon {
   color: var(--blue-500);
 }

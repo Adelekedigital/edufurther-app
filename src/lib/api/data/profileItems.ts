@@ -9,7 +9,7 @@ export type BackgroundSave = { originId: string; studyId: string; languageIds: s
 
 /** A failed save, in our words. */
 export class ItemSaveError extends Error {
-  /** `cause`: the failure itself, so the review freeze's refusal is still seen (freeze.ts). */
+  /** `cause`: the failure itself, kept for debugging. */
   constructor(
     readonly copy: string,
     cause?: unknown,

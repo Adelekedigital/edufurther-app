@@ -61,7 +61,7 @@ describe('accessFor: who is locked (owner, 2026-10-18)', () => {
     expect(a).toMatchObject({ homeHref: '/mentor-application', setupPill: false });
     expect(a.copy).toMatchObject({
       why: 'opens once you’re approved',
-      body: 'We’re reviewing your application. You can set up your sessions and hours while you wait.',
+      body: 'We’re reviewing your application. You can set up your profile, sessions and hours while you wait.',
       cta: 'See application status',
       href: '/mentor-application',
     });

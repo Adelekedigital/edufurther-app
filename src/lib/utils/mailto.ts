@@ -13,8 +13,7 @@ export type SupportPerson = { name: string; firstName: string; email: string; me
 
 /**
  * A request to support from a signed-in person, subject and body prefilled in
- * the request's own words (Settings' email change, the review freeze's
- * "Contact us"). Falls back to the email when there's no name.
+ * the request's own words (Settings' email change). Falls back to the email when there's no name.
  */
 export function supportHref(
   p: { name: string; email: string; mentor: boolean },

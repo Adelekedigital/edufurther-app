@@ -2,7 +2,6 @@
 
 import { useId, type ReactNode, type Ref } from 'react';
 import { FormGrid } from '@/components/atoms/FormGrid/FormGrid';
-import { FrozenGroup } from '@/components/atoms/FrozenGroup/FrozenGroup';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { AiField, type AssistMode } from '@/components/molecules/AiField/AiField';
@@ -13,7 +12,6 @@ import {
   LanguageChips,
   type LanguageOption,
 } from '@/components/molecules/LanguageChips/LanguageChips';
-import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { ProfilePhoto } from '@/components/molecules/ProfilePhoto/ProfilePhoto';
 import type {
   LanguageSearch,
@@ -26,7 +24,6 @@ import {
   type MentorProfileGap,
 } from '@/lib/copy/mentorSettings';
 import type { CoverArt, CoverIcon } from '@/lib/utils/cover';
-import { cx } from '@/lib/utils/cx';
 import { ABOUT_MAX, HEADLINE_MAX } from '@/lib/utils/profileLimits';
 import type { MentorProfileValues } from '@/types/mentorSettings';
 import styles from './MentorProfileForm.module.css';
@@ -62,12 +59,6 @@ type MentorProfileFormProps = {
   onAssistBusy?: (busy: boolean) => void;
   /** "How mentees see you": the preview column. */
   preview: ReactNode;
-  /**
-   * The application is in review: what the reviewer judges is read-only
-   * (photo, cover, headline, About, countries, languages). Name and gender
-   * stay editable (owner, 2026-10-20).
-   */
-  frozen?: boolean;
 };
 
 /**
@@ -92,7 +83,6 @@ export function MentorProfileForm({
   onAssist,
   onAssistBusy,
   preview,
-  frozen = false,
 }: MentorProfileFormProps) {
   const id = useId();
   const has = (g: MentorProfileGap) => errors.includes(g);
@@ -123,8 +113,7 @@ export function MentorProfileForm({
       <div className={styles.main}>
         <CoverHeader
           as="section"
-          // Frozen, its only controls (photo and cover) are gone: dimmed as drawn.
-          className={cx(styles.photoCard, frozen && styles.frozen)}
+          className={styles.photoCard}
           cover={
             <CoverBanner
               className={styles.cover}
@@ -134,30 +123,17 @@ export function MentorProfileForm({
               bannerUrl={cover.bannerUrl}
               art={cover.art}
               icons={cover.artIcons}
-              tools={frozen ? undefined : coverTools}
+              tools={coverTools}
             />
           }
           photo={
-            frozen ? (
-              // Frozen while the application is in review: the photo, no editor.
-              <Avatar
-                size={72}
-                ring="white"
-                initials={photo.person.initials}
-                tone={photo.person.cover}
-                src={photo.person.src}
-                focus={photo.person.focus}
-                alt={C.photoLabel}
-              />
-            ) : (
-              <ProfilePhoto
-                size={72}
-                ring="white"
-                person={{ ...photo.person, name: C.photoLabel }}
-                upload={photo.upload}
-                onRemove={photo.onRemove}
-              />
-            )
+            <ProfilePhoto
+              size={72}
+              ring="white"
+              person={{ ...photo.person, name: C.photoLabel }}
+              upload={photo.upload}
+              onRemove={photo.onRemove}
+            />
           }
           // The photo rises 32px into the cover; the title and hint sit beside
           // it, below the cover, and wrap downwards on phones.
@@ -190,7 +166,7 @@ export function MentorProfileForm({
             />
             {has('name') && <FieldError id={ids('name').error}>{nameError ?? E.name}</FieldError>}
           </div>
-          <FrozenGroup frozen={frozen} className={styles.field}>
+          <div className={styles.field}>
             <label htmlFor={ids('headline').field} className={styles.label}>
               {C.headline}
             </label>
@@ -211,21 +187,19 @@ export function MentorProfileForm({
                 {headlineTooLong ? E.headlineTooLong : E.headline}
               </FieldError>
             )}
-          </FrozenGroup>
-          <FrozenGroup frozen={frozen}>
-            <AiField
-              label={C.about}
-              value={values.about}
-              drafted={values.aboutDrafted}
-              onChange={(about, meta) => onChange({ about, aboutDrafted: meta.drafted })}
-              draftNote={C.aboutDraftNote}
-              max={ABOUT_MAX}
-              rows={5}
-              hint={C.aboutHint}
-              onAssist={onAssist}
-              onBusyChange={onAssistBusy}
-            />
-          </FrozenGroup>
+          </div>
+          <AiField
+            label={C.about}
+            value={values.about}
+            drafted={values.aboutDrafted}
+            onChange={(about, meta) => onChange({ about, aboutDrafted: meta.drafted })}
+            draftNote={C.aboutDraftNote}
+            max={ABOUT_MAX}
+            rows={5}
+            hint={C.aboutHint}
+            onAssist={onAssist}
+            onBusyChange={onAssistBusy}
+          />
         </section>
 
         <section className={styles.card} aria-labelledby={`${id}-background`}>
@@ -242,7 +216,7 @@ export function MentorProfileForm({
                 ['study', C.study, C.studyHint, E.study, values.studyId],
               ] as const
             ).map(([k, label, hint, error, value]) => (
-              <FrozenGroup key={k} frozen={frozen} className={styles.field}>
+              <div key={k} className={styles.field}>
                 <label htmlFor={ids(k).field} className={styles.label}>
                   {label}
                 </label>
@@ -260,7 +234,7 @@ export function MentorProfileForm({
                   {hint}
                 </span>
                 {has(k) && <FieldError id={ids(k).error}>{error}</FieldError>}
-              </FrozenGroup>
+              </div>
             ))}
             <div className={styles.field}>
               <label htmlFor={ids('gender').field} className={styles.label}>
@@ -283,7 +257,7 @@ export function MentorProfileForm({
               </span>
             </div>
           </FormGrid>
-          <FrozenGroup frozen={frozen} className={styles.field}>
+          <div className={styles.field}>
             <span className={styles.label}>{C.languages}</span>
             <LanguageChips
               label={C.languages}
@@ -305,7 +279,7 @@ export function MentorProfileForm({
                 noMatch: C.noLanguageMatch,
               }}
             />
-          </FrozenGroup>
+          </div>
         </section>
       </div>
       <aside className={styles.aside} aria-label={C.preview}>

@@ -39,7 +39,7 @@ let settings: {
   retry: () => void;
 };
 const mutateAsync = vi.fn();
-let saveError: { copy: string; inReview?: boolean } | null = null;
+let saveError: { copy: string } | null = null;
 
 vi.mock('@/lib/api/data/mentorSettings', async (orig) => ({
   ...(await orig<typeof import('@/lib/api/data/mentorSettings')>()),
@@ -86,9 +86,6 @@ vi.mock('@/lib/api/data/catalog', () => ({
   useLanguageSearch: () => ({ results: [{ id: 'en', label: 'English' }], status: 'ready' }),
 }));
 vi.mock('@/lib/api/data/writingAssist', () => ({ useWritingAssist: () => ({ assist: vi.fn() }) }));
-vi.mock('@/lib/api/data/settings', () => ({
-  useMenteeProfile: () => ({ profile: { name: 'Ada Obi', email: 'ada@example.com' } }),
-}));
 
 beforeEach(() => {
   settings = { status: 'ready', values, profile, handle: 'ada-obi', version: 'v1', retry: vi.fn() };
@@ -99,8 +96,6 @@ beforeEach(() => {
 
 const preview = () => within(screen.getByRole('complementary', { name: 'How mentees see you' }));
 const bar = () => screen.queryByRole('region', { name: 'Unsaved changes' });
-const banner = () =>
-  screen.queryAllByText('We’re reviewing your application.')[0]?.closest('[class*="subtle"]');
 
 describe('MentorProfilePanel', () => {
   it('the preview shows the saved profile, with Open profile to the public page', () => {
@@ -296,48 +291,6 @@ describe('MentorProfilePanel', () => {
     settings = { ...settings, status: 'loading', values: null, profile: null };
     render(<MentorProfilePanel userId="u1" />);
     expect(screen.getByRole('status', { name: 'Loading your profile' })).toBeInTheDocument();
-  });
-
-  describe('while the application is in review', () => {
-    it('the banner; what’s reviewed is read-only, name and gender stay live', () => {
-      render(<MentorProfilePanel userId="u1" frozen />);
-      expect(banner()).toHaveTextContent(
-        'We’re reviewing your application. You can edit your name and gender now, and the rest once it’s reviewed. Spotted a mistake? Contact us',
-      );
-      expect(screen.getByRole('textbox', { name: 'Headline' })).toBeDisabled();
-      expect(screen.getByRole('textbox', { name: 'Full name' })).toBeEnabled();
-      expect(screen.getByRole('combobox', { name: 'Gender (optional)' })).toBeEnabled();
-      expect(screen.queryByRole('button', { name: 'Change cover' })).toBeNull();
-      expect(screen.queryByRole('button', { name: /photo/i })).toBeNull();
-    });
-
-    it('Tab goes from Full name straight to Gender', async () => {
-      const user = userEvent.setup();
-      render(<MentorProfilePanel userId="u1" frozen />);
-      screen.getByRole('textbox', { name: 'Full name' }).focus();
-      await user.tab();
-      expect(screen.getByRole('combobox', { name: 'Gender (optional)' })).toHaveFocus();
-    });
-
-    it('a name change saves with the save bar, even with a reviewed field empty', async () => {
-      const user = userEvent.setup();
-      settings = { ...settings, values: { ...values, originId: '' } };
-      render(<MentorProfilePanel userId="u1" frozen />);
-      const name = screen.getByRole('textbox', { name: 'Full name' });
-      await user.clear(name);
-      await user.type(name, 'Ada Obi-Eze');
-      await user.click(screen.getByRole('button', { name: 'Save changes' }));
-      expect(mutateAsync).toHaveBeenCalledTimes(1);
-      const { before, after } = mutateAsync.mock.calls[0]![0];
-      expect(after).toEqual({ ...before, name: 'Ada Obi-Eze' });
-    });
-
-    it('a save the freeze refuses shows the banner, not an error', () => {
-      saveError = { copy: 'We couldn’t save your profile.', inReview: true };
-      render(<MentorProfilePanel userId="u1" />);
-      expect(banner()).toBeInTheDocument();
-      expect(screen.getByRole('textbox', { name: 'Headline' })).toBeDisabled();
-    });
   });
 
   it('languages are optional: none saves, and the label says so (founder, 21 Oct)', async () => {
