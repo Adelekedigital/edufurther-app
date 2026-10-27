@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
-import { MoveFailureSnackbar } from '@/app/_sessions/MoveFailureSnackbar';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -410,8 +409,6 @@ export function BookingsScreen() {
               {/* One live region for the whole page: sr-only, so it is heard even
               while the sheet covers everything. */}
               <LiveRegion message={announcement} />
-              {/* A move refused after its Session Join page had gone. */}
-              <MoveFailureSnackbar timeZone={timeZone} />
 
               <TabPanel id="bookings-upcoming" active={tab === 'upcoming'}>
                 <BookingsPanel

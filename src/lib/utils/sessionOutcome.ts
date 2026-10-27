@@ -1,6 +1,6 @@
 import type { Booking } from '@/types/booking';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
-import { MISSED_WAIT_FALLBACK_MIN, MOVE_COPY, OUTCOME_COPY as C } from '@/lib/copy/session';
+import { MISSED_WAIT_FALLBACK_MIN, OUTCOME_COPY as C } from '@/lib/copy/session';
 import { showedUp } from './bookings';
 
 /**
@@ -262,39 +262,5 @@ export function outcomeView({
     body: M.unknownBody,
     askReason: false,
     actions: [BOOKINGS],
-  };
-}
-
-/**
- * The notice under a session the viewer's move canceled when the new time
- * couldn't be booked (PRD fix 1): canceled, the credit back, the time not
- * booked, and Book again opening the booking modal here, as the completed
- * state does. `day` is the session's date in the page's zone; `why` adds the
- * reason when it is one the mentee can act on (the time taken, the questions).
- */
-export function moveFailedView(
-  b: Booking,
-  canBook: boolean,
-  day: string,
-  why: 'taken' | 'questions' | 'other',
-): OutcomeView {
-  const bookable = canBook && !b.other.deleted;
-  return {
-    kind: 'canceled',
-    tone: 'grey',
-    icon: 'event_busy',
-    title: MOVE_COPY.failedTitle,
-    body: MOVE_COPY.failedBody(day, why, b.other.firstName),
-    askReason: false,
-    actions: bookable
-      ? [
-          {
-            key: 'book',
-            label: MOVE_COPY.bookAgain(b.other.firstName),
-            href: null,
-            variant: 'primary',
-          },
-        ]
-      : [BOOKINGS],
   };
 }
