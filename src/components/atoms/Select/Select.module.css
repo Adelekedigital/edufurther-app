@@ -2,10 +2,16 @@
   position: relative;
   display: flex;
 }
-.select {
+/* The closed field: as the native select was (Session Types.dc.html rule rows). */
+.control {
   appearance: none;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
   width: 100%;
+  min-width: 0;
   height: var(--control-h-sm);
+  margin: 0;
   padding: 0 var(--space-8) 0 var(--space-3);
   border: var(--border-hairline) solid var(--border-default);
   border-radius: var(--radius-md);
@@ -13,20 +19,38 @@
   color: var(--text-primary);
   font-family: var(--font-ui);
   font-size: var(--text-p-xs);
+  text-align: left;
   cursor: pointer;
 }
-.select:hover {
+input.control {
+  cursor: text;
+}
+.control::placeholder {
+  color: var(--ink-500);
+}
+.value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.control:hover {
   border-color: var(--ink-400);
 }
-.select:focus-visible {
+.control:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 0;
   border-color: var(--border-focus);
 }
-.select[aria-invalid='true'] {
+.control[aria-invalid='true'] {
   border-color: var(--border-danger);
 }
-.select:disabled:not(fieldset:disabled *) {
+/* Read-only (e.g. a list at its limit): still focusable, drawn as not taking input. */
+.control[aria-readonly='true'] {
+  background: var(--ink-50);
+  cursor: not-allowed;
+}
+.control:disabled {
   background: var(--surface-subtle);
   color: var(--ink-500);
   cursor: not-allowed;
@@ -39,38 +63,155 @@
   pointer-events: none;
   color: var(--ink-500);
 }
-.compact .select {
+.compact .control {
   height: 36px;
   padding: 0 var(--space-6) 0 var(--space-2);
 }
 .compact .chevron {
   right: var(--space-1);
 }
-.xl .select {
+/* md: the medium button's height, for a field in a row of 40px buttons. */
+.md .control {
+  height: var(--button-h-medium);
+}
+.xl .control {
   height: var(--space-12);
   padding: 0 var(--space-10) 0 var(--space-4);
   font-size: var(--text-p-sm);
 }
-.sm .select {
+.sm .control {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-regular);
 }
 /* The placeholder ("Select") until something is picked (the design's ink-500). */
-.empty .select {
+.empty .control {
   color: var(--text-tertiary);
 }
 .xl .chevron {
   right: var(--space-3);
 }
+
+/* PerformanceChart's year, a pill in the range switch: 28px, borderless,
+   ink-600 until a year is picked. */
+.segment .control {
+  height: 28px;
+  padding: 0 var(--space-6) 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--ink-600);
+  font-weight: var(--weight-semibold);
+}
+.segment .chevron {
+  right: var(--space-1);
+  color: currentColor;
+}
+.segmentOn .control {
+  background: var(--surface-card);
+  box-shadow: var(--shadow-control);
+  color: var(--ink-900);
+}
+.segment .control:focus-visible {
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* The open list (design system SelectorMenu). Fixed, placed by useListPosition. */
+.popup {
+  position: fixed;
+  z-index: 60;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-1) 0;
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow:
+    var(--shadow-menu),
+    0 0 0 1px var(--ink-200);
+  font-family: var(--font-ui);
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--menu-item-h);
+  padding: var(--space-2) var(--space-4);
+  box-sizing: border-box;
+  font-size: var(--text-p-sm);
+  color: var(--ink-900);
+  cursor: pointer;
+}
+.option:hover,
+.active {
+  background: var(--ink-50);
+}
+/* Windows high contrast drops backgrounds: the active row keeps a mark. */
+@media (forced-colors: active) {
+  .active {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+.label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.meta {
+  flex: none;
+  color: var(--ink-500);
+}
+.check {
+  flex: none;
+  margin-left: auto;
+  color: var(--blue-500);
+}
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--menu-item-h);
+  padding: var(--space-2) var(--space-4);
+  box-sizing: border-box;
+  font-size: var(--text-p-sm);
+  color: var(--ink-600);
+}
+.retry {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-link);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.retry:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 @media (max-width: 767px) {
   /* Design phone rule: full width, 44px, 16px text (no iOS zoom). */
-  .wrap {
+  .wrap:not(.segment) {
     width: 100% !important;
   }
-  .select,
-  .xl .select,
-  .sm .select {
+  .wrap:not(.segment) .control {
     min-height: var(--touch-target-min);
     font-size: var(--text-p-md);
+  }
+  .option,
+  .line {
+    min-height: var(--touch-target-min);
+    font-size: var(--text-p-md);
+  }
+  /* The chart's year pill grows with its row (PerformanceChart), at its 12px. */
+  .segment .control {
+    min-height: var(--touch-target-min);
   }
 }

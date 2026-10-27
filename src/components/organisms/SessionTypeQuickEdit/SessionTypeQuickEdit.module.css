@@ -11,9 +11,6 @@
   font-size: var(--text-p-sm);
   font-weight: var(--weight-medium);
 }
-.length select {
-  height: var(--control-h-sm);
-}
 /* Price, read-only until payments are designed: the cards' "Free". */
 p.field {
   margin: 0;
@@ -86,11 +83,6 @@ p.field {
   flex-wrap: wrap;
   padding-top: var(--space-4);
   border-top: var(--border-hairline) solid var(--ink-100);
-}
-@media (min-width: 768px) {
-  .length select {
-    font-size: var(--text-p-sm);
-  }
 }
 @media (max-width: 767px) {
   /* The design's phone padding for its boxes. */

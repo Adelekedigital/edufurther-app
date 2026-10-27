@@ -72,7 +72,7 @@ export function EducationFields({
           {(c) => (
             <Select
               {...c}
-              className={styles.select}
+              text="sm"
               options={degrees}
               value={values.degree}
               onChange={(e) => set('degree', e.target.value)}
@@ -97,7 +97,7 @@ export function EducationFields({
           {(c) => (
             <Select
               {...c}
-              className={styles.select}
+              text="sm"
               options={yearOptions}
               value={String(values.start)}
               onChange={(e) => set('start', Number(e.target.value))}
@@ -108,7 +108,7 @@ export function EducationFields({
           {(c) => (
             <Select
               {...c}
-              className={styles.select}
+              text="sm"
               options={yearOptions}
               value={String(values.end)}
               onChange={(e) => set('end', Number(e.target.value))}

@@ -222,7 +222,7 @@
     flex: 1;
     min-width: 0;
   }
-  .cTime select {
+  .cTime [role='combobox'] {
     width: 100% !important;
   }
   .cIcon {

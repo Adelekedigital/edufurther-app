@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SessionTypeQuickEdit } from './SessionTypeQuickEdit';
+import { optionValues, pickOption } from '@/test-utils/select';
 
 const props = () => ({
   initial: { durationMin: 60, visible: true },
@@ -12,16 +13,11 @@ const props = () => ({
 });
 
 describe('SessionTypeQuickEdit', () => {
-  it('offers the platform lengths, names the switch, and links the full editor', () => {
+  it('offers the platform lengths, names the switch, and links the full editor', async () => {
     render(<SessionTypeQuickEdit {...props()} />);
     const length = screen.getByRole('combobox', { name: 'Length' });
     expect(length).toHaveValue('60');
-    expect(Array.from((length as HTMLSelectElement).options, (o) => o.value)).toEqual([
-      '30',
-      '45',
-      '60',
-      '90',
-    ]);
+    expect(await optionValues(userEvent.setup(), length)).toEqual(['30', '45', '60', '90']);
     const vis = screen.getByRole('switch', { name: 'Visible to mentees' });
     expect(vis).toBeChecked();
     expect(vis).toHaveAccessibleDescription(
@@ -37,10 +33,20 @@ describe('SessionTypeQuickEdit', () => {
     const p = props();
     const user = userEvent.setup();
     render(<SessionTypeQuickEdit {...p} />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Length' }), '90');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Length' }), '90');
     await user.click(screen.getByRole('switch', { name: 'Visible to mentees' }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(p.onSave).toHaveBeenCalledWith({ durationMin: 90, visible: false });
+  });
+
+  it('Length is named by its label alone, and a pick closes the list', async () => {
+    const user = userEvent.setup();
+    render(<SessionTypeQuickEdit {...props()} />);
+    const length = screen.getByRole('combobox', { name: 'Length' });
+    expect(length).toHaveAccessibleName('Length');
+    await pickOption(user, length, '45');
+    expect(length).toHaveValue('45');
+    expect(screen.queryByRole('listbox')).toBeNull();
   });
 
   it('nothing changed cancels', async () => {
@@ -58,7 +64,7 @@ describe('SessionTypeQuickEdit', () => {
     render(<SessionTypeQuickEdit {...p} saving />);
     const save = screen.getByRole('button', { name: 'Saving…' });
     expect(save).toHaveAttribute('aria-disabled', 'true');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Length' }), '30');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Length' }), '30');
     await user.click(save);
     expect(p.onSave).not.toHaveBeenCalled();
   });

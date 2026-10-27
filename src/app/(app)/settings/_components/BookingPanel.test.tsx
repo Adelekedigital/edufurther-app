@@ -5,6 +5,7 @@ import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import type { AppError } from '@/types/mentor';
 import { BookingPanel } from './BookingPanel';
 import type { PanelHandle } from './ProfilePanel';
+import { pickOption } from '@/test-utils/select';
 
 const stored: MentorDefaults = {
   durationMin: 60,
@@ -65,7 +66,7 @@ describe('BookingPanel', () => {
     const user = userEvent.setup();
     render(<BookingPanel userId="u1" />);
     await user.click(screen.getByRole('switch'));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Session length' }), '90');
     expect(bar()).toHaveTextContent('Unsaved changes to booking rules');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(save).toHaveBeenCalledWith({
@@ -132,7 +133,7 @@ describe('BookingPanel', () => {
   it('a refetch while editing keeps the edit; a clean panel takes the new values', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<BookingPanel userId="u1" />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Session length' }), '90');
     defaults = { ...defaults, data: { ...stored, durationMin: 45 } };
     rerender(<BookingPanel userId="u1" />);
     expect(screen.getByRole('combobox', { name: 'Session length' })).toHaveValue('90');
@@ -145,7 +146,7 @@ describe('BookingPanel', () => {
   it('a cap lowered while editing brings the window down to it, as Calendar does', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<BookingPanel userId="u1" />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Booking window' }), '56');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Booking window' }), '56');
     defaults = { ...defaults, data: { ...stored, maxWindowDays: 42 } };
     rerender(<BookingPanel userId="u1" />);
     expect(screen.getByRole('combobox', { name: 'Booking window' })).toHaveValue('42');

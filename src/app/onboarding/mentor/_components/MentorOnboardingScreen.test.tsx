@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type { MentorApplicationState, MentorAnswers } from '@/types/mentorOnboarding';
 import type { Viewer } from '@/types/mentor';
 import { MentorOnboardingScreen } from './MentorOnboardingScreen';
+import { pickOption } from '@/test-utils/select';
 
 // Both flows on, before access.ts reads them: step 1 may offer the mentee flow.
 vi.hoisted(() => {
@@ -232,7 +233,7 @@ describe('MentorOnboardingScreen', () => {
       'aria-pressed',
       'false',
     );
-    await userEvent.selectOptions(screen.getByLabelText('From'), '1140');
+    await pickOption(userEvent, screen.getByLabelText('From'), '1140');
     expect(screen.getByLabelText('To')).toHaveValue('1320');
     expect(screen.getByText('Mon, Tue, Wed, Thu, Fri · 7:00 pm – 10:00 pm')).toBeInTheDocument();
     expect(
@@ -647,8 +648,8 @@ describe('MentorOnboardingScreen', () => {
     await userEvent.type(screen.getByLabelText('University'), 'University of Lagos');
     await userEvent.click(screen.getByRole('button', { name: 'Bachelor’s' }));
     await userEvent.type(screen.getByLabelText('Field of study'), 'Microbiology');
-    await userEvent.selectOptions(screen.getByLabelText('Start year'), '2011');
-    await userEvent.selectOptions(screen.getByLabelText('End year (or expected)'), '2015');
+    await pickOption(userEvent, screen.getByLabelText('Start year'), '2011');
+    await pickOption(userEvent, screen.getByLabelText('End year (or expected)'), '2015');
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await screen.findByRole('heading', { level: 1, name: 'About you' });
     await waitFor(() => expect(requestAssist).toHaveBeenCalledTimes(2));

@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ReactNode } from 'react';
 import { ProfileItemModal, type ItemShell } from './ProfileItemModal';
+import { pickOption } from '@/test-utils/select';
 
 const shell = (s: ItemShell, body: ReactNode) => (
   <div role="dialog" aria-label={s.title} aria-describedby="sub">
@@ -365,7 +366,7 @@ describe('ProfileItemModal — award', () => {
   it('a saved award without a year keeps "No year" rather than getting one', () => {
     award({ ...saved, year: null });
     expect(screen.getByRole('combobox', { name: 'Year' })).toHaveValue('');
-    expect(screen.getByRole('option', { name: 'No year' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Year' })).toHaveTextContent('No year');
   });
 });
 
@@ -412,10 +413,11 @@ describe('ProfileItemModal — education', () => {
     expect(current).toBeChecked();
     expect(current).toHaveAccessibleDescription('Shown under your name and on your mentor card.');
     await user.type(screen.getByRole('textbox', { name: 'School' }), ' UCL ');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Degree' }), 'MSc');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Degree' }), 'MSc');
     await user.type(screen.getByRole('textbox', { name: 'Course of study' }), 'Public Health');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Start year' }), '2024');
-    await user.selectOptions(
+    await pickOption(user, screen.getByRole('combobox', { name: 'Start year' }), '2024');
+    await pickOption(
+      user,
       screen.getByRole('combobox', { name: 'End year (or expected)' }),
       '2025',
     );

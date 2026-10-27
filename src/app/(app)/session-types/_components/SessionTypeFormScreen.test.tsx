@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { Viewer } from '@/types/mentor';
 import { SessionTypeFormScreen } from './SessionTypeFormScreen';
 import { expectLockedPage, explainer, resetFlags, viewers } from '@/app/_shell/lockedPage.harness';
+import { optionLabels, pickOption } from '@/test-utils/select';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -400,7 +401,7 @@ describe('SessionTypeFormScreen', () => {
     const error = 'Turn on at least one day, or use your weekly availability.';
     expect(screen.getByText(error)).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Minimum notice' }), '72');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Minimum notice' }), '72');
     expect(screen.getByText(error)).toBeInTheDocument();
   });
 
@@ -436,9 +437,9 @@ describe('SessionTypeFormScreen', () => {
     render(<SessionTypeFormScreen template="sop-review" />);
     await toStep3();
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Minimum notice' }), '72');
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Approve bookings' }), 'off');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Session length' }), '90');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Minimum notice' }), '72');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Approve bookings' }), 'off');
     await publish();
     expect(create.mock.calls[0]![0].body).toMatchObject({
       duration_minutes: 90,
@@ -476,11 +477,11 @@ describe('SessionTypeFormScreen', () => {
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     const select = screen.getByRole('combobox', { name: 'Approve bookings' });
     expect(select).toHaveAccessibleDescription('Your default: you approve each booking.');
-    expect(
-      within(select)
-        .getAllByRole('option')
-        .map((o) => o.textContent),
-    ).toEqual(['Use my default', 'You approve each booking', 'Confirmed straight away']);
+    expect(await optionLabels(user, select)).toEqual([
+      'Use my default',
+      'You approve each booking',
+      'Confirmed straight away',
+    ]);
   });
 
   it('review: one Booking rules row while inheriting; a row per rule once customized', async () => {
@@ -501,7 +502,7 @@ describe('SessionTypeFormScreen', () => {
     await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Approve bookings' }), 'off');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Approve bookings' }), 'off');
     await user.click(next(/^Continue$/));
     for (const k of [
       'Session length',
@@ -546,11 +547,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
     await toStep3(user);
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     const own = screen.getByRole('combobox', { name: 'Booking window' });
-    expect(
-      within(own)
-        .getAllByRole('option')
-        .map((o) => o.textContent),
-    ).toEqual(['1 week', '2 weeks']);
+    expect(await optionLabels(user, own)).toEqual(['1 week', '2 weeks']);
   });
 
   it('defaults that arrive late don’t swallow what the mentor typed (review r2 of #60)', async () => {
@@ -635,10 +632,8 @@ describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
     await user.click(next(/^Continue$/));
     await user.click(next(/^Continue$/));
   };
-  const optionsOf = () =>
-    within(screen.getByRole('combobox', { name: 'Video' }))
-      .getAllByRole('option')
-      .map((o) => o.textContent);
+  const optionsOf = (user: ReturnType<typeof userEvent.setup>) =>
+    optionLabels(user, screen.getByRole('combobox', { name: 'Video' }));
 
   it('in both modes, with the default set in Integrations (a new tab)', async () => {
     const user = userEvent.setup({ delay: null });
@@ -668,7 +663,11 @@ describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
     videoMock = { data, isLoading: false, error: null };
     await toStep3(user);
     // No personal link of its own: that is a default only.
-    expect(optionsOf()).toEqual([`Use my default (${name})`, 'EduFurther video', 'Google Meet']);
+    expect(await optionsOf(user)).toEqual([
+      `Use my default (${name})`,
+      'EduFurther video',
+      'Google Meet',
+    ]);
   });
 
   it.each([
@@ -678,7 +677,7 @@ describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
     const user = userEvent.setup({ delay: null });
     videoMock = mock;
     await toStep3(user);
-    expect(optionsOf()[0]).toBe('Use my default');
+    expect((await optionsOf(user))[0]).toBe('Use my default');
   });
 
   it('a default that failed to load says so, as the rules and hours do, and Try again reads it again (GitHub review)', async () => {
@@ -714,7 +713,7 @@ describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
 
     create.mockReset();
     await toStep3(user);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Video' }), 'google_meet');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Video' }), 'google_meet');
     await user.click(next(/^Continue$/));
     // After "Approve bookings", inheriting the rules too.
     const terms = screen.getAllByRole('term').map((t) => t.textContent);
@@ -742,7 +741,7 @@ describe('SessionTypeFormScreen — the Video row (backend #535)', () => {
     // The problem is read first, then the hint; and focus is on the select.
     expect(select).toHaveAccessibleDescription(/^Choose where the call happens\. Where the call/);
     expect(select).toHaveFocus();
-    await user.selectOptions(select, 'daily');
+    await pickOption(user, select, 'daily');
     expect(screen.queryByText('Choose where the call happens.')).toBeNull();
   });
 });

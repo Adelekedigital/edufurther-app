@@ -4,6 +4,7 @@ import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixtur
 import { h, ownType, quickEdit, remote, removeType, setLive, state } from './profileScreen.harness';
 import type { MentorDefaults } from '@/lib/api/data/sessionTypes';
 import { MentorProfileScreen } from './MentorProfileScreen';
+import { optionLabels, pickOption } from '@/test-utils/select';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
@@ -187,7 +188,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
       'href',
       '/session-types/st1/edit',
     );
-    await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Length' }), '45');
+    await pickOption(user, within(dialog).getByRole('combobox', { name: 'Length' }), '45');
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     expect(quickEdit).toHaveBeenCalledWith({ id: 'st1', durationMin: 45, live: undefined });
     expect(document.querySelector('[aria-modal="true"]')).toBeNull();
@@ -240,7 +241,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Edit SOP draft review' }));
     const dialog = screen.getByRole('dialog', { name: 'Edit SOP draft review' });
-    await user.selectOptions(within(dialog).getByRole('combobox', { name: 'Length' }), '45');
+    await pickOption(user, within(dialog).getByRole('combobox', { name: 'Length' }), '45');
     await user.click(within(dialog).getByRole('switch', { name: 'Visible to mentees' }));
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
     await user.click(screen.getByRole('button', { name: 'Keep visible' }));
@@ -289,7 +290,7 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(screen.getByRole('button', { name: 'Edit SOP draft review' }));
     const dialog = screen.getByRole('dialog', { name: 'Edit SOP draft review' });
     expect(within(dialog).getByText('That didn’t save. Try again.')).toBeVisible();
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Length' }), '90');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Length' }), '90');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(screen.getByRole('dialog', { name: 'Edit SOP draft review' })).toBeInTheDocument();
     // Said in the page's live region, which is always there (Codex on PR 119).
@@ -304,11 +305,13 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     await user.click(screen.getByRole('button', { name: 'Edit SOP draft review' }));
     const length = screen.getByRole('combobox', { name: 'Length' });
     expect(length).toHaveValue('15');
-    expect(
-      within(length)
-        .getAllByRole('option')
-        .map((o) => o.textContent),
-    ).toEqual(['15 min', '30 min', '45 min', '60 min', '90 min']);
+    expect(await optionLabels(user, length)).toEqual([
+      '15 min',
+      '30 min',
+      '45 min',
+      '60 min',
+      '90 min',
+    ]);
   });
 
   it('Delete asks first; deleted, it says so and focus moves on', async () => {

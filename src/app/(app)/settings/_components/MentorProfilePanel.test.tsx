@@ -4,6 +4,7 @@ import type { MentorProfile } from '@/types/mentor';
 import type { MentorProfileValues } from '@/types/mentorSettings';
 import { MentorProfileSaveError } from '@/lib/api/data/mentorSettings';
 import { MentorProfilePanel } from './MentorProfilePanel';
+import { pickOption } from '@/test-utils/select';
 
 const values: MentorProfileValues = {
   name: 'Ada Obi',
@@ -136,7 +137,7 @@ describe('MentorProfilePanel', () => {
     const long = 'z'.repeat(100);
     settings = { ...settings, values: { ...values, headline: long } };
     render(<MentorProfilePanel userId="u1" />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(mutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -162,7 +163,7 @@ describe('MentorProfilePanel', () => {
     saveError = { copy: 'Some changes saved, but your languages didn’t. Try again.' };
     mutateAsync.mockRejectedValue(new Error('x'));
     render(<MentorProfilePanel userId="u1" />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Man');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Man');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(screen.getByRole('alert')).toHaveTextContent('your languages didn’t');
     expect(screen.getByRole('combobox', { name: 'Gender (optional)' })).toHaveValue('Man');
@@ -171,7 +172,7 @@ describe('MentorProfilePanel', () => {
   it('after Save the form keeps the saved values while the refetch is on its way', async () => {
     const user = userEvent.setup();
     render(<MentorProfilePanel userId="u1" />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(await screen.findByText('Profile saved')).toBeInTheDocument();
     // useMentorSettings still returns the values from before the save.
@@ -208,7 +209,7 @@ describe('MentorProfilePanel', () => {
   it('newer values that arrive while editing show once the edit is discarded', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<MentorProfilePanel userId="u1" />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Man');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Man');
     settings = {
       ...settings,
       values: { ...values, headline: 'Edited on another device' },
@@ -271,7 +272,7 @@ describe('MentorProfilePanel', () => {
   it('after Save, a newer read is taken even if it equals what was there before', async () => {
     const user = userEvent.setup();
     const { rerender } = render(<MentorProfilePanel userId="u1" />);
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
+    await pickOption(user, screen.getByRole('combobox', { name: 'Gender (optional)' }), 'Woman');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     await screen.findByText('Profile saved');
     // Another device put the old value back: a new read, with the old values.

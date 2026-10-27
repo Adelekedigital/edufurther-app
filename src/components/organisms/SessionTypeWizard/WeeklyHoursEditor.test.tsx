@@ -3,6 +3,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { emptyWeek, type DayHours } from '@/lib/utils/sessionTypeDraft';
 import { WeeklyHoursEditor } from './WeeklyHoursEditor';
+import { optionValues, pickOption } from '@/test-utils/select';
 
 function Harness({
   start,
@@ -59,12 +60,13 @@ describe('WeeklyHoursEditor: hours fit the shortest session', () => {
     ).toHaveLength(2);
   });
 
-  it('start times leave room for a session before midnight', () => {
+  it('start times leave room for a session before midnight', async () => {
     render(<Harness start={week({ on: true, slots: [[540, 630]] })} minLength={90} />);
-    const starts = within(
+    const starts = await optionValues(
+      userEvent.setup(),
       within(monday()).getByRole('combobox', { name: /start time/ }),
-    ).getAllByRole('option');
-    expect((starts.at(-1) as HTMLOptionElement).value).toBe('1350');
+    );
+    expect(starts.at(-1)).toBe('1350');
   });
 
   it('Add hours with a 30-min minimum makes a 30-min slot (design add)', async () => {
@@ -85,7 +87,7 @@ describe('WeeklyHoursEditor: hours fit the shortest session', () => {
   it('a picked end stays as picked', async () => {
     const user = userEvent.setup();
     render(<Harness start={week({ on: true, slots: [[540, 600]] })} minLength={30} />);
-    await user.selectOptions(within(monday()).getByRole('combobox', { name: /end time/ }), '570');
+    await pickOption(user, within(monday()).getByRole('combobox', { name: /end time/ }), '570');
     expect(times(/end time/)).toEqual(['570']);
   });
 
@@ -101,10 +103,13 @@ describe('WeeklyHoursEditor: hours fit the shortest session', () => {
     );
   });
 
-  it('no minimum: behaves as before (every end time listed)', () => {
+  it('no minimum: behaves as before (every end time listed)', async () => {
     render(<Harness start={week({ on: true, slots: [[540, 600]] })} />);
     expect(
-      within(within(monday()).getByRole('combobox', { name: /end time/ })).getAllByRole('option'),
+      await optionValues(
+        userEvent.setup(),
+        within(monday()).getByRole('combobox', { name: /end time/ }),
+      ),
     ).toHaveLength(49);
   });
 });

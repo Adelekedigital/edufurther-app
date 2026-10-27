@@ -59,16 +59,17 @@ export function SessionTypeQuickEdit({
         Price
         <span className={styles.free}>Free</span>
       </p>
-      <label className={styles.field}>
-        Length
+      <div className={styles.field}>
+        <label htmlFor={`${id}-length`}>Length</label>
         <Select
-          className={styles.length}
+          id={`${id}-length`}
+          text="sm"
           width={200}
           value={String(durationMin)}
           onChange={(e) => setDuration(Number(e.target.value))}
           options={lengths.map((n) => ({ value: String(n), label: `${n} min` }))}
         />
-      </label>
+      </div>
       <div className={styles.toggle}>
         <span className={styles.toggleText}>
           <span id={`${id}-vis`} className={styles.toggleLabel}>

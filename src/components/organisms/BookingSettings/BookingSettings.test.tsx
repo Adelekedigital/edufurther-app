@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { approvalLine, rulesNote } from '@/lib/copy/mentorSettings';
 import { BookingSettings, type BookingSettingsValue } from './BookingSettings';
+import { pickOption } from '@/test-utils/select';
 
 const value: BookingSettingsValue = {
   requiresApproval: true,
@@ -62,7 +63,7 @@ describe('BookingSettings', () => {
       'Buffer between sessions',
     ])
       expect(screen.getByRole('combobox', { name })).toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Session length' }), '90');
+    await pickOption(userEvent, screen.getByRole('combobox', { name: 'Session length' }), '90');
     expect(onChange).toHaveBeenCalledWith({ ...value, durationMin: 90 });
   });
 

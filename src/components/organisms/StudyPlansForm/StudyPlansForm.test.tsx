@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { EMPTY_PLANS } from '@/lib/utils/onboardingAnswers';
 import type { PlanAnswers } from '@/types/onboarding';
 import { StudyPlansForm } from './StudyPlansForm';
+import { pickOption } from '@/test-utils/select';
 
 const countries = [
   { id: 'ca', label: 'Canada' },
@@ -69,7 +70,8 @@ describe('StudyPlansForm', () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
     render(<Harness onChange={onChange} />);
-    await user.selectOptions(
+    await pickOption(
+      user,
       screen.getByRole('combobox', { name: 'What are you applying for?' }),
       'MBA',
     );
