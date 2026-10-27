@@ -64,6 +64,10 @@ export function SchoolChips({
   const matches = typed && !full ? results.filter((r) => !has(r.name)).slice(0, MATCHES) : [];
   const wrap = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLElement>(null);
+  // The Select also keeps typed text when focus or a press leaves the field.
+  // Here that would add a chip nobody asked for (and eat the Add button's
+  // click), so only Enter or the Use row adds it.
+  const asked = useRef(false);
 
   // Read-only, not disabled, at the limit: the field keeps focus after the
   // tenth, and says why with the line it describes itself by. The Select has
@@ -117,11 +121,20 @@ export function SchoolChips({
           ))}
         </ul>
       )}
-      <div className={styles.adder}>
+      <div
+        className={styles.adder}
+        onKeyDownCapture={(e) => (asked.current = e.key === 'Enter')}
+        onPointerDownCapture={(e) =>
+          (asked.current = e.target instanceof Element && !!e.target.closest('[role="option"]'))
+        }
+        onBlurCapture={() => (asked.current = false)}
+      >
         <Select
           ref={input}
           searchable
           remote
+          // GET /institutions runs from two characters (useInstitutionSearch).
+          minChars={2}
           allowCustom
           text="sm"
           className={styles.search}
@@ -136,9 +149,8 @@ export function SchoolChips({
           value=""
           options={matches.map((m) => ({ value: m.id, label: m.name }))}
           onChange={(e) => add(matches.find((m) => m.id === e.target.value))}
-          // Enter or the Use row keeps the typed name; leaving the field leaves it there.
           onCustom={() => {
-            if (document.activeElement === input.current) add();
+            if (asked.current) add();
           }}
           status={status}
           copy={{ searching: copy.searching, failed: copy.searchFailed }}

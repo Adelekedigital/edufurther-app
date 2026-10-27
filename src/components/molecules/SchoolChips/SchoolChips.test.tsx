@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
-import { pickOption } from '@/test-utils/select';
+import { optionLabels, pickOption } from '@/test-utils/select';
 import type { GoalSchool } from '@/types/settings';
 import { SchoolChips } from './SchoolChips';
 
@@ -95,14 +95,35 @@ describe('SchoolChips', () => {
     await userEvent.tab();
     expect(added).toEqual([]);
     expect(field()).toHaveValue('Lagos');
+    await userEvent.type(field(), ' Uni');
+    await userEvent.click(document.body);
+    expect(added).toEqual([]);
+  });
+
+  it('Add with the list open adds the typed name once and keeps focus in the field', async () => {
+    render(<Schools />);
+    await userEvent.type(field(), 'Lagos');
+    expect(field()).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(added).toEqual([school('Lagos')]);
+    expect(field()).toHaveFocus();
   });
 
   it('says when the search failed, and still keeps a typed name', async () => {
     render(<Schools status="error" />);
     await userEvent.type(field(), 'toron');
-    expect(screen.getByText(COPY.searchFailed)).toBeInTheDocument();
+    // In the list, and said in the field's own status region.
+    expect(screen.getAllByText(COPY.searchFailed)).toHaveLength(2);
     await userEvent.keyboard('{Enter}');
     expect(added).toEqual([school('toron')]);
+  });
+
+  it('one letter searches nothing yet: only the Use row, and Enter keeps it', async () => {
+    render(<Schools />);
+    await userEvent.type(field(), 'L');
+    expect(await optionLabels(userEvent, field())).toEqual(['Use “L”']);
+    await userEvent.keyboard('{Enter}');
+    expect(added).toEqual([school('L')]);
   });
 
   it('the same school twice is not added', async () => {

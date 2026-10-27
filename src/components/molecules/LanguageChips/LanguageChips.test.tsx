@@ -108,7 +108,7 @@ describe('LanguageChips', () => {
     render(<Chips status="error" />);
     await openAdder();
     await userEvent.type(field(), 'tw');
-    expect(screen.getByText(copy.searchFailed)).toBeInTheDocument();
+    expect(screen.getAllByText(copy.searchFailed)).toHaveLength(2);
   });
 
   it('the list failing to load is said into a region that was there first', async () => {
