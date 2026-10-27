@@ -65,11 +65,6 @@
   flex: 1;
   min-width: 0;
 }
-/* At the limit the field is read-only (set on the Select's text box here). */
-.search [aria-disabled='true'] {
-  cursor: not-allowed;
-  background: var(--ink-50);
-}
 
 .full {
   font-size: var(--text-p-xs);

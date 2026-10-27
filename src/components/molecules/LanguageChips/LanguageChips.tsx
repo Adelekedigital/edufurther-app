@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
+import { useHighlightOnPress } from '@/lib/utils/useHighlightOnPress';
 import styles from './LanguageChips.module.css';
 
 export type LanguageOption = { id: string; label: string };
@@ -73,6 +74,8 @@ export function LanguageChips({
   const [adding, setAdding] = useState(false);
   const addButton = useRef<HTMLButtonElement>(null);
   const field = useRef<HTMLElement>(null);
+  const addMatch = useRef<HTMLButtonElement>(null);
+  const highlighted = useHighlightOnPress(field, addMatch);
   const group = useRef<HTMLDivElement>(null);
   // The failure line, heard: put into the always-present region after it
   // mounts (a region that arrives with its text in it is often skipped).
@@ -88,7 +91,8 @@ export function LanguageChips({
   const chips = [...common, ...selected.filter((s) => !common.some((c) => c.id === s.id))];
   const typed = query.trim();
   const matches = typed ? results.filter((r) => !isOn(r)).slice(0, MATCHES) : [];
-  // The Add button takes the match typed in full, else the first (the row Enter picks).
+  // Enter with the list closed, and Add with no row highlighted: the match
+  // typed in full, else the first.
   const chosen = matches.find((m) => same(m.label, typed)) ?? matches[0];
 
   // Opened on request, so focus goes straight to the field.
@@ -184,6 +188,7 @@ export function LanguageChips({
             ref={field}
             searchable
             remote
+            density="md"
             text="sm"
             className={styles.search}
             aria-label={copy.add}
@@ -197,10 +202,14 @@ export function LanguageChips({
             copy={{ searching: copy.searching, failed: copy.searchFailed, noMatch: copy.noMatch }}
           />
           <Button
+            ref={addMatch}
             variant="secondary-outlined"
             size="medium"
             disabled={!chosen}
-            onClick={() => pick(chosen)}
+            onClick={(e) => {
+              const row = highlighted(e);
+              pick(matches.find((m) => m.id === row) ?? chosen);
+            }}
           >
             {copy.addButton}
           </Button>

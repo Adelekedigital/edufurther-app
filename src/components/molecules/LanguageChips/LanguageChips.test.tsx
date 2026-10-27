@@ -6,6 +6,8 @@ import { LanguageChips, type LanguageOption } from './LanguageChips';
 
 const EN = { id: 'en', label: 'English' };
 const TWI = { id: 'tw', label: 'Twi' };
+const TSWANA = { id: 'tn', label: 'Tswana' };
+const CATALOG = [TWI, TSWANA];
 const copy = {
   add: 'Add another language',
   addButton: 'Add',
@@ -35,7 +37,11 @@ function Chips({
       onToggle={(l) => setSelected((s) => [...s, l])}
       query={query}
       onQueryChange={setQuery}
-      results={status === 'ready' && 'twi'.startsWith(query.toLowerCase()) && query ? [TWI] : []}
+      results={
+        status === 'ready' && query
+          ? CATALOG.filter((l) => l.label.toLowerCase().startsWith(query.toLowerCase()))
+          : []
+      }
       status={status}
       copy={copy}
       commonFailed={
@@ -84,6 +90,16 @@ describe('LanguageChips', () => {
     expect(field()).toHaveAttribute('aria-activedescendant');
     await userEvent.click(screen.getByRole('button', { name: 'Add' }));
     expect(screen.getByRole('button', { name: 'Twi' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('Add takes the highlighted match, not the first', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 't');
+    await userEvent.keyboard('{ArrowDown}');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('button', { name: 'Tswana' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Twi' })).not.toBeInTheDocument();
   });
 
   it('the first Escape closes the list, the second the adder', async () => {

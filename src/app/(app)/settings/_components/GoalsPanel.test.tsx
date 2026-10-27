@@ -230,7 +230,7 @@ describe('GoalsPanel', () => {
     for (let i = 1; i <= 9; i++) await userEvent.type(field, `School ${i}{Enter}`);
     expect(screen.getByRole('button', { name: 'Remove School 9' })).toBeVisible();
     // Read-only, not disabled: focus stays in the field that took the tenth.
-    expect(field).toHaveAttribute('aria-disabled', 'true');
+    expect(field).toHaveAttribute('aria-readonly', 'true');
     expect(field).toHaveAttribute('readonly');
     expect(field).toHaveFocus();
     expect(screen.getByText(GOALS_COPY.schoolsFull)).toBeInTheDocument();

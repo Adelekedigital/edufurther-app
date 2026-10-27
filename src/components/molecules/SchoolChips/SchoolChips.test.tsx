@@ -134,6 +134,20 @@ describe('SchoolChips', () => {
     expect(added).toEqual([school('Lagos')]);
   });
 
+  it('Add takes the highlighted match, linked', async () => {
+    render(<Schools />);
+    await userEvent.type(field(), 'univ');
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(added).toEqual([
+      {
+        institutionId: 'inst-2',
+        raw: 'University College London',
+        label: 'University College London',
+      },
+    ]);
+  });
+
   it('the same school twice is not added', async () => {
     render(<Schools initial={[school('Lagos Business School')]} />);
     await userEvent.type(field(), 'lagos business school{Enter}');
@@ -144,7 +158,8 @@ describe('SchoolChips', () => {
   it('at the limit the field goes read-only, keeps focus and says why', async () => {
     render(<Schools initial={[school('One')]} max={2} />);
     await userEvent.type(field(), 'Two{Enter}');
-    expect(field()).toHaveAttribute('aria-disabled', 'true');
+    expect(field()).toHaveAttribute('readonly');
+    expect(field()).toHaveAttribute('aria-readonly', 'true');
     expect(field()).toHaveFocus();
     expect(screen.getByText(COPY.full)).toBeInTheDocument();
   });

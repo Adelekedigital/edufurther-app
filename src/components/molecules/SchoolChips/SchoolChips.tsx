@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useId, useRef } from 'react';
+import { useId, useRef } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
+import { useHighlightOnPress } from '@/lib/utils/useHighlightOnPress';
 import type { GoalSchool } from '@/types/settings';
 import styles from './SchoolChips.module.css';
 
@@ -69,16 +70,8 @@ export function SchoolChips({
   // click), so only Enter or the Use row adds it.
   const asked = useRef(false);
 
-  // Read-only, not disabled, at the limit: the field keeps focus after the
-  // tenth, and says why with the line it describes itself by. The Select has
-  // no read-only prop, so it is set on its text box here.
-  useEffect(() => {
-    const el = input.current;
-    if (!(el instanceof HTMLInputElement)) return;
-    el.readOnly = full;
-    if (full) el.setAttribute('aria-disabled', 'true');
-    else el.removeAttribute('aria-disabled');
-  }, [full]);
+  const addButton = useRef<HTMLButtonElement>(null);
+  const highlighted = useHighlightOnPress(input, addButton);
 
   // The removed chip's button is gone: focus the next one, else the field.
   const remove = (i: number) => {
@@ -139,6 +132,7 @@ export function SchoolChips({
           ref={input}
           searchable
           remote
+          density="md"
           // GET /institutions runs from two characters (useInstitutionSearch).
           minChars={2}
           allowCustom
@@ -150,6 +144,9 @@ export function SchoolChips({
           }
           placeholder={copy.add}
           maxLength={maxChars}
+          // Read-only, not disabled, at the limit: the field keeps focus after
+          // the tenth, and says why with the line it describes itself by.
+          readOnly={full}
           query={query}
           onQueryChange={onQueryChange}
           value=""
@@ -162,11 +159,13 @@ export function SchoolChips({
           copy={{ searching: copy.searching, failed: copy.searchFailed }}
         />
         <Button
+          ref={addButton}
           variant="secondary-outlined"
           size="medium"
           disabled={full || !typed}
-          onClick={() => {
-            add();
+          onClick={(e) => {
+            const row = highlighted(e);
+            add(matches.find((m) => m.id === row));
             // The button disables once the field empties: keep focus in the field.
             input.current?.focus();
           }}
