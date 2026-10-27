@@ -1,3 +1,4 @@
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { KpiCard } from '@/components/molecules/KpiCard/KpiCard';
 import type { MentorSummary } from '@/lib/api/data/admin';
 import type { MentorTab } from '@/lib/api/data/adminMentors';
@@ -6,17 +7,29 @@ import styles from './MentorSummaryCards.module.css';
 
 /**
  * The three summary cards (Admin.dc.html `mKpis`), the same on every tab. Each
- * is a button that opens its tab; no selected state. Null while the summary
- * loads or failed: the cards wait rather than show zeros.
+ * is a button that opens its tab; no selected state. While the summary loads
+ * the cards hold their place (no zeros, no jump); a failed summary draws none.
  */
 export function MentorSummaryCards({
   summary,
+  loading = false,
   onOpen,
 }: {
   summary: MentorSummary | null;
+  /** Still on its way: placeholders the cards' size. */
+  loading?: boolean;
   onOpen: (tab: MentorTab) => void;
 }) {
-  if (!summary) return null;
+  if (!summary) {
+    if (!loading) return null;
+    return (
+      <div className={styles.grid} aria-hidden>
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} height="122px" radius="xl" />
+        ))}
+      </div>
+    );
+  }
   const waiting = summary.counts.applications;
   const longest = waiting ? summary.longestWaitDays : null;
   const cards = [

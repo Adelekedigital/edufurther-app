@@ -359,7 +359,20 @@ export const Selects: Story = {
         ]}
       />
       <DemoSelect
-        aria-label="Filter off its default (changed)"
+        aria-label="Credits reason (density lg, radius sm)"
+        density="lg"
+        radius="sm"
+        text="sm"
+        width={240}
+        defaultValue=""
+        options={[
+          { value: '', label: 'Choose a reason' },
+          { value: 'goodwill', label: 'Goodwill' },
+        ]}
+      />
+      <DemoSelect
+        aria-label="Admin filter off its default (changed, radius sm)"
+        radius="sm"
         density="md"
         text="sm"
         width={200}

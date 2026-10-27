@@ -39,9 +39,10 @@ type SelectProps = {
   /**
    * compact: 36px, tighter padding and a 16px chevron (TimeSlots.dc.html `compact`).
    * md: 40px, the height of the medium buttons it sits beside (chip adders).
+   * lg: 44px (Admin.dc.html credits reason select).
    * xl: 48px flow-form field with a 24px chevron (Mentee Onboarding v5.dc.html).
    */
-  density?: 'default' | 'compact' | 'md' | 'xl';
+  density?: 'default' | 'compact' | 'md' | 'lg' | 'xl';
   /**
    * sm: use in a form, beside text inputs: 14px like them (Mentor Settings.dc.html
    * profile selects), grey while nothing is picked. Default xs: the 12px rule
@@ -55,6 +56,11 @@ type SelectProps = {
    * shows at a glance (Admin.dc.html filter row). Field variant only.
    */
   changed?: boolean;
+  /**
+   * The closed field's corners: md 6px (the default), sm 5px (Admin.dc.html
+   * filters and the credits reason select draw `--radius-sm`).
+   */
+  radius?: 'md' | 'sm';
   className?: string;
   id?: string;
   disabled?: boolean;
@@ -135,6 +141,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
     text = 'xs',
     variant = 'field',
     changed = false,
+    radius = 'md',
     className,
     id,
     disabled,
@@ -431,6 +438,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
         variant === 'segment' && styles.segment,
         variant === 'segment' && value !== '' && styles.segmentOn,
         changed && variant === 'field' && styles.changed,
+        radius === 'sm' && styles.radiusSm,
         text === 'sm' && !searchable && value === '' && styles.empty,
         className,
       )}

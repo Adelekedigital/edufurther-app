@@ -13,7 +13,8 @@ type Props = {
   tab: MentorTab;
   filters: MentorFilters;
   onChange: (f: MentorFilters) => void;
-  shown: number;
+  /** Null until the tab has loaded: no "0 mentors" while it's on its way. */
+  shown: number | null;
   total: number;
   active: boolean;
   onClear: () => void;
@@ -95,6 +96,7 @@ export function MentorFilterBar({ tab, filters, onChange, shown, total, active, 
             density="md"
             text="sm"
             changed={f.changed}
+            radius="sm"
             options={f.options}
             value={f.value}
             onChange={(e) => f.set(e.target.value)}
@@ -104,7 +106,7 @@ export function MentorFilterBar({ tab, filters, onChange, shown, total, active, 
       ))}
       <div className={styles.end}>
         {/* Not a live region: the list's own count is announced by the screen. */}
-        <span className={styles.count}>{F.count(shown, total)}</span>
+        {shown !== null && <span className={styles.count}>{F.count(shown, total)}</span>}
         {active && (
           <Button
             variant="text"
