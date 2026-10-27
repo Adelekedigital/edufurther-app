@@ -74,6 +74,10 @@ input.control {
 .md .control {
   height: var(--button-h-medium);
 }
+/* lg: 44px, the admin credits reason select (Admin.dc.html). */
+.lg .control {
+  height: var(--touch-target-min);
+}
 .xl .control {
   height: var(--space-12);
   padding: 0 var(--space-10) 0 var(--space-4);
@@ -95,6 +99,11 @@ input.control {
 .changed .control {
   border-color: var(--blue-500);
   background: var(--blue-50);
+}
+
+/* Admin.dc.html selects: --radius-sm corners. */
+.radiusSm .control {
+  border-radius: var(--radius-sm);
 }
 
 /* PerformanceChart's year, a pill in the range switch: 28px, borderless,

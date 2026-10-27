@@ -170,6 +170,20 @@ describe('Select (select-only)', () => {
     );
   });
 
+  it('density lg is 44px, from a token', () => {
+    render(<Plain density="lg" />);
+    expect(field().parentElement).toHaveClass('lg');
+    const css = readFileSync(join(__dirname, 'Select.module.css'), 'utf8');
+    expect(css).toMatch(/\.lg \.control \{\s*height: var\(--touch-target-min\);/);
+  });
+
+  it('radius sm: the admin selects, 5px corners', () => {
+    render(<Plain radius="sm" />);
+    expect(field().parentElement).toHaveClass('radiusSm');
+    const css = readFileSync(join(__dirname, 'Select.module.css'), 'utf8');
+    expect(css).toMatch(/\.radiusSm \.control \{\s*border-radius: var\(--radius-sm\);/);
+  });
+
   it('a real option whose value is empty ("No year") carries the check when chosen', async () => {
     const user = userEvent.setup();
     const years: SelectOption[] = [
