@@ -175,3 +175,35 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
     });
   });
 });
+
+describe('MentorProfileScreen — the owner’s share note', () => {
+  const open = async (approval: 'pending' | 'approved' | 'declined', listed = true) => {
+    h.viewerIsMentor = true;
+    h.profile = state({ data: { ...fullProfile, owner: { approval, listed } } });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    return screen.getByRole('menu', { name: 'Share' });
+  };
+  const HIDDEN = 'Only you can see this page. Others see “This mentor profile isn’t available”.';
+
+  it('pending: who can see it until approved, and the options still work', async () => {
+    const menu = await open('pending');
+    expect(menu).toHaveAccessibleDescription(
+      'Only you can see this page until you’re approved. Others see “This mentor profile isn’t available”.',
+    );
+    expect(within(menu).getByRole('menuitem', { name: /Copy profile link/ })).toBeInTheDocument();
+  });
+
+  it('declined: the shorter note', async () => {
+    expect(await open('declined')).toHaveAccessibleDescription(HIDDEN);
+  });
+
+  it('unlisted: the shorter note', async () => {
+    expect(await open('approved', false)).toHaveAccessibleDescription(HIDDEN);
+  });
+
+  it('approved and listed: no note', async () => {
+    expect(await open('approved')).not.toHaveAccessibleDescription();
+  });
+});

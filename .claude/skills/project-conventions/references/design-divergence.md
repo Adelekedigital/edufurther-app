@@ -1065,9 +1065,11 @@ Since 2026-10-20 (design `goalsSave` default `bar`): the split Goals tab is the 
 | "Add another language": `--radius-md`, `--blue-500` text | The shared LanguageChips adder: `--radius-lg`, `--blue-700` | One component across Settings: Mentee Settings.dc.html draws it blue-700; the two drafts disagree | design picks one look |
 | "How mentees see you" shown on every width (below the form once it wraps) | Not shown under 768px | Owner, 2026-10-20: on a phone it only repeats the form below it. View profile (account menu) opens the real page | design draws a phone preview |
 
-## Mentor Settings, PR 8: review freeze (`reviewFreeze=on`, `reviewStatus=inReview`)
+## ~~Mentor Settings, PR 8: review freeze (`reviewFreeze=on`, `reviewStatus=inReview`)~~ SUPERSEDED 2026-10-26
 
-The frozen state follows `viewer.mentorStage === 'pending'` (submitted, awaiting a decision: the backend's `application_in_review`). A declined, approved or unsubmitted mentor isn't frozen.
+> **SUPERSEDED 2026-10-26** (PRD Frontend fixes, fix 7; backend decision 296 / edufurtherbe #551): there is no review freeze any more. A mentor in review edits every profile field from Settings and their profile; the banner, the read-only states and the LinkedIn lock are gone (edufurther-app PR 426). Kept below as history only.
+
+The frozen state followed `viewer.mentorStage === 'pending'` (submitted, awaiting a decision: the backend's `application_in_review`). A declined, approved or unsubmitted mentor isn't frozen.
 
 | Design says | We do | Why | Revisit when |
 | --- | --- | --- | --- |

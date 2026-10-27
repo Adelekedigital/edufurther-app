@@ -149,4 +149,17 @@ describe('useProfileEdit', () => {
     await waitFor(() => expect(result.current.aboutError).toBe('That didn’t save. Try again.'));
     expect(PATCH.mock.calls[1]![1].body).toEqual({ about_me: null });
   });
+
+  it('a 409 of any type, the old review one included, is the normal save error', async () => {
+    PATCH.mockResolvedValue({
+      data: undefined,
+      error: { type: '/problems/mentor-application-in-review', status: 409 },
+      response: new Response(null, { status: 409 }),
+    });
+    const { result } = setup();
+    act(() => result.current.saveIntro(before, { ...before, headline: 'New' }, vi.fn()));
+    await waitFor(() =>
+      expect(result.current.introErrors.general).toBe('That didn’t save. Try again.'),
+    );
+  });
 });
