@@ -78,6 +78,8 @@ export function MenteeGoalsForm({
   const full = values.countryIds.length >= GOAL_COUNTRY_MAX;
   const q = norm(countryQuery.trim());
   const countryResults = q ? countries.filter((c) => norm(c.label).includes(q)) : [];
+  // Picks still in the catalog, as the picker and the save's check count them.
+  const helpCount = values.needIds.filter((id) => topics.some((t) => t.id === id)).length;
   // One help-area error at a time: none picked, or more than the cap (saved before it).
   const helpGap: GoalsGap | null = has('help') ? 'help' : has('helpMax') ? 'helpMax' : null;
   const toggleCountry = (c: LanguageOption) => {
@@ -232,7 +234,7 @@ export function MenteeGoalsForm({
         <HelpAreaPicker
           look="row"
           // The gap the save focuses: over the cap is its own (useRequiredFields).
-          focusKey={values.needIds.length > HELP_LIMIT ? 'helpMax' : 'help'}
+          focusKey={helpCount > HELP_LIMIT ? 'helpMax' : 'help'}
           label={C.help}
           options={topics}
           value={values.needIds}

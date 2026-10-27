@@ -48,13 +48,18 @@ const same = (a: MenteeGoalValues, b: MenteeGoalValues) =>
  * No countries is "Not sure yet" (owner, 2026-10-20), and the backend reads
  * it so for matching.
  */
-const gapsOf = (v: MenteeGoalValues): GoalsGap[] => [
-  ...(v.originId ? [] : ['origin' as const]),
-  ...(v.degree ? [] : ['degree' as const]),
-  ...(fieldOk(v.field) ? [] : ['field' as const]),
-  ...(v.needIds.length ? [] : ['help' as const]),
-  ...(v.needIds.length > HELP_LIMIT ? ['helpMax' as const] : []),
-];
+const gapsOf = (v: MenteeGoalValues, liveIds: ReadonlySet<string>): GoalsGap[] => {
+  // Only offerings still in the catalog count, as in HelpAreaPicker: a retired
+  // one can't be seen or unpicked, so it can't be what puts someone over the cap.
+  const help = v.needIds.filter((id) => liveIds.has(id)).length;
+  return [
+    ...(v.originId ? [] : ['origin' as const]),
+    ...(v.degree ? [] : ['degree' as const]),
+    ...(fieldOk(v.field) ? [] : ['field' as const]),
+    ...(help ? [] : ['help' as const]),
+    ...(help > HELP_LIMIT ? ['helpMax' as const] : []),
+  ];
+};
 
 /**
  * Settings › Goals (Mentee Settings.dc.html `isMGoals`, menteeTabs split,
@@ -97,7 +102,8 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
   const [toastStamp, setToastStamp] = useState(0);
   const [tries, setTries] = useState(0);
   const root = useRef<HTMLDivElement>(null);
-  const required = useRequiredFields(draft ? gapsOf(draft) : [], root);
+  const liveIds = new Set(topics.topics.flatMap((t) => (t.id ? [t.id] : [])));
+  const required = useRequiredFields(draft ? gapsOf(draft, liveIds) : [], root);
   const heading = useRef<HTMLHeadingElement>(null);
   // Gone before a save answered (the page moved on): nothing more to do.
   const alive = useRef(true);
@@ -140,7 +146,13 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
       setTries((n) => n + 1);
       return false;
     }
-    const after = { ...draft, field: draft.field.trim() };
+    // Retired offerings stay saved, unless they'd take the list past the
+    // backend's cap of 3 (a 422 at /need_ids): then only the visible picks go.
+    const needIds =
+      draft.needIds.length > HELP_LIMIT
+        ? draft.needIds.filter((id) => liveIds.has(id))
+        : draft.needIds;
+    const after = { ...draft, field: draft.field.trim(), needIds };
     try {
       await saving.mutateAsync({
         after,

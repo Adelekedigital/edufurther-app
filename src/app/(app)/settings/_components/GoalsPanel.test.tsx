@@ -238,6 +238,29 @@ describe('GoalsPanel', () => {
     expect(mutateAsync).toHaveBeenCalledTimes(1);
   });
 
+  it('a retired offering does not count toward the cap, and is dropped only past it', async () => {
+    const need = (id: string, code: string) => ({ id, code, display_name: code });
+    ready({
+      goal: goal({
+        needs: [
+          need('o-retired', 'retired-offering'),
+          need('o-prog', 'program-selection'),
+          need('o-test', 'test-preparation'),
+          need('o-schol', 'scholarships-financial-aid'),
+        ],
+      }),
+    });
+    render(<GoalsPanel userId="u1" />);
+    const group = screen.getByRole('group', { name: GOALS_COPY.help });
+    expect(within(group).getAllByRole('button', { pressed: true })).toHaveLength(3);
+    await userEvent.click(screen.getByRole('radio', { name: 'MBA' }));
+    await userEvent.click(await saveButton());
+    expect(screen.queryByText(GOALS_ERRORS.helpMax)).toBeNull();
+    expect(mutateAsync).toHaveBeenCalledTimes(1);
+    // Four ids would be a 422 at /need_ids, so only the three visible picks go.
+    expect(mutateAsync.mock.calls[0]![0].after.needIds).toEqual(['o-prog', 'o-test', 'o-schol']);
+  });
+
   it('"Not sure yet": on with no countries, clears them, stays usable at the limit', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
