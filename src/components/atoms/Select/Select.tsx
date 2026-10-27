@@ -499,7 +499,9 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
             className={styles.list}
           >
             {rows.map((r, i) => {
-              const picked = r.kind === 'option' && r.option.value === value && value !== '';
+              // '' is a real choice when a row carries it ("No year"); with no
+              // such row, nothing matches and nothing is checked.
+              const picked = r.kind === 'option' && r.option.value === value;
               return (
                 <li
                   key={r.kind === 'option' ? `o:${r.option.value}` : 'custom'}

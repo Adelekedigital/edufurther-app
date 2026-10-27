@@ -132,6 +132,30 @@ describe('Select (select-only)', () => {
     expect(rows[0]!.textContent).not.toContain('check_circle');
   });
 
+  it('a real option whose value is empty ("No year") carries the check when chosen', async () => {
+    const user = userEvent.setup();
+    const years: SelectOption[] = [
+      { value: '2024', label: '2024' },
+      { value: '2023', label: '2023' },
+      { value: '', label: 'No year' },
+    ];
+    render(<Plain options={years} start="" />);
+    expect(field()).toHaveTextContent('No year');
+    await user.click(field());
+    const rows = screen.getAllByRole('option');
+    expect(rows[2]!.textContent).toContain('check_circle');
+    expect(rows[0]!.textContent).not.toContain('check_circle');
+  });
+
+  it('nothing chosen and no empty option: no row is checked', async () => {
+    const user = userEvent.setup();
+    render(<Plain start="" />);
+    await user.click(field());
+    expect(screen.getAllByRole('option').some((r) => r.textContent?.includes('check_circle'))).toBe(
+      false,
+    );
+  });
+
   it('a click opens, a click on a row picks, a click outside closes', async () => {
     const user = userEvent.setup();
     const onPick = vi.fn();
