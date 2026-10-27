@@ -112,9 +112,8 @@ describe('what happens to the credit is said before the button', () => {
     dialog({
       booking: sampleBookingFor({ side: 'mentor', status: 'confirmed', startsAt: at(9), endsAt: at(10) }),
     });
-    // No credit notice of their own. The suggest row's "Their credit comes
-    // back if they don't" (PRD fix 5) is about the mentee's credit, not theirs.
-    expect(screen.queryByText(/your credit|the credit/i)).not.toBeInTheDocument();
+    // No credit wording at all, theirs or the mentee's (owner, 26 Oct).
+    expect(screen.queryByText(/credit/i)).not.toBeInTheDocument();
   });
 
   it('a withdrawal returns the credit whenever it happens', () => {
@@ -360,11 +359,11 @@ describe('what offering a time promises depends on what was approved', () => {
     ).toBeVisible();
   });
 
-  it('a cancel names the hold and the credit instead, because there is nothing to skip', () => {
+  it('a cancel names the hold instead, because there is nothing to skip', () => {
     dialog({ booking: sampleBookingFor({ side: 'mentor', status: 'confirmed' }) });
     expect(
       screen.getByText(
-        'Amara gets one tap to book it, held for 2 hours. Their credit comes back if they don’t.',
+        'Amara gets one tap to book it, held for 2 hours.',
       ),
     ).toBeVisible();
   });

@@ -424,11 +424,11 @@ export function ConfirmActionDialog({
                   Only a decline promises no approval wait (backend #435): a
                   declined request was never approved, so the offered time skips
                   the wait. A cancel had its approval already, so it names the
-                  hold and the credit instead. */}
+                  hold instead. Mentors never see credit copy (owner, 26 Oct). */}
               <p id={`${fieldId}-sg-hint`} className={styles.slotHint}>
                 {action === 'decline'
                   ? `${first} books it in one tap, with no wait for your approval.`
-                  : `${first} gets one tap to book it, held for ${HOLD_HOURS} hours. Their credit comes back if they don’t.`}
+                  : `${first} gets one tap to book it, held for ${HOLD_HOURS} hours.`}
               </p>
               {offerBad && (
                 <p id={`${fieldId}-sg-err`} role="alert" className={styles.confirmError}>
