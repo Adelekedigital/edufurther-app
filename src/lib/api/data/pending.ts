@@ -20,10 +20,6 @@ export type PendingResponses = {
   'GET /api/v1/admin/mentors/{user_id}/notes': { data: WireAdminNote[] };
   'POST /api/v1/admin/mentors/{user_id}/notes': WireAdminNote;
   'POST /api/v1/admin/mentors/decisions': WireBulkDecision;
-  'GET /api/v1/admin/mentees': { data: WireMenteeRow[] };
-  'GET /api/v1/admin/mentees/{user_id}/credits': WireMenteeCredits;
-  'GET /api/v1/admin/credit-log': { data: WireCreditEntry[]; next_cursor: string | null };
-  'GET /api/v1/admin/credit-rules': WireCreditRules;
 };
 
 type Schemas = components['schemas'];
@@ -116,41 +112,3 @@ export type WireAdminNote = {
 
 /** A7 `POST /admin/mentors/decisions`. */
 export type WireBulkDecision = { approved: string[]; failed: string[] };
-
-/** A9 `GET /admin/mentees?q=`: mentees only, with the same credits as `/me`. */
-export type WireMenteeRow = WireAdminPerson & {
-  email: string;
-  credits: Schemas['CreditsRead'] | null;
-};
-
-export type WireCreditKind =
-  | 'booking'
-  | 'refund'
-  | 'monthly_free'
-  | 'profile_completed'
-  | 'admin_grant'
-  | 'referral_unlock'
-  | 'opening_balance'
-  | 'expired';
-
-/** A10/A11: one change to a mentee's credits, with the balance after it. */
-export type WireCreditEntry = {
-  id: string;
-  at: string;
-  change: number;
-  balance_after: number;
-  kind: WireCreditKind;
-  refund_reason: 'mentor_canceled' | 'mentee_canceled' | 'mentor_no_show' | null;
-  mentor: { first_name: string | null; last_name: string | null } | null;
-  mentee: { user_id: string; first_name: string | null; last_name: string | null };
-  admin: { first_name: string | null; last_name: string | null } | null;
-  note: string | null;
-};
-
-/** A10 `GET /admin/mentees/{user_id}/credits`. */
-export type WireMenteeCredits = { mentee: WireMenteeRow; history: WireCreditEntry[] };
-
-export type WireCreditLogType = 'all' | 'admin' | 'bookings' | 'refunds' | 'monthly';
-
-/** A12 `GET /admin/credit-rules`. */
-export type WireCreditRules = { starter: number; monthly: number };

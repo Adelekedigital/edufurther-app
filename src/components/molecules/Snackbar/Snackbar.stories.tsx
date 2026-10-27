@@ -21,3 +21,11 @@ export const WithUndo: Story = {
     action: { label: 'Undo', onClick: () => {} },
   },
 };
+
+/** With a glyph (Admin.dc.html toast): a done action, and one that failed. */
+export const Success: Story = {
+  args: { message: '2 credits added for Amara Okafor', stamp: 1, tone: 'success' },
+};
+export const Failed: Story = {
+  args: { message: 'That didn’t go through. Nothing changed, try again.', stamp: 1, tone: 'error' },
+};

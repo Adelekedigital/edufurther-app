@@ -39,3 +39,16 @@ export const NotDestructive: Story = {
     confirmLabel: 'Feature this instead',
   },
 };
+
+/** No glyph, and more body: what the action changes (Admin.dc.html credits confirm). */
+export const WithBody: Story = {
+  args: {
+    title: 'Add 2 credits for Amara?',
+    subtitle: 'They can use them right away. Added credits reset with the rest on Nov 1.',
+    icon: undefined,
+    tone: 'default',
+    keepLabel: 'Cancel',
+    confirmLabel: 'Add credits',
+    children: <p style={{ margin: 0 }}>Now 1 → After 3</p>,
+  },
+};

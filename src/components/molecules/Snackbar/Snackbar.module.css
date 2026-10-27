@@ -3,7 +3,8 @@
   position: fixed;
   left: 50%;
   bottom: var(--space-6);
-  z-index: 30;
+  /* Above SideDrawer (44), below ModalShell (50): a drawer's toast stays visible. */
+  z-index: 46;
   transform: translateX(-50%);
   width: max-content;
   max-width: calc(100% - var(--space-8));
@@ -46,6 +47,17 @@
 .action:focus-visible {
   outline: var(--focus-ring-width) solid var(--blue-300);
   outline-offset: 2px;
+}
+/* With a glyph (Admin.dc.html toast): 14px text, 12px to the icon. */
+.withIcon {
+  gap: var(--space-3);
+  font-size: var(--text-p-sm);
+}
+.success {
+  color: var(--green-400);
+}
+.error {
+  color: var(--red-300);
 }
 @media (max-width: 767px) {
   .region {

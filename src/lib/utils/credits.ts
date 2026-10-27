@@ -77,10 +77,19 @@ export function creditsView(
     bonus,
     showMonthly,
     hadSession: completedSessions > 0,
-    resetsOn: showMonthly
-      ? ((c.nextResetAt ? resetDay(c.nextResetAt) : null) ?? resetDay(nextFirst(now)))
-      : null,
+    resetsOn: showMonthly ? resetsOnFor(c.nextResetAt, now) : null,
   };
+}
+
+/**
+ * The monthly reset day ("Nov 1"): `next_reset_at`, else the next 1st (UTC),
+ * which is the backend's rule, so the line never goes missing or reads "null".
+ */
+export function resetsOnFor(
+  nextResetAt: string | null | undefined,
+  now: Date = new Date(),
+): string {
+  return (nextResetAt ? resetDay(nextResetAt) : null) ?? resetDay(nextFirst(now))!;
 }
 
 /** Midnight UTC on the next 1st: the backend's reset (`end_of_month`). */

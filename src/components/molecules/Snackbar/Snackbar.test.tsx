@@ -56,3 +56,16 @@ describe('Snackbar with an action', () => {
     expect(screen.getByRole('button', { name: 'Undo' })).not.toHaveFocus();
   });
 });
+
+describe('Snackbar with a tone', () => {
+  it('draws the glyph for the outcome, and none without a tone', () => {
+    const { rerender } = render(<Snackbar message="2 credits added" stamp={1} tone="success" />);
+    const region = screen.getByRole('status');
+    expect(region).toHaveTextContent('2 credits added');
+    expect(region.querySelector('[aria-hidden="true"]')).toHaveTextContent('check_circle');
+    rerender(<Snackbar message="That didn’t go through." stamp={2} tone="error" />);
+    expect(region.querySelector('[aria-hidden="true"]')).toHaveTextContent('error');
+    rerender(<Snackbar message="Profile saved" stamp={3} />);
+    expect(region.querySelector('[aria-hidden="true"]')).toBeNull();
+  });
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import {
   ConfirmActions,
@@ -21,12 +21,17 @@ type ConfirmDialogProps = ConfirmActionsProps & {
    * undersells. One of `subtitle` or `body`, not both.
    */
   body?: string;
-  /** Header glyph; red for a danger confirm, blue otherwise. */
-  icon: IconName;
+  /** Header glyph; red for a danger confirm, blue otherwise. None: title only (Admin.dc.html confirms). */
+  icon?: IconName;
   /** Closing while the request runs dismisses it and lets the request carry on. */
   onDismissWhilePending?: () => void;
   /** Under 768px: full screen (default), or a bottom sheet (Modal.dc.html `kind="confirm"`). */
   mobile?: 'full' | 'sheet';
+  /**
+   * More of the body, between the explanation and the buttons: what the
+   * action changes (the admin credits' Now → After box, Admin.dc.html).
+   */
+  children?: ReactNode;
 };
 
 /**
@@ -44,6 +49,7 @@ export function ConfirmDialog({
   icon,
   onDismissWhilePending,
   mobile,
+  children,
   ...actions
 }: ConfirmDialogProps) {
   const bodyId = useId();
@@ -70,6 +76,7 @@ export function ConfirmDialog({
           {body}
         </p>
       )}
+      {children}
       <ConfirmActions {...actions} />
     </ModalShell>
   );

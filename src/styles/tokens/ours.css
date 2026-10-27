@@ -19,6 +19,8 @@
   /* Modal overlay and lift, read off Modal.dc.html literals. */
   --overlay-scrim: rgba(16, 25, 40, 0.48);
   --overlay-scrim-sheet: rgba(16, 25, 40, 0.4);
+  /* Admin.dc.html side drawers: lighter, the list stays readable behind. */
+  --overlay-scrim-drawer: rgba(16, 25, 40, 0.32);
   --shadow-modal: 0 24px 48px -12px rgba(16, 25, 40, 0.24), inset 0 0 0 1px var(--ink-100);
   --shadow-popover: 0 8px 24px rgba(16, 24, 40, 0.12);
   /* Floating match pill (Explore.dc.html: ink-tinted, stronger than --shadow-menu). */
