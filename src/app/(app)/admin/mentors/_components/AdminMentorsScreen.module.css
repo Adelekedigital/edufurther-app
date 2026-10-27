@@ -1,0 +1,41 @@
+/* Admin.dc.html Mentors: a column, gap space-5. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+.search {
+  flex: 0 1 320px;
+  min-width: 220px;
+}
+/* The tab row scrolls sideways rather than wrapping (design overflow-x auto). */
+.tabs {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  min-width: 0;
+}
+.region:focus {
+  outline: none;
+}
+/* Error and empty: the table card's frame around a centred state. */
+.stateCard {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-8) var(--space-5);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+@media (max-width: 767px) {
+  .search {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
