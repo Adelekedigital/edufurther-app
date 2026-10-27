@@ -7,8 +7,8 @@
  */
 import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { BookingAnswer, SessionRoom } from '@/types/booking';
-import type { Remote, SessionType, Viewer } from '@/types/mentor';
-import type { MoveCallbacks, MoveError, MoveRequest } from '@/lib/api/data/moveSession';
+import type { AppError, Remote, SessionType, Viewer } from '@/types/mentor';
+import type { MoveRequest } from '@/lib/api/data/moveSession';
 import {
   resetReviewAndRebook,
   reviewAndRebookMocks,
@@ -39,9 +39,9 @@ export const h = {
 
 /** The mentee's move (useMoveSession): each press recorded, the outcome up to the test. */
 export const moveHook = {
-  calls: [] as { req: MoveRequest; cb: MoveCallbacks }[],
+  calls: [] as { req: MoveRequest; onMoved: (newId: string, confirmed: boolean) => void }[],
   isPending: false,
-  error: null as MoveError | null,
+  error: null as AppError | null,
   reset: vi.fn(),
 };
 
@@ -107,8 +107,8 @@ export const mocks = {
   moveSession: () => ({
     useMoveSession: () => ({
       ...moveHook,
-      move: async (req: MoveRequest, cb: MoveCallbacks) => {
-        moveHook.calls.push({ req, cb });
+      move: (req: MoveRequest, onMoved: (newId: string, confirmed: boolean) => void) => {
+        moveHook.calls.push({ req, onMoved });
       },
     }),
   }),

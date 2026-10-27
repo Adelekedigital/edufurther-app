@@ -198,32 +198,13 @@ export const MOVE_COPY = {
     unknown: `We can’t show ${first}’s open times for this session right now.`,
     empty: `${first} has no open times for this session right now, so there’s nothing to move it to.`,
   }),
-  /** Before the cancel: nothing has changed. */
+  /** A refused move: the server changes nothing, so every refusal says so. */
   nothingChanged: 'Nothing has changed.',
-  prepareFailed:
-    'We couldn’t get your session ready to move. Nothing has changed. Try again in a moment.',
-  questionsChanged: (first: string) =>
-    `${first}’s questions for this session have changed, so we can’t move it. Nothing has changed. Switch this off to cancel, then book a new time.`,
-  fileUnavailable:
-    'Your file for this session is no longer available, so we can’t move it. Nothing has changed. Switch this off to cancel, then book again with a new file.',
-  sessionChanged: (first: string) =>
-    `${first} changed this session since you opened it. Nothing has changed. Close this and try again.`,
   slotTaken: 'That time was just taken. Nothing has changed. Pick another time.',
-  /** Not a refusal: said once, and pressing again moves it anyway. */
-  answersDropped: (first: string, button: string) =>
-    `Some of your answers won’t carry over, because ${first} changed the questions. Nothing has changed yet. Press ${button} again to move it anyway.`,
-  /** The cancel went through and the new time didn’t: the notice on the page. */
-  failedTitle: 'We couldn’t book your new time',
-  failedBody: (day: string, why: 'taken' | 'questions' | 'other', first: string) =>
-    [
-      why === 'taken'
-        ? 'That time was just taken.'
-        : why === 'questions'
-          ? `${first}’s questions for this session changed.`
-          : null,
-      `Your session on ${day} is canceled and your credit is back. Pick another time to book again.`,
-    ]
-      .filter(Boolean)
-      .join(' '),
-  bookAgain: (first: string) => `Book ${first} again`,
+  /** 409 move-too-late: inside the refund window a confirmed session can only be canceled. */
+  tooLate:
+    'It’s now too close to the session to move it. Nothing has changed. Switch this off to cancel instead.',
+  /** 404: no longer a session of theirs to move. */
+  gone: 'This session can’t be moved any more. Nothing has changed.',
+  failed: 'We couldn’t move your session. Nothing has changed. Try again in a moment.',
 } as const;
