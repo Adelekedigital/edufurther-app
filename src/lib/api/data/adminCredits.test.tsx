@@ -111,7 +111,7 @@ describe('mappers', () => {
     );
   });
 
-  it('an entry carries its words; a deleted mentee is "Deleted account"', () => {
+  it('an entry carries its words; a deleted mentee is "Deleted user"', () => {
     expect(toCreditEntry(entry())).toMatchObject({
       change: -1,
       balanceAfter: 1,
@@ -123,9 +123,9 @@ describe('mappers', () => {
       entry({ mentee: { user_id: ID, first_name: null, last_name: null }, mentor: null }),
     );
     expect(gone).toMatchObject({
-      menteeName: 'Deleted account',
+      menteeName: 'Deleted user',
       menteeGone: true,
-      by: 'Deleted account',
+      by: 'Deleted user',
     });
   });
 });

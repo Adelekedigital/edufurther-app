@@ -9,12 +9,8 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 import type { components, paths } from '@/lib/api/generated/schema';
-import {
-  DELETED_ACCOUNT,
-  entryWording,
-  type CreditKind,
-  type CreditLogType,
-} from '@/lib/copy/adminCredits';
+import { DELETED_NAME } from '@/lib/copy/bookings';
+import { entryWording, type CreditKind, type CreditLogType } from '@/lib/copy/adminCredits';
 import { coverKey, type CoverKey } from '@/lib/utils/cover';
 import { resetsOnFor } from '@/lib/utils/credits';
 import { personCover, personInitials } from '@/lib/utils/person';
@@ -109,7 +105,7 @@ export function toCreditEntry(w: Schemas['CreditEntryRead']): CreditEntry {
     balanceAfter: w.balance_after,
     kind: w.kind,
     menteeId: w.mentee.user_id,
-    menteeName: fullName(w.mentee.first_name, w.mentee.last_name) || DELETED_ACCOUNT,
+    menteeName: fullName(w.mentee.first_name, w.mentee.last_name) || DELETED_NAME,
     menteeGone: !fullName(w.mentee.first_name, w.mentee.last_name),
     what: words.what,
     by: words.by,

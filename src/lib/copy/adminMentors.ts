@@ -188,7 +188,7 @@ export const MENTOR_DRAWER = {
     none: 'No notes yet.',
     loadFailed: 'We couldn’t load the notes.',
     retry: 'Try again',
-    addFailed: 'We couldn’t add that note. Try again.',
+    addFailed: 'We couldn’t add that note. Your text is still here, so try again.',
   },
   email: (first: string) => `Email ${first}`,
   approve: 'Approve',
@@ -243,7 +243,7 @@ export const MENTOR_DIALOGS = {
     ok: 'Resume',
     done: (name: string) => `${name} is live on Explore again`,
     /** 409 /problems/mentor-paused-themselves: only they can resume. */
-    selfPaused: (first: string) => `${first} paused themselves, so only they can resume.`,
+    selfPaused: (first: string) => `${first} paused their own profile, so only they can resume it.`,
   },
 };
 

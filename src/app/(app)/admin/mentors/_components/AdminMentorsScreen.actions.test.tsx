@@ -185,7 +185,7 @@ describe('the confirms', () => {
     await user.click(within(await drawer('Femi Ade')).getByRole('button', { name: 'Resume' }));
     await user.click(within(confirmBox()).getByRole('button', { name: 'Resume' }));
     expect(
-      await screen.findByText('Femi paused themselves, so only they can resume.'),
+      await screen.findByText('Femi paused their own profile, so only they can resume it.'),
     ).toBeInTheDocument();
   });
 

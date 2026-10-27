@@ -18,3 +18,6 @@ export const BOOKINGS_COPY = {
   /** Under the mentor's empty Upcoming state; the link opens Calendar. */
   moreSessions: { lead: 'Want more sessions?', link: 'Update your availability' },
 };
+
+/** What a person is called once their account is gone, or when it has no name at all (every role and screen). */
+export const DELETED_NAME = 'Deleted user';
