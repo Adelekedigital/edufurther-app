@@ -139,6 +139,41 @@
   color: var(--ink-600);
 }
 
+/* CancelModal.dc.html `move` on (viewer mentee): the lead pulls up under the
+   title, smaller and softer than the cancel's, with the facts in ink-900. */
+.moveLead {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
+/* The pull-up is the dialog's; the phone sheet's header sits tighter already,
+   and there it ran the lead into the title. */
+@media (min-width: 768px) {
+  .moveLead {
+    margin-top: calc(var(--space-3) * -1);
+  }
+}
+
+.moveLead strong {
+  color: var(--ink-900);
+}
+
+/* "Pick a time, or switch this off to cancel instead." under the switch. */
+.moveError {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--red-500);
+}
+
+/* Move session with no time: the design's dimmed primary (opacity 0.6), still
+   pressable, so it can say what is missing. */
+.moveIncomplete {
+  opacity: 0.6;
+}
+
 @media (max-width: 767px) {
   .confirmFooter {
     /* `btnCols: sheet ? '1fr' : '1fr 1fr'` — the design collapses the same grid

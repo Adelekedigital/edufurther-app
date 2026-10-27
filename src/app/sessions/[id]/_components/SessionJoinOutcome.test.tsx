@@ -38,6 +38,9 @@ vi.mock('@/lib/api/data/sessionAnswers', async () =>
 vi.mock('@/lib/api/data/bookingActions', async () =>
   (await import('./sessionJoin.harness')).mocks.bookingActions(),
 );
+vi.mock('@/lib/api/data/moveSession', async () =>
+  (await import('./sessionJoin.harness')).mocks.moveSession(),
+);
 vi.mock('@/lib/api/data/booking', async (orig) =>
   (await import('./sessionJoin.harness')).mocks.booking(await orig()),
 );

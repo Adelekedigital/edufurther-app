@@ -3,7 +3,7 @@
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Textarea } from '@/components/atoms/Input/Input';
 import type { Booking } from '@/types/booking';
-import { SlotPicker } from './SlotPicker';
+import { SlotPicker, type SlotPickerCopy } from './SlotPicker';
 import styles from './SuggestTimeStep.module.css';
 
 /**
@@ -70,6 +70,46 @@ export function offerSentence(slot: string): string {
   return `Could we do ${slot} instead?`;
 }
 
+/**
+ * The mentee's move message (PRD fix 1, CancelModal.dc.html `move`), drafted
+ * the same way: theirs to send or write over. With approval the new booking
+ * is a request, so it asks rather than tells.
+ */
+export function moveDraft({
+  first,
+  origDay,
+  slot,
+  request,
+}: {
+  first: string;
+  origDay: string;
+  slot: string;
+  request: boolean;
+}): string {
+  const lead = `Hi ${first}, I can’t make our session on ${origDay}.`;
+  return request
+    ? `${lead} ${moveSentence(slot, true)} I’ve sent it as a request.`
+    : `${lead} ${moveSentence(slot, false)} See you then.`;
+}
+
+/** The sentence in the move draft that names the new time (the swap below finds it). */
+export function moveSentence(slot: string, request: boolean): string {
+  return request ? offerSentence(slot) : `I’ve moved it to ${slot}.`;
+}
+
+/**
+ * A change of time inside a message someone may have edited: only our
+ * sentence, and only its first occurrence, is swapped (the design's
+ * `draft.split(oldLabel).join(newLabel)`, narrowed: a global replace rewrote
+ * the person's own words, GitHub review, PR 234). Rewritten by them, it isn't
+ * found and their text is left exactly as written.
+ */
+export function swapSentence(message: string, was: string, now: string): string {
+  const at = message.indexOf(was);
+  if (at === -1) return message;
+  return message.slice(0, at) + now + message.slice(at + was.length);
+}
+
 type SuggestTimeStepProps = {
   booking: Booking;
   /**
@@ -96,6 +136,12 @@ type SuggestTimeStepProps = {
    */
   message: string;
   onMessage: (value: string) => void;
+  /** The picker's label: "Suggested time" (the mentor's offer) or "New time" (the mentee's move). */
+  label?: string;
+  /** The hold line under a picked time: the mentor's offer only (a move holds nothing). */
+  hold?: boolean;
+  /** The picker's no-times lines; the mentor's own calendar by default. */
+  copy?: SlotPickerCopy;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
 };
@@ -108,7 +154,8 @@ type SuggestTimeStepProps = {
  * instant to be one `/slots` currently lists, exactly.
  *
  * The picker (chips, then "Pick another day") is `SlotPicker`, shared with the
- * mentee's move; this step adds the hold line and the message.
+ * mentee's move; this step adds the hold line and the message. The mentee's
+ * move uses it too, with its own label and no hold line.
  */
 export function SuggestTimeStep({
   booking: b,
@@ -119,6 +166,9 @@ export function SuggestTimeStep({
   onChange,
   message,
   onMessage,
+  label = 'Suggested time',
+  hold = true,
+  copy,
   now,
 }: SuggestTimeStepProps) {
   return (
@@ -131,15 +181,18 @@ export function SuggestTimeStep({
         value={value}
         onChange={onChange}
         otherFirst={b.other.firstName}
-        label="Suggested time"
+        label={label}
+        copy={copy}
         now={now}
       />
       {value && (
         <>
-          <span className={styles.hold}>
-            <Icon name="lock_clock" size={14} className={styles.holdIcon} />
-            Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others again.
-          </span>
+          {hold && (
+            <span className={styles.hold}>
+              <Icon name="lock_clock" size={14} className={styles.holdIcon} />
+              Held for {b.other.firstName} for {HOLD_HOURS} hours, then it opens to others again.
+            </span>
+          )}
           {/* Last in the step, where the design puts it — and behind the same
               condition as the hold line above it. A message whose whole point
               is "could we do this instead?" has no instead to name until a time

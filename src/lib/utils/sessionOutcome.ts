@@ -1,6 +1,6 @@
 import type { Booking } from '@/types/booking';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
-import { MISSED_WAIT_FALLBACK_MIN, OUTCOME_COPY as C } from '@/lib/copy/session';
+import { MISSED_WAIT_FALLBACK_MIN, MOVE_COPY, OUTCOME_COPY as C } from '@/lib/copy/session';
 import { showedUp } from './bookings';
 
 /**
@@ -64,7 +64,8 @@ export type OutcomeView =
       actions: OutcomeAction[];
     }
   | {
-      kind: 'missed';
+      /** `canceled`: the viewer's move canceled it and couldn't book the new time (PRD fix 1). */
+      kind: 'missed' | 'canceled';
       /** The panel's ground and icon colour (Session Join.dc.html `miss`). */
       tone: 'red' | 'green' | 'grey';
       icon: IconName;
@@ -261,5 +262,33 @@ export function outcomeView({
     body: M.unknownBody,
     askReason: false,
     actions: [BOOKINGS],
+  };
+}
+
+/**
+ * The notice under a session the viewer's move canceled when the new time
+ * couldn't be booked (PRD fix 1): canceled, the credit back, the time not
+ * booked, and Book again opening the booking modal here, as the completed
+ * state does. `day` is the session's date in the page's zone.
+ */
+export function moveFailedView(b: Booking, canBook: boolean, day: string): OutcomeView {
+  const bookable = canBook && !b.other.deleted;
+  return {
+    kind: 'canceled',
+    tone: 'grey',
+    icon: 'event_busy',
+    title: MOVE_COPY.failedTitle,
+    body: MOVE_COPY.failedBody(day),
+    askReason: false,
+    actions: bookable
+      ? [
+          {
+            key: 'book',
+            label: MOVE_COPY.bookAgain(b.other.firstName),
+            href: null,
+            variant: 'primary',
+          },
+        ]
+      : [BOOKINGS],
   };
 }

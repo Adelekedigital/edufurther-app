@@ -4,6 +4,7 @@ import type { components } from '@/lib/api/generated/schema';
 import { mockMissedReasons } from '@/lib/api/mock/missedReasons';
 import { mockReminders } from '@/lib/api/mock/reminders';
 import { ok, problem } from '@/lib/api/mock/respond';
+import { MENTORS } from '@/lib/api/mock/fixtures';
 
 type S = components['schemas'];
 
@@ -68,6 +69,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     answers?: { count: number; first: { question_text: string; text: string } } | null;
     suggestion?: 'active' | 'booked' | 'expired';
     typeId?: string;
+    /** The other party's id, when it has to be a real mock mentor (their types and open times). */
+    otherId?: string;
     /** The other party's zone, so the "what time is it for them" line has something to say. */
     zone?: string;
     /** The offering's name, for the join page's title. */
@@ -104,7 +107,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     const inRoom = (seen?: string) =>
       (o.provider ?? 'daily') === 'daily' ? running && !!seen : null;
     const other: S['PartyRead'] = {
-      ...party(`mock-${id}`, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos', o.edu ?? {}),
+      ...party(
+        o.otherId ?? `mock-${id}`,
+        mentee[0],
+        mentee[1],
+        o.zone ?? 'Africa/Lagos',
+        o.edu ?? {},
+      ),
       joined_at: o.otherJoinedAt ?? null,
       in_room_at: o.otherInRoomAt ?? null,
       in_room: inRoom(o.otherInRoomAt),
@@ -298,6 +307,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
     session('u-7', at(20, 10), 'confirmed', ['Natasha', 'Oyelaran'], {
       topic: 'Personal statement review',
       asMentee: true,
+      // A mentor the mock knows, so the mentee's move (PRD fix 1) can read
+      // their session types and open times on /sessions/u-7.
+      otherId: MENTORS[0]!.id,
     }),
     // The same, inside the refund deadline, so the "credit is not returned"
     // warning is reachable too.

@@ -13,8 +13,10 @@ export const LOBBY_COPY = {
   joinLockedHint: (min: number) => `The button becomes active ${min} minutes before the start.`,
   /** Join again, for someone who has been in. */
   rejoin: 'Rejoin call',
-  reschedule: 'Reschedule',
+  /** Both roles (PRD fix 1): a mentee moves the session from the same dialog. */
   cancel: 'Cancel',
+  /** The status pill when a move canceled the session but couldn’t book the new time. */
+  canceled: 'Canceled',
   /** Between the end and the attendance ruling (the settling phase). */
   settlingNote:
     'You’ve finished this session. We’re confirming who joined. Your booking updates when that’s done.',
@@ -78,12 +80,22 @@ export const PREP_COPY = {
       title: 'Your setup',
       body: 'A quiet spot, headphones and a steady connection make the call easier for both of you.',
     },
+    // PRD fix 1: the link reads "Cancel" for both roles; a mentee moves the
+    // session from its dialog. No deadline on the row: no number rather than a
+    // guessed one (copy reviewed with ux-writer).
     plans: {
       title: 'If plans change',
-      body: (hours: number) =>
-        `Canceling or rescheduling at least ${hours} hours before lets someone else book the time.`,
-      // No deadline on the row: no number rather than a guessed one.
-      bodyNoWindow: 'Canceling or rescheduling in good time lets someone else book the time.',
+      body: {
+        mentee: (hours: number) =>
+          `Need another time? Use Cancel. Moving it at least ${hours} hours before lets someone else book this time.`,
+        mentor: (hours: number) =>
+          `Canceling at least ${hours} hours before lets someone else book the time.`,
+      },
+      bodyNoWindow: {
+        mentee:
+          'Need another time? Use Cancel. Moving it in good time lets someone else book this time.',
+        mentor: 'Canceling in good time lets someone else book the time.',
+      },
     },
   },
 } as const;
@@ -154,4 +166,40 @@ export const MISSED_REASON_COPY = {
   closed: 'This session isn’t taking a reason from you.',
   /** The longest note the backend takes. */
   noteMax: 1000,
+} as const;
+
+/**
+ * The mentee's move (PRD Session Join fixes, fix 1; CancelModal.dc.html `move`
+ * on, viewer mentee). Design strings, the founder's changes, and ours where
+ * the design draws nothing (the no-times lines, the prepare errors and the
+ * failure notice), all reviewed with edufurther-ux-writer. No em dashes.
+ */
+export const MOVE_COPY = {
+  title: 'Move this session?',
+  switchTitle: (first: string) => `Book a new time with ${first}`,
+  switchSub: (first: string, request: boolean) =>
+    request
+      ? `From ${first}’s open times. Sent as a request.`
+      : `From ${first}’s open times. It moves right away, same credit.`,
+  pickerLabel: 'New time',
+  keep: 'Keep session',
+  confirm: (request: boolean) => (request ? 'Send request' : 'Move session'),
+  /** A press with no time picked. */
+  pickFirst: 'Pick a time, or switch this off to cancel instead.',
+  /** The picker with nothing to show, from the mentee's side (the mentor's own are SlotPicker's). */
+  slots: (first: string) => ({
+    error: `We couldn’t load ${first}’s open times just now.`,
+    unknown: `We can’t show ${first}’s open times for this session right now.`,
+    empty: `${first} has no open times for this session right now, so there’s nothing to move it to.`,
+  }),
+  /** Before the cancel: nothing has changed. */
+  prepareFailed:
+    'We couldn’t get your session ready to move. Nothing has changed. Try again in a moment.',
+  questionsChanged: (first: string) =>
+    `${first}’s questions for this session have changed, so we can’t move it. Nothing has changed. Switch this off to cancel, then book a new time.`,
+  /** The cancel went through and the new time didn’t: the notice on the page. */
+  failedTitle: 'We couldn’t book your new time',
+  failedBody: (day: string) =>
+    `Your session on ${day} is canceled and your credit is back. Pick another time to book again.`,
+  bookAgain: (first: string) => `Book ${first} again`,
 } as const;
