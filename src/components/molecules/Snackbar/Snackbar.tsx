@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { cx } from '@/lib/utils/cx';
+import { Icon } from '@/components/atoms/Icon/Icon';
 import styles from './Snackbar.module.css';
 
 const noop = () => () => {};
@@ -33,6 +34,7 @@ export function Snackbar({
   message,
   stamp = 0,
   action,
+  tone,
 }: {
   message: string | null;
   /** Moves with each outcome, so the same words twice are shown and heard again. */
@@ -43,6 +45,11 @@ export function Snackbar({
    * control the person was on (Hide), so they land on the way back.
    */
   action?: { label: string; onClick: () => void; focus?: boolean };
+  /**
+   * An outcome with its glyph (Admin.dc.html toast): success, a green
+   * check_circle; error, a red error. Absent: the plain toast.
+   */
+  tone?: 'success' | 'error';
 }) {
   const actionRef = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -74,7 +81,17 @@ export function Snackbar({
   const region = (
     <div role="status" className={styles.region}>
       {shown && (
-        <div key={stamp} className={cx(styles.toast, action && styles.withAction)}>
+        <div
+          key={stamp}
+          className={cx(styles.toast, action && styles.withAction, tone && styles.withIcon)}
+        >
+          {tone && (
+            <Icon
+              name={tone === 'success' ? 'check_circle' : 'error'}
+              size={20}
+              className={tone === 'success' ? styles.success : styles.error}
+            />
+          )}
           {shown}
           {action && (
             <button

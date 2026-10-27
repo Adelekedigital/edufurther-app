@@ -13,6 +13,20 @@ const base = {
 };
 
 describe('ConfirmDialog', () => {
+  it('draws extra body between the explanation and the buttons, with no glyph when none is given', () => {
+    render(
+      <ConfirmDialog {...base} icon={undefined} onKeep={vi.fn()} onConfirm={vi.fn()}>
+        <p>Now 1, after 3</p>
+      </ConfirmDialog>,
+    );
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete this award?' });
+    const extra = screen.getByText('Now 1, after 3');
+    const keep = screen.getByRole('button', { name: 'Keep it' });
+    expect(extra.compareDocumentPosition(keep) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dialog).toBeInTheDocument();
+    expect(screen.queryByText('delete')).toBeNull();
+  });
+
   it('is an alertdialog named by its title and described by its subtitle', () => {
     render(<ConfirmDialog {...base} onKeep={vi.fn()} onConfirm={vi.fn()} />);
     const dialog = screen.getByRole('alertdialog', { name: 'Delete this award?' });
@@ -93,7 +107,13 @@ describe('ConfirmDialog', () => {
 
   it('shows the pending label while it runs', () => {
     render(
-      <ConfirmDialog {...base} pending pendingLabel="Deleting…" onKeep={vi.fn()} onConfirm={vi.fn()} />,
+      <ConfirmDialog
+        {...base}
+        pending
+        pendingLabel="Deleting…"
+        onKeep={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
     );
     expect(screen.getByRole('button', { name: 'Deleting…' })).toHaveAttribute('aria-busy', 'true');
   });
@@ -127,6 +147,8 @@ describe('ConfirmDialog', () => {
         onConfirm={vi.fn()}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Feature this instead' }).className).toMatch(/primary/);
+    expect(screen.getByRole('button', { name: 'Feature this instead' }).className).toMatch(
+      /primary/,
+    );
   });
 });

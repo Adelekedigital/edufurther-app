@@ -47,6 +47,17 @@
   outline: var(--focus-ring-width) solid var(--blue-300);
   outline-offset: 2px;
 }
+/* With a glyph (Admin.dc.html toast): 14px text, 12px to the icon. */
+.withIcon {
+  gap: var(--space-3);
+  font-size: var(--text-p-sm);
+}
+.success {
+  color: var(--green-400);
+}
+.error {
+  color: var(--red-300);
+}
 @media (max-width: 767px) {
   .region {
     bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-3));
