@@ -1,0 +1,40 @@
+/* Admin.dc.html Credits: the tab row, then the tab's body. */
+.tabs {
+  border-bottom: var(--border-hairline) solid var(--ink-200);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-5);
+}
+.pickHint {
+  flex: 1.4 1 380px;
+  min-width: 0;
+  min-height: 280px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+  border: var(--border-hairline) dashed var(--ink-300);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-p-sm);
+  color: var(--ink-600);
+  text-align: center;
+}
+/* The picked mentee beside the find card (desktop). */
+.panel {
+  flex: 1.4 1 380px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
