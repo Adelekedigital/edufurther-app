@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import type { Booking } from '@/types/booking';
+import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { AppError } from '@/types/mentor';
 import { NewMentorHero } from './NewMentorHero';
 
@@ -20,21 +21,17 @@ vi.mock('@/lib/api/data/bookings', () => ({ usePendingBookings: () => pending })
 const iso = (ms: number) => new Date(ms).toISOString();
 function booking(over: Partial<Booking> = {}): Booking {
   const start = Date.now() + 6 * 864e5;
-  return {
+  return sampleBookingFor({
     id: 's1',
-    status: 'confirmed',
-    side: 'mentor',
-    other: { name: 'Ada Okafor' },
+    other: sampleParty({ name: 'Ada Okafor' }),
     title: 'Intro chat',
     startsAt: iso(start),
     endsAt: iso(start + 18e5),
     durationMin: 30,
     joinOpensAt: iso(start - 6e5),
     joinClosesAt: iso(start + 18e5),
-    doorClosesAt: null,
-    myJoinedAt: null,
     ...over,
-  } as unknown as Booking;
+  });
 }
 
 const base = {

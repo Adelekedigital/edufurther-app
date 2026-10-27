@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { StatusLinkRow } from '@/components/molecules/StatusLinkRow/StatusLinkRow';
 import { HERO_COPY, STATUS_COPY } from '@/lib/copy/dashboard';
 import type { Booking } from '@/types/booking';
+import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import { HeroRows, MentorHero } from './MentorHero';
 import { NextSessionCard } from './NextSessionCard';
 import { WeekMoves } from './WeekMoves';
@@ -15,20 +16,17 @@ const col = { maxWidth: 1080 } as const;
 const noop = () => {};
 const allMoves = ['share', 'about', 'hours'] as const;
 const start = Date.now() + 6 * 864e5;
-const first = {
+const first = sampleBookingFor({
   id: 's1',
-  status: 'confirmed',
-  side: 'mentor',
-  other: { name: 'Ada Okafor' },
+  other: sampleParty({ name: 'Ada Okafor' }),
   title: 'Intro chat',
   startsAt: new Date(start).toISOString(),
   endsAt: new Date(start + 18e5).toISOString(),
   durationMin: 30,
   joinOpensAt: new Date(start - 6e5).toISOString(),
   joinClosesAt: new Date(start + 18e5).toISOString(),
-  doorClosesAt: null,
-  myJoinedAt: null,
-} as unknown as Booking;
+  provider: 'google_meet',
+});
 
 export const NoBookings: Story = {
   render: () => (

@@ -230,11 +230,13 @@ export function daysBetween(a: Date, b: Date, zone: string): number {
 
 /**
  * "Attendance rate: 92%" under the other person's name in the details panel,
- * or just what they are when there is no figure. Never "0%" from nothing: null
+ * "New mentee" for one new to EduFurther, or just what they are when there is
+ * no figure. Never "0%" from nothing: null
  * means no data, and a mentee with no history is not an unreliable one.
  */
 export function attendanceLine(b: Booking): string {
   if (b.side !== 'mentor') return 'Mentor';
+  if (isNewMentee(b)) return NEW_MENTEE;
   if (b.menteeAttendanceRate == null) return 'Mentee';
   // The denominator, because a percentage without one says very little: 100%
   // of two sessions and 100% of forty are not the same claim (backend #409).
@@ -249,6 +251,8 @@ export function attendanceLine(b: Booking): string {
  * (the backend asks clients to say "New mentee" here). Not "first session with
  * you": there is no such signal, and the owner chose this one (#241).
  */
+export const NEW_MENTEE = 'New mentee';
+
 export function isNewMentee(b: Booking): boolean {
   return b.side === 'mentor' && b.menteeAttendanceRate == null && b.menteeAttendanceSessions === 0;
 }

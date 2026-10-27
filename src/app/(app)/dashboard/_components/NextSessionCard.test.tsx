@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Booking } from '@/types/booking';
+import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { AppError } from '@/types/mentor';
 import { NextSessionCard } from './NextSessionCard';
 
@@ -9,21 +10,17 @@ const iso = (ms: number) => new Date(ms).toISOString();
 
 function booking(over: Partial<Booking> = {}): Booking {
   const start = Date.now() + 8 * 864e5;
-  return {
+  return sampleBookingFor({
     id: 's1',
-    status: 'confirmed',
-    side: 'mentor',
-    other: { name: 'Amara Okafor' },
+    other: sampleParty({ name: 'Amara Okafor' }),
     title: 'SOP review',
     startsAt: iso(start),
     endsAt: iso(start + 36e5),
     durationMin: 60,
     joinOpensAt: iso(start - 6e5),
     joinClosesAt: iso(start + 36e5),
-    doorClosesAt: null,
-    myJoinedAt: null,
     ...over,
-  } as unknown as Booking;
+  });
 }
 
 const base = { onRetry: () => {}, timeZone: ZONE, now: new Date() };

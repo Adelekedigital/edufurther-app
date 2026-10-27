@@ -154,7 +154,7 @@ export const at = (hhmmss: string) => new Date(`2026-10-04T${hhmmss}Z`);
 export function sessionRoom(
   over: Partial<SessionRoom['booking']> = {},
   me = {},
-  provider: SessionRoom['provider'] = 'daily',
+  provider: SessionRoom['booking']['provider'] = 'daily',
 ): SessionRoom {
   return {
     booking: sampleBookingFor({
@@ -166,11 +166,11 @@ export function sessionRoom(
       joinOpensAt: '2026-10-04T16:55:00Z',
       joinClosesAt: '2026-10-04T17:15:00Z',
       doorClosesAt: '2026-10-04T17:30:00Z',
+      provider,
       ...over,
     }),
     me: sampleParty({ id: 'me', name: 'Gbenga Ogundipe', firstName: 'Gbenga', ...me }),
     typeName: '1:1 call',
-    provider,
     missedReasonSent: false,
   };
 }

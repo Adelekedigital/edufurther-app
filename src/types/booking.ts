@@ -299,8 +299,6 @@ export type SessionRoom = {
   me: BookingParty;
   /** The offering's name ("1:1 call"); null on an older row with no type. */
   typeName: string | null;
-  /** Null on an older row with no venue recorded. */
-  provider: MeetingProvider | null;
   /** The viewer has told us why they missed it (backend #532); false on an older backend. */
   missedReasonSent: boolean;
 };

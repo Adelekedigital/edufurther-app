@@ -3,7 +3,7 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { DateChip } from '@/components/molecules/DateChip/DateChip';
 import { DashboardNextSession } from '@/components/organisms/DashboardNextSession/DashboardNextSession';
-import { daysBetween, isNewMentee, timeRange } from '@/lib/utils/bookings';
+import { daysBetween, isNewMentee, NEW_MENTEE, timeRange } from '@/lib/utils/bookings';
 import { providerName } from '@/lib/utils/sessionPhase';
 import type { Booking } from '@/types/booking';
 import type { AppError } from '@/types/mentor';
@@ -48,7 +48,7 @@ function SessionRow({
   const rel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
   const venue = providerName(booking.provider);
   // The hero's own note ("Your first booking") replaces the tag, as drawn.
-  const tag = note ?? (isNewMentee(booking) ? 'New mentee' : undefined);
+  const tag = note ?? (isNewMentee(booking) ? NEW_MENTEE : undefined);
   // Join is never greyed out or swapped (owner, 26 Oct): the session's own page
   // shows the countdown, lobby or outcome for every phase.
   const sessionHref = `/sessions/${encodeURIComponent(booking.id)}`;

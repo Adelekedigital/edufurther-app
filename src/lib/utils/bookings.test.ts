@@ -585,10 +585,10 @@ describe('who the other person is, and how reliable (backend #409)', () => {
   });
 
   it('a new mentee is not a bad one — no rate, no count, no claim', () => {
-    // 0 with a null rate is a new mentee. "0 sessions" would read as a record.
+    // 0 with a null rate is a new mentee (#241). "0 sessions" would read as a record.
     expect(
       attendanceLine(mentorView({ menteeAttendanceRate: null, menteeAttendanceSessions: 0 })),
-    ).toBe('Mentee');
+    ).toBe('New mentee');
   });
 
   it('a rate with no count is still a rate', () => {

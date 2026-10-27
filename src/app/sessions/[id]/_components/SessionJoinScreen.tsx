@@ -288,7 +288,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
     live &&
     showsLivePresence(live) &&
     data &&
-    presenceOf(data.booking.other, data.provider) !== 'none'
+    presenceOf(data.booking.other, data.booking.provider) !== 'none'
   );
   const [seen, setSeen] = useState({ live, otherJoined });
   if (seen.live !== live || seen.otherJoined !== otherJoined) {

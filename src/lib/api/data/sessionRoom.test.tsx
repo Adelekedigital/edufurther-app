@@ -72,7 +72,7 @@ describe('toSessionRoom', () => {
     expect(r.me.firstName).toBe('Gbenga');
     expect(r.booking.other.firstName).toBe('Amara');
     expect(r.typeName).toBe('1:1 call');
-    expect(r.provider).toBe('daily');
+    expect(r.booking.provider).toBe('daily');
   });
 });
 
