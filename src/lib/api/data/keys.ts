@@ -218,4 +218,20 @@ export const keys = {
     me: (userId: string) => ['viewer', 'mentorOnboarding', userId] as const,
     institutions: (q: string) => ['institutions', q] as const,
   },
+  /**
+   * The admin app (Admin PRD), keyed by the signed-in admin (`me`). Every
+   * admin write invalidates `admin.all`, so
+   * the summary (cards, tab counts, the nav badge) and every list stay true.
+   */
+  admin: {
+    all: ['admin'] as const,
+    summary: (me: string) => ['admin', me, 'mentors', 'summary'] as const,
+    mentors: (me: string, tab: string) => ['admin', me, 'mentors', 'list', tab] as const,
+    mentor: (me: string, id: string) => ['admin', me, 'mentors', 'detail', id] as const,
+    notes: (me: string, id: string) => ['admin', me, 'mentors', 'notes', id] as const,
+    mentees: (me: string, q: string) => ['admin', me, 'mentees', q] as const,
+    menteeCredits: (me: string, id: string) => ['admin', me, 'mentee-credits', id] as const,
+    creditLog: (me: string, type: string) => ['admin', me, 'credit-log', type] as const,
+    creditRules: (me: string) => ['admin', me, 'credit-rules'] as const,
+  },
 };

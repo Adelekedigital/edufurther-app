@@ -851,6 +851,14 @@ SVG ring — neutral `--ink-100` track, a value arc (`--action-primary` /
 `{pct}%` label. Re-check its stroke width and track colour against the DS
 `ProgressCircle` when the bundle is readable again.
 
+## Admin (Admin.dc.html + AppShell.dc.html admin nav, routes `/admin/*`, Admin PRD 2026-10-26)
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| A mentee admin reaches Admin from the account menu (PRD Q13 default) | On phones the Admin item sits in the More sheet, the account menu's place on phones; on desktop it is the rail-foot item AppShell.dc.html draws | One entry per width, where that width already keeps account items | design draws a phone account menu |
+| The account menu shows a role label "Admin" | No role label | The app has no role label for any role; adding one for admins only would be a second pattern | product adds role labels |
+| `/` sends an admin to `/admin` (older settled rule) | Admins keep their own home; the Admin nav item is the entry | PRD: "Admins keep their normal account and nav" | — |
+
 ## Mentee home / dashboard (Mentee Dashboard v2.dc.html, route `/home`, PR 1)
 
 | Design says | We do | Why | Revisit when |

@@ -6,7 +6,6 @@ const base: OutcomeInput = {
   role: 'mentee',
   isNew: false,
   firstName: 'Amara',
-  isAdmin: false,
   isMentor: false,
   mentorApproved: false,
   googleJustLinked: false,
@@ -250,11 +249,10 @@ describe('signInOutcome — a mentee whose onboarding is unfinished (PRD H5)', (
     expect(on({ ...base, onboardingComplete: true }).href).toBe('/home');
     expect(on({ ...base, onboardingComplete: null }).href).toBe('/home');
     expect(on(base).href).toBe('/home');
-    // A mentor or an admin never goes to mentee onboarding.
+    // A mentor never goes to mentee onboarding.
     expect(
       on({ ...base, isMentor: true, mentorApproved: true, onboardingComplete: false }).href,
     ).toBe('/dashboard');
-    expect(on({ ...base, isAdmin: true, onboardingComplete: false }).href).toBe('/admin');
     // Any return path wins, a booking included: booking is never gated (PRD F4).
     const next = '/mentors/ada?book=st-1&at=2026-10-20T10:00:00Z';
     expect(on({ ...base, onboardingComplete: false, next }).href).toBe(next);

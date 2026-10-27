@@ -6,10 +6,12 @@
  * CI's `pnpm check:icons` fails until you do.
  */
 export const ICON_NAMES = [
+  'accessibility_new',
   'account_box',
   'add',
   'add_circle',
   'add_photo_alternate',
+  'admin_panel_settings',
   'alternate_email',
   'arrow_back',
   'arrow_downward',
@@ -113,6 +115,7 @@ export const ICON_NAMES = [
   'record_voice_over',
   'redeem',
   'refresh',
+  'remove',
   'replay',
   'route',
   'schedule',

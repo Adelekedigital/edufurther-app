@@ -11,7 +11,6 @@ export type Home =
   | '/explore'
   | '/home'
   | '/dashboard'
-  | '/admin'
   | '/onboarding'
   | '/onboarding/mentor'
   | '/mentor-application';
@@ -27,8 +26,7 @@ type Me = Pick<components['schemas']['UserRead'], 'is_admin'> &
   };
 
 /**
- * Platform admins first (even if also a mentor), then the member's own home,
- * the same rule sign-in uses (memberHome, lib/utils/access): a mentor profile
+ * The member's own home, the same rule sign-in uses (memberHome, lib/utils/access): a mentor profile
  * → the dashboard, or the application while it isn't approved (or approved
  * and not yet seen); everyone else → the mentee home, goal or not (product,
  * 2026-10-15), or onboarding while it isn't finished. Each detour only while
@@ -37,7 +35,6 @@ type Me = Pick<components['schemas']['UserRead'], 'is_admin'> &
  */
 export function homeFor(me: Me | null): Home {
   if (!me) return '/explore';
-  if (me.is_admin) return '/admin';
   const p = me.mentor_profile;
   const mentor = !!p && !menteeByChoice(me);
   return memberHome({
@@ -50,7 +47,7 @@ export function homeFor(me: Me | null): Home {
   });
 }
 
-/** Local dev / CI without auth (NEXT_PUBLIC_MOCK_VIEWER): `admin` exists for routing checks only. */
+/** Local dev / CI without auth (NEXT_PUBLIC_MOCK_VIEWER). */
 const MOCK_ROLES: Record<string, Me | null> = {
   guest: null,
   mentee: { is_admin: false, mentor_profile: null },

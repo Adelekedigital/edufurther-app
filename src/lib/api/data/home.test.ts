@@ -12,8 +12,13 @@ describe('homeFor: where / sends each viewer (product 2026-10-15; every non-ment
       '/home',
     ],
     ['a mentor, any state', { is_admin: false, mentor_profile: mentorProfile }, '/dashboard'],
-    ['a platform admin', { is_admin: true, mentor_profile: null }, '/admin'],
-    ['an admin who is also a mentor', { is_admin: true, mentor_profile: mentorProfile }, '/admin'],
+    // Admins keep their own home; the nav's Admin item opens /admin (Admin PRD).
+    ['a platform admin', { is_admin: true, mentor_profile: null }, '/home'],
+    [
+      'an admin who is also a mentor',
+      { is_admin: true, mentor_profile: mentorProfile },
+      '/dashboard',
+    ],
   ] as const)('%s → %s', (_who, me, home) => {
     expect(homeFor(me as Me)).toBe(home);
   });
@@ -105,7 +110,7 @@ describe('fetchHome', () => {
     vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', 'mentee');
     expect(await fetchHome({ accessToken: null })).toBe('/home');
     expect(await fetchHome({ accessToken: null, mockViewer: 'mentor' })).toBe('/dashboard');
-    expect(await fetchHome({ accessToken: null, mockViewer: 'admin' })).toBe('/admin');
+    expect(await fetchHome({ accessToken: null, mockViewer: 'admin' })).toBe('/home');
     expect(await fetchHome({ accessToken: null, mockViewer: 'constructor' })).toBe('/home');
   });
 });

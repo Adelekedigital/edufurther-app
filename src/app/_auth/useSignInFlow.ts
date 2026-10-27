@@ -49,7 +49,6 @@ function googleName(u: GoogleUser): string {
 
 type Account = {
   id: string;
-  isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
   mentorApprovedSeen?: boolean;
@@ -196,7 +195,6 @@ export function useSignInFlow({
         role: a.signedUpAsMentor ? 'mentor' : 'mentee',
         isNew: a.isNew,
         firstName,
-        isAdmin: a.isAdmin,
         isMentor: a.isMentor,
         mentorApproved: a.mentorApproved,
         mentorApprovedSeen: a.mentorApprovedSeen,

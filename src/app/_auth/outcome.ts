@@ -13,14 +13,12 @@ import { bookingFromNext, isOnboardingNext } from './booking';
  * explicit `false` sends them: unknown is done.
  */
 export function accountHome(a: {
-  isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
   mentorApprovedSeen?: boolean;
   onboardingComplete?: boolean | null;
   signedUpAsMentor?: boolean;
 }): string {
-  if (a.isAdmin) return '/admin';
   return memberHome({
     isMentor: a.isMentor,
     signedUpAsMentor: a.signedUpAsMentor,
@@ -42,7 +40,6 @@ export type OutcomeInput = {
   /** The account had no name before this sign-in: it was just created. */
   isNew: boolean;
   firstName: string;
-  isAdmin: boolean;
   isMentor: boolean;
   mentorApproved: boolean;
   /** Signed up as a mentor with no mentor profile yet: continues as a mentor. */

@@ -15,6 +15,16 @@ const me = (over: Partial<Me> = {}): Me =>
   }) as Me;
 
 describe('toViewer (backend auth reply #3)', () => {
+  it('a live admin grant: isAdmin and its role (no role named yet reads as the full grant)', () => {
+    expect(toViewer(me())).toMatchObject({ isAdmin: false, adminRole: null });
+    expect(toViewer(me({ is_admin: true }))).toMatchObject({
+      isAdmin: true,
+      adminRole: 'super_admin',
+    });
+    const limited = { is_admin: true, admin_role: 'limited_access' } as Partial<Me>;
+    expect(toViewer(me(limited))).toMatchObject({ isAdmin: true, adminRole: 'limited_access' });
+  });
+
   it('a goal makes a mentee; no mentor profile → not a mentor', () => {
     const v = toViewer(me({ goal: {} as Me['goal'] }));
     expect(v).toMatchObject({ isMentee: true, isApprovedMentor: false, initials: 'E' });

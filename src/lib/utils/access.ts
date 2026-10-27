@@ -189,6 +189,8 @@ export const SHARED_ROUTES: readonly string[] = [
   '/login',
   '/signup',
   '/invite',
+  // Any role may be a platform admin; the admin layout lets only admins in.
+  '/admin',
 ];
 
 /** `path` is `route` or one of its sub-routes; `/` matches the root only. */

@@ -38,7 +38,6 @@ const unfinished = {
   kind: 'member',
   id: 'u1',
   firstName: 'Amara',
-  isAdmin: false,
   isMentor: false,
   mentorApproved: false,
   onboardingComplete: false,

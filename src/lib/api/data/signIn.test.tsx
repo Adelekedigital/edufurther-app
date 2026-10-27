@@ -32,7 +32,6 @@ describe('fetchSignInAccount (who just signed in)', () => {
       kind: 'member',
       id: 'u1',
       firstName: null,
-      isAdmin: false,
       isMentor: false,
       mentorApproved: false,
       // No mentor profile: nothing to show.
