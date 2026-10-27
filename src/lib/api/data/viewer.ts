@@ -14,7 +14,6 @@ import { clampFocus, personInitials } from '@/lib/utils/person';
 import { toCredits } from './credits';
 import { ApiError } from './errors';
 import { api } from './http';
-import type { PendingMe } from './pending';
 import { menteeByChoice } from './roles';
 import { keys } from './keys';
 import { useSession } from './session';
@@ -64,8 +63,9 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     menteeCancelRefundHours: me.mentee_cancel_refund_hours ?? null,
     sessionTypeLimit: me.session_type_limit ?? null,
     isAdmin: me.is_admin === true,
-    // A grant with no role named yet (older /me) is the full one: the API still decides.
-    adminRole: me.is_admin ? ((me as UserRead & PendingMe).admin_role ?? 'super_admin') : null,
+    // A grant with no role named reads as the narrowest one: the UI never offers
+    // a decision the API might refuse.
+    adminRole: me.is_admin ? (me.admin_role ?? 'limited_access') : null,
     bookingCounts: {
       pending: sumSides(
         me.booking_counts?.as_mentor?.awaiting_your_response,

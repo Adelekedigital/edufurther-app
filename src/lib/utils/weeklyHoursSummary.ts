@@ -22,11 +22,11 @@ function daysLabel(days: number[]): string {
 }
 
 /**
- * The approved screen's hours line (Approved.dc.html "Mon–Fri, 6:00 pm –
- * 9:00 pm"): days that share the same times are grouped, groups split by "; ".
- * Null when no day is on.
+ * One line per group of days that share the same times, in week order
+ * ("Mon, Wed, 6:00 pm – 9:00 pm"); empty when no day is on. The admin drawer's
+ * "Drafted weekly hours" lists them one per line.
  */
-export function weeklyHoursSummary(days: readonly DayHours[]): string | null {
+export function weeklyHoursLines(days: readonly DayHours[]): string[] {
   const groups = new Map<string, { days: number[]; times: string }>();
   days.forEach((d, day) => {
     if (!d.on || d.slots.length === 0) return;
@@ -35,7 +35,6 @@ export function weeklyHoursSummary(days: readonly DayHours[]): string | null {
     g.days.push(day);
     groups.set(times, g);
   });
-  if (groups.size === 0) return null;
   // In week order of each group's first day.
   return [...groups.values()]
     .sort(
@@ -43,6 +42,13 @@ export function weeklyHoursSummary(days: readonly DayHours[]): string | null {
         Math.min(...a.days.map((d) => WEEK_ORDER.indexOf(d))) -
         Math.min(...b.days.map((d) => WEEK_ORDER.indexOf(d))),
     )
-    .map((g) => `${daysLabel(g.days)}, ${g.times}`)
-    .join('; ');
+    .map((g) => `${daysLabel(g.days)}, ${g.times}`);
+}
+
+/**
+ * The approved screen's hours line (Approved.dc.html "Mon–Fri, 6:00 pm –
+ * 9:00 pm"): the groups split by "; ". Null when no day is on.
+ */
+export function weeklyHoursSummary(days: readonly DayHours[]): string | null {
+  return weeklyHoursLines(days).join('; ') || null;
 }
