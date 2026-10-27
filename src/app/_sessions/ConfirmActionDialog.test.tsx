@@ -144,7 +144,7 @@ describe('what happens to the hour, said as a line', () => {
   it('the link flips the line, and says how to undo itself', async () => {
     dialog({ booking: mentorCancel() });
     await userEvent.click(screen.getByRole('button', { name: 'Reopen it' }));
-    expect(screen.getByText(/slot stays opened on your calendar\./)).toBeVisible();
+    expect(screen.getByText(/slot stays open on your calendar/)).toBeVisible();
     expect(screen.getByRole('button', { name: 'Keep it blocked' })).toBeVisible();
   });
 

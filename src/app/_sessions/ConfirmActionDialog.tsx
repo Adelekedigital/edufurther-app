@@ -373,7 +373,7 @@ export function ConfirmActionDialog({
           <p className={styles.freeLine}>
             <Icon name={free ? 'event_available' : 'event_busy'} size={18} aria-hidden />
             <span>
-              {when.day}, {when.start} slot stays {free ? 'opened' : 'blocked'} on your calendar.
+              {when.day}, {when.start} slot stays {free ? 'open' : 'blocked'} on your calendar.
             </span>
             <button type="button" className={styles.freeLink} onClick={() => setFree((v) => !v)}>
               {free ? 'Keep it blocked' : 'Reopen it'}
