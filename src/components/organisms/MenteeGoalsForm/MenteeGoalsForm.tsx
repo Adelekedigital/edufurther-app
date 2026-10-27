@@ -11,7 +11,7 @@ import {
 import { RadioChips } from '@/components/molecules/RadioChips/RadioChips';
 import { SchoolChips, type SchoolOption } from '@/components/molecules/SchoolChips/SchoolChips';
 import { HelpAreaPicker } from '@/components/organisms/HelpAreaPicker/HelpAreaPicker';
-import { DEGREE_OPTIONS, FIELD_MAX, TOP_DESTINATIONS } from '@/lib/copy/onboarding';
+import { DEGREE_OPTIONS, FIELD_MAX, HELP_LIMIT, TOP_DESTINATIONS } from '@/lib/copy/onboarding';
 import {
   GOAL_COUNTRY_MAX,
   GOAL_SCHOOL_CHARS,
@@ -78,6 +78,10 @@ export function MenteeGoalsForm({
   const full = values.countryIds.length >= GOAL_COUNTRY_MAX;
   const q = norm(countryQuery.trim());
   const countryResults = q ? countries.filter((c) => norm(c.label).includes(q)) : [];
+  // Picks still in the catalog, as the picker and the save's check count them.
+  const helpCount = values.needIds.filter((id) => topics.some((t) => t.id === id)).length;
+  // One help-area error at a time: none picked, or more than the cap (saved before it).
+  const helpGap: GoalsGap | null = has('help') ? 'help' : has('helpMax') ? 'helpMax' : null;
   const toggleCountry = (c: LanguageOption) => {
     const on = values.countryIds.includes(c.id);
     if (!on && full) return;
@@ -222,16 +226,22 @@ export function MenteeGoalsForm({
             {C.help}
           </h2>
           <span className={styles.cardSub}>{C.helpSub}</span>
+          <span id={ids('help-hint')} className={styles.hint}>
+            {C.helpHint}
+          </span>
         </div>
-        {has('help') && <FieldError id={ids('help-error')}>{GOALS_ERRORS.help}</FieldError>}
+        {helpGap && <FieldError id={ids('help-error')}>{GOALS_ERRORS[helpGap]}</FieldError>}
         <HelpAreaPicker
           look="row"
-          focusKey="help"
+          // The gap the save focuses: over the cap is its own (useRequiredFields).
+          focusKey={helpCount > HELP_LIMIT ? 'helpMax' : 'help'}
           label={C.help}
           options={topics}
           value={values.needIds}
           onChange={(needIds) => onChange({ needIds })}
-          errorId={has('help') ? ids('help-error') : undefined}
+          limit={HELP_LIMIT}
+          describedBy={ids('help-hint')}
+          errorId={helpGap ? ids('help-error') : undefined}
         />
       </section>
     </div>
