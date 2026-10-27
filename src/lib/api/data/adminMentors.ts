@@ -165,6 +165,8 @@ export type AdminMentorDetail = AdminPerson & {
   /** Which tab they sit in. */
   status: MentorTab;
   submittedAt: string | null;
+  /** Whole UTC days since applying (applications), from the API. */
+  waitingDays: number | null;
   approvedAt: string | null;
   decidedAt: string | null;
   linkedinUrl: string | null;
@@ -198,6 +200,7 @@ export function toAdminMentorDetail(w: WireMentorDetail): AdminMentorDetail {
     email: w.email,
     status: TAB_OF[w.status],
     submittedAt: w.submitted_at,
+    waitingDays: w.waiting_days,
     approvedAt: w.approved_at,
     decidedAt: w.decided_at,
     // Someone else's text on our page: https on LinkedIn's own host, else no link.

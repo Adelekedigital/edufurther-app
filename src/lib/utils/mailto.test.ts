@@ -1,5 +1,5 @@
 import { DEFAULT_SUPPORT_EMAIL } from '@/lib/config/support';
-import { supportMailto } from './mailto';
+import { mailtoHref, supportMailto } from './mailto';
 
 describe('supportMailto', () => {
   afterEach(() => vi.unstubAllEnvs());
@@ -25,6 +25,15 @@ describe('supportMailto', () => {
     );
     expect(supportMailto(undefined, 'Body only')).toBe(
       'mailto:support@edufurther.org?body=Body%20only',
+    );
+  });
+});
+
+describe('mailtoHref', () => {
+  it('encodes the address so it cannot add fields of its own', () => {
+    expect(mailtoHref('amara.okafor@example.com')).toBe('mailto:amara.okafor@example.com');
+    expect(mailtoHref('a?cc=x@evil.com&b@example.com')).toBe(
+      'mailto:a%3Fcc%3Dx%40evil.com%26b@example.com',
     );
   });
 });

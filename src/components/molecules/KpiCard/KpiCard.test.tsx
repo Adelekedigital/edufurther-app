@@ -61,3 +61,29 @@ describe('KpiCard', () => {
     expect(screen.getByText(hint)).toBeVisible();
   });
 });
+
+describe('KpiCard as a button (admin summary)', () => {
+  it('is one named button that runs onClick', async () => {
+    const onClick = vi.fn();
+    render(
+      <KpiCard
+        size="lg"
+        label="At risk"
+        value="1"
+        valueTone="danger"
+        trend={{ text: 'Show-up rate under 50%', tone: 'neutral' }}
+        onClick={onClick}
+        ariaLabel="At risk: 1. Open Approved"
+      />,
+    );
+    const card = screen.getByRole('button', { name: 'At risk: 1. Open Approved' });
+    expect(card).toHaveClass('lg', 'action');
+    await userEvent.click(card);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('without onClick it is not a button', () => {
+    render(<KpiCard label="Sessions" value="3" />);
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});
