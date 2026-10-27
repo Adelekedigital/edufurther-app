@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useId } from 'react';
+import { useId } from 'react';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
+import { SchoolSelect } from '@/components/molecules/SchoolSelect/SchoolSelect';
 import type { CatalogOption } from '@/lib/api/data/catalog';
 import { useInstitutionSearch } from '@/lib/api/data/mentorApplication';
 import { EDUCATION_COPY } from '@/lib/copy/mentorOnboarding';
@@ -59,17 +60,6 @@ export function SchoolFields({
     ...list.map((y) => ({ value: y, label: y })),
   ];
   const fid = (f: Parameters<typeof schoolFieldId>[1]) => schoolFieldId(s.key, f);
-  // A name typed in full is matched once the search answers, not only on the keystroke
-  // that finished it (the results trail typing by the debounce).
-  const exact = s.institutionId
-    ? null
-    : (search.options.find((o) => o.name.toLowerCase() === typed.toLowerCase()) ?? null);
-  useEffect(() => {
-    if (exact && !s.countryOpen)
-      onChange({ ...s, institutionId: exact.id, catalogCountryId: exact.countryId, countryId: '' });
-    // Only when a match appears: `s` and `onChange` change on every keystroke.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exact?.id]);
 
   return (
     <div className={cx(styles.school, multi && styles.card)}>
@@ -93,48 +83,23 @@ export function SchoolFields({
         <label htmlFor={fid('school')} className={step.label}>
           {EDUCATION_COPY.university}
         </label>
-        <Select
+        <SchoolSelect
           id={fid('school')}
-          searchable
-          remote
-          minChars={2}
-          allowCustom
           density="xl"
-          maxLength={200}
           placeholder={EDUCATION_COPY.universityPlaceholder}
-          query={s.school}
-          onQueryChange={(name) => {
-            // A name typed in full that the catalogue knows is that school.
-            const hit = search.options.find(
-              (o) => o.name.toLowerCase() === name.trim().toLowerCase(),
-            );
+          value={{ name: s.school, institutionId: s.institutionId }}
+          onChange={({ name, institutionId }, hit) =>
             set({
               school: name,
-              institutionId: hit?.id ?? null,
-              catalogCountryId: hit?.countryId ?? null,
+              institutionId,
+              // Text only (hit undefined): the school's country stands until it's resolved.
+              ...(hit !== undefined && { catalogCountryId: hit?.countryId ?? null }),
               countryId: '',
               countryOpen: false,
-            });
-          }}
-          value={s.institutionId ?? ''}
-          options={search.options.map((o) => ({
-            value: o.id,
-            label: o.name,
-            meta: o.countryLabel ?? undefined,
-          }))}
-          onChange={(e, o) => {
-            const hit = search.options.find((x) => x.id === e.target.value);
-            set({
-              school: o.label,
-              institutionId: e.target.value,
-              catalogCountryId: hit?.countryId ?? null,
-              countryId: '',
-              countryOpen: false,
-            });
-          }}
-          status={search.isLoading ? 'loading' : search.isError ? 'error' : 'ready'}
-          onRetry={search.retry}
-          copy={{ failed: EDUCATION_COPY.schoolSearchFailed }}
+            })
+          }
+          search={search}
+          failedCopy={EDUCATION_COPY.schoolSearchFailed}
         />
       </div>
 

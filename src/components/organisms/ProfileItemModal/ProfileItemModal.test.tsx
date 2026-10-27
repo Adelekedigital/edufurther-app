@@ -370,6 +370,18 @@ describe('ProfileItemModal — award', () => {
   });
 });
 
+/** The school search's answer (GET /institutions), whatever is typed. */
+const schools = {
+  options: [
+    { id: 'inst-lagos', name: 'University of Lagos', countryId: null, countryLabel: 'Nigeria' },
+  ],
+  term: '',
+  isLoading: false,
+  isError: false,
+  retry: () => undefined,
+  onQueryChange: () => undefined,
+};
+
 describe('ProfileItemModal — education', () => {
   const education = (
     initial: Parameters<typeof ProfileItemModal>[0]['initial'] | null = null,
@@ -378,6 +390,7 @@ describe('ProfileItemModal — education', () => {
   ) => {
     const onSave = vi.fn();
     const onClose = vi.fn();
+    const onQueryChange = vi.fn();
     render(
       <ProfileItemModal
         kind="education"
@@ -386,6 +399,7 @@ describe('ProfileItemModal — education', () => {
         thisYear={2026}
         hasOther={hasOther}
         audience={audience}
+        schools={{ ...schools, onQueryChange }}
         saving={false}
         error={null}
         onSave={onSave}
@@ -393,10 +407,12 @@ describe('ProfileItemModal — education', () => {
         renderShell={shell}
       />,
     );
-    return { onSave, onClose, user: userEvent.setup() };
+    return { onSave, onClose, onQueryChange, user: userEvent.setup() };
   };
+  const school = () => screen.getByRole('combobox', { name: 'School' });
   const saved = {
     school: 'Mississippi State University',
+    institutionId: null,
     degree: 'PhD',
     course: 'Sociology',
     start: 2023,
@@ -412,7 +428,7 @@ describe('ProfileItemModal — education', () => {
     });
     expect(current).toBeChecked();
     expect(current).toHaveAccessibleDescription('Shown under your name and on your mentor card.');
-    await user.type(screen.getByRole('textbox', { name: 'School' }), ' UCL ');
+    await user.type(school(), ' UCL ');
     await pickOption(user, screen.getByRole('combobox', { name: 'Degree' }), 'MSc');
     await user.type(screen.getByRole('textbox', { name: 'Course of study' }), 'Public Health');
     await pickOption(user, screen.getByRole('combobox', { name: 'Start year' }), '2024');
@@ -424,6 +440,7 @@ describe('ProfileItemModal — education', () => {
     await user.click(screen.getByRole('button', { name: 'Add education' }));
     expect(onSave).toHaveBeenCalledWith({
       school: 'UCL',
+      institutionId: null,
       degree: 'MSc',
       course: 'Public Health',
       start: 2024,
@@ -472,9 +489,7 @@ describe('ProfileItemModal — education', () => {
     await user.clear(screen.getByRole('textbox', { name: 'Course of study' }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(onSave).not.toHaveBeenCalled();
-    expect(screen.getByRole('textbox', { name: 'School' })).toHaveAccessibleDescription(
-      'Add your school.',
-    );
+    expect(school()).toHaveAccessibleDescription('Add your school.');
     expect(screen.getByRole('textbox', { name: 'Course of study' })).toHaveAccessibleDescription(
       'Add your course of study.',
     );
@@ -492,6 +507,58 @@ describe('ProfileItemModal — education', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
+  it('School is announced as required, like Course of study', () => {
+    education();
+    expect(school()).toHaveAttribute('aria-required', 'true');
+  });
+
+  it('a school picked from the list saves its id and name', async () => {
+    const { user, onSave, onQueryChange } = education({ ...saved, school: '' });
+    await user.type(school(), 'Lag');
+    expect(onQueryChange).toHaveBeenLastCalledWith('Lag');
+    expect(screen.getByRole('option', { name: /University of Lagos/ })).toHaveTextContent(
+      'Nigeria',
+    );
+    await user.click(screen.getByRole('option', { name: /University of Lagos/ }));
+    expect(school()).toHaveValue('University of Lagos');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onSave).toHaveBeenCalledWith({
+      ...saved,
+      school: 'University of Lagos',
+      institutionId: 'inst-lagos',
+    });
+  });
+
+  it('a school typed that isn’t listed saves the name with no id', async () => {
+    const { user, onSave } = education({ ...saved, school: '' });
+    await user.type(school(), 'Unilag Distance Centre');
+    await user.click(screen.getByRole('option', { name: 'Use “Unilag Distance Centre”' }));
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onSave).toHaveBeenCalledWith({
+      ...saved,
+      school: 'Unilag Distance Centre',
+      institutionId: null,
+    });
+  });
+
+  it('an edit keeps the saved school’s id until the school changes', async () => {
+    const listed = { ...saved, school: 'University of Lagos', institutionId: 'inst-lagos' };
+    const { user, onSave } = education(listed);
+    expect(school()).toHaveValue('University of Lagos');
+    await user.type(screen.getByRole('textbox', { name: 'Course of study' }), ' and Data');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onSave).toHaveBeenLastCalledWith({ ...listed, course: 'Sociology and Data' });
+    await user.clear(school());
+    await user.type(school(), 'Lagos Business School');
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(onSave).toHaveBeenLastCalledWith({
+      ...listed,
+      course: 'Sociology and Data',
+      school: 'Lagos Business School',
+      institutionId: null,
+    });
+  });
+
   it('a new one waits for the owner’s list: with another current, it starts unticked (screen test)', () => {
     const props = {
       kind: 'education' as const,
@@ -500,6 +567,7 @@ describe('ProfileItemModal — education', () => {
       thisYear: 2026,
       hasOther: false,
       audience: 'mentor' as const,
+      schools,
       catalog: { status: 'loading' as const, onRetry: vi.fn() },
       saving: false,
       error: null,
@@ -532,9 +600,11 @@ describe('ProfileItemModal — review of #93', () => {
         {...base}
         kind="education"
         audience="mentor"
+        schools={schools}
         editing
         initial={{
           school: 'UNN',
+          institutionId: null,
           degree: 'PhD',
           course: 'History',
           start: 1978,

@@ -13,6 +13,7 @@ import { AwardFields, type AwardErrors } from '@/components/molecules/AwardField
 import {
   EducationFields,
   type EducationErrors,
+  type SchoolSearchProps,
 } from '@/components/molecules/EducationFields/EducationFields';
 import type { LanguageOption } from '@/components/molecules/LanguagePicker/LanguagePicker';
 import { TopicPicker } from '@/components/molecules/TopicPicker/TopicPicker';
@@ -78,6 +79,8 @@ type EducationProps = Common & {
   hasOther: boolean;
   /** Who is editing: the hint mentions a mentor card only to a mentor. */
   audience: EducationAudience;
+  /** The school search the page runs on what's typed. */
+  schools: SchoolSearchProps;
   onSave: (values: EducationValues) => void;
 };
 
@@ -125,6 +128,7 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
       ? props.initial
       : {
           school: '',
+          institutionId: null,
           degree: 'PhD',
           course: '',
           start: props.kind === 'education' ? props.thisYear : 0,
@@ -277,6 +281,7 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
         thisYear={props.thisYear}
         hasOther={props.hasOther}
         audience={props.audience}
+        schools={props.schools}
       />
     ) : props.kind === 'award' ? (
       <AwardFields

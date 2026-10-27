@@ -348,6 +348,8 @@ export type AwardValues = {
 /** A degree as its edit form holds it (ProfileItemModal.dc.html `education`). */
 export type EducationValues = {
   school: string;
+  /** The school picked from our list (GET /institutions); null when typed. */
+  institutionId: string | null;
   /** The abbreviation (PhD, MSc…), or "Other". */
   degree: string;
   course: string;

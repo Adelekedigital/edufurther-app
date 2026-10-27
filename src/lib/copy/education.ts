@@ -13,4 +13,6 @@ export const EDUCATION_FIELD_COPY = {
   /** Appended when another degree is marked current. */
   replaces: ' Replaces the one currently marked.',
   unticked: 'Leave unticked for earlier degrees. They’ll still appear in your Education list.',
+  /** The school search failed (onboarding's words; the list's last row is Use "{typed}"). */
+  schoolSearchFailed: 'We couldn’t search schools. You can still use the name as you typed it.',
 } as const;

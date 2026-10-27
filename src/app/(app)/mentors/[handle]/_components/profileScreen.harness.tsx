@@ -166,6 +166,7 @@ export const ownEducation = [
     id: 'e1',
     values: {
       school: 'Mississippi State University',
+      institutionId: 'inst-msu',
       degree: 'PhD',
       course: 'Sociology',
       start: 2023,
@@ -181,6 +182,7 @@ export const ownEducation = [
     id: 'e2',
     values: {
       school: 'Mississippi State University',
+      institutionId: 'inst-msu',
       degree: 'MSc',
       course: 'Sociology',
       start: 2021,

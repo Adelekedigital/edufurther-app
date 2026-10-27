@@ -101,6 +101,7 @@ describe('useAwardEdit', () => {
 describe('education bodies', () => {
   const v = {
     school: 'UCL',
+    institutionId: null as string | null,
     degree: 'MSc',
     course: 'Public Health',
     start: 2023,
@@ -110,6 +111,7 @@ describe('education bodies', () => {
   it('the abbreviation and derived level; years as Jan 1; Other says neither', () => {
     expect(educationBody(v, 'dl-masters')).toEqual({
       school_name_raw: 'UCL',
+      institution_id: null,
       degree_abbreviation: 'MSc',
       degree_level_id: 'dl-masters',
       study_course: 'Public Health',
@@ -120,6 +122,43 @@ describe('education bodies', () => {
     const other = educationBody({ ...v, degree: 'Other' }, null);
     expect(other.degree_abbreviation).toBeNull();
     expect(other.degree_level_id).toBeNull();
+  });
+
+  it('a school picked from the list saves its id with its name; a typed one, no id', () => {
+    const picked = educationBody(
+      { ...v, school: 'University of Lagos', institutionId: 'inst-lagos' },
+      'dl-masters',
+    );
+    expect(picked).toMatchObject({
+      school_name_raw: 'University of Lagos',
+      institution_id: 'inst-lagos',
+    });
+    expect(educationBody({ ...v, school: 'Unilag Annex' }, 'dl-masters')).toMatchObject({
+      school_name_raw: 'Unilag Annex',
+      institution_id: null,
+    });
+  });
+
+  it('an edit sends the school’s id only when the school changed', () => {
+    const listed = { ...v, school: 'University of Lagos', institutionId: 'inst-lagos' };
+    const saved = {
+      id: 'e1',
+      values: listed,
+      dateStart: null,
+      dateEnd: null,
+      levelId: 'dl-masters',
+      levelName: 'Masters',
+    };
+    const before = educationBody(listed, 'dl-masters', saved);
+    expect(
+      educationPatch(before, educationBody({ ...listed, course: 'Law' }, 'dl-masters', saved)),
+    ).toEqual({ study_course: 'Law' });
+    expect(
+      educationPatch(
+        before,
+        educationBody({ ...listed, school: 'Typed', institutionId: null }, 'dl-masters', saved),
+      ),
+    ).toEqual({ school_name_raw: 'Typed', institution_id: null });
   });
 
   it('an edit keeps a saved month and day while the year stands, and sends only changes', () => {
@@ -160,7 +199,15 @@ describe('useEducationEdit', () => {
     const { result, spy } = setupEdu();
     const done = vi.fn();
     const body = educationBody(
-      { school: 'UCL', degree: 'BA', course: 'History', start: 2019, end: 2022, current: false },
+      {
+        school: 'UCL',
+        institutionId: null,
+        degree: 'BA',
+        course: 'History',
+        start: 2019,
+        end: 2022,
+        current: false,
+      },
       'dl-undergraduate',
     );
     act(() => result.current.addEducation(body, done));

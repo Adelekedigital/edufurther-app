@@ -95,7 +95,13 @@ vi.mock('@/lib/api/data/mentorApplication', () => ({
     error: submitError,
     reset: vi.fn(),
   }),
-  useInstitutionSearch: () => ({ options: institutions, isLoading: false }),
+  useInstitutionSearch: (q: string) => ({
+    options: institutions,
+    term: q.trim(),
+    isLoading: false,
+    isError: false,
+    retry: vi.fn(),
+  }),
   DECIDED: '/problems/mentor-application-decided',
 }));
 

@@ -105,6 +105,7 @@ export function useOwnEducation(userId: string | null, enabled: boolean) {
         id: e.id,
         values: {
           school: e.school_name_raw,
+          institutionId: e.institution?.id ?? null,
           degree: degreeFromSaved(e.degree_abbreviation),
           course: e.study_course ?? '',
           start: Number(e.date_start?.slice(0, 4)) || new Date().getFullYear(),
@@ -141,6 +142,8 @@ type EducationSave =
 
 export type EducationBody = {
   school_name_raw: string;
+  /** Picked from our list; null for a typed name (the server matches or queues it). */
+  institution_id: string | null;
   degree_abbreviation: string | null;
   degree_level_id: string | null;
   study_course: string;
@@ -160,6 +163,7 @@ export function educationBody(
 ): EducationBody {
   return {
     school_name_raw: v.school,
+    institution_id: v.institutionId,
     degree_abbreviation: v.degree === 'Other' ? null : v.degree,
     degree_level_id: levelId,
     study_course: v.course,

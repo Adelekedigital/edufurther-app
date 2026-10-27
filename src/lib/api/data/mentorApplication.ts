@@ -235,6 +235,8 @@ export function useInstitutionSearch(q: string, countries: CatalogOption[]) {
   }));
   return {
     options,
+    /** What `options` answer: the debounced text, behind what's typed. */
+    term,
     isLoading: query.isFetching,
     isError: query.isError,
     retry: () => void query.refetch(),
