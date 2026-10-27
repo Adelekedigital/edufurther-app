@@ -73,3 +73,8 @@
     padding-right: var(--space-11);
   }
 }
+
+/* Admin.dc.html fields: --radius-sm corners, whatever the size. */
+.radiusSm {
+  border-radius: var(--radius-sm);
+}

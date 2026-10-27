@@ -21,6 +21,8 @@ type SearchFieldProps = {
    * "Find a mentee"). Default: the label is for screen readers, a glyph leads.
    */
   labelled?: boolean;
+  /** Passed to the Input: `sm` for the admin fields' 5px corners. */
+  radius?: 'sm';
 };
 
 export function SearchField({
@@ -32,6 +34,7 @@ export function SearchField({
   onClear,
   disabled,
   labelled = false,
+  radius,
 }: SearchFieldProps) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +50,7 @@ export function SearchField({
         id={id}
         type="search"
         fieldSize="lg"
+        radius={radius}
         padStart={!labelled}
         padEnd
         placeholder={placeholder}

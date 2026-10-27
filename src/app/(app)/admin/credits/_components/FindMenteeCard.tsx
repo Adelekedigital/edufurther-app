@@ -39,6 +39,7 @@ export function FindMenteeCard({
     <div className={cx(styles.card, narrow && styles.narrow)}>
       <SearchField
         labelled
+        radius="sm"
         label={FIND_COPY.label}
         placeholder={FIND_COPY.placeholder}
         value={query}

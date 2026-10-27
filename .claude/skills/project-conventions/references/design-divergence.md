@@ -871,7 +871,7 @@ SVG ring — neutral `--ink-100` track, a value arc (`--action-primary` /
 
 ### Admin — Credits page (`creditLayout=lookup`, route `/admin/credits`, PR 6), 2026-10-27
 
-Measured at 1440 against the design's inline values: 182 of 185 checks match (98.38%). The three misses are a shared-atom gap, not a divergence. **Pending follow-up:** `Select` gains a 44px density and `--radius-sm` in PR 5 (Mentors); Credits adopts it right after for the reason select (now 37px, `--radius-md`), and the "Find a mentee" field (the `Input` `lg` field, now `--radius-lg`) follows the same radius.
+Measured at 1440 against the design's inline values. The three field-shape misses of the first build are closed: the reason select is `Select density="lg" radius="sm"` (44px, `--radius-sm`) and the "Find a mentee" field is `SearchField radius="sm"` (`Input` `radius="sm"`).
 
 | Design says | We do | Why | Reopen if |
 | --- | --- | --- | --- |

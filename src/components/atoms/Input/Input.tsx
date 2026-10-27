@@ -9,6 +9,8 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   padEnd?: boolean;
   /** xl: 48px flow-form field (Mentee Onboarding v5, Sign In). */
   fieldSize?: 'md' | 'lg' | 'xl';
+  /** sm: `--radius-sm` corners (Admin.dc.html fields, like Select `radius="sm"`). Default: the size's own. */
+  radius?: 'sm';
 };
 
 /**
@@ -16,7 +18,7 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
  * aria-labelledby. 16px text on phones so iOS does not zoom (design PWA pass).
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { invalid, padStart, padEnd, fieldSize = 'md', className, ...rest },
+  { invalid, padStart, padEnd, fieldSize = 'md', radius, className, ...rest },
   ref,
 ) {
   return (
@@ -27,6 +29,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         styles[fieldSize],
         padStart && styles.padStart,
         padEnd && styles.padEnd,
+        radius === 'sm' && styles.radiusSm,
         className,
       )}
       {...rest}
