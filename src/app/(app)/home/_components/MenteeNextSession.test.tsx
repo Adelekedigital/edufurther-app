@@ -48,6 +48,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   refundUntil: null,
   menteeAttendanceRate: null,
   menteeAttendanceSessions: 0,
+  provider: null,
   ...over,
 });
 
@@ -110,6 +111,22 @@ describe('MenteeNextSession', () => {
       '/sessions/b1',
     );
     expect(screen.queryByText('View details')).not.toBeInTheDocument();
+  });
+
+  it('ends the time line with the venue, and drops it on an older row with none', () => {
+    const { unmount } = render(
+      <MenteeNextSession
+        booking={booking({ provider: 'daily' })}
+        timeZone="Africa/Lagos"
+        now={NOW}
+      />,
+    );
+    expect(screen.getByText(/· EduFurther video$/)).toBeInTheDocument();
+    unmount();
+    render(
+      <MenteeNextSession booking={booking({ provider: null })} timeZone="Africa/Lagos" now={NOW} />,
+    );
+    expect(screen.queryByText(/EduFurther video|Google Meet/)).not.toBeInTheDocument();
   });
 
   it('an imminent session shows the live badge and routes to the session page', () => {

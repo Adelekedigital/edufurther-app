@@ -1,6 +1,7 @@
 import type { Booking, BookingParty, BookingStatus } from '@/types/booking';
 import {
   attendanceLine,
+  isNewMentee,
   byNewestFirst,
   canAccept,
   HISTORY_FILTERS,
@@ -77,6 +78,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   refundUntil: null,
   menteeAttendanceRate: null,
   menteeAttendanceSessions: 0,
+  provider: null,
   ...over,
 });
 
@@ -599,6 +601,19 @@ describe('who the other person is, and how reliable (backend #409)', () => {
 
   it('a mentee sees the other side as a mentor, with no record at all', () => {
     expect(attendanceLine(booking({ side: 'mentee' }))).toBe('Mentor');
+  });
+
+  it('a new mentee is new to EduFurther: no rate and no finished sessions (#241)', () => {
+    expect(
+      isNewMentee(mentorView({ menteeAttendanceRate: null, menteeAttendanceSessions: 0 })),
+    ).toBe(true);
+    expect(isNewMentee(mentorView())).toBe(false);
+    // Defensive: a count without a rate is history, not a newcomer.
+    expect(
+      isNewMentee(mentorView({ menteeAttendanceRate: null, menteeAttendanceSessions: 3 })),
+    ).toBe(false);
+    // The tag is for the mentor; a mentee's view of a mentor never carries it.
+    expect(isNewMentee(booking({ side: 'mentee', menteeAttendanceRate: null }))).toBe(false);
   });
 });
 

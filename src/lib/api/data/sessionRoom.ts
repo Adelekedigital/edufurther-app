@@ -44,7 +44,7 @@ export function toSessionRoom(s: SessionRead, viewerId: string): SessionRoom {
     booking,
     me: toParty(booking.side === 'mentor' ? s.mentor : s.mentee),
     typeName: s.session_type?.name?.trim() || null,
-    provider: s.meeting_provider ?? null,
+    provider: booking.provider,
     missedReasonSent: s.missed_reason_sent ?? false,
   };
 }

@@ -54,6 +54,7 @@ export const sampleBooking = (over: Partial<Booking> = {}): Booking => ({
   refundUntil: null,
   menteeAttendanceRate: 92,
   menteeAttendanceSessions: 12,
+  provider: null,
   ...over,
 });
 

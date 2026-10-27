@@ -245,6 +245,15 @@ export function attendanceLine(b: Booking): string {
 }
 
 /**
+ * The mentee is new to EduFurther: no finished session anywhere, so no rate
+ * (the backend asks clients to say "New mentee" here). Not "first session with
+ * you": there is no such signal, and the owner chose this one (#241).
+ */
+export function isNewMentee(b: Booking): boolean {
+  return b.side === 'mentor' && b.menteeAttendanceRate == null && b.menteeAttendanceSessions === 0;
+}
+
+/**
  * "BSc Student at FUTA" — who this person is, in one line (backend #409).
  *
  * Both halves can be missing: there may be no education entry, or the account

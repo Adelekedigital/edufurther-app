@@ -186,6 +186,8 @@ export type Booking = {
    * (backend #409). `0` with a null rate is a new mentee, not a bad one.
    */
   menteeAttendanceSessions: number;
+  /** Where it happens (`meeting_provider`); null on an older row with no venue recorded. */
+  provider: MeetingProvider | null;
 };
 
 /** Which tab a booking belongs to. */
