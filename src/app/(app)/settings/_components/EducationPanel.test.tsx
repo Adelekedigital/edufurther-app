@@ -73,6 +73,7 @@ vi.mock('@/lib/api/data/mentorApplication', () => ({
               },
             ]
           : [],
+      term: q.trim(),
       isLoading: false,
       isError: false,
       retry: vi.fn(),

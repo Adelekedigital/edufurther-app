@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId } from 'react';
+import { useId } from 'react';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
@@ -60,17 +60,6 @@ export function SchoolFields({
     ...list.map((y) => ({ value: y, label: y })),
   ];
   const fid = (f: Parameters<typeof schoolFieldId>[1]) => schoolFieldId(s.key, f);
-  // A name typed in full is matched once the search answers, not only on the keystroke
-  // that finished it (the results trail typing by the debounce).
-  const exact = s.institutionId
-    ? null
-    : (search.options.find((o) => o.name.toLowerCase() === typed.toLowerCase()) ?? null);
-  useEffect(() => {
-    if (exact && !s.countryOpen)
-      onChange({ ...s, institutionId: exact.id, catalogCountryId: exact.countryId, countryId: '' });
-    // Only when a match appears: `s` and `onChange` change on every keystroke.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exact?.id]);
 
   return (
     <div className={cx(styles.school, multi && styles.card)}>
@@ -103,7 +92,8 @@ export function SchoolFields({
             set({
               school: name,
               institutionId,
-              catalogCountryId: hit?.countryId ?? null,
+              // Text only (hit undefined): the school's country stands until it's resolved.
+              ...(hit !== undefined && { catalogCountryId: hit?.countryId ?? null }),
               countryId: '',
               countryOpen: false,
             })

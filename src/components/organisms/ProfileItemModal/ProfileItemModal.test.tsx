@@ -375,6 +375,7 @@ const schools = {
   options: [
     { id: 'inst-lagos', name: 'University of Lagos', countryId: null, countryLabel: 'Nigeria' },
   ],
+  term: '',
   isLoading: false,
   isError: false,
   retry: () => undefined,

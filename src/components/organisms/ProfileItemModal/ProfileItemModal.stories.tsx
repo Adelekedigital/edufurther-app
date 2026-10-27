@@ -225,6 +225,7 @@ const education = (over: Partial<ProfileItemModalProps> = {}) => (
         },
         { id: 'inst-lagos', name: 'University of Lagos', countryId: null, countryLabel: 'Nigeria' },
       ],
+      term: '',
       isLoading: false,
       isError: false,
       retry: fn(),

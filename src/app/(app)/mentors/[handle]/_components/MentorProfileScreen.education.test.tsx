@@ -57,7 +57,13 @@ vi.mock('@/lib/api/data/catalog', async () =>
 );
 vi.mock('@/lib/api/data/mentorApplication', async (orig) => ({
   ...(await orig<object>()),
-  useInstitutionSearch: () => ({ options: [], isLoading: false, isError: false, retry: vi.fn() }),
+  useInstitutionSearch: () => ({
+    options: [],
+    term: '',
+    isLoading: false,
+    isError: false,
+    retry: vi.fn(),
+  }),
 }));
 
 const owner = { approval: 'approved' as const, listed: true };
