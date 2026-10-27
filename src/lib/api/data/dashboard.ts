@@ -196,6 +196,8 @@ export type Kpi = {
   unit?: string;
   info: string;
   trend?: KpiTrend;
+  /** The window this trend comes from is still loading (holds the row, CLS). */
+  trendPending?: boolean;
 };
 
 /** The KPI figures — primitives only, so it is pure and testable. */
@@ -444,10 +446,13 @@ export function useMentorDashboard(
       ? { current: quarterly.data.current, previous: quarterly.data.previous }
       : null,
   });
+  // A failed window ends pending (the card keeps no line); a rating window
+  // with no reviews settles to no line too.
+  const pending = (key: string) => (key === 'rating' ? quarterly : monthly).isLoading;
   const metrics: Kpi[] | null =
     baseMetrics?.map((k) => {
       const trend = trends[k.key];
-      return trend ? { ...k, trend } : k;
+      return trend ? { ...k, trend } : pending(k.key) ? { ...k, trendPending: true } : k;
     }) ?? null;
 
   const upcomingCount = upcoming.data ? hosted.length : null;

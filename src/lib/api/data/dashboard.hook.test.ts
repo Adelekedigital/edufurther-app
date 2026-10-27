@@ -183,4 +183,33 @@ describe('useMentorDashboard', () => {
       tone: 'positive',
     });
   });
+
+  // CLS: a window still loading holds its cards' trend rows; one that settled
+  // (or failed) never does, so a stats error can't leave a placeholder forever.
+  it('marks a trend pending only while its own window loads', () => {
+    const active = profile({
+      data: {
+        mentor: { completedSessions: 4, profileHref: '/mentors/m1' },
+        names: { first: 'G', last: 'A' },
+        owner: { completeness: { percent: 100, missing: [] }, setupNeeded: [] },
+      },
+    });
+    const loading = { ...noStats, isLoading: true } as StatsRet;
+    const failed = { ...noStats, error: { kind: 'network' } } as unknown as StatsRet;
+    const kpi = (r: ReturnType<typeof run>, key: string) =>
+      r.current.metrics?.find((k) => k.key === key);
+
+    const r = run(active, cal(), upc(), { monthly: loading, quarterly: failed });
+    expect(kpi(r, 'sessions')?.trendPending).toBe(true);
+    expect(kpi(r, 'time')?.trendPending).toBe(true);
+    expect(kpi(r, 'rating')?.trendPending).toBeUndefined();
+
+    const done = run(active, cal(), upc(), {
+      monthly: windowStats({ completedSessions: 4 }, { completedSessions: 3 }),
+      quarterly: loading,
+    });
+    expect(kpi(done, 'sessions')?.trendPending).toBeUndefined();
+    expect(kpi(done, 'sessions')?.trend).toBeDefined();
+    expect(kpi(done, 'rating')?.trendPending).toBe(true);
+  });
 });

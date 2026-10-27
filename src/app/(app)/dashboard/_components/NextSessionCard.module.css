@@ -66,6 +66,12 @@
   color: var(--text-secondary);
 }
 
+/* A loading line: the text's own line height, the bone beside its no-break space. */
+.boneLine {
+  display: flex;
+  align-items: center;
+}
+
 /* variant="hero" (Mentor Dashboard v2.dc.html, firstBooked): the session in a
    blue-outlined row. */
 .heroRow {
