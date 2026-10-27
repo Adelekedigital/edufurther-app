@@ -237,7 +237,8 @@ export function AppShell({
   const daily = items.filter((n) => n.group === 'daily');
   const setup = items.filter((n) => n.group === 'setup');
   const admin = adminEntry && nav !== 'admin' ? [shownItem(ADMIN_ENTRY, undefined, {})] : [];
-  // Phones put it in the More sheet with the design's sheet icon.
+  // Phones put it in the More sheet with the icon the design draws there
+  // (AppShell.dc.html mentor defs ['Admin', 'accessibility_new']; Admin PRD).
   const sheetItems = [
     ...extra,
     ...admin.map((n) => ({ ...n, icon: 'accessibility_new' as const })),
