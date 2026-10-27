@@ -66,11 +66,11 @@ export const Profile: Story = {
   ),
 };
 
-const settingsCard = (frozen: boolean, title = 'Profile photo and cover') => (
+const settingsCard = (title = 'Profile photo and cover') => (
   <div style={{ maxWidth: 640 }}>
     <CoverHeader
       as="section"
-      style={{ ...card, borderRadius: 'var(--radius-xl)', opacity: frozen ? 0.72 : undefined }}
+      style={{ ...card, borderRadius: 'var(--radius-xl)' }}
       cover={
         <CoverBanner
           height={120}
@@ -79,25 +79,19 @@ const settingsCard = (frozen: boolean, title = 'Profile photo and cover') => (
           art="icons"
           icons={icons}
           tools={
-            frozen ? undefined : (
-              <Button variant="secondary-outlined" size="small">
-                Change cover
-              </Button>
-            )
+            <Button variant="secondary-outlined" size="small">
+              Change cover
+            </Button>
           }
         />
       }
       photo={
-        frozen ? (
-          <Avatar size={72} ring="white" initials="GE" tone="mint" alt="Your photo" />
-        ) : (
-          <ProfilePhoto
-            size={72}
-            ring="white"
-            person={{ initials: 'GE', cover: 'mint', src: null, name: 'Your photo' }}
-            upload={upload}
-          />
-        )
+        <ProfilePhoto
+          size={72}
+          ring="white"
+          person={{ initials: 'GE', cover: 'mint', src: null, name: 'Your photo' }}
+          upload={upload}
+        />
       }
       overlap={32}
       contentBasis={200}
@@ -111,17 +105,15 @@ const settingsCard = (frozen: boolean, title = 'Profile photo and cover') => (
 );
 
 /** Settings › Profile's photo card: the text beside the photo, below the cover. */
-export const SettingsPhotoCard: Story = { render: () => settingsCard(false) };
-/** In review: dimmed, no tools, the plain photo. */
-export const Frozen: Story = { render: () => settingsCard(true) };
+export const SettingsPhotoCard: Story = { render: () => settingsCard() };
 /** A title that wraps: the card grows downwards, the text never rises over the cover. */
 export const LongTitle: Story = {
   render: () =>
-    settingsCard(false, 'Profile photo and cover, shown on your profile, in Explore and in emails'),
+    settingsCard('Profile photo and cover, shown on your profile, in Explore and in emails'),
 };
 /** At 390px: the hint wraps beside the photo, still below the cover. */
 export const SettingsPhone: Story = {
-  render: () => settingsCard(false),
+  render: () => settingsCard(),
   globals: { viewport: { value: 'mobile2', isRotated: false } },
 };
 

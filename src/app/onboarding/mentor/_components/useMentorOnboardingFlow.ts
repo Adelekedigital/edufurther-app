@@ -168,7 +168,7 @@ export function useMentorOnboardingFlow() {
   // A failed help-areas list is a load error, never a step 1 with no chips.
   const ready = !!state && !topics.isLoading && !topics.error;
   const decided = state?.approvalStatus === 'declined' || state?.approvalStatus === 'approved';
-  // In review: the reviewed answers are frozen until the decision (owner, 18 Oct).
+  // Submitted and in review: the application page shows it, not the form (owner, 18 Oct).
   const inReview = state?.approvalStatus === 'pending' && state.submitted;
   if (form === null && ready && !decided && !inReview) {
     const last = state.lastStep;

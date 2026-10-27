@@ -192,21 +192,6 @@ describe('SocialLinksCard', () => {
     expect(screen.getByLabelText('YouTube handle')).toBeInTheDocument();
   });
 
-  it('in review: LinkedIn’s Remove is locked and says why; Edit still works', async () => {
-    const lock = 'You can edit LinkedIn, but not remove it, while we review your application.';
-    const { onRemove, user } = setup({ linkedInLock: lock });
-    const remove = screen.getByRole('button', { name: 'Remove LinkedIn' });
-    expect(remove).toHaveAttribute('aria-disabled', 'true');
-    expect(remove).toHaveAccessibleDescription(lock);
-    await user.click(remove);
-    expect(onRemove).not.toHaveBeenCalled();
-    // Other links aren't locked.
-    await user.click(screen.getByRole('button', { name: 'Remove YouTube' }));
-    expect(onRemove).toHaveBeenCalledWith(YOUTUBE);
-    await user.click(screen.getByRole('button', { name: 'Edit LinkedIn' }));
-    expect(screen.getByLabelText('LinkedIn handle')).toHaveValue('ada-obi');
-  });
-
   it('Remove hands the row to the page (it confirms)', async () => {
     const { onRemove, user } = setup();
     await user.click(screen.getByRole('button', { name: 'Remove YouTube' }));

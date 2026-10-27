@@ -142,11 +142,6 @@ describe('useSaveSocial', () => {
     [problem(500), 'x', 'Your link didn’t save. Try again in a moment.'],
     [problem(404), 'x', 'That link was already removed. Your list is up to date.'],
     [problem(404), 'linkedin', 'Your link didn’t save. Try again in a moment.'],
-    [
-      problem(409, '/problems/mentor-application-in-review'),
-      'linkedin',
-      'You can edit LinkedIn, but not remove it, while we review your application.',
-    ],
   ] as const)('a refusal is said in the page’s words (%#)', async (answer, kind, copy) => {
     POST.mockResolvedValue(answer);
     PATCH.mockResolvedValue(answer);
@@ -195,27 +190,6 @@ describe('useRemoveSocial', () => {
       params: { path: { user_id: 'u1' } },
       body: { social_linkedin: null },
     });
-  });
-
-  it('in review, LinkedIn can’t be cleared: the lock is said, and the viewer re-read', async () => {
-    PATCH.mockResolvedValue(problem(409, '/problems/mentor-application-in-review'));
-    DELETE.mockResolvedValue(problem(409, '/problems/mentor-application-in-review'));
-    const { result } = renderHook(() => useRemoveSocial('u1'), { wrapper: wrap() });
-    await act(() =>
-      result.current
-        .remove({ ...row, id: 'linkedin', kind: 'linkedin', mark: 'linkedin' })
-        .catch(() => undefined),
-    );
-    await waitFor(() =>
-      expect(result.current.error).toBe(
-        'You can edit LinkedIn, but not remove it, while we review your application.',
-      ),
-    );
-    // Only LinkedIn's refusal is worded as its lock.
-    await act(() => result.current.remove(row).catch(() => undefined));
-    await waitFor(() =>
-      expect(result.current.error).toBe('That didn’t go through. Try again in a moment.'),
-    );
   });
 
   it('already gone (404) is what was asked for; a failure says so', async () => {

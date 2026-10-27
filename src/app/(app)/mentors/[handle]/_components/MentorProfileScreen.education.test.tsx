@@ -33,9 +33,6 @@ vi.mock('@/lib/api/data/freeSoon', async () =>
 vi.mock('@/lib/api/data/profile', async () =>
   (await import('./profileScreen.harness')).mocks.profile(),
 );
-vi.mock('@/lib/api/data/freeze', async () =>
-  (await import('./profileScreen.harness')).mocks.freeze(),
-);
 vi.mock('@/lib/api/data/cover', async () =>
   (await import('./profileScreen.harness')).mocks.cover(),
 );

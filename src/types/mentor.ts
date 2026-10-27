@@ -91,8 +91,6 @@ export type AppErrorKind =
    * onboarding. The booking flow shows the finish-setup box, not an error.
    */
   | 'needsOnboarding'
-  /** 409 `/problems/mentor-application-in-review`: frozen until the decision. */
-  | 'inReview'
   /** 429: the server is asking for a pause, and says how long (backend #358). */
   | 'rateLimited'
   | 'server'

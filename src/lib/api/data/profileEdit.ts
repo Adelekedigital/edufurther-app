@@ -26,7 +26,7 @@ const COPY: Record<IntroField | 'about', string> = {
 
 /** A failure as the forms show it: our copy per field, else one general line. */
 export class EditError extends Error {
-  /** `cause`: the failure itself, so the review freeze's refusal is still seen (freeze.ts). */
+  /** `cause`: the failure itself, kept for debugging. */
   constructor(
     readonly errors: IntroEditErrors & { about?: string },
     cause?: unknown,
@@ -47,9 +47,6 @@ function toEditError(error: unknown, body: unknown): EditError {
     if (Object.keys(out).length) return new EditError(out, error);
   }
   const e = normaliseError(error);
-  // Refused for the review: the page freezes and its bar says why, so no
-  // "try again" here (it can't succeed until the decision).
-  if (e.kind === 'inReview') return new EditError({}, error);
   return new EditError(
     {
       general:

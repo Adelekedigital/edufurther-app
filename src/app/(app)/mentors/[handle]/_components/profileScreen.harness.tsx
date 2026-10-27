@@ -51,8 +51,6 @@ export const state = (over: Partial<ProfileRemote>): ProfileRemote => ({
 /** What the mocked hooks return in the current test. */
 export const h = {
   search: new URLSearchParams(),
-  /** A save on this page was refused by the review freeze (409 in review). */
-  inReviewRefusal: false,
   isGuest: false,
   viewerIsMentor: false,
   viewerLoading: false,
@@ -305,7 +303,6 @@ const freeSoonMock = () => ({
 
 const profileMock = () => ({ useMentorProfile: () => h.profile });
 // As the hook reports it: when the latest refusal happened, or null.
-const freezeMock = () => ({ useInReviewRefusal: () => (h.inReviewRefusal ? 1 : null) });
 
 const coverMock = () => ({
   BANNER_ACCEPT: 'image/jpeg,image/png,image/webp',
@@ -535,7 +532,6 @@ export const mocks = {
   freeSoon: freeSoonMock,
   auth: authMock,
   profile: profileMock,
-  freeze: freezeMock,
   cover: coverMock,
   avatar: avatarMock,
   booking: bookingMock,
@@ -550,7 +546,6 @@ export const mocks = {
 
 beforeEach(() => {
   h.search = new URLSearchParams();
-  h.inReviewRefusal = false;
   h.isGuest = false;
   h.viewerIsMentor = false;
   h.viewerLoading = false;

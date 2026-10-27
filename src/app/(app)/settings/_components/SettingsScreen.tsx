@@ -40,8 +40,6 @@ export function SettingsScreen() {
   const segment = useSelectedLayoutSegment();
   const member = viewer.kind === 'member' ? viewer : null;
   const mentor = !!member?.isMentor;
-  // Submitted and awaiting a decision: what's reviewed holds still (decision 273).
-  const inReview = member?.mentorStage === 'pending';
   const access = accessFor(viewer);
   const { tabs, first } = settingsTabs(mentor, access);
   const setup = inSetup(access);
@@ -156,16 +154,12 @@ export function SettingsScreen() {
           )}
           {has('profile') && (
             <TabPanel id={panelId('profile')} active={tab === 'profile'} keepMounted>
-              {member ? (
-                <MentorProfilePanel ref={profilePanel} userId={member.id} frozen={inReview} />
-              ) : null}
+              {member ? <MentorProfilePanel ref={profilePanel} userId={member.id} /> : null}
             </TabPanel>
           )}
           {has('expertise') && (
             <TabPanel id={panelId('expertise')} active={tab === 'expertise'} keepMounted>
-              {member ? (
-                <ExpertisePanel ref={expertisePanel} userId={member.id} frozen={inReview} />
-              ) : null}
+              {member ? <ExpertisePanel ref={expertisePanel} userId={member.id} /> : null}
             </TabPanel>
           )}
           {/* Nothing to edit here: only while shown, as on the mentee's. */}
@@ -174,7 +168,7 @@ export function SettingsScreen() {
           </TabPanel>
           {has('links') && (
             <TabPanel id={panelId('links')} active={tab === 'links'}>
-              {member ? <LinksPanel userId={member.id} frozen={inReview} /> : null}
+              {member ? <LinksPanel userId={member.id} /> : null}
             </TabPanel>
           )}
         </>

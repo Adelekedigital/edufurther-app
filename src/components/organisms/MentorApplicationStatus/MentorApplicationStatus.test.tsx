@@ -28,10 +28,10 @@ describe('MentorApplicationStatus', () => {
       screen.getByText('We’ll email you at gbenga@example.com when there’s an update.'),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('listitem')).toHaveLength(3);
-    // The reviewed fields are frozen until the decision: nothing to edit here.
+    // The status page itself has nothing to edit.
     expect(screen.queryByRole('link', { name: 'Edit my application' })).toBeNull();
     expect(
-      screen.getByText('While you wait, you can set up your sessions and hours.'),
+      screen.getByText('While you wait, you can set up your profile, sessions and hours.'),
     ).toBeInTheDocument();
   });
 

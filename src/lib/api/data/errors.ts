@@ -45,7 +45,11 @@ export function apiError(status: number, body: unknown, response?: Response): Ap
  * and a link, which only it has.
  */
 const BOOKING_LIMITS: [string, AppErrorKind, string][] = [
-  ['/problems/booking-overlap', 'bookingOverlap', 'This time overlaps with another session you have.'],
+  [
+    '/problems/booking-overlap',
+    'bookingOverlap',
+    'This time overlaps with another session you have.',
+  ],
   [
     '/problems/booking-with-mentor-exists',
     'bookingWithMentorExists',
@@ -86,14 +90,6 @@ export function normaliseError(error: unknown): AppError {
       return {
         kind: 'needsOnboarding',
         message: 'Finish setting up your account before booking.',
-        status: s,
-      };
-    // A submitted mentor application holds what's reviewed (decision 273,
-    // amended): the page shows the review banner, never an error.
-    if (s === 409 && error.type?.endsWith('/problems/mentor-application-in-review'))
-      return {
-        kind: 'inReview',
-        message: 'You can change this once your application is reviewed.',
         status: s,
       };
     if (s === 409 && error.type?.endsWith('/problems/insufficient-credit'))

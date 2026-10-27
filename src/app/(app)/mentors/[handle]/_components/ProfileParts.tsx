@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useEffect, useId, useRef } from 'react';
+import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -16,10 +16,8 @@ export const PREVIEW_TOGGLE_ID = 'profile-preview-toggle';
 export function ownerBarState(
   profile: MentorProfile,
   preview: boolean,
-  inReview = false,
 ):
   | 'preview'
-  | 'inReview'
   | 'previewUnapproved'
   | 'previewUnlisted'
   | 'declined'
@@ -36,8 +34,6 @@ export function ownerBarState(
       : o && !o.listed
         ? 'previewUnlisted'
         : 'preview';
-  // The review freeze: what's reviewed holds still (Mentor Profile.dc.html `frozen`).
-  if (inReview) return 'inReview';
   if (o?.approval === 'declined') return 'declined';
   if (o && o.approval !== 'approved') return 'pending';
   if (o && !o.listed) return 'unlisted';
@@ -48,8 +44,6 @@ export function ownerBarState(
 
 const OWNER_COPY = {
   pending: 'Only you can see this until your profile is approved.',
-  inReview:
-    'We’re reviewing your application. You can edit your name and sessions now, and the rest once it’s reviewed.',
   unlisted: 'Your profile is unlisted. Only you can see it.',
   noTypes:
     'Mentees see “Not taking bookings” on your profile. Turn on a session to take bookings again.',
@@ -78,8 +72,6 @@ export function OwnerBar({
   onTogglePreview,
   hoursHref,
   previewBlocked,
-  inReview = false,
-  reviewKnown = true,
 }: {
   profile: MentorProfile;
   preview: boolean;
@@ -88,23 +80,8 @@ export function OwnerBar({
   hoursHref: string;
   /** Why the toggle waits (an inline edit is open), or null. */
   previewBlocked: string | null;
-  /** The application is in review: the review freeze's line. */
-  inReview?: boolean;
-  /** Whether the account's stage is known yet (/me answered). */
-  reviewKnown?: boolean;
 }) {
-  const state = ownerBarState(profile, preview, inReview);
-  // Frozen while the owner is here (a save the freeze refused): the editor
-  // that held focus is gone, so focus moves to the line saying why, which is
-  // read as it lands (as Settings' ReviewFreeze). On load it's page content.
-  const line = useRef<HTMLSpanElement>(null);
-  // The first known value is how the page loaded, not a change.
-  const was = useRef<boolean | null>(null);
-  useEffect(() => {
-    if (!reviewKnown) return;
-    if (inReview && was.current === false) line.current?.focus();
-    was.current = inReview;
-  }, [inReview, reviewKnown]);
+  const state = ownerBarState(profile, preview);
   const whyId = useId();
   const icon =
     state === 'preview'
@@ -118,7 +95,7 @@ export function OwnerBar({
             : 'lock';
   return (
     <div className={`${styles.ownerBar} ${preview ? styles.ownerBarPreview : ''}`}>
-      <span ref={line} tabIndex={-1} className={styles.ownerText}>
+      <span className={styles.ownerText}>
         <Icon
           name={icon}
           size={18}
