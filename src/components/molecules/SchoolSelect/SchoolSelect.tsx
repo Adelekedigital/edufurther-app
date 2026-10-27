@@ -69,7 +69,12 @@ export function SchoolSelect({ value, onChange, search, failedCopy, ...rest }: S
   /** The id for what's typed: undefined while it can't be told yet. */
   const resolve = (settledOnly: boolean): string | null | undefined => {
     if (same(typed, base.name)) return base.institutionId;
-    if (answered) return search.options.find((o) => same(o.name, typed))?.id ?? null;
+    if (answered) {
+      // Two schools can share a name (the country tells them apart), so only an
+      // unambiguous name links itself; otherwise picking the row decides.
+      const matches = search.options.filter((o) => same(o.name, typed));
+      return matches.length === 1 ? matches[0]!.id : null;
+    }
     return settledOnly ? undefined : null;
   };
   const settle = (id: string | null) => {

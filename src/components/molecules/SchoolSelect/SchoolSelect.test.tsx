@@ -88,6 +88,21 @@ describe('SchoolSelect: the id follows the school, not the keystroke', () => {
     expect(seen()).toEqual({ name: 'Zaria Annex College', institutionId: null });
   });
 
+  it('a name two schools share links neither until a row is picked', async () => {
+    const user = userEvent.setup();
+    const covenantGhana = { ...covenant, id: 'inst-cov-gh', countryLabel: 'Ghana' };
+    const { rerender } = render(<Harness start={saved} search={search()} />);
+    await user.clear(box());
+    await user.type(box(), 'Covenant University');
+    rerender(
+      <Harness
+        start={saved}
+        search={search({ term: 'Covenant University', options: [covenant, covenantGhana] })}
+      />,
+    );
+    expect(seen()).toEqual({ name: 'Covenant University', institutionId: null });
+  });
+
   it('stale results keep the id until the search answers for what’s typed', async () => {
     const user = userEvent.setup();
     // The last query's answer (it listed Lagos), and a fetch still running.
