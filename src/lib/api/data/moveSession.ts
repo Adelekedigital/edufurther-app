@@ -1,61 +1,90 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { addDays, dayKey } from '@/lib/utils/slots';
 import type { Booking } from '@/types/booking';
-import type { AppError, IntakeAnswer, IntakeQuestion, SessionType } from '@/types/mentor';
-import { requestError, uploadIntakeFile, useRequestBooking } from './booking';
+import type {
+  AppError,
+  IntakeAnswer,
+  IntakeFile,
+  IntakeQuestion,
+  SessionType,
+} from '@/types/mentor';
+import {
+  fetchSessionTypes,
+  fetchSlotStarts,
+  requestError,
+  useRequestBooking,
+  useUploadIntakeFile,
+  type AnswerProblem,
+  type BookingError,
+} from './booking';
 import { useBookingAction } from './bookingActions';
-import { apiError, normaliseError } from './errors';
+import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
+import { keys } from './keys';
 
 type SessionAnswerRead = components['schemas']['SessionAnswerRead'];
+type AnsweredFile = NonNullable<SessionAnswerRead['file']>;
 
 /**
- * Why the move stopped **before** the cancel, so nothing has changed:
- *  - `failed`: the old answers or a file couldn't be read;
- *  - `upload`: a file couldn't be uploaded again (`error.message` says why:
- *    too many waiting, ten an hour, …);
- *  - `questionsChanged`: the session's questions changed since it was booked,
- *    so the old answers can't book it again (a required one has no answer).
- * Or `cancel`: the cancel itself was refused (`error.message`, as built).
+ * Why the move stopped before the cancel, so nothing has changed. `upload`
+ * carries the upload's own words; `sessionChanged`: the type is gone or its
+ * approval switched; `answersDropped` is not a refusal: the mentee is told,
+ * and pressing again (`acceptDropped`) moves it anyway. `cancel`: the cancel
+ * itself was refused, in its words.
  */
+export type MoveStopReason =
+  | 'failed'
+  | 'upload'
+  | 'questionsChanged'
+  | 'fileUnavailable'
+  | 'sessionChanged'
+  | 'slotTaken'
+  | 'answersDropped';
+
 export type MoveError =
-  | { stage: 'prepare'; reason: 'failed' | 'upload' | 'questionsChanged'; error: AppError }
+  | { stage: 'prepare'; reason: MoveStopReason; error: AppError }
   | { stage: 'cancel'; error: AppError };
 
 export type MoveRequest = {
-  /** The confirmed session being moved; the viewer is its mentee. */
   booking: Booking;
-  /** Its session type as the mentor offers it now: the new booking's form. */
+  /** As the dialog showed it; read again fresh before the cancel. */
   sessionType: SessionType;
-  /** The new time: an instant `/slots` lists for this mentor and type. */
   startsAt: string;
   /** "Message to {First}": the cancel's `reason_text`. */
   message: string;
+  /** Told some answers won't carry over, and pressed again. */
+  acceptDropped?: boolean;
 };
+
+/** Why the booking was refused after the cancel, for the notice. */
+export type BookFailure = { why: 'taken' | 'questions' | 'other'; error: BookingError };
 
 export type MoveCallbacks = {
-  /** Booked: the new session's id. */
-  onMoved: (newId: string) => void;
-  /** The old session is canceled and the new time isn't booked. */
-  onBookFailed: (error: AppError) => void;
+  /** `confirmed` false: the new booking is a request. */
+  onMoved: (newId: string, confirmed: boolean) => void;
+  onBookFailed: (failure: BookFailure) => void;
 };
 
-class PrepareError extends Error {
+class Stop extends Error {
   constructor(
-    readonly reason: 'failed' | 'upload' | 'questionsChanged',
-    readonly appError: AppError,
+    readonly reason: MoveStopReason,
+    readonly appError: AppError = { kind: 'validation', message: '' },
   ) {
     super(reason);
   }
 }
 
+/** The run was left behind (the page unmounted) before the cancel. */
+class Left extends Error {}
+
 /**
- * The old answers, fitted to the form as it stands now. One answer per live
- * question, in the form the question takes today; answers to questions no
- * longer asked are left out (the server would refuse them, after the cancel).
- * `file` entries are the old files, still to be uploaded again.
+ * The old answers fitted to today's form (`files`: old files to upload again).
+ * `missing`/`fileMissing`: a required question or file with nothing to carry;
+ * `dropped`: answers given that won't all go with the new booking.
  */
 export function carryAnswers(
   old: SessionAnswerRead[],
@@ -64,12 +93,21 @@ export function carryAnswers(
   answers: Record<string, IntakeAnswer>;
   files: Record<string, AnsweredFile>;
   missing: boolean;
+  fileMissing: boolean;
+  dropped: number;
 } {
   const answers: Record<string, IntakeAnswer> = {};
   const files: Record<string, AnsweredFile> = {};
   let missing = false;
+  let fileMissing = false;
+  let dropped = 0;
+  const given = old.filter((a) => a.answered);
+  for (const a of given) {
+    const q = a.retired ? undefined : questions.find((x) => x.id === a.question_id);
+    if (!q) dropped += 1;
+  }
   for (const q of questions) {
-    const a = old.find((x) => x.question_id === q.id && x.answered && !x.retired);
+    const a = given.find((x) => x.question_id === q.id && !x.retired);
     let carried = false;
     if (a && q.kind === 'text' && a.question_type === 'free_text' && a.text?.trim()) {
       answers[q.id] = { text: a.text.trim() };
@@ -80,156 +118,258 @@ export function carryAnswers(
       a.question_type === 'multi_choice'
     ) {
       // Only options the question still has.
-      const ids = (a.options ?? [])
-        .map((o) => o.id)
-        .filter((id) => q.options.some((o) => o.id === id));
+      const all = (a.options ?? []).map((o) => o.id);
+      const ids = all.filter((id) => q.options.some((o) => o.id === id));
       if (ids.length && (q.kind === 'multi' || ids.length === 1)) {
         answers[q.id] = { optionIds: ids };
         carried = true;
+        if (ids.length < all.length) dropped += 1;
       }
-    } else if (a && q.kind === 'file' && a.question_type === 'file_upload' && a.file?.available) {
-      files[q.id] = a.file;
-      carried = true;
+    } else if (a && q.kind === 'file' && a.question_type === 'file_upload') {
+      if (a.file?.available) {
+        files[q.id] = a.file;
+        carried = true;
+      } else if (q.required) fileMissing = true;
     }
-    if (!carried && q.required) missing = true;
+    if (a && !carried) dropped += 1;
+    if (!carried && q.required && !(a?.question_type === 'file_upload' && q.kind === 'file'))
+      missing = true;
   }
-  return { answers, files, missing };
+  return { answers, files, missing, fileMissing, dropped };
 }
 
-type AnsweredFile = NonNullable<SessionAnswerRead['file']>;
+/** Turns a failed read into a `failed` stop, and a 404 or 410 into `whenGone`. */
+function readStop(e: unknown, whenGone: MoveStopReason = 'failed'): Stop {
+  if (e instanceof Stop) return e;
+  const status = e instanceof ApiError ? e.status : undefined;
+  return new Stop(status === 404 || status === 410 ? whenGone : 'failed', normaliseError(e));
+}
 
 /** GET /sessions/{id}/answers, as sent: option ids and file ids intact. */
-async function readAnswers(bookingId: string): Promise<SessionAnswerRead[]> {
-  let result;
+async function readAnswers(bookingId: string, signal: AbortSignal): Promise<SessionAnswerRead[]> {
   try {
-    result = await api.GET('/api/v1/sessions/{session_id}/answers', {
+    const { data, error, response } = await api.GET('/api/v1/sessions/{session_id}/answers', {
       params: { path: { session_id: bookingId } },
+      signal,
     });
+    if (!data) throw apiError(response.status, error);
+    return data.data;
   } catch (e) {
-    throw new PrepareError('failed', normaliseError(e));
+    throw readStop(e);
   }
-  const { data, error, response } = result;
-  if (!data) throw new PrepareError('failed', normaliseError(apiError(response.status, error)));
-  return data.data;
 }
 
 /** The old file's bytes, under its own name and type, ready to upload again. */
-async function readFile(file: AnsweredFile): Promise<File> {
+async function readFile(file: AnsweredFile, signal: AbortSignal): Promise<File> {
   try {
     const { response } = await api.GET('/api/v1/intake-files/{file_id}', {
       params: { path: { file_id: file.id } },
       parseAs: 'stream',
+      signal,
     });
     if (!response.ok) throw apiError(response.status, null);
     return new File([await response.blob()], file.filename, { type: file.content_type });
   } catch (e) {
-    throw new PrepareError('failed', normaliseError(e));
+    throw readStop(e, 'fileUnavailable');
   }
 }
 
+/** Two days either side of the new time's UTC date: the mentor's zone can't push it out. */
+function slotCheckWindow(startsAt: string): { start: string; end: string } {
+  const day = dayKey(startsAt, 'UTC');
+  return { start: addDays(day, -2), end: addDays(day, 3) };
+}
+
+function bookFailure(e: unknown): BookFailure {
+  const error = requestError(e);
+  const problem = (e as { answers?: AnswerProblem } | null)?.answers;
+  if (problem) return { why: 'questions', error };
+  if (error.kind === 'conflict' || error.kind === 'validation') return { why: 'taken', error };
+  return { why: 'other', error };
+}
+
+// ---- a refused booking that outlives the page --------------------------------
+
+/** A booking refused after the cancel, once the page that ran the move had gone. */
+export type LeftMoveFailure = BookFailure & { booking: Booking };
+
+let leftFailure: LeftMoveFailure | null = null;
+const leftListeners = new Set<() => void>();
+
+/** Kept for Bookings when the move's page had gone (exported for its tests). */
+export function rememberMoveFailure(f: LeftMoveFailure | null): void {
+  leftFailure = f;
+  leftListeners.forEach((l) => l());
+}
+
+/** Takes the left-behind failure, once: it is said in one place, one time. */
+export function takeMoveFailure(): LeftMoveFailure | null {
+  const f = leftFailure;
+  if (f) rememberMoveFailure(null);
+  return f;
+}
+
 /**
- * Step 1, before anything changes: the old answers, fitted to today's form,
- * with every file uploaded again (a file linked to one booking can't answer
- * another, `usable_file_ids`). Throws `PrepareError`.
+ * For Bookings, where the canceled session now is, to say. The app has no
+ * shared notice store (every Snackbar is its screen's own), so this is the move's.
  */
-async function prepare(
-  bookingId: string,
-  questions: IntakeQuestion[],
-): Promise<Record<string, IntakeAnswer>> {
-  const carried = carryAnswers(await readAnswers(bookingId), questions);
-  // Checked before any upload: no files left waiting for a move that can't go.
-  if (carried.missing)
-    throw new PrepareError('questionsChanged', { kind: 'validation', message: '' });
-  const answers = { ...carried.answers };
-  // One at a time: the server counts uploads (ten an hour, ten waiting), and a
-  // refusal part-way stops the rest.
-  for (const [questionId, old] of Object.entries(carried.files)) {
-    const bytes = await readFile(old);
-    try {
-      answers[questionId] = { file: await uploadIntakeFile(bytes) };
-    } catch (e) {
-      throw new PrepareError('upload', e as AppError);
-    }
-  }
-  return answers;
+export function useLeftMoveFailure(): LeftMoveFailure | null {
+  return useSyncExternalStore(
+    (l) => {
+      leftListeners.add(l);
+      return () => void leftListeners.delete(l);
+    },
+    () => leftFailure,
+    () => null,
+  );
 }
 
+// ---- the hook -----------------------------------------------------------------
+
 /**
- * The mentee's move (PRD Session Join fixes, fix 1), until the server has one:
- * prepare the answers, cancel the old session (`scheduling_conflict`, the
- * message as `reason_text`), then book the new time with the same session
- * type and answers.
+ * The mentee's move (PRD Session Join fixes, fix 1), until the server has one.
+ * Everything that can stop it is checked before the cancel, so a stop changes
+ * nothing: the session type read fresh, the old answers fitted to it with each
+ * file uploaded again (`usable_file_ids`), and the time in a fresh `/slots`.
+ * Then the existing cancel (`scheduling_conflict`, the message as
+ * `reason_text`) and booking writers, with their own wording, idempotency and
+ * invalidation. A refusal after the cancel is `onBookFailed` (the credit is
+ * back: the move is only offered while cancelling refunds).
  *
- * Built from the existing writers, so the cancel and the booking keep their
- * own refusal wording, idempotency key and invalidation (Bookings, `/me` with
- * the credits, slots, the room). A failure before the cancel leaves the
- * session as it was and comes back as `error`. A failure after it is
- * `onBookFailed`: the old session is gone, the credit is back (12+ hours out,
- * which is the only time the move is offered), and the page says so.
+ * Left mid-move: before the cancel, nothing happens; after it, no navigation
+ * from a page that has gone, and a refusal is kept for Bookings.
  */
 export function useMoveSession() {
+  const qc = useQueryClient();
   const cancel = useBookingAction('cancel');
   const book = useRequestBooking();
+  // The booking form's own upload, with its refusal wording.
+  const upload = useUploadIntakeFile();
   const { mutateAsync: cancelAsync } = cancel;
   const { requestAsync } = book;
-  // A second press while the first is running is dropped, not queued: two runs
-  // would cancel once and book twice.
+  // A second press while one runs is dropped: two runs would book twice.
   const running = useRef(false);
+  // By old file id: a second attempt reuses them (uploads have no delete).
+  const uploaded = useRef(new Map<string, IntakeFile>());
+  const alive = useRef(true);
+  const controller = useRef<AbortController | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<MoveError | null>(null);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+      controller.current?.abort();
+    };
+  }, []);
+
+  const prepare = useCallback(
+    async (req: MoveRequest, signal: AbortSignal): Promise<Record<string, IntakeAnswer>> => {
+      const b = req.booking;
+      let types: SessionType[];
+      try {
+        types = await fetchSessionTypes(b.other.id, signal);
+      } catch (e) {
+        throw readStop(e);
+      }
+      const type = types.find((t) => t.id === req.sessionType.id);
+      if (!type || type.requiresConfirmation !== req.sessionType.requiresConfirmation)
+        throw new Stop('sessionChanged');
+      const carried = carryAnswers(await readAnswers(b.id, signal), type.questions);
+      // Before any upload: no files left waiting for a move that can't go.
+      if (carried.fileMissing) throw new Stop('fileUnavailable');
+      if (carried.missing) throw new Stop('questionsChanged');
+      if (carried.dropped && !req.acceptDropped) throw new Stop('answersDropped');
+      const answers = { ...carried.answers };
+      // One at a time: the server counts uploads, and a refusal stops the rest.
+      for (const [questionId, old] of Object.entries(carried.files)) {
+        let file = uploaded.current.get(old.id);
+        if (!file) {
+          const bytes = await readFile(old, signal);
+          try {
+            file = await upload(bytes);
+          } catch (e) {
+            throw new Stop('upload', e as AppError);
+          }
+          uploaded.current.set(old.id, file);
+        }
+        answers[questionId] = { file };
+      }
+      let open: string[];
+      try {
+        open = await fetchSlotStarts(b.other.id, type.id, slotCheckWindow(req.startsAt), signal);
+      } catch (e) {
+        throw readStop(e);
+      }
+      if (!open.some((s) => Date.parse(s) === Date.parse(req.startsAt))) {
+        // The picker shows what is open now.
+        void qc.invalidateQueries({ queryKey: keys.booking.slotsFor(b.other.id) });
+        throw new Stop('slotTaken');
+      }
+      return answers;
+    },
+    [qc, upload],
+  );
 
   const move = useCallback(
     async (req: MoveRequest, cb: MoveCallbacks) => {
       if (running.current) return;
       running.current = true;
+      const ctrl = new AbortController();
+      controller.current = ctrl;
       setPending(true);
       setError(null);
       const b = req.booking;
       try {
         let answers: Record<string, IntakeAnswer>;
         try {
-          answers = await prepare(b.id, req.sessionType.questions);
-        } catch (e) {
-          const p = e instanceof PrepareError ? e : new PrepareError('failed', normaliseError(e));
-          setError({ stage: 'prepare', reason: p.reason, error: p.appError });
-          return;
-        }
-        try {
+          answers = await prepare(req, ctrl.signal);
+          if (ctrl.signal.aborted) throw new Left();
           await cancelAsync({
             bookingId: b.id,
             reasonCode: 'scheduling_conflict',
             reasonText: req.message,
           });
         } catch (e) {
+          if (ctrl.signal.aborted || e instanceof Left) return;
+          if (e instanceof Stop)
+            setError({ stage: 'prepare', reason: e.reason, error: e.appError });
           // Already in the cancel's words (`actionError`).
-          setError({ stage: 'cancel', error: e as AppError });
+          else setError({ stage: 'cancel', error: e as AppError });
           return;
         }
-        let created;
+        // Canceled: from here the booking runs to the end, page or no page.
         try {
-          created = await requestAsync({
+          const created = await requestAsync({
             mentorId: b.other.id,
             sessionTypeId: req.sessionType.id,
             startsAt: req.startsAt,
             answers,
           });
+          if (alive.current) cb.onMoved(created.id, created.status === 'confirmed');
         } catch (e) {
-          cb.onBookFailed(requestError(e));
-          return;
+          const failure = bookFailure(e);
+          if (alive.current) cb.onBookFailed(failure);
+          else rememberMoveFailure({ ...failure, booking: b });
         }
-        cb.onMoved(created.id);
       } finally {
         running.current = false;
+        if (controller.current === ctrl) controller.current = null;
         setPending(false);
       }
     },
-    [cancelAsync, requestAsync],
+    [prepare, cancelAsync, requestAsync],
   );
 
   return {
     move,
     isPending: pending,
     error,
-    reset: useCallback(() => setError(null), []),
+    /** The dialog closed: its error and its uploads go. */
+    reset: useCallback(() => {
+      setError(null);
+      uploaded.current.clear();
+    }, []),
   };
 }

@@ -106,14 +106,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ userId: string 
       Date.now() < Date.parse(starts) + (o.duration ?? 60) * 60_000;
     const inRoom = (seen?: string) =>
       (o.provider ?? 'daily') === 'daily' ? running && !!seen : null;
+    const otherId = o.otherId ?? `mock-${id}`;
     const other: S['PartyRead'] = {
-      ...party(
-        o.otherId ?? `mock-${id}`,
-        mentee[0],
-        mentee[1],
-        o.zone ?? 'Africa/Lagos',
-        o.edu ?? {},
-      ),
+      ...party(otherId, mentee[0], mentee[1], o.zone ?? 'Africa/Lagos', o.edu ?? {}),
       joined_at: o.otherJoinedAt ?? null,
       in_room_at: o.otherInRoomAt ?? null,
       in_room: inRoom(o.otherInRoomAt),

@@ -42,7 +42,7 @@ import { DELETED_NAME } from '@/lib/api/data/bookings';
 import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useSessionTypes } from '@/lib/api/data/booking';
-import { useMoveSession, type MoveError } from '@/lib/api/data/moveSession';
+import { useMoveSession, type BookFailure, type MoveError } from '@/lib/api/data/moveSession';
 import { useSendMissedReason, type MissedReasonCode } from '@/lib/api/data/missedReason';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
@@ -107,12 +107,25 @@ function enterProblemText(
 
 /** "Having a problem? Contact support": the card's last row, on the session and on a failed load. */
 /** A move that stopped before the cancel, in the dialog's words: nothing has changed. */
-function moveErrorText(e: MoveError | null, first: string): string | null {
+function moveErrorText(e: MoveError | null, first: string, type: SessionType): string | null {
   if (!e) return null;
-  if (e.stage === 'cancel' || e.reason === 'upload') return e.error.message;
-  return e.reason === 'questionsChanged'
-    ? MOVE_COPY.questionsChanged(first)
-    : MOVE_COPY.prepareFailed;
+  if (e.stage === 'cancel') return e.error.message;
+  switch (e.reason) {
+    case 'upload':
+      return `${e.error.message} ${MOVE_COPY.nothingChanged}`;
+    case 'questionsChanged':
+      return MOVE_COPY.questionsChanged(first);
+    case 'fileUnavailable':
+      return MOVE_COPY.fileUnavailable;
+    case 'sessionChanged':
+      return MOVE_COPY.sessionChanged(first);
+    case 'slotTaken':
+      return MOVE_COPY.slotTaken;
+    case 'answersDropped':
+      return MOVE_COPY.answersDropped(first, MOVE_COPY.confirm(!!type.requiresConfirmation));
+    case 'failed':
+      return MOVE_COPY.prepareFailed;
+  }
 }
 
 function SupportRow({ href }: { href: string }) {
@@ -158,7 +171,20 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // a locked page doesn't fetch what it won't show.
   const access = accessFor(viewer);
   const room = useSessionRoom(id, access.locked.has('Bookings') ? null : userId);
-  const data = room.data;
+
+  // The mentee's move (PRD fix 1): its cancel would send this page to
+  // Bookings, so it stays while the move runs, lands, or fails (the notice).
+  const move = useMoveSession();
+  const [moved, setMoved] = useState(false);
+  const [moveFailed, setMoveFailed] = useState<BookFailure | null>(null);
+  const holding = move.isPending || moved || !!moveFailed;
+  // The session as it was when Move was pressed, shown until the outcome is
+  // known: never a bare "Canceled" behind a move about to land.
+  const [movingFrom, setMovingFrom] = useState<Booking | null>(null);
+  const data =
+    room.data && movingFrom && (move.isPending || moved)
+      ? { ...room.data, booking: movingFrom }
+      : room.data;
   // The clock stops once the outcome is final: nothing on a completed or
   // missed page changes with time. Known from the last render, adjusted while
   // rendering (React: adjusting state when a prop changes).
@@ -168,15 +194,6 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const isNowFinal = !!phase && isFinal(phase);
   if (isNowFinal !== final) setFinal(isNowFinal);
   const live = phase && isDrawnPhase(phase) ? phase : null;
-
-  // The mentee's move (PRD fix 1). Its cancel turns this session into one the
-  // page hands to Bookings, so while it runs, once it has moved (leaving for
-  // the new session), and when the new time failed (the notice), the page
-  // stays.
-  const move = useMoveSession();
-  const [moved, setMoved] = useState(false);
-  const [moveFailed, setMoveFailed] = useState(false);
-  const holding = move.isPending || moved || moveFailed;
 
   // Everything this page does not draw belongs to Bookings, which already
   // shows it (pending, cancelled, …). Replace, so Back does not bounce here.
@@ -250,26 +267,19 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // Why the viewer missed it, for EduFurther only (founder, Oct 21).
   const missedReason = useSendMissedReason(id);
   const [cancelling, setCancelling] = useState(false);
-  // The session's type as the mentor offers it now, for the move: its form
-  // and whether it needs approval. Read for a mentee while the session can be
-  // called off; taken when the dialog opens (or, opened before they answered,
-  // once they do), so a later refetch never changes the view under someone
-  // already reading it.
+  // The session type as offered now, for the move (form, approval). Taken
+  // when the dialog opens, or once it answers if still loading, so a later
+  // refetch never changes the view under the reader.
   const menteeCancel = !!data && data.booking.side === 'mentee' && canCancel(data.booking, now);
   const types = useSessionTypes(menteeCancel ? data!.booking.other.id : null);
   const liveType = types.data?.find((t) => t.id === data?.booking.sessionTypeId) ?? null;
   const [moveType, setMoveType] = useState<SessionType | null>(null);
-  // Opened before the types answered: the move view comes in once they do,
-  // a moment later, and then stays (adjusting state while rendering).
+  // Opened before the types answered (adjusting state while rendering).
   const [awaitingType, setAwaitingType] = useState(false);
   if (awaitingType && !types.isLoading) {
     setAwaitingType(false);
     setMoveType(liveType);
   }
-  // The session as it was when Move was pressed. Its cancel lands while the
-  // dialog is still saying "Working…", and the live row (canceled now) would
-  // turn the dialog into a cancel that can't be made.
-  const [movingFrom, setMovingFrom] = useState<Booking | null>(null);
 
   // Say the moments that matter, once each. The clock itself is never read
   // out. Worked out while rendering, from what was seen last time, rather than
@@ -359,11 +369,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
         <SupportRow href={supportMailto()} />
       </section>
     );
-  } else if (data && (moveFailed || (phase === 'elsewhere' && holding))) {
-    // The move's cancel went through: the session as it now stands, and, when
-    // the new time wasn't booked, what happened and Book again (PRD fix 1).
-    // `moveFailed` alone is enough: the cancel answered OK, so this is drawn
-    // canceled before the refetched row says so, never as still upcoming.
+  } else if (data && moveFailed) {
+    // Canceled, the new time not booked: the notice and Book again, drawn
+    // before the refetched row says so, never as still upcoming.
     const b = data.booking;
     body = (
       <section className={styles.card}>
@@ -371,14 +379,12 @@ export function SessionJoinScreen({ id }: { id: string }) {
           {...canceledLobby(data, timeZone)}
           zone={{ value: timeZone, onChange: setZone, deviceZone }}
         />
-        {moveFailed && (
-          <SessionOutcome
-            view={moveFailedView(b, canBook, dayLabel(b.startsAt, timeZone))}
-            onAction={(key) => {
-              if (key === 'book') rr.bookAgain(b);
-            }}
-          />
-        )}
+        <SessionOutcome
+          view={moveFailedView(b, canBook, dayLabel(b.startsAt, timeZone), moveFailed.why)}
+          onAction={(key) => {
+            if (key === 'book') rr.bookAgain(b);
+          }}
+        />
         <SupportRow href={supportMailto()} />
       </section>
     );
@@ -593,41 +599,46 @@ export function SessionJoinScreen({ id }: { id: string }) {
       {cancelling && data && (
         <ConfirmActionDialog
           move={
-            moveType
-              ? ({
-                  sessionType: moveType,
-                  pending: move.isPending,
-                  error: moveErrorText(move.error, data.booking.other.firstName),
-                  onMove: ({ startsAt, message }) => {
-                    setMovingFrom(data.booking);
-                    void move.move(
-                      { booking: data.booking, sessionType: moveType, startsAt, message },
-                      {
-                        onMoved: (newId) => {
-                          setMoved(true);
-                          router.push(`/sessions/${encodeURIComponent(newId)}`);
+            awaitingType
+              ? 'loading'
+              : moveType
+                ? ({
+                    sessionType: moveType,
+                    // "Working…" until the page has gone to the new session.
+                    pending: move.isPending || moved,
+                    error: moveErrorText(move.error, data.booking.other.firstName, moveType),
+                    onMove: ({ startsAt, message }) => {
+                      setMovingFrom(data.booking);
+                      void move.move(
+                        {
+                          booking: data.booking,
+                          sessionType: moveType,
+                          startsAt,
+                          message,
+                          // Told some answers won't carry over, and pressed again.
+                          acceptDropped:
+                            move.error?.stage === 'prepare' &&
+                            move.error.reason === 'answersDropped',
                         },
-                        onBookFailed: () => {
-                          setCancelling(false);
-                          setMoveFailed(true);
-                          // Heard as well as shown: the dialog that was
-                          // speaking is gone, and the title alone says nothing.
-                          const day = dayLabel(data.booking.startsAt, timeZone);
-                          setSaid((last) => ({
-                            text: `${MOVE_COPY.failedTitle}. ${MOVE_COPY.failedBody(day)}`,
-                            id: (last?.id ?? 0) + 1,
-                          }));
-                          // The dialog's button is gone: the notice's title
-                          // takes focus, where the page now explains itself.
-                          requestAnimationFrame(() =>
-                            document.querySelector<HTMLElement>('main h1')?.focus(),
-                          );
+                        {
+                          onMoved: (newId, confirmed) => {
+                            setMoved(true);
+                            // Not back to the canceled one; a request is Bookings'.
+                            const to = encodeURIComponent(newId);
+                            router.replace(
+                              confirmed ? `/sessions/${to}` : `/bookings?booking=${to}`,
+                            );
+                          },
+                          onBookFailed: (failure) => {
+                            setCancelling(false);
+                            // The notice takes focus itself (SessionOutcome).
+                            setMoveFailed(failure);
+                          },
                         },
-                      },
-                    );
-                  },
-                } satisfies MoveOption)
-              : undefined
+                      );
+                    },
+                  } satisfies MoveOption)
+                : undefined
           }
           action="cancel"
           booking={holding && movingFrom ? movingFrom : data.booking}

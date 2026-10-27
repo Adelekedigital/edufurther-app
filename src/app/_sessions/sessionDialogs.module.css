@@ -148,8 +148,7 @@
   color: var(--ink-700);
 }
 
-/* The pull-up is the dialog's; the phone sheet's header sits tighter already,
-   and there it ran the lead into the title. */
+/* Dialog only: on the phone sheet it ran the lead into the title. */
 @media (min-width: 768px) {
   .moveLead {
     margin-top: calc(var(--space-3) * -1);

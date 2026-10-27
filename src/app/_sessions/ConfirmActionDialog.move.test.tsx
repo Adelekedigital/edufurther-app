@@ -67,24 +67,24 @@ const moveOption = (over: Partial<MoveOption> = {}): MoveOption => ({
   ...over,
 });
 
-const dialog = (
+const element = (
   props: Partial<Parameters<typeof ConfirmActionDialog>[0]> = {},
-  move: MoveOption | null = moveOption(),
-) =>
-  render(
-    <ConfirmActionDialog
-      action="cancel"
-      booking={menteeBooking()}
-      onConfirm={vi.fn()}
-      onClose={vi.fn()}
-      now={NOW}
-      timeZone="America/New_York"
-      viewerId="me"
-      accountZone="America/New_York"
-      move={move ?? undefined}
-      {...props}
-    />,
-  );
+  move: MoveOption | 'loading' | null = moveOption(),
+) => (
+  <ConfirmActionDialog
+    action="cancel"
+    booking={menteeBooking()}
+    onConfirm={vi.fn()}
+    onClose={vi.fn()}
+    now={NOW}
+    timeZone="America/New_York"
+    viewerId="me"
+    accountZone="America/New_York"
+    move={move ?? undefined}
+    {...props}
+  />
+);
+const dialog = (...a: Parameters<typeof element>) => render(element(...a));
 
 const moveSwitch = () => screen.getByRole('switch', { name: 'Book a new time with Amara' });
 
@@ -117,6 +117,24 @@ describe('when the move view opens', () => {
     expect(screen.getByText(/credit is not returned/)).toBeVisible();
   });
 
+  it('with no refund deadline on the row it is the cancel as built (no device-clock guess)', () => {
+    dialog({ booking: menteeBooking({ refundUntil: null }) });
+    expect(screen.getByRole('heading', { name: 'Cancel this booking?' })).toBeVisible();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+  });
+
+  it('while the session type is still loading: a skeleton, and no reasons to touch', () => {
+    dialog({}, 'loading');
+    expect(screen.getByLabelText('Getting your options ready')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    );
+    expect(screen.queryByRole('button', { name: 'I no longer need it' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Yes, cancel session' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keep session' })).toBeVisible();
+  });
+
   it('without a known session type it is the cancel as built', () => {
     dialog({}, null);
     expect(screen.getByRole('heading', { name: 'Cancel this booking?' })).toBeVisible();
@@ -136,7 +154,12 @@ describe('with approval on the session type', () => {
 
   it('says it goes as a request, and the button reads Send request', () => {
     dialog({}, request());
-    expect(screen.getByText('From Amara’s open times. Sent as a request.')).toBeVisible();
+    // The old time goes as soon as the request does: said before the press.
+    expect(
+      screen.getByText(
+        'From Amara’s open times. Sent as a request, and your current time is released now.',
+      ),
+    ).toBeVisible();
     expect(screen.getByRole('button', { name: 'Send request' })).toBeVisible();
   });
 
@@ -238,6 +261,14 @@ describe('while moving, and when it stops', () => {
     expect(onClose).not.toHaveBeenCalled();
     // The switch is locked too: no cancel view while the move is running.
     expect(moveSwitch()).toBeDisabled();
+  });
+
+  it('stays the move view while it runs, even as the refund deadline passes', () => {
+    const view = dialog({}, moveOption({ pending: true }));
+    // A tick past `refund_until` mid-move: the plain cancel must not take over.
+    view.rerender(element({ now: new Date(at(37)) }, moveOption({ pending: true })));
+    expect(screen.getByRole('heading', { name: 'Move this session?' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Working…' })).toBeVisible();
   });
 
   it('an error before the cancel shows in the dialog', () => {

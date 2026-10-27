@@ -164,6 +164,22 @@ export function bookingError(e: AppError): AppError {
 
 // ---- hooks ------------------------------------------------------------------
 
+/**
+ * One read of GET /users/{id}/session-types. Shared by `useSessionTypes` and
+ * the mentee's move, which reads it fresh just before cancelling.
+ */
+export async function fetchSessionTypes(
+  mentorId: string,
+  signal?: AbortSignal,
+): Promise<SessionType[]> {
+  const { data, error, response } = await api.GET('/api/v1/users/{user_id}/session-types', {
+    params: { path: { user_id: mentorId } },
+    signal,
+  });
+  if (!data) throw apiError(response.status, error);
+  return data.data.map(toSessionType);
+}
+
 /** GET /users/{id}/session-types — what this mentor offers. */
 export function useSessionTypes(
   mentorId: string | null,
@@ -171,14 +187,7 @@ export function useSessionTypes(
   const query = useQuery({
     queryKey: keys.booking.sessionTypes(mentorId ?? 'none'),
     enabled: mentorId !== null,
-    queryFn: async ({ signal }) => {
-      const { data, error, response } = await api.GET('/api/v1/users/{user_id}/session-types', {
-        params: { path: { user_id: mentorId! } },
-        signal,
-      });
-      if (!data) throw apiError(response.status, error);
-      return data.data.map(toSessionType);
-    },
+    queryFn: ({ signal }) => fetchSessionTypes(mentorId!, signal),
     staleTime: 5 * 60 * 1000,
   });
   return {
@@ -434,34 +443,28 @@ export function uploadError(e: unknown): AppError {
  * is obviously wrong (size) is refused here, before it's sent.
  */
 export function useUploadIntakeFile() {
-  const mutation = useMutation<IntakeFile, AppError, File>({ mutationFn: uploadIntakeFile });
+  const mutation = useMutation<IntakeFile, AppError, File>({
+    mutationFn: async (file) => {
+      if (file.size > INTAKE_MAX_BYTES) throw uploadError(new ApiError(413));
+      let result;
+      try {
+        result = await api.POST('/api/v1/me/intake-files', {
+          // The generated type calls the binary part a string (openapi-typescript
+          // and multipart); the serializer sends the File itself.
+          body: { file } as unknown as { file: string },
+          bodySerializer: (b) => {
+            const form = new FormData();
+            form.append('file', (b as unknown as { file: File }).file);
+            return form;
+          },
+        });
+      } catch (e) {
+        throw uploadError(e);
+      }
+      const { data, error, response } = result;
+      if (!data) throw uploadError(apiError(response.status, error, response));
+      return { id: data.file_id, name: data.filename, size: data.size };
+    },
+  });
   return (file: File) => mutation.mutateAsync(file);
-}
-
-/**
- * The one upload to POST /me/intake-files, refusals already in our words
- * (`uploadError`). Shared by the booking form and the mentee's move, which
- * uploads each file answer again: a file linked to one booking can't answer
- * another (`usable_file_ids`).
- */
-export async function uploadIntakeFile(file: File): Promise<IntakeFile> {
-  if (file.size > INTAKE_MAX_BYTES) throw uploadError(new ApiError(413));
-  let result;
-  try {
-    result = await api.POST('/api/v1/me/intake-files', {
-      // The generated type calls the binary part a string (openapi-typescript
-      // and multipart); the serializer sends the File itself.
-      body: { file } as unknown as { file: string },
-      bodySerializer: (b) => {
-        const form = new FormData();
-        form.append('file', (b as unknown as { file: File }).file);
-        return form;
-      },
-    });
-  } catch (e) {
-    throw uploadError(e);
-  }
-  const { data, error, response } = result;
-  if (!data) throw uploadError(apiError(response.status, error, response));
-  return { id: data.file_id, name: data.filename, size: data.size };
 }

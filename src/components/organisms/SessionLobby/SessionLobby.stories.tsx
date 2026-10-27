@@ -33,9 +33,8 @@ const calendar = {
   pageUrl: 'https://app.test/sessions/s1',
   venue: 'EduFurther video',
 };
-// While upcoming: Reschedule opens the same cancel dialog (J2).
+// While upcoming: Cancel, for both roles (a mentee moves the session from its dialog).
 const links = [
-  { key: 'reschedule', icon: 'update' as const, label: 'Reschedule', onClick: fn() },
   { key: 'cancel', icon: 'event_busy' as const, label: 'Cancel', onClick: fn(), danger: true },
 ];
 const ANSWERS: BookingAnswer[] = [

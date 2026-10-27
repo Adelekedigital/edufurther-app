@@ -70,11 +70,7 @@ export function offerSentence(slot: string): string {
   return `Could we do ${slot} instead?`;
 }
 
-/**
- * The mentee's move message (PRD fix 1, CancelModal.dc.html `move`), drafted
- * the same way: theirs to send or write over. With approval the new booking
- * is a request, so it asks rather than tells.
- */
+/** The mentee's move message (CancelModal.dc.html `move`); with approval it asks. */
 export function moveDraft({
   first,
   origDay,
@@ -98,11 +94,9 @@ export function moveSentence(slot: string, request: boolean): string {
 }
 
 /**
- * A change of time inside a message someone may have edited: only our
- * sentence, and only its first occurrence, is swapped (the design's
- * `draft.split(oldLabel).join(newLabel)`, narrowed: a global replace rewrote
- * the person's own words, GitHub review, PR 234). Rewritten by them, it isn't
- * found and their text is left exactly as written.
+ * A new time inside a message someone may have edited: only the first copy of
+ * our sentence is swapped (a global replace rewrote their words, PR 234); if
+ * they rewrote it, their text stays exactly as written.
  */
 export function swapSentence(message: string, was: string, now: string): string {
   const at = message.indexOf(was);
@@ -136,11 +130,9 @@ type SuggestTimeStepProps = {
    */
   message: string;
   onMessage: (value: string) => void;
-  /** The picker's label: "Suggested time" (the mentor's offer) or "New time" (the mentee's move). */
+  /** "Suggested time" (mentor) or "New time" (mentee's move, no hold line, own copy). */
   label?: string;
-  /** The hold line under a picked time: the mentor's offer only (a move holds nothing). */
   hold?: boolean;
-  /** The picker's no-times lines; the mentor's own calendar by default. */
   copy?: SlotPickerCopy;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;

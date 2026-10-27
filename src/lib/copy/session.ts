@@ -13,9 +13,9 @@ export const LOBBY_COPY = {
   joinLockedHint: (min: number) => `The button becomes active ${min} minutes before the start.`,
   /** Join again, for someone who has been in. */
   rejoin: 'Rejoin call',
-  /** Both roles (PRD fix 1): a mentee moves the session from the same dialog. */
+  /** Both roles (PRD fix 1). */
   cancel: 'Cancel',
-  /** The status pill when a move canceled the session but couldn’t book the new time. */
+  /** The pill when a move canceled the session but couldn’t book the new time. */
   canceled: 'Canceled',
   /** Between the end and the attendance ruling (the settling phase). */
   settlingNote:
@@ -80,9 +80,7 @@ export const PREP_COPY = {
       title: 'Your setup',
       body: 'A quiet spot, headphones and a steady connection make the call easier for both of you.',
     },
-    // PRD fix 1: the link reads "Cancel" for both roles; a mentee moves the
-    // session from its dialog. No deadline on the row: no number rather than a
-    // guessed one (copy reviewed with ux-writer).
+    // PRD fix 1. No deadline on the row: no number rather than a guessed one.
     plans: {
       title: 'If plans change',
       body: {
@@ -169,37 +167,63 @@ export const MISSED_REASON_COPY = {
 } as const;
 
 /**
- * The mentee's move (PRD Session Join fixes, fix 1; CancelModal.dc.html `move`
- * on, viewer mentee). Design strings, the founder's changes, and ours where
- * the design draws nothing (the no-times lines, the prepare errors and the
- * failure notice), all reviewed with edufurther-ux-writer. No em dashes.
+ * The mentee's move (PRD fix 1; CancelModal.dc.html `move`, viewer mentee):
+ * the design's strings, and ours where it draws nothing, reviewed with
+ * edufurther-ux-writer. No em dashes.
  */
 export const MOVE_COPY = {
   title: 'Move this session?',
+  /** "Your session with **{Name}** is on **{date}** at **{start}**. …", the bold runs between. */
+  lead: {
+    before: 'Your session with ',
+    on: ' is on ',
+    at: ' at ',
+    after: '. Pick a new time, or switch this off to cancel.',
+  },
+  /** The dialog's busy region while the session type is read. */
+  loading: 'Getting your options ready',
   switchTitle: (first: string) => `Book a new time with ${first}`,
   switchSub: (first: string, request: boolean) =>
     request
-      ? `From ${first}’s open times. Sent as a request.`
+      ? `From ${first}’s open times. Sent as a request, and your current time is released now.`
       : `From ${first}’s open times. It moves right away, same credit.`,
   pickerLabel: 'New time',
   keep: 'Keep session',
   confirm: (request: boolean) => (request ? 'Send request' : 'Move session'),
   /** A press with no time picked. */
   pickFirst: 'Pick a time, or switch this off to cancel instead.',
-  /** The picker with nothing to show, from the mentee's side (the mentor's own are SlotPicker's). */
+  /** The picker with nothing to show, mentee side. */
   slots: (first: string) => ({
     error: `We couldn’t load ${first}’s open times just now.`,
     unknown: `We can’t show ${first}’s open times for this session right now.`,
     empty: `${first} has no open times for this session right now, so there’s nothing to move it to.`,
   }),
   /** Before the cancel: nothing has changed. */
+  nothingChanged: 'Nothing has changed.',
   prepareFailed:
     'We couldn’t get your session ready to move. Nothing has changed. Try again in a moment.',
   questionsChanged: (first: string) =>
     `${first}’s questions for this session have changed, so we can’t move it. Nothing has changed. Switch this off to cancel, then book a new time.`,
+  fileUnavailable:
+    'Your file for this session is no longer available, so we can’t move it. Nothing has changed. Switch this off to cancel, then book again with a new file.',
+  sessionChanged: (first: string) =>
+    `${first} changed this session since you opened it. Nothing has changed. Close this and try again.`,
+  slotTaken: 'That time was just taken. Nothing has changed. Pick another time.',
+  /** Not a refusal: said once, and pressing again moves it anyway. */
+  answersDropped: (first: string, button: string) =>
+    `Some of your answers won’t carry over, because ${first} changed the questions. Nothing has changed yet. Press ${button} again to move it anyway.`,
   /** The cancel went through and the new time didn’t: the notice on the page. */
   failedTitle: 'We couldn’t book your new time',
-  failedBody: (day: string) =>
-    `Your session on ${day} is canceled and your credit is back. Pick another time to book again.`,
+  failedBody: (day: string, why: 'taken' | 'questions' | 'other', first: string) =>
+    [
+      why === 'taken'
+        ? 'That time was just taken.'
+        : why === 'questions'
+          ? `${first}’s questions for this session changed.`
+          : null,
+      `Your session on ${day} is canceled and your credit is back. Pick another time to book again.`,
+    ]
+      .filter(Boolean)
+      .join(' '),
   bookAgain: (first: string) => `Book ${first} again`,
 } as const;

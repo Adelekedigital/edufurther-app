@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -44,17 +45,18 @@ type ConfirmActionDialogProps = {
   now?: Date;
   /**
    * The mentee's move (PRD fix 1), Session Join only: given with the session's
-   * type as the mentor offers it now (unknown: not given). The dialog opens
-   * on it while the session is confirmed and cancelling still refunds;
+   * type as the mentor offers it now (unknown: not given), or `loading` while
+   * that is still being read. The dialog opens on it while the session is
+   * confirmed and cancelling still refunds by the row's own deadline;
    * otherwise, or switched off, it is the cancel as built.
    */
-  move?: MoveOption;
+  move?: MoveOption | 'loading';
 };
 
 export type MoveOption = {
   sessionType: SessionType;
   onMove: (input: { startsAt: string; message: string }) => void;
-  /** The whole sequence is running (prepare, cancel, book). */
+  /** The whole sequence is running (prepare, cancel, book), or it has landed and the page is leaving. */
   pending: boolean;
   /** Why it stopped before anything changed, in our words. */
   error: string | null;
@@ -148,8 +150,9 @@ export function ConfirmActionDialog({
   viewerId,
   accountZone,
   now = new Date(),
-  move,
+  move: moveProp,
 }: ConfirmActionDialogProps) {
+  const move = moveProp === 'loading' ? undefined : moveProp;
   const [reasonCode, setReasonCode] = useState<PickableReason | null>(null);
   const [text, setText] = useState('');
   // Mentors only. The default is `true` because the two ways of being wrong are
@@ -203,18 +206,28 @@ export function ConfirmActionDialog({
   // is open, so this one value decides which question is being asked.
   const offering = canSuggest && suggestOn;
   const when = { day: dayLabel(b.startsAt, timeZone), start: formatTime(b.startsAt, timeZone) };
-  // Offered only while the credit comes back (12+ hours out): a move later
-  // would cost a second credit, so the plain cancel shows (owner default,
-  // open question 1). Re-read on every tick, like `tooLate`.
-  const canMove =
-    !!move && action === 'cancel' && !isMentor && b.status === 'confirmed' && refunds && !tooLate;
-  const moving = canMove && moveOn;
+  // Offered only while the credit comes back (12+ hours out) by the row's own
+  // deadline: a move later would cost a second credit, so the plain cancel
+  // shows (owner default, open question 1), and with no deadline on the row
+  // there is no guessing one from the device clock. Re-read on every tick,
+  // like `tooLate`.
+  const moveFits =
+    action === 'cancel' &&
+    !isMentor &&
+    b.status === 'confirmed' &&
+    !!b.refundUntil &&
+    refunds &&
+    !tooLate;
+  const canMove = !!move && moveFits;
+  // Latched while it runs: the deadline passing mid-move must not swap in the
+  // plain cancel under "Working…".
+  const moving = (canMove && moveOn) || !!move?.pending;
   const request = !!move?.sessionType.requiresConfirmation;
   const moveDrafted = newTime
     ? moveDraft({ first, origDay: when.day, slot: slotLabel(newTime, timeZone), request })
     : '';
   const moveText = moveMessage ?? moveDrafted;
-  const busy = moving ? !!move?.pending : pending;
+  const busy = !!move?.pending;
   // Rebuilt from whichever slot is picked, so an untouched box always names the
   // time actually on offer. Nothing drafted until there is a time to draft
   // about — the box is not on screen before then either.
@@ -265,12 +278,164 @@ export function ConfirmActionDialog({
       </>
     );
 
+  // In both views, at the same place and key, so switching keeps it (and its
+  // focus): turning it back on from the cancel view is one tap.
+  const moveSwitch = move && (
+    <div key="move-switch" className={styles.slotChoice}>
+      <Switch
+        ref={moveSwitchRef}
+        checked={moving}
+        // Not mid-move: switching off then would show a cancel for a session
+        // the running sequence is already canceling.
+        disabled={move.pending}
+        onChange={(v) => {
+          setMoveOn(v);
+          setMoveBad(false);
+          setReasonBad(null);
+          // The time and the message about it go together, as the mentor's
+          // offer does: a time nowhere on screen is never sent.
+          if (!v) {
+            setNewTime(null);
+            setMoveMessage(null);
+          }
+        }}
+        aria-labelledby={`${fieldId}-mv`}
+        aria-describedby={moveBad ? `${fieldId}-mv-hint ${fieldId}-mv-err` : `${fieldId}-mv-hint`}
+      />
+      <div>
+        <span id={`${fieldId}-mv`} className={styles.slotLabel}>
+          {MOVE_COPY.switchTitle(first)}
+        </span>
+        <p id={`${fieldId}-mv-hint`} className={styles.slotHint}>
+          {MOVE_COPY.switchSub(first, request)}
+        </p>
+        {moveBad && moving && (
+          <p id={`${fieldId}-mv-err`} role="alert" className={styles.moveError}>
+            {MOVE_COPY.pickFirst}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  // The move view (CancelModal.dc.html `move` on, viewer mentee). While the
+  // session type is still being read it is a skeleton with only the way out:
+  // a reason picked in a cancel view would be under the move view a moment later.
+  const moveLoading = moveProp === 'loading' && moveFits;
+  if ((moving && move) || moveLoading)
+    return (
+      <ModalShell
+        title={MOVE_COPY.title}
+        size="lg"
+        tone="danger"
+        onClose={onClose}
+        sheet={
+          isPhone
+            ? {
+                heading: MOVE_COPY.title,
+                leading: { icon: 'close', label: 'Close', onClick: onClose, disabled: busy },
+                showClose: false,
+              }
+            : undefined
+        }
+        contained={isPhone}
+        footer={
+          <div className={styles.confirmFooter}>
+            <Button
+              variant="secondary-outlined"
+              size="large"
+              aria-disabled={busy || undefined}
+              onClick={busy ? undefined : onClose}
+            >
+              {MOVE_COPY.keep}
+            </Button>
+            {move ? (
+              <Button
+                variant="primary"
+                size="large"
+                // Dimmed with no time (the design's opacity 0.6), but not
+                // disabled: pressing it says what is missing and focuses the switch.
+                className={!newTime ? styles.moveIncomplete : undefined}
+                busy={move.pending}
+                onClick={() => {
+                  if (!newTime) {
+                    setMoveBad(true);
+                    requestAnimationFrame(() => moveSwitchRef.current?.focus());
+                    return;
+                  }
+                  move.onMove({ startsAt: newTime, message: moveText });
+                }}
+              >
+                {move.pending ? 'Working…' : MOVE_COPY.confirm(request)}
+              </Button>
+            ) : (
+              <Skeleton height="48px" radius="md" />
+            )}
+          </div>
+        }
+      >
+        {move ? (
+          <div className={styles.confirmBody}>
+            <p className={styles.moveLead}>
+              {MOVE_COPY.lead.before}
+              <strong>{b.other.name}</strong>
+              {MOVE_COPY.lead.on}
+              <strong>{when.day}</strong>
+              {MOVE_COPY.lead.at}
+              <strong>{when.start}</strong>
+              {MOVE_COPY.lead.after}
+            </p>
+            {moveSwitch}
+            <SuggestTimeStep
+              booking={b}
+              // The mentor's open times: on a mentee's row, the other party.
+              mentorId={b.other.id}
+              accountZone={accountZone}
+              timeZone={timeZone}
+              value={newTime}
+              onChange={(v) => {
+                // As the mentor's draft: only our sentence naming the time is swapped.
+                setMoveMessage((m) =>
+                  m === null || !newTime || !v
+                    ? null
+                    : swapSentence(
+                        m,
+                        moveSentence(slotLabel(newTime, timeZone), request),
+                        moveSentence(slotLabel(v, timeZone), request),
+                      ),
+                );
+                setNewTime(v);
+                setMoveBad(false);
+              }}
+              message={moveText}
+              onMessage={setMoveMessage}
+              label={MOVE_COPY.pickerLabel}
+              hold={false}
+              copy={MOVE_COPY.slots(first)}
+              now={now}
+            />
+            {move.error && (
+              <p role="alert" className={styles.confirmError}>
+                {move.error}
+              </p>
+            )}
+          </div>
+        ) : (
+          <section className={styles.confirmBody} aria-busy="true" aria-label={MOVE_COPY.loading}>
+            <Skeleton height="16px" width="90%" />
+            <Skeleton height="64px" radius="lg" />
+            <Skeleton height="32px" width="70%" />
+          </section>
+        )}
+      </ModalShell>
+    );
+
   return (
     <ModalShell
-      title={moving ? MOVE_COPY.title : TITLES[action]}
+      title={TITLES[action]}
       // `size: panel ? 'lg' : 'md'` in the design: the slot picker needs the
       // wider frame, and 480px squeezed its day chips.
-      size={offering || moving ? 'lg' : 'md'}
+      size={offering ? 'lg' : 'md'}
       tone="danger"
       onClose={onClose}
       // A bottom sheet on phones, as `CancelModal.dc.html` draws it — content
@@ -280,239 +445,124 @@ export function ConfirmActionDialog({
       sheet={
         isPhone
           ? {
-              heading: moving ? MOVE_COPY.title : TITLES[action],
+              heading: TITLES[action],
               // The way out. One close, not two — hence `showClose: false`.
-              leading: { icon: 'close', label: 'Close', onClick: onClose, disabled: busy },
+              leading: { icon: 'close', label: 'Close', onClick: onClose, disabled: pending },
               showClose: false,
             }
           : undefined
       }
       contained={isPhone}
       footer={
-        moving && move ? (
-          <div className={styles.confirmFooter}>
-            <Button
-              variant="secondary-outlined"
-              size="large"
-              aria-disabled={move.pending || undefined}
-              onClick={move.pending ? undefined : onClose}
-            >
-              {MOVE_COPY.keep}
-            </Button>
-            <Button
-              variant="primary"
-              size="large"
-              // Dimmed with no time (the design's opacity 0.6), but neither
-              // disabled nor aria-disabled: pressing it says what is missing
-              // and moves focus to the switch, the other way out.
-              className={!newTime ? styles.moveIncomplete : undefined}
-              busy={move.pending}
-              onClick={() => {
-                if (!newTime) {
-                  setMoveBad(true);
-                  requestAnimationFrame(() => moveSwitchRef.current?.focus());
-                  return;
-                }
-                move.onMove({ startsAt: newTime, message: moveText });
-              }}
-            >
-              {move.pending ? 'Working…' : MOVE_COPY.confirm(request)}
-            </Button>
-          </div>
-        ) : (
-          <div className={styles.confirmFooter}>
-            {/* Closed only when nothing is in flight: `reset()` detaches the
+        <div className={styles.confirmFooter}>
+          {/* Closed only when nothing is in flight: `reset()` detaches the
               observer but the POST keeps going, so closing mid-flight made the
               dialog vanish — which reads as "done" — while it might fail. */}
-            <Button
-              variant="secondary-outlined"
-              size="large"
-              aria-disabled={pending || undefined}
-              onClick={pending ? undefined : onClose}
-            >
-              {action === 'cancel' ? 'Keep session' : 'Go back'}
-            </Button>
-            <Button
-              variant="destructive"
-              size="large"
-              // Soft red while it cannot go through, as the design draws it — but
-              // still pressable, because a disabled-looking button with nothing
-              // saying why is the confirm people learn to click past. Pressing it
-              // explains and moves focus.
-              incomplete={incomplete && !tooLate}
-              // Points at the credit line, so the confirm is not pressed without
-              // hearing what happens to it — which is why that line is above the
-              // button in the first place.
-              aria-describedby={creditLine ? `${fieldId}-credit` : undefined}
-              // `tooLate` only. The incomplete state is soft red and says so when
-              // pressed — marking it disabled would tell assistive tech the one
-              // control that explains what is missing is unavailable.
-              aria-disabled={tooLate || undefined}
-              onClick={() => {
-                if (tooLate) return;
-                if (offering) {
-                  // Not a silent no-op. A mentor whose calendar has no open hours
-                  // — or whose /slots read failed — opens on this path with
-                  // nothing to pick, and a confirm that does nothing at all leaves
-                  // them stuck in a dialog with no way out but noticing a switch.
-                  if (!suggested) {
-                    setOfferBad(true);
-                    requestAnimationFrame(() => offerRef.current?.focus());
-                    return;
-                  }
-                } else {
-                  const bad = reasonError({ reasonCode, text, required: true });
-                  setReasonBad(bad);
-                  if (bad) {
-                    // Announced by the field, and focus goes to what is wrong:
-                    // an error that is only read out leaves a keyboard user
-                    // hunting for the control.
-                    requestAnimationFrame(() => {
-                      const el = bad.field === 'note' ? noteRef.current : firstChipRef.current;
-                      el?.focus();
-                    });
-                    return;
-                  }
+          <Button
+            variant="secondary-outlined"
+            size="large"
+            aria-disabled={pending || undefined}
+            onClick={pending ? undefined : onClose}
+          >
+            {action === 'cancel' ? 'Keep session' : 'Go back'}
+          </Button>
+          <Button
+            variant="destructive"
+            size="large"
+            // Soft red while it cannot go through, as the design draws it — but
+            // still pressable, because a disabled-looking button with nothing
+            // saying why is the confirm people learn to click past. Pressing it
+            // explains and moves focus.
+            incomplete={incomplete && !tooLate}
+            // Points at the credit line, so the confirm is not pressed without
+            // hearing what happens to it — which is why that line is above the
+            // button in the first place.
+            aria-describedby={creditLine ? `${fieldId}-credit` : undefined}
+            // `tooLate` only. The incomplete state is soft red and says so when
+            // pressed — marking it disabled would tell assistive tech the one
+            // control that explains what is missing is unavailable.
+            aria-disabled={tooLate || undefined}
+            onClick={() => {
+              if (tooLate) return;
+              if (offering) {
+                // Not a silent no-op. A mentor whose calendar has no open hours
+                // — or whose /slots read failed — opens on this path with
+                // nothing to pick, and a confirm that does nothing at all leaves
+                // them stuck in a dialog with no way out but noticing a switch.
+                if (!suggested) {
+                  setOfferBad(true);
+                  requestAnimationFrame(() => offerRef.current?.focus());
+                  return;
                 }
-                onConfirm({
-                  // Offering another time *is* a reason, and a true one: this
-                  // mentor still wants the session, just not at this hour
-                  // (owner, 2026-10-13). Sending the code rather than leaning on
-                  // the server's exemption keeps the data point the requirement
-                  // exists for — otherwise most mentor endings would carry no
-                  // code at all, and reporting would see only the mentee side.
-                  //
-                  // Except where it would be a lie. A mentor cancelling who has
-                  // left "I'm still free at this time" on has just said the hour
-                  // is fine and put it back on their calendar; sending
-                  // `mentor_unavailable` would reach the mentee as "No longer
-                  // free at that time" directly under it. There the time is not
-                  // the reason, we do not know what is, and the server's
-                  // `suggested_starts_at` exemption is exactly for a request
-                  // that honestly has none.
-                  reasonCode: offering
-                    ? impliesUnavailable
-                      ? 'mentor_unavailable'
-                      : null
-                    : reasonCode,
-                  // Offering a time now sends words too — the drafted message,
-                  // or whatever the mentor made of it. Before 2026-10-13 this
-                  // path sent `''` and the mentee received a suggested hour with
-                  // nothing said about why the agreed one was going away. One
-                  // field carries both (`reason_text`, 2000 chars), because the
-                  // two questions are alternatives: a reason or an offer, never
-                  // both. An emptied box sends `''` and the offer speaks for
-                  // itself (owner, 2026-10-13).
-                  //
-                  // Off the offering path, only "Something else" has words to
-                  // send. The box is hidden for every other reason, so anything
-                  // still held in state is something the person cannot see — it
-                  // must not reach the other party's notification.
-                  reasonText: offering ? messageText : reasonCode === 'other' ? text : '',
-                  ...(action === 'cancel' && isMentor ? { releaseSlot: free } : {}),
-                  ...(offering && suggested ? { suggestedStartsAt: suggested } : {}),
-                });
-              }}
-              // `busy` rather than the aria attributes: the atom owns both, and
-              // it also swallows the second click.
-              busy={pending}
-            >
-              {pending ? 'Working…' : offering ? CONFIRMS_OFFERING[action] : CONFIRMS[action]}
-            </Button>
-          </div>
-        )
+              } else {
+                const bad = reasonError({ reasonCode, text, required: true });
+                setReasonBad(bad);
+                if (bad) {
+                  // Announced by the field, and focus goes to what is wrong:
+                  // an error that is only read out leaves a keyboard user
+                  // hunting for the control.
+                  requestAnimationFrame(() => {
+                    const el = bad.field === 'note' ? noteRef.current : firstChipRef.current;
+                    el?.focus();
+                  });
+                  return;
+                }
+              }
+              onConfirm({
+                // Offering another time *is* a reason, and a true one: this
+                // mentor still wants the session, just not at this hour
+                // (owner, 2026-10-13). Sending the code rather than leaning on
+                // the server's exemption keeps the data point the requirement
+                // exists for — otherwise most mentor endings would carry no
+                // code at all, and reporting would see only the mentee side.
+                //
+                // Except where it would be a lie. A mentor cancelling who has
+                // left "I'm still free at this time" on has just said the hour
+                // is fine and put it back on their calendar; sending
+                // `mentor_unavailable` would reach the mentee as "No longer
+                // free at that time" directly under it. There the time is not
+                // the reason, we do not know what is, and the server's
+                // `suggested_starts_at` exemption is exactly for a request
+                // that honestly has none.
+                reasonCode: offering
+                  ? impliesUnavailable
+                    ? 'mentor_unavailable'
+                    : null
+                  : reasonCode,
+                // Offering a time now sends words too — the drafted message,
+                // or whatever the mentor made of it. Before 2026-10-13 this
+                // path sent `''` and the mentee received a suggested hour with
+                // nothing said about why the agreed one was going away. One
+                // field carries both (`reason_text`, 2000 chars), because the
+                // two questions are alternatives: a reason or an offer, never
+                // both. An emptied box sends `''` and the offer speaks for
+                // itself (owner, 2026-10-13).
+                //
+                // Off the offering path, only "Something else" has words to
+                // send. The box is hidden for every other reason, so anything
+                // still held in state is something the person cannot see — it
+                // must not reach the other party's notification.
+                reasonText: offering ? messageText : reasonCode === 'other' ? text : '',
+                ...(action === 'cancel' && isMentor ? { releaseSlot: free } : {}),
+                ...(offering && suggested ? { suggestedStartsAt: suggested } : {}),
+              });
+            }}
+            // `busy` rather than the aria attributes: the atom owns both, and
+            // it also swallows the second click.
+            busy={pending}
+          >
+            {pending ? 'Working…' : offering ? CONFIRMS_OFFERING[action] : CONFIRMS[action]}
+          </Button>
+        </div>
       }
     >
       <div className={styles.confirmBody}>
-        {moving ? (
-          <p className={styles.moveLead}>
-            Your session with <strong>{b.other.name}</strong> is on <strong>{when.day}</strong> at{' '}
-            <strong>{when.start}</strong>. Pick a new time, or switch this off to cancel.
-          </p>
-        ) : (
-          <p className={styles.confirmLead}>{lead}</p>
-        )}
-        {/* The switch stays in both views, so switching back is one tap. */}
-        {canMove && move && (
-          <div className={styles.slotChoice}>
-            <Switch
-              ref={moveSwitchRef}
-              checked={moveOn}
-              // Not mid-move: switching off then would show a cancel for a
-              // session the running sequence is already canceling.
-              disabled={move.pending}
-              onChange={(v) => {
-                setMoveOn(v);
-                setMoveBad(false);
-                setReasonBad(null);
-                // The time and the message about it go together, as the
-                // mentor's offer does: a time nowhere on screen is never sent.
-                if (!v) {
-                  setNewTime(null);
-                  setMoveMessage(null);
-                }
-              }}
-              aria-labelledby={`${fieldId}-mv`}
-              aria-describedby={
-                moveBad ? `${fieldId}-mv-hint ${fieldId}-mv-err` : `${fieldId}-mv-hint`
-              }
-            />
-            <div>
-              <span id={`${fieldId}-mv`} className={styles.slotLabel}>
-                {MOVE_COPY.switchTitle(first)}
-              </span>
-              <p id={`${fieldId}-mv-hint`} className={styles.slotHint}>
-                {MOVE_COPY.switchSub(first, request)}
-              </p>
-              {moveBad && moving && (
-                <p id={`${fieldId}-mv-err`} role="alert" className={styles.moveError}>
-                  {MOVE_COPY.pickFirst}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-        {moving && move && (
-          <SuggestTimeStep
-            booking={b}
-            // The mentor's open times: on a mentee's row, the other party.
-            mentorId={b.other.id}
-            accountZone={accountZone}
-            timeZone={timeZone}
-            value={newTime}
-            onChange={(v) => {
-              // As the mentor's draft: an edited message keeps the edit, with
-              // only our sentence naming the time swapped.
-              setMoveMessage((m) =>
-                m === null || !newTime || !v
-                  ? null
-                  : swapSentence(
-                      m,
-                      moveSentence(slotLabel(newTime, timeZone), request),
-                      moveSentence(slotLabel(v, timeZone), request),
-                    ),
-              );
-              setNewTime(v);
-              setMoveBad(false);
-            }}
-            message={moveText}
-            onMessage={setMoveMessage}
-            label={MOVE_COPY.pickerLabel}
-            hold={false}
-            copy={MOVE_COPY.slots(first)}
-            now={now}
-          />
-        )}
-        {moving && move?.error && (
-          <p role="alert" className={styles.confirmError}>
-            {move.error}
-          </p>
-        )}
-
+        <p className={styles.confirmLead}>{lead}</p>
+        {canMove && moveSwitch}
         {/* Before the button, never after — and in the design's `Notice`
             tone="info" with no icon. The window is the server's, never the
             design's hard-coded twelve hours. */}
-        {creditLine && !moving && (
+        {creditLine && (
           <Notice tone="info" id={`${fieldId}-credit`}>
             {/* The design draws one Notice for both outcomes. "Your credit goes
                 back" and "the credit is not returned" are the one distinction
@@ -645,7 +695,7 @@ export function ConfirmActionDialog({
 
         {/* One question at a time: offering a time replaces giving a reason,
             which is how the design draws it and what the server accepts. */}
-        {!offering && !moving && (
+        {!offering && (
           <ReasonField
             side={b.side}
             label={REASON_LABELS[action]}
@@ -682,7 +732,7 @@ export function ConfirmActionDialog({
           </p>
         )}
 
-        {error && !moving && (
+        {error && (
           <p role="alert" className={styles.confirmError}>
             {error.message}
           </p>
