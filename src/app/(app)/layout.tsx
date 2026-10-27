@@ -31,8 +31,12 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
   settings: 'Settings',
 };
 
+/** The admin app's pages, by their segment under `/admin`. */
+const ADMIN_ACTIVE: Record<string, string> = { mentors: 'Mentors', credits: 'Credits' };
+
 export function activeFor(pathname: string): string {
-  const segment = pathname.split('/')[1] ?? '';
+  const [, segment = '', sub = ''] = pathname.split('/');
+  if (segment === 'admin') return ADMIN_ACTIVE[sub] ?? '';
   return ACTIVE_BY_SEGMENT[segment] ?? '';
 }
 
@@ -48,13 +52,14 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { chrome, account, nav, access } = useAppShell();
+  const { chrome, account, nav, adminEntry, access } = useAppShell();
   const online = useOnline();
 
   return (
     <AppShell
       active={activeFor(pathname)}
       nav={nav}
+      adminEntry={adminEntry}
       chrome={chrome}
       account={account}
       access={access}

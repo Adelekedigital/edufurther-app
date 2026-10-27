@@ -36,8 +36,11 @@ export function RoleRedirect({ children }: { children: ReactNode }) {
   return children;
 }
 
-/** The role isn't known yet: a page-shaped placeholder, nothing either role would read. */
-function RoleLoading() {
+/**
+ * The role isn't known yet: a page-shaped placeholder, nothing either role
+ * would read. Also the admin app's while /me loads.
+ */
+export function RoleLoading() {
   return (
     <div className={styles.loading} role="status" aria-label="Loading" aria-busy="true">
       <Skeleton width="40%" height="32px" />

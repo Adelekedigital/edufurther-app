@@ -1,9 +1,11 @@
 {
   "names": [
+    "accessibility_new",
     "account_box",
     "add",
     "add_circle",
     "add_photo_alternate",
+    "admin_panel_settings",
     "alternate_email",
     "arrow_back",
     "arrow_downward",
@@ -107,6 +109,7 @@
     "record_voice_over",
     "redeem",
     "refresh",
+    "remove",
     "replay",
     "route",
     "schedule",
@@ -153,5 +156,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "e0c9d4c1dd52e2d157cb96fd0d18302bf6444b8f10ae79f7ae5302598b407ad8"
+  "sha256": "b9320df1d878e0d3d425b7eb6f649a66d3133db921a4cc685ff57a1f2870df44"
 }

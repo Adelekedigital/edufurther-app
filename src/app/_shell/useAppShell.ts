@@ -2,10 +2,12 @@
 
 import { MENTOR_ONBOARDING_LIVE } from '@/lib/config/auth';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
+import { useAdminSummary } from '@/lib/api/data/admin';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useViewer } from '@/lib/api/data/viewer';
-import { accessFor, inSetup, setupCredits, type Access } from '@/lib/utils/access';
+import { accessFor, inSetup, isUnder, setupCredits, type Access } from '@/lib/utils/access';
 import { personCover } from '@/lib/utils/person';
 import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
@@ -105,6 +107,13 @@ export function useAppShell() {
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const chrome = chromeFor(viewer);
   const member = viewer.kind === 'member' ? viewer : null;
+  const admin = member?.isAdmin ? member : null;
+  // Inside /admin an admin gets the admin nav; its Mentors badge counts the
+  // applications waiting (Admin PRD, Access).
+  const pathname = usePathname();
+  const inAdmin = !!admin && isUnder(pathname ?? '', '/admin');
+  // Only inside /admin: the badge shows nowhere else.
+  const summary = useAdminSummary(inAdmin ? admin.id : null);
   // The setup lock: nav items held until onboarding or approval (lib/utils/access).
   const access = accessFor(viewer);
   const items = accountItems(
@@ -123,9 +132,12 @@ export function useAppShell() {
     // no Explore (product, 2026-09-28). Unknown until /me answers.
     nav: !member
       ? ('unknown' as const)
-      : member.isMentor
-        ? ('mentor' as const)
-        : ('mentee' as const),
+      : inAdmin
+        ? ('admin' as const)
+        : member.isMentor
+          ? ('mentor' as const)
+          : ('mentee' as const),
+    adminEntry: !!admin,
     /** Mentors can't book (product, 2026-09-29): "View profile" instead of Book. */
     canBook: canBookFor(viewer),
     access,
@@ -144,7 +156,8 @@ export function useAppShell() {
             // In setup the starter credit isn't paid yet (it is at completion): 0.
             // A mentor sign-up in setup isn't a mentee: no mentee credits.
             credits:
-              isMenteeSide(member) && access.state !== 'mentorSetup'
+              // Not inside /admin: mentee credits aren't admin chrome.
+              !inAdmin && isMenteeSide(member) && access.state !== 'mentorSetup'
                 ? (creditsView(
                     member.credits && access.state === 'menteeSetup'
                       ? setupCredits(member.credits)
@@ -155,7 +168,7 @@ export function useAppShell() {
                   ) ?? undefined)
                 : undefined,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
-            counts: countsFor(member),
+            counts: inAdmin ? adminCounts(summary.data?.counts.applications) : countsFor(member),
             logoutConfirm: confirmingLogout
               ? {
                   onKeep: () => setConfirmingLogout(false),
@@ -167,6 +180,17 @@ export function useAppShell() {
               : undefined,
           }
         : undefined,
+  };
+}
+
+/** The admin nav's badge: applications waiting, on Mentors. */
+export function adminCounts(waiting: number | undefined) {
+  if (!waiting || waiting <= 0) return {};
+  return {
+    Mentors: {
+      count: waiting,
+      label: `${waiting} ${waiting === 1 ? 'application' : 'applications'} waiting`,
+    },
   };
 }
 

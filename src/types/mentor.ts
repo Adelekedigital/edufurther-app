@@ -174,6 +174,9 @@ export type BookingRequest = {
 /** Where a mentor application stands (/me mentor_profile), as toMentorApplication reads it. */
 export type MentorStage = 'none' | 'unsubmitted' | 'pending' | 'approved' | 'declined';
 
+/** A platform admin's strongest grant (backend `admin_users.role`). */
+export type AdminRole = 'super_admin' | 'mentor_approval' | 'limited_access';
+
 export type Viewer =
   /**
    * Not known yet. `signedIn`: null while the session itself is unknown (render
@@ -294,6 +297,14 @@ export type Viewer =
        * counts. Null without a mentor profile; absent from an older /me.
        */
       sessionTypeLimit?: number | null;
+      /**
+       * A live, unrevoked platform admin grant (`/me` is_admin): the Admin nav
+       * item and the `/admin` pages. Never a role: an admin is also a mentee or
+       * a mentor. Absent: not an admin.
+       */
+      isAdmin?: boolean;
+      /** The strongest grant (`/me` admin_role); `limited_access` can't decide on mentors. */
+      adminRole?: AdminRole | null;
     };
 
 export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';

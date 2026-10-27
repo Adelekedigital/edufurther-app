@@ -5,6 +5,7 @@ const signOut = vi.fn();
 let unsaved = false;
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => signOut }));
 vi.mock('@/lib/utils/leaveGuard', () => ({ hasUnsavedChanges: () => unsaved }));
+vi.mock('@/lib/api/data/admin', () => ({ useAdminSummary: () => ({ data: undefined }) }));
 vi.mock('@/lib/api/data/viewer', () => ({
   useViewer: () => ({
     kind: 'member',

@@ -14,7 +14,6 @@ export type SignInAccount =
       id: string;
       /** null: never named. The finish step, or the name typed at sign-up, fills it. */
       firstName: string | null;
-      isAdmin: boolean;
       /** Any mentor profile, approved or not. */
       isMentor: boolean;
       /** The mentor profile's approval_status is `approved` (pending and declined are not). */
@@ -51,7 +50,6 @@ export async function fetchSignInAccount(): Promise<SignInAccount> {
       kind: 'member',
       id: data.id,
       firstName: data.first_name ?? null,
-      isAdmin: !!data.is_admin,
       // A declined applicant who chose mentee signs in to the mentee side.
       isMentor: !!data.mentor_profile && !menteeByChoice(data),
       mentorApproved: data.mentor_profile?.approval_status === 'approved',

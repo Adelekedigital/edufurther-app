@@ -128,7 +128,7 @@ type HomeInput = {
 };
 
 /**
- * A member's own home (admins aside), shared by `/` (homeFor), sign-in
+ * A member's own home, shared by `/` (homeFor), sign-in
  * (accountHome) and the nav's Home. A mentor who never submitted goes to the
  * application form, one not yet approved to their application, as does an approved one who hasn't seen the approved screen; a
  * mentee who hasn't finished onboarding goes to it. Each only while the page
@@ -189,6 +189,8 @@ export const SHARED_ROUTES: readonly string[] = [
   '/login',
   '/signup',
   '/invite',
+  // Any role may be a platform admin; the admin layout lets only admins in.
+  '/admin',
 ];
 
 /** `path` is `route` or one of its sub-routes; `/` matches the root only. */

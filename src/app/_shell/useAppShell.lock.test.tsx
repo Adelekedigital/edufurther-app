@@ -8,6 +8,7 @@ vi.hoisted(() => {
 let viewer: Viewer = { kind: 'guest' };
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
+vi.mock('@/lib/api/data/admin', () => ({ useAdminSummary: () => ({ data: undefined }) }));
 const { useAppShell } = await import('./useAppShell');
 
 type Member = Extract<Viewer, { kind: 'member' }>;

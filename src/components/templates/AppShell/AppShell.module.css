@@ -122,6 +122,17 @@
   margin: var(--space-2) 0;
   background: var(--border-subtle);
 }
+/* The Admin entry sits at the rail's foot (design: a flex spacer, then the divider). */
+.railAdmin {
+  margin-top: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.railAdminDivider {
+  margin: var(--space-1) 0;
+}
 .railItem {
   /* Also a <button> when locked: no UA border or ground. */
   border: none;

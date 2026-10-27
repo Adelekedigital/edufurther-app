@@ -50,7 +50,6 @@ const fresh = (over: object = {}) => ({
   kind: 'member',
   id: 'u1',
   firstName: null,
-  isAdmin: false,
   isMentor: false,
   mentorApproved: false,
   signedUpAsMentor: false,

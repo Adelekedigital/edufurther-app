@@ -19,7 +19,6 @@ export async function loadAccount(): Promise<SignInAccount> {
 export function toAccount(acct: Extract<SignInAccount, { kind: 'member' }>) {
   return {
     id: acct.id,
-    isAdmin: acct.isAdmin,
     isMentor: acct.isMentor,
     mentorApproved: acct.mentorApproved,
     mentorApprovedSeen: acct.mentorApprovedSeen,

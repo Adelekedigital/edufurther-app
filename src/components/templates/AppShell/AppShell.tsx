@@ -63,13 +63,37 @@ const MENTOR_NAV: NavItem[] = [
   { label: 'Integration', href: '/integrations', icon: 'power', group: 'setup' },
   { label: 'Settings', href: '/settings', icon: 'settings', group: 'setup' },
 ];
+/**
+ * The admin app (design AppShell role=admin): Mentors and Credits. Team calls
+ * waits for its own PRD (founder, 2026-10-26).
+ */
+const ADMIN_NAV: NavItem[] = [
+  { label: 'Mentors', href: '/admin/mentors', icon: 'groups', group: 'daily' },
+  { label: 'Credits', href: '/admin/credits', icon: 'toll', group: 'daily' },
+];
 /** `unknown`: signed in, role not known yet — no items rather than the wrong set. */
-const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, unknown: [] as NavItem[] };
-/** Bottom tabs: max 4 — the first three, then "More" (design PWA pass). */
+const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, admin: ADMIN_NAV, unknown: [] as NavItem[] };
+/**
+ * Bottom tabs: max 4 — the first three, then "More" (design PWA pass). Admin
+ * keeps More too, for its account items: the design's phone header has no
+ * account control, so without it an admin couldn't log out (design-divergence, Admin).
+ */
 const PRIMARY_TABS = {
   mentee: ['Home', 'Explore', 'Bookings'],
   mentor: ['Home', 'Calendar', 'Bookings'],
+  admin: ['Mentors', 'Credits'],
   unknown: [] as string[],
+};
+/**
+ * The way into the admin app from the member app, for platform admins only
+ * (design `showAdmin`): the rail's foot under a divider, and on phones the More
+ * sheet (its own icon there, as drawn).
+ */
+const ADMIN_ENTRY: NavItem = {
+  label: 'Admin',
+  href: '/admin/mentors',
+  icon: 'admin_panel_settings',
+  group: 'setup',
 };
 /**
  * Prefetch is off until the other screens exist: Next 16 holds prefetch streams
@@ -87,11 +111,13 @@ type AppShellProps = {
   /** Label of the current section, e.g. "Explore". */
   active: string;
   /**
-   * Which navigation a member gets (design `role`; Admin is never shown). From
-   * useAppShell; `unknown` while /me is loading, so a mentor never sees the
-   * mentee set flash first.
+   * Which navigation a member gets (design `role`). From useAppShell;
+   * `unknown` while /me is loading, so a mentor never sees the mentee set
+   * flash first; `admin` inside the admin app.
    */
-  nav?: 'mentee' | 'mentor' | 'unknown';
+  nav?: 'mentee' | 'mentor' | 'admin' | 'unknown';
+  /** A platform admin in the member app: the Admin item (design `showAdmin`). */
+  adminEntry?: boolean;
   /**
    * guest: public header (Log in / Get started), no navigation.
    * member: rail / tabs and the account menu.
@@ -125,6 +151,7 @@ type AppShellProps = {
 export function AppShell({
   active,
   nav = 'mentee',
+  adminEntry = false,
   chrome,
   account,
   access,
@@ -209,6 +236,13 @@ export function AppShell({
   const moreActive = extra.some((n) => n.label === active);
   const daily = items.filter((n) => n.group === 'daily');
   const setup = items.filter((n) => n.group === 'setup');
+  const admin = adminEntry && nav !== 'admin' ? [shownItem(ADMIN_ENTRY, undefined, {})] : [];
+  // Phones put it in the More sheet with the icon the design draws there
+  // (AppShell.dc.html mentor defs ['Admin', 'accessibility_new']; Admin PRD).
+  const sheetItems = [
+    ...extra,
+    ...admin.map((n) => ({ ...n, icon: 'accessibility_new' as const })),
+  ];
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -272,6 +306,12 @@ export function AppShell({
                 <span className={styles.railDivider} aria-hidden />
               )}
               <RailList items={setup} active={active} onLock={openLock} />
+              {admin.length > 0 && (
+                <div className={styles.railAdmin}>
+                  <span className={cx(styles.railDivider, styles.railAdminDivider)} aria-hidden />
+                  <RailList items={admin} active={active} onLock={openLock} />
+                </div>
+              )}
             </div>
             {account && (
               <AccountMenu
@@ -406,7 +446,7 @@ export function AppShell({
               <CreditsSummary credits={credits} onHowItWorks={() => openCredits(moreRef.current)} />
             )}
             <ul className={styles.sheetList}>
-              {extra.map((n) => (
+              {sheetItems.map((n) => (
                 <li key={n.href}>
                   {n.locked ? (
                     <button

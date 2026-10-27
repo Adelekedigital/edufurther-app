@@ -6,13 +6,14 @@ import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
-import { mentorStageOf, routeRole } from '@/lib/utils/access';
+import { isUnder, mentorStageOf, routeRole } from '@/lib/utils/access';
 import { coverKey } from '@/lib/utils/cover';
 import { readMockParam } from '@/lib/utils/mockViewerParam';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { clampFocus, personInitials } from '@/lib/utils/person';
 import { ApiError } from './errors';
 import { api } from './http';
+import type { PendingMe } from './pending';
 import { menteeByChoice } from './roles';
 import { keys } from './keys';
 import { useSession } from './session';
@@ -80,6 +81,9 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
       : (me.booking_counts?.as_mentee?.awaiting_mentor ?? null),
     menteeCancelRefundHours: me.mentee_cancel_refund_hours ?? null,
     sessionTypeLimit: me.session_type_limit ?? null,
+    isAdmin: me.is_admin === true,
+    // A grant with no role named yet (older /me) is the full one: the API still decides.
+    adminRole: me.is_admin ? ((me as UserRead & PendingMe).admin_role ?? 'super_admin') : null,
     bookingCounts: {
       pending: sumSides(
         me.booking_counts?.as_mentor?.awaiting_your_response,
@@ -241,6 +245,21 @@ MOCK_VIEWERS['mentor-unsubmitted'] = {
   mentorStage: 'unsubmitted',
 };
 
+// Platform admins (Admin PRD): a mentee and a mentor who also hold a grant.
+MOCK_VIEWERS.admin = {
+  ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
+  firstName: 'Ada',
+  initials: 'AO',
+  isAdmin: true,
+  adminRole: 'super_admin',
+};
+MOCK_VIEWERS['admin-mentor'] = {
+  ...(MOCK_VIEWERS.mentor as Extract<Viewer, { kind: 'member' }>),
+  isAdmin: true,
+  adminRole: 'super_admin',
+};
+MOCK_VIEWERS['admin-limited'] = { ...MOCK_VIEWERS.admin, adminRole: 'limited_access' } as Viewer;
+
 /** The mock viewer before hydration has read `?mockViewer=`. */
 const MOCK_PENDING: Viewer = { kind: 'loading', signedIn: true };
 
@@ -256,6 +275,8 @@ const onPopState = (cb: () => void) => {
  * redirect in dev.
  */
 const onMentorPage = (path: string | null) => !!path && routeRole(path) === 'mentor';
+/** Likewise the admin pages default to an admin. */
+const onAdminPage = (path: string | null) => !!path && isUnder(path, '/admin');
 
 /**
  * The mock viewer, or null when NEXT_PUBLIC_MOCK_VIEWER is unset (every real
@@ -279,7 +300,7 @@ function useMockViewer(): Viewer | null {
   const hydrated = useHydrated();
   if (!env) return null;
   if (!hydrated) return MOCK_PENDING;
-  const byRoute = onMentorPage(path) ? 'mentor' : env;
+  const byRoute = onMentorPage(path) ? 'mentor' : onAdminPage(path) ? 'admin' : env;
   const pick = param ?? byRoute;
   // Own keys only: `?mockViewer=constructor` must not reach Object.prototype.
   const key = Object.hasOwn(MOCK_VIEWERS, pick) ? pick : env;
