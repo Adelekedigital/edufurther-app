@@ -13,17 +13,27 @@ import { keys } from './keys';
 export type MoveRequest = {
   booking: Booking;
   startsAt: string;
+  /**
+   * "Message to {First}": the new session's note, in the mentor's booking
+   * email; blank keeps the old note.
+   */
+  message: string;
 };
 
-/** The move's refusal in our words; every one leaves the session as it was. */
+/**
+ * The move's refusal in our words. Every answer from the server leaves the
+ * session as it was, so each says so; offline does not, as the move may have
+ * landed before the connection went.
+ */
 export function moveError(e: unknown): AppError {
   const n = normaliseError(e);
   const said = (message: string): AppError => ({ ...n, message });
   if (e instanceof ApiError && e.status === 409 && e.type?.endsWith('/problems/move-too-late'))
     return said(MOVE_COPY.tooLate);
   switch (n.kind) {
-    // 422: not a time the grid offers now. A plain 409: taken while moving,
-    // or the session itself changed; either way another time is the answer.
+    // 422: not a time the grid offers now. A plain 409 is mostly the time
+    // taken while moving; one for a session that has ended meanwhile is
+    // corrected by the refetch, which takes the page to Bookings.
     case 'validation':
     case 'conflict':
       return said(MOVE_COPY.slotTaken);
@@ -34,9 +44,10 @@ export function moveError(e: unknown): AppError {
     case 'bookingLimitReached':
     case 'needsOnboarding':
       return said(`${n.message} ${MOVE_COPY.nothingChanged}`);
-    case 'offline':
     case 'unauthorized':
     case 'rateLimited':
+      return said(`${n.message} ${MOVE_COPY.nothingChanged}`);
+    case 'offline':
       return n;
     default:
       return said(MOVE_COPY.failed);
@@ -63,7 +74,8 @@ export function useMoveSession() {
 
   const mutation = useMutation({
     mutationFn: async (req: MoveRequest) => {
-      const body = { starts_at: req.startsAt };
+      const body = { starts_at: req.startsAt, message: req.message };
+      // The server's fingerprint covers the message too: an edited one is a new attempt.
       attempt.current = keyForAttempt(attempt.current, JSON.stringify([req.booking.id, body]), () =>
         crypto.randomUUID(),
       );
@@ -74,7 +86,7 @@ export function useMoveSession() {
         },
         body,
       });
-      if (!data) throw apiError(response.status, error);
+      if (!data) throw apiError(response.status, error, response);
       return data;
     },
     onSuccess: () => {

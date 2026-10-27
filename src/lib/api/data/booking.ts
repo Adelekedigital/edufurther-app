@@ -164,14 +164,8 @@ export function bookingError(e: AppError): AppError {
 
 // ---- hooks ------------------------------------------------------------------
 
-/**
- * One read of GET /users/{id}/session-types. Shared by `useSessionTypes` and
- * the mentee's move, which reads it fresh just before cancelling.
- */
-export async function fetchSessionTypes(
-  mentorId: string,
-  signal?: AbortSignal,
-): Promise<SessionType[]> {
+/** One read of GET /users/{id}/session-types, for `useSessionTypes`. */
+async function fetchSessionTypes(mentorId: string, signal?: AbortSignal): Promise<SessionType[]> {
   const { data, error, response } = await api.GET('/api/v1/users/{user_id}/session-types', {
     params: { path: { user_id: mentorId } },
     signal,
@@ -356,11 +350,6 @@ export function useRequestBooking() {
   );
   return {
     request: mutation.mutate,
-    /**
-     * The same request, awaited: for a sequence that books as its last step
-     * (the mentee's move). Rejects with the raw error; `requestError` words it.
-     */
-    requestAsync: mutation.mutateAsync,
     isPending: mutation.isPending,
     isDone: mutation.isSuccess,
     /** The created session came back confirmed (an instant offering), not pending. */

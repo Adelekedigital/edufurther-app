@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import { ApiError } from './errors';
+import { keys } from './keys';
 import { moveError, useMoveSession, type MoveRequest } from './moveSession';
 
 // Mocked at the client's edge (`./http`), as the other data-layer suites do:
@@ -37,7 +38,7 @@ const booking = sampleBookingFor({
   status: 'confirmed',
   other: sampleParty({ id: 'amara' }),
 });
-const req: MoveRequest = { booking, startsAt: NEW_TIME };
+const req: MoveRequest = { booking, startsAt: NEW_TIME, message: 'See you then.' };
 
 function setup() {
   const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
@@ -57,7 +58,7 @@ beforeEach(() => {
 });
 
 describe('useMoveSession', () => {
-  it('is one POST to the session’s move, with the time and an Idempotency-Key', async () => {
+  it('is one POST to the session’s move, with the time, the message and an Idempotency-Key', async () => {
     const { result } = setup();
     const onMoved = vi.fn();
     act(() => result.current.move(req, onMoved));
@@ -65,7 +66,7 @@ describe('useMoveSession', () => {
     expect(calls).toHaveLength(1);
     expect(calls[0]!.path).toBe(MOVE);
     expect(calls[0]!.init.params).toMatchObject({ path: { session_id: 'b1' } });
-    expect(calls[0]!.init.body).toEqual({ starts_at: NEW_TIME });
+    expect(calls[0]!.init.body).toEqual({ starts_at: NEW_TIME, message: 'See you then.' });
     expect(keyOf(0)).toMatch(/^[0-9a-f-]{36}$/);
   });
 
@@ -88,6 +89,10 @@ describe('useMoveSession', () => {
     act(() => result.current.move({ ...req, startsAt: '2026-10-07T14:00:00Z' }, vi.fn()));
     await waitFor(() => expect(calls).toHaveLength(3));
     expect(keyOf(2)).not.toBe(keyOf(0));
+    // The server fingerprints the message too: an edited one is a new attempt.
+    act(() => result.current.move({ ...req, message: 'Edited.' }, vi.fn()));
+    await waitFor(() => expect(calls).toHaveLength(4));
+    expect(keyOf(3)).not.toBe(keyOf(0));
   });
 
   it('reset clears the refusal and starts a new attempt, with a new key', async () => {
@@ -102,14 +107,21 @@ describe('useMoveSession', () => {
     expect(keyOf(1)).not.toBe(keyOf(0));
   });
 
-  it('refreshes the lists and the mentor’s grid, moved or refused', async () => {
+  it('refreshes the lists, /me, Book again and the mentor’s grid, moved or refused', async () => {
     reply = () => fail(409);
     const { result, invalidate } = setup();
     act(() => result.current.move(req, vi.fn()));
     await waitFor(() => expect(result.current.error).not.toBeNull());
     const refreshed = invalidate.mock.calls.map((c) => JSON.stringify(c[0]!.queryKey));
-    expect(refreshed).toContain(JSON.stringify(['bookings']));
-    expect(refreshed.some((k) => k.includes('amara'))).toBe(true);
+    expect(refreshed).toEqual(
+      expect.arrayContaining([
+        JSON.stringify(keys.bookings.all),
+        JSON.stringify(keys.viewer.all),
+        JSON.stringify(keys.metMentors.all),
+        JSON.stringify(keys.mentors.all),
+        JSON.stringify(keys.booking.slotsFor('amara')),
+      ]),
+    );
   });
 
   it('no onMoved once the page has gone', async () => {
@@ -125,7 +137,7 @@ describe('useMoveSession', () => {
   });
 });
 
-describe('moveError: every refusal says nothing has changed', () => {
+describe('moveError: every answer from the server says nothing has changed', () => {
   const api = (status: number, type?: string) => new ApiError(status, 'x', type);
 
   it.each([
@@ -151,11 +163,36 @@ describe('moveError: every refusal says nothing has changed', () => {
       'This time overlaps with another session you have. Nothing has changed.',
     ],
     [
+      'with this mentor already',
+      api(409, '/problems/booking-with-mentor-exists'),
+      'You already have a session pending or coming up with this mentor. Nothing has changed.',
+    ],
+    [
+      'at the limit',
+      api(409, '/problems/booking-limit-reached'),
+      'You already have 2 sessions pending or coming up. Nothing has changed.',
+    ],
+    [
+      'onboarding unfinished',
+      api(409, '/problems/booking-needs-onboarding'),
+      'Finish setting up your account before booking. Nothing has changed.',
+    ],
+    ['logged out (401)', api(401), 'Please log in again. Nothing has changed.'],
+    [
+      'too often (429)',
+      api(429),
+      'You’ve done that too often. Try again shortly. Nothing has changed.',
+    ],
+    [
       'server',
       api(500),
       'We couldn’t move your session. Nothing has changed. Try again in a moment.',
     ],
   ])('%s', (_name, e, text) => {
     expect(moveError(e).message).toBe(text);
+  });
+
+  it('offline: not said, since the move may have landed', () => {
+    expect(moveError(new TypeError('fetch failed')).message).toBe('We couldn’t reach EduFurther.');
   });
 });

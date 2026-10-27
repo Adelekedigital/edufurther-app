@@ -564,14 +564,17 @@ export function SessionJoinScreen({ id }: { id: string }) {
                     // "Working…" until the page has gone to the new session.
                     pending: move.isPending || moved,
                     error: move.error?.message ?? null,
-                    onMove: ({ startsAt }) => {
+                    onMove: ({ startsAt, message }) => {
                       setMovingFrom(data.booking);
-                      move.move({ booking: data.booking, startsAt }, (newId, confirmed) => {
-                        setMoved(true);
-                        // Not back to the canceled one; a request is Bookings'.
-                        const to = encodeURIComponent(newId);
-                        router.replace(confirmed ? `/sessions/${to}` : `/bookings?booking=${to}`);
-                      });
+                      move.move(
+                        { booking: data.booking, startsAt, message },
+                        (newId, confirmed) => {
+                          setMoved(true);
+                          // Not back to the canceled one; a request is Bookings'.
+                          const to = encodeURIComponent(newId);
+                          router.replace(confirmed ? `/sessions/${to}` : `/bookings?booking=${to}`);
+                        },
+                      );
                     },
                   } satisfies MoveOption)
                 : undefined

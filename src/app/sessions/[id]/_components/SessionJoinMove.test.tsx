@@ -146,11 +146,14 @@ describe('Cancel on a mentee’s session', () => {
     expect(screen.getByRole('dialog', { name: 'Cancel this booking?' })).toBeVisible();
   });
 
-  it('sends the session and the picked time to the move', async () => {
+  it('sends the session, the picked time and the message to the move', async () => {
     renderAt('2026-10-03T12:00:00Z');
     const { req } = await openAndMove();
     expect(req.booking.id).toBe('b1');
     expect(req.startsAt).toBe(NEW_TIME);
+    expect(req.message).toBe(
+      'Hi Amara, I can’t make our session on Sun, Oct 4. I’ve moved it to Tue, Oct 6 · 3:00 pm. See you then.',
+    );
   });
 });
 
