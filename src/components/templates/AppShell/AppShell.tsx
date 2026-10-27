@@ -73,7 +73,11 @@ const ADMIN_NAV: NavItem[] = [
 ];
 /** `unknown`: signed in, role not known yet — no items rather than the wrong set. */
 const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, admin: ADMIN_NAV, unknown: [] as NavItem[] };
-/** Bottom tabs: max 4 — the first three, then "More" (design PWA pass). Admin: no More. */
+/**
+ * Bottom tabs: max 4 — the first three, then "More" (design PWA pass). Admin
+ * keeps More too, for its account items: the design's phone header has no
+ * account control, so without it an admin couldn't log out (design-divergence, Admin).
+ */
 const PRIMARY_TABS = {
   mentee: ['Home', 'Explore', 'Bookings'],
   mentor: ['Home', 'Calendar', 'Bookings'],
@@ -395,7 +399,7 @@ export function AppShell({
               </Link>
             );
           })}
-          {nav !== 'unknown' && nav !== 'admin' && (
+          {nav !== 'unknown' && (
             <button
               ref={moreRef}
               type="button"

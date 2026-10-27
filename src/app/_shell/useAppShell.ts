@@ -112,7 +112,8 @@ export function useAppShell() {
   // applications waiting (Admin PRD, Access).
   const pathname = usePathname();
   const inAdmin = !!admin && isUnder(pathname ?? '', '/admin');
-  const summary = useAdminSummary(admin?.id ?? null);
+  // Only inside /admin: the badge shows nowhere else.
+  const summary = useAdminSummary(inAdmin ? admin.id : null);
   // The setup lock: nav items held until onboarding or approval (lib/utils/access).
   const access = accessFor(viewer);
   const items = accountItems(
@@ -155,7 +156,8 @@ export function useAppShell() {
             // In setup the starter credit isn't paid yet (it is at completion): 0.
             // A mentor sign-up in setup isn't a mentee: no mentee credits.
             credits:
-              isMenteeSide(member) && access.state !== 'mentorSetup'
+              // Not inside /admin: mentee credits aren't admin chrome.
+              !inAdmin && isMenteeSide(member) && access.state !== 'mentorSetup'
                 ? (creditsView(
                     member.credits && access.state === 'menteeSetup'
                       ? setupCredits(member.credits)

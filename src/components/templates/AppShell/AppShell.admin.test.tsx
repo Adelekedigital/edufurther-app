@@ -10,7 +10,7 @@ const hrefs = (i: 0 | 1) =>
     .map((a) => a.getAttribute('href'));
 
 describe('AppShell: the admin app (Admin PRD, Access)', () => {
-  it('admin nav is Mentors and Credits, on the rail and the phone tabs, with no More', () => {
+  it('admin nav is Mentors and Credits, on the rail and the phone tabs', () => {
     render(
       <AppShell active="Mentors" nav="admin" chrome="member" offline={false}>
         <p>Page</p>
@@ -18,7 +18,6 @@ describe('AppShell: the admin app (Admin PRD, Access)', () => {
     );
     expect(hrefs(0)).toEqual(['/', '/admin/mentors', '/admin/credits']);
     expect(hrefs(1)).toEqual(['/admin/mentors', '/admin/credits']);
-    expect(nav(1).queryByRole('button', { name: 'More' })).toBeNull();
     expect(screen.queryByRole('link', { name: /Team calls/ })).toBeNull();
     expect(nav(0).getByRole('link', { name: 'Mentors' })).toHaveAttribute('aria-current', 'page');
   });
@@ -74,6 +73,30 @@ describe('AppShell: the admin app (Admin PRD, Access)', () => {
       );
       unmount();
     }
+  });
+
+  it('phones: More holds the account items in the admin app, so Logout is reachable', async () => {
+    const onSelect = vi.fn();
+    render(
+      <AppShell
+        active="Mentors"
+        nav="admin"
+        chrome="member"
+        offline={false}
+        account={{
+          avatar: { initials: 'AO', cover: 'sky' },
+          items: [{ key: 'logout', label: 'Logout', icon: 'logout', danger: true, onSelect }],
+        }}
+      >
+        <p>Page</p>
+      </AppShell>,
+    );
+    await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
+    const sheet = document.getElementById('more-sheet')!;
+    // No member nav and no Admin entry inside the admin app: just the account.
+    expect(within(sheet).queryByRole('link', { name: 'Admin' })).toBeNull();
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Logout' }));
+    expect(onSelect).toHaveBeenCalledTimes(1);
   });
 
   it('nobody else sees an Admin item', () => {

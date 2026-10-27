@@ -17,6 +17,8 @@ export type Home =
 
 type Profile = components['schemas']['MentorProfileRead'];
 // What the router reads: who the member is, and how far their setup has got.
+// `is_admin` stays so the tests (and the admin mock) pin that an admin routes
+// like any member (Admin PRD: admins keep their own home).
 type Me = Pick<components['schemas']['UserRead'], 'is_admin'> &
   Partial<Pick<components['schemas']['UserRead'], 'primary_role' | 'onboarding' | 'goal'>> & {
     mentor_profile?:
