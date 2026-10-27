@@ -1,10 +1,10 @@
 'use client';
 
-import { Fragment, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { cx } from '@/lib/utils/cx';
+import { Select } from '@/components/atoms/Select/Select';
 import styles from './LanguageChips.module.css';
 
 export type LanguageOption = { id: string; label: string };
@@ -50,9 +50,9 @@ const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLow
 /**
  * Languages as chips (Mentee Settings.dc.html `mLangs`): the common ones, then
  * any other the person speaks, each a toggle. "Add another language" opens a
- * field that searches the catalog, with the matches listed under it
- * (design-divergence: the design takes free text, but a language is saved by
- * its catalog id).
+ * field that searches the catalog: the shared Select, searchable, with the
+ * matches in its list (design-divergence: the design takes free text, but a
+ * language is saved by its catalog id).
  */
 export function LanguageChips({
   label,
@@ -70,11 +70,17 @@ export function LanguageChips({
   full = false,
   none,
 }: LanguageChipsProps) {
-  const id = useId();
-  const listId = `${id}-list`;
   const [adding, setAdding] = useState(false);
-  const [active, setActive] = useState(0);
   const addButton = useRef<HTMLButtonElement>(null);
+  const field = useRef<HTMLElement>(null);
+  // The row the list last highlighted, for Add. Pressing Add closes the list
+  // first (its closing null arrives before Add's own events), so that null
+  // is not taken: typing, Escape and leaving the field for anything but Add
+  // forget the row instead. A click reads it as the press starts (Safari doesn't
+  // focus a clicked button); Enter or Space after Tab reads it as kept.
+  const highlight = useRef<string | null>(null);
+  const pressed = useRef<string | null>(null);
+  const addRow = useRef<HTMLButtonElement>(null);
   const group = useRef<HTMLDivElement>(null);
   // The failure line, heard: put into the always-present region after it
   // mounts (a region that arrives with its text in it is often skipped).
@@ -90,14 +96,20 @@ export function LanguageChips({
   const chips = [...common, ...selected.filter((s) => !common.some((c) => c.id === s.id))];
   const typed = query.trim();
   const matches = typed ? results.filter((r) => !isOn(r)).slice(0, MATCHES) : [];
-  const exact = matches.find((m) => same(m.label, typed));
-  const chosen = matches[active] ?? exact;
+  // Enter with the list closed, and Add with no row highlighted: the match
+  // typed in full, else the first.
+  const chosen = matches.find((m) => same(m.label, typed)) ?? matches[0];
+
+  // Opened on request, so focus goes straight to the field.
+  useEffect(() => {
+    if (adding) field.current?.focus();
+  }, [adding]);
 
   // The field and its buttons go: focus returns to "Add another language",
   // or to the group when that pick filled it and the button is now disabled.
   const close = () => {
     setAdding(false);
-    setActive(0);
+    highlight.current = null;
     onQueryChange('');
     requestAnimationFrame(() => {
       const add = addButton.current;
@@ -111,23 +123,20 @@ export function LanguageChips({
     if (!isOn(l) && !full) onToggle(l);
     close();
   };
-  const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown' && matches.length) {
-      e.preventDefault();
-      setActive((a) => (a + 1) % matches.length);
-    } else if (e.key === 'ArrowUp' && matches.length) {
-      e.preventDefault();
-      setActive((a) => (a - 1 + matches.length) % matches.length);
-    } else if (e.key === 'Enter') {
+  // The keys the Select leaves alone while its list is closed: Enter adds the
+  // match, Escape closes the adder (the one that closes the list stays there).
+  const onKey = (e: KeyboardEvent) => {
+    if (e.defaultPrevented) return;
+    if (e.key === 'Enter' && chosen && e.target === field.current) {
       e.preventDefault();
       pick(chosen);
     } else if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       close();
     }
   };
 
-  const showList = adding && typed !== '';
   const noneChip = (n: NonNullable<typeof none>) => (
     <Chip look="choice" pressed={selected.length === 0} onClick={n.onPick}>
       {n.label}
@@ -180,62 +189,47 @@ export function LanguageChips({
           {copy.add}
         </button>
       ) : (
-        <span className={styles.adder}>
-          <span className={styles.search}>
-            <input
-              role="combobox"
-              aria-expanded={showList}
-              aria-controls={showList ? listId : undefined}
-              aria-autocomplete="list"
-              aria-activedescendant={
-                showList && matches[active] ? `${listId}-${active}` : undefined
-              }
-              aria-label={copy.add}
-              className={styles.input}
-              value={query}
-              placeholder={copy.placeholder}
-              // Opened on request, so focus goes straight to it.
-              autoFocus
-              onChange={(e) => {
-                onQueryChange(e.target.value);
-                setActive(0);
-              }}
-              onKeyDown={onKey}
-            />
-            {showList && (
-              <ul id={listId} role="listbox" aria-label={copy.add} className={styles.list}>
-                {matches.length === 0 ? (
-                  <li role="presentation" className={styles.empty}>
-                    {status === 'loading'
-                      ? copy.searching
-                      : status === 'error'
-                        ? copy.searchFailed
-                        : copy.noMatch(typed)}
-                  </li>
-                ) : (
-                  matches.map((m, i) => (
-                    <li
-                      key={m.id}
-                      id={`${listId}-${i}`}
-                      role="option"
-                      aria-selected={i === active}
-                      className={cx(styles.option, i === active && styles.activeOption)}
-                      // Before the input blurs, so the pick lands.
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => pick(m)}
-                    >
-                      {m.label}
-                    </li>
-                  ))
-                )}
-              </ul>
-            )}
-          </span>
+        <span
+          className={styles.adder}
+          onKeyDown={onKey}
+          onKeyDownCapture={(e) => e.key === 'Escape' && (highlight.current = null)}
+          onBlurCapture={(e) => e.relatedTarget !== addRow.current && (highlight.current = null)}
+        >
+          <Select
+            ref={field}
+            searchable
+            remote
+            density="md"
+            text="sm"
+            className={styles.search}
+            aria-label={copy.add}
+            placeholder={copy.placeholder}
+            query={query}
+            onQueryChange={(q) => {
+              highlight.current = null;
+              onQueryChange(q);
+            }}
+            onHighlight={(o, open) => {
+              // A null as the list closes is Add's own press: keep the row.
+              if (o || open) highlight.current = o?.value ?? null;
+            }}
+            value=""
+            options={matches.map((m) => ({ value: m.id, label: m.label }))}
+            onChange={(e) => pick(matches.find((m) => m.id === e.target.value))}
+            status={status}
+            copy={{ searching: copy.searching, failed: copy.searchFailed, noMatch: copy.noMatch }}
+          />
           <Button
             variant="secondary-outlined"
             size="medium"
             disabled={!chosen}
-            onClick={() => pick(chosen)}
+            ref={addRow}
+            onPointerDown={() => (pressed.current = highlight.current)}
+            onClick={(e) => {
+              const row = e.detail > 0 ? pressed.current : highlight.current;
+              pressed.current = null;
+              pick(matches.find((m) => m.id === row) ?? chosen);
+            }}
           >
             {copy.addButton}
           </Button>

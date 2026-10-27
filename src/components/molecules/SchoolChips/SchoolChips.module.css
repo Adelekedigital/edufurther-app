@@ -62,70 +62,8 @@
   gap: var(--space-2);
 }
 .search {
-  position: relative;
   flex: 1;
   min-width: 0;
-}
-.input {
-  box-sizing: border-box;
-  width: 100%;
-  height: var(--control-h-sm);
-  padding: 0 var(--space-3);
-  border: var(--border-hairline) solid var(--ink-300);
-  border-radius: var(--radius-md);
-  background: var(--white);
-  font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
-  color: var(--ink-900);
-}
-.input::placeholder {
-  color: var(--ink-500);
-}
-.input:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: 0;
-  border-color: var(--border-focus);
-}
-.input[aria-disabled='true'] {
-  cursor: not-allowed;
-  background: var(--ink-50);
-}
-
-/* Ours: the catalogue matches, in the menu card (as LanguageChips). */
-.list {
-  position: absolute;
-  top: calc(100% + var(--space-1));
-  left: 0;
-  right: 0;
-  z-index: 6;
-  margin: 0;
-  padding: var(--space-1);
-  list-style: none;
-  border-radius: var(--radius-lg);
-  background: var(--white);
-  box-shadow:
-    var(--shadow-menu),
-    inset 0 0 0 1px var(--ink-200);
-}
-.option,
-.empty {
-  display: flex;
-  align-items: center;
-  min-height: var(--button-h-medium);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-md);
-  font-size: var(--text-p-sm);
-  color: var(--ink-900);
-}
-.option {
-  cursor: pointer;
-}
-.option:hover,
-.activeOption {
-  background: var(--ink-50);
-}
-.empty {
-  color: var(--ink-600);
 }
 
 .full {
@@ -133,13 +71,9 @@
   color: var(--ink-600);
 }
 
-/* Phones: 16px so iOS doesn't zoom into the field, and 44px targets (the
-   chip's × keeps its drawn size, with an invisible tap area around it). */
+/* Phones: 44px targets (the chip's × keeps its drawn size, with an
+   invisible tap area around it). */
 @media (max-width: 767px) {
-  .input {
-    min-height: var(--touch-target-min);
-    font-size: var(--text-p-md);
-  }
   .remove::after {
     content: '';
     position: absolute;

@@ -90,6 +90,14 @@ type SelectProps = {
   copy?: SelectCopy;
   /** The list's name for screen readers (defaults to the field's label). */
   listLabel?: string;
+  /**
+   * The highlighted option, each time it changes: null when nothing is
+   * active or the active row is Use "{typed}", and null with `open` false
+   * when the list closes. For a button beside the field (the chips fields'
+   * Add) that adds what is highlighted: a press on it closes the list first,
+   * so `open` tells that null from a real one.
+   */
+  onHighlight?: (option: SelectOption | null, open: boolean) => void;
 };
 
 type Row = { kind: 'option'; option: SelectOption } | { kind: 'custom'; text: string };
@@ -139,6 +147,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
     onCustom,
     copy: copyIn,
     listLabel,
+    onHighlight,
     ...rest
   } = props;
   const copy = { ...SELECT_COPY, ...copyIn };
@@ -366,6 +375,17 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
   };
 
   const activeId = shown && rows[active] ? `${listId}-${active}` : undefined;
+
+  // Said once per change, so an inline callback doesn't hear it every render.
+  const activeRow = shown ? rows[active] : undefined;
+  const highlighted = activeRow?.kind === 'option' ? activeRow.option : null;
+  const heard = useRef('closed');
+  useEffect(() => {
+    const key = shown ? `open:${highlighted?.value ?? ''}:${highlighted ? 1 : 0}` : 'closed';
+    if (key === heard.current) return;
+    heard.current = key;
+    onHighlight?.(highlighted, shown);
+  });
   const announce =
     !shown || !dirty
       ? ''

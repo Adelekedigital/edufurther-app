@@ -1,10 +1,13 @@
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { pickOption } from '@/test-utils/select';
 import { LanguageChips, type LanguageOption } from './LanguageChips';
 
 const EN = { id: 'en', label: 'English' };
 const TWI = { id: 'tw', label: 'Twi' };
+const TSWANA = { id: 'tn', label: 'Tswana' };
+const CATALOG = [TWI, TSWANA];
 const copy = {
   add: 'Add another language',
   addButton: 'Add',
@@ -15,7 +18,15 @@ const copy = {
   noMatch: (q: string) => `No languages match “${q}”.`,
 };
 
-function Chips({ failed, at = 1 }: { failed?: boolean; at?: number }) {
+function Chips({
+  failed,
+  at = 1,
+  status = 'ready',
+}: {
+  failed?: boolean;
+  at?: number;
+  status?: 'loading' | 'error' | 'ready';
+}) {
   const [selected, setSelected] = useState<LanguageOption[]>([EN]);
   const [query, setQuery] = useState('');
   return (
@@ -26,8 +37,12 @@ function Chips({ failed, at = 1 }: { failed?: boolean; at?: number }) {
       onToggle={(l) => setSelected((s) => [...s, l])}
       query={query}
       onQueryChange={setQuery}
-      results={query ? [TWI] : []}
-      status="ready"
+      results={
+        status === 'ready' && query
+          ? CATALOG.filter((l) => l.label.toLowerCase().startsWith(query.toLowerCase()))
+          : []
+      }
+      status={status}
       copy={copy}
       commonFailed={
         failed
@@ -55,6 +70,102 @@ describe('LanguageChips', () => {
     await close();
     await act(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     expect(screen.getByRole('button', { name: copy.add })).toHaveFocus();
+  });
+
+  const field = () => screen.getByRole('combobox', { name: copy.add });
+  const openAdder = () => userEvent.click(screen.getByRole('button', { name: copy.add }));
+
+  it('picking a match from the list adds it as a pressed chip', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 't');
+    await pickOption(userEvent, field(), 'tw');
+    expect(screen.getByRole('button', { name: 'Twi' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('Add takes the first match, as Enter does', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 'tw');
+    expect(field()).toHaveAttribute('aria-activedescendant');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('button', { name: 'Twi' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('Add takes the highlighted match, not the first', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 't');
+    await userEvent.keyboard('{ArrowDown}');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('button', { name: 'Tswana' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Twi' })).not.toBeInTheDocument();
+  });
+
+  it('Tab to Add, then Enter, still takes the highlighted match', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 't');
+    await userEvent.keyboard('{ArrowDown}');
+    await userEvent.tab();
+    expect(screen.getByRole('button', { name: 'Add' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.getByRole('button', { name: 'Tswana' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Twi' })).not.toBeInTheDocument();
+  });
+
+  it('after Escape, Add takes the first match again, not the old highlight', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 't');
+    await userEvent.keyboard('{ArrowDown}{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: 'Add' }));
+    expect(screen.getByRole('button', { name: 'Twi' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Tswana' })).not.toBeInTheDocument();
+  });
+
+  it('the first Escape closes the list, the second the adder', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 'tw');
+    expect(field()).toHaveAttribute('aria-expanded', 'true');
+    await userEvent.keyboard('{Escape}');
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  it('Enter after Escape closed the list still adds the match', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 'tw{Escape}');
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+    await userEvent.keyboard('{Enter}');
+    expect(screen.getByRole('button', { name: 'Twi' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('Enter on Cancel cancels, adding nothing', async () => {
+    render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 'tw');
+    screen.getByRole('button', { name: 'Cancel' }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByRole('button', { name: 'Twi' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  it('says when nothing matches, and when the search failed', async () => {
+    const { unmount } = render(<Chips />);
+    await openAdder();
+    await userEvent.type(field(), 'xh');
+    // In the list, and said in the field's own status region.
+    expect(screen.getAllByText(copy.noMatch('xh'))).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
+    unmount();
+    render(<Chips status="error" />);
+    await openAdder();
+    await userEvent.type(field(), 'tw');
+    expect(screen.getAllByText(copy.searchFailed)).toHaveLength(2);
   });
 
   it('the list failing to load is said into a region that was there first', async () => {

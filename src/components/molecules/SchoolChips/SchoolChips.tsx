@@ -1,10 +1,10 @@
 'use client';
 
-import { useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useId, useRef } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Select } from '@/components/atoms/Select/Select';
 import type { GoalSchool } from '@/types/settings';
-import { cx } from '@/lib/utils/cx';
 import styles from './SchoolChips.module.css';
 
 export type SchoolOption = { id: string; name: string };
@@ -37,9 +37,10 @@ const key = (s: string) => s.trim().toLowerCase();
 
 /**
  * Schools as removable chips (Mentee Settings.dc.html `gSchools`), with "Add
- * a school" under them. Typing searches the catalogue: arrows and Enter, or a
- * click, pick a match; otherwise the name is kept as typed (the education
- * rule: the server links or queues it). No duplicates; at most `max`.
+ * a school" under them: the shared Select, searchable. Typing searches the
+ * catalogue: arrows and Enter, or a click, pick a match; otherwise Enter keeps
+ * the name as typed (the education rule: the server links or queues it). No
+ * duplicates; at most `max`.
  */
 export function SchoolChips({
   schools,
@@ -55,19 +56,27 @@ export function SchoolChips({
   describedBy,
 }: SchoolChipsProps) {
   const id = useId();
-  const listId = `${id}-list`;
   const fullId = `${id}-full`;
-  // -1: nothing highlighted, so Enter keeps the typed name unless it is a match's.
-  const [active, setActive] = useState(-1);
-  const [open, setOpen] = useState(false);
   const full = schools.length >= max;
   const typed = query.trim();
   const has = (name: string) =>
     schools.some((s) => key(s.label) === key(name) || key(s.raw) === key(name));
-  const matches = typed ? results.filter((r) => !has(r.name)).slice(0, MATCHES) : [];
-  const showList = open && typed !== '' && !full && (matches.length > 0 || status !== 'ready');
+  const matches = typed && !full ? results.filter((r) => !has(r.name)).slice(0, MATCHES) : [];
   const wrap = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
+  const input = useRef<HTMLElement>(null);
+  // The Select also keeps typed text when focus or a press leaves the field.
+  // Here that would add a chip nobody asked for (and eat the Add button's
+  // click), so only Enter or the Use row adds it.
+  const asked = useRef(false);
+
+  // The row the list last highlighted, for Add. Pressing Add closes the list
+  // first (its closing null arrives before Add's own events), so that null
+  // is not taken: typing, Escape and leaving the field for anything but Add
+  // forget the row instead. A click reads it as the press starts (Safari doesn't
+  // focus a clicked button); Enter or Space after Tab reads it as kept.
+  const highlight = useRef<string | null>(null);
+  const pressed = useRef<string | null>(null);
+  const addRow = useRef<HTMLButtonElement>(null);
 
   // The removed chip's button is gone: focus the next one, else the field.
   const remove = (i: number) => {
@@ -79,37 +88,16 @@ export function SchoolChips({
     }, 0);
   };
 
-  const done = () => {
-    onQueryChange('');
-    setActive(-1);
-  };
   const add = (pick?: SchoolOption) => {
     if (full) return;
-    const exact = matches.find((m) => key(m.name) === key(typed));
-    const hit = pick ?? matches[active] ?? exact;
+    const hit = pick ?? matches.find((m) => key(m.name) === key(typed));
     if (hit) {
       if (!has(hit.name)) onAdd({ institutionId: hit.id, raw: hit.name, label: hit.name });
     } else if (typed && !has(typed)) {
       onAdd({ institutionId: null, raw: typed, label: typed });
     }
-    done();
-  };
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown' && matches.length) {
-      e.preventDefault();
-      setOpen(true);
-      setActive((a) => (a + 1) % matches.length);
-    } else if (e.key === 'ArrowUp' && matches.length) {
-      e.preventDefault();
-      setActive((a) => (a <= 0 ? matches.length - 1 : a - 1));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      add();
-    } else if (e.key === 'Escape' && showList) {
-      e.preventDefault();
-      setOpen(false);
-      setActive(-1);
-    }
+    highlight.current = null;
+    onQueryChange('');
   };
 
   return (
@@ -132,67 +120,73 @@ export function SchoolChips({
           ))}
         </ul>
       )}
-      <div className={styles.adder}>
-        <span className={styles.search}>
-          <input
-            ref={input}
-            role="combobox"
-            aria-expanded={showList}
-            aria-controls={listId}
-            aria-autocomplete="list"
-            aria-activedescendant={showList && matches[active] ? `${listId}-${active}` : undefined}
-            aria-label={copy.add}
-            aria-describedby={
-              [describedBy, full ? fullId : null].filter(Boolean).join(' ') || undefined
-            }
-            className={styles.input}
-            value={query}
-            placeholder={copy.add}
-            maxLength={maxChars}
-            autoComplete="off"
-            // Read-only, not disabled, at the limit: the field keeps focus after
-            // the tenth, and says why with the line it describes itself by.
-            readOnly={full}
-            aria-disabled={full || undefined}
-            onChange={(e) => {
-              onQueryChange(e.target.value);
-              setActive(-1);
-              setOpen(true);
-            }}
-            onKeyDown={onKeyDown}
-            onBlur={() => setOpen(false)}
-          />
-          {showList && (
-            <ul id={listId} role="listbox" aria-label={copy.add} className={styles.list}>
-              {matches.length === 0 ? (
-                <li role="presentation" className={styles.empty}>
-                  {status === 'loading' ? copy.searching : copy.searchFailed}
-                </li>
-              ) : (
-                matches.map((m, i) => (
-                  <li
-                    key={m.id}
-                    id={`${listId}-${i}`}
-                    role="option"
-                    aria-selected={i === active}
-                    className={cx(styles.option, i === active && styles.activeOption)}
-                    // Before the input blurs, so the pick lands.
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => add(m)}
-                  >
-                    {m.name}
-                  </li>
-                ))
-              )}
-            </ul>
-          )}
-        </span>
+      <div
+        className={styles.adder}
+        onKeyDownCapture={(e) => {
+          asked.current = e.key === 'Enter';
+          if (e.key === 'Escape') highlight.current = null;
+        }}
+        onPointerDownCapture={(e) =>
+          (asked.current = e.target instanceof Element && !!e.target.closest('[role="option"]'))
+        }
+        onBlurCapture={(e) => {
+          asked.current = false;
+          if (e.relatedTarget !== addRow.current) highlight.current = null;
+        }}
+        // Enter with the list closed (after Escape), which the Select leaves alone.
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' || e.defaultPrevented || e.target !== input.current) return;
+          e.preventDefault();
+          add();
+        }}
+      >
+        <Select
+          ref={input}
+          searchable
+          remote
+          density="md"
+          // GET /institutions runs from two characters (useInstitutionSearch).
+          minChars={2}
+          allowCustom
+          text="sm"
+          className={styles.search}
+          aria-label={copy.add}
+          aria-describedby={
+            [describedBy, full ? fullId : null].filter(Boolean).join(' ') || undefined
+          }
+          placeholder={copy.add}
+          maxLength={maxChars}
+          // Read-only, not disabled, at the limit: the field keeps focus after
+          // the tenth, and says why with the line it describes itself by.
+          readOnly={full}
+          query={query}
+          onQueryChange={(q) => {
+            highlight.current = null;
+            onQueryChange(q);
+          }}
+          onHighlight={(o, open) => {
+            // A null as the list closes is Add's own press: keep the row.
+            if (o || open) highlight.current = o?.value ?? null;
+          }}
+          value=""
+          options={matches.map((m) => ({ value: m.id, label: m.name }))}
+          onChange={(e) => add(matches.find((m) => m.id === e.target.value))}
+          onCustom={() => {
+            if (asked.current) add();
+          }}
+          status={status}
+          copy={{ searching: copy.searching, failed: copy.searchFailed }}
+        />
         <Button
           variant="secondary-outlined"
           size="medium"
           disabled={full || !typed}
-          onClick={() => {
-            add();
+          ref={addRow}
+          onPointerDown={() => (pressed.current = highlight.current)}
+          onClick={(e) => {
+            const row = e.detail > 0 ? pressed.current : highlight.current;
+            pressed.current = null;
+            add(matches.find((m) => m.id === row));
             // The button disables once the field empties: keep focus in the field.
             input.current?.focus();
           }}
