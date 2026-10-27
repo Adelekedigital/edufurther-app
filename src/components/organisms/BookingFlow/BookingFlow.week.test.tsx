@@ -13,6 +13,7 @@ import {
   setPhone,
   slots,
 } from './BookingFlow.testkit';
+import { pickOption } from '@/test-utils/select';
 
 pinToday();
 
@@ -201,7 +202,7 @@ describe('BookingFlow week view (7 days at a time)', () => {
     }
     render(<Page />);
     expect(screen.getByRole('combobox')).toHaveValue('st2');
-    await user.selectOptions(screen.getByRole('combobox'), 'st1');
+    await pickOption(user, screen.getByRole('combobox'), 'st1');
     expect(screen.getByRole('combobox')).toHaveValue('st1');
     expect(screen.getByRole('radio', { name: /Mon, Sep 28, 1 time/ })).toBeInTheDocument();
     expect(screen.queryByText(/just taken/)).not.toBeInTheDocument();

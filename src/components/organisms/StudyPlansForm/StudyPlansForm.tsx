@@ -2,7 +2,6 @@
 
 import { useId, type ReactNode } from 'react';
 import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
-import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
@@ -116,7 +115,6 @@ export function StudyPlansForm({
 }: StudyPlansFormProps) {
   const own = useId();
   const pre = idPrefix ?? own;
-  const listId = `${pre}-fields`;
   const set = (patch: Partial<PlanAnswers>) => onChange({ ...value, ...patch });
   return (
     <div className={styles.form}>
@@ -168,25 +166,21 @@ export function StudyPlansForm({
         error={errors.field}
       >
         {({ id, describedBy, invalid }) => (
-          <>
-            <Input
-              id={id}
-              aria-describedby={describedBy}
-              fieldSize="xl"
-              invalid={invalid}
-              list={listId}
-              maxLength={FIELD_MAX}
-              autoComplete="off"
-              placeholder={PLAN_PLACEHOLDERS.field}
-              value={value.field}
-              onChange={(e) => set({ field: e.target.value })}
-            />
-            <datalist id={listId}>
-              {(fields ?? FIELD_SUGGESTIONS).map((f) => (
-                <option key={f} value={f} />
-              ))}
-            </datalist>
-          </>
+          <Select
+            id={id}
+            aria-describedby={describedBy}
+            searchable
+            allowCustom
+            density="xl"
+            invalid={invalid}
+            maxLength={FIELD_MAX}
+            placeholder={PLAN_PLACEHOLDERS.field}
+            query={value.field}
+            onQueryChange={(field) => set({ field })}
+            value={value.field}
+            options={(fields ?? FIELD_SUGGESTIONS).map((f) => ({ value: f, label: f }))}
+            onChange={(e) => set({ field: e.target.value })}
+          />
         )}
       </Field>
       <Field

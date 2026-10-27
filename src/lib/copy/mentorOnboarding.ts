@@ -55,6 +55,7 @@ export const EDUCATION_COPY = {
   removeSchool: (n: number) => `Remove school ${n}`,
   university: 'University',
   universityPlaceholder: 'Which school did you attend?',
+  schoolSearchFailed: 'We couldn’t search schools. You can still use the name as you typed it.',
   inCountry: (country: string) => `In ${country}`,
   change: 'Change',
   countryOfStudy: 'Country of study',
