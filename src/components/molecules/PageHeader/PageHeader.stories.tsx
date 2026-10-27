@@ -35,3 +35,13 @@ export const LongTitleWraps: Story = {
   },
   parameters: { viewport: { defaultViewport: 'mobile1' } },
 };
+
+export const WithCountAndAction: Story = {
+  args: {
+    title: 'Sessions',
+    titleAside: <span>· 2 of 5</span>,
+    subtitle: 'The sessions mentees can book with you.',
+    measure: 'wide',
+    actions: <button type="button">Create session</button>,
+  },
+};

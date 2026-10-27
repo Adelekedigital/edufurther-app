@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
+import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { SaveChangesDialog } from '@/components/templates/SaveChangesDialog/SaveChangesDialog';
 import { useViewer } from '@/lib/api/data/viewer';
 import { MENTOR_SETTINGS_SUB } from '@/lib/copy/mentorSettings';
@@ -93,10 +94,11 @@ export function SettingsScreen() {
         <p role="status" className="sr-only">
           {SETTINGS_COPY.loading}
         </p>
-        <header className={styles.head} aria-busy="true">
-          <h1 className={styles.title}>{SETTINGS_COPY.title}</h1>
-          <Skeleton width="320px" height="18px" className={styles.skeletonSub} />
-        </header>
+        <PageHeader
+          title={SETTINGS_COPY.title}
+          subtitle={<Skeleton width="320px" height="18px" className={styles.skeletonSub} />}
+          busy
+        />
         <div className={styles.skeletonRow}>
           <div className={styles.skeletonTabs} aria-hidden>
             {[0, 1, 2].map((i) => (
@@ -127,12 +129,10 @@ export function SettingsScreen() {
 
   return (
     <div className={styles.screen}>
-      <header className={styles.head}>
-        <h1 className={styles.title}>{SETTINGS_COPY.title}</h1>
-        <p className={styles.sub}>
-          {setup ? SETTINGS_COPY.setupSub : mentor ? MENTOR_SETTINGS_SUB : SETTINGS_COPY.sub}
-        </p>
-      </header>
+      <PageHeader
+        title={SETTINGS_COPY.title}
+        subtitle={setup ? SETTINGS_COPY.setupSub : mentor ? MENTOR_SETTINGS_SUB : SETTINGS_COPY.sub}
+      />
       <Tabs
         label={SETTINGS_COPY.tabsLabel}
         items={items}

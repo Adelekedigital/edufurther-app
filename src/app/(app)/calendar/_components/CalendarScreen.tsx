@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MonthPicker } from '@/components/molecules/MonthPicker/MonthPicker';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SettingSummaryRow } from '@/components/molecules/SettingSummaryRow/SettingSummaryRow';
+import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { StatusPill } from '@/components/molecules/StatusPill/StatusPill';
 import { BlockOutForm } from '@/components/organisms/BlockOutForm/BlockOutForm';
 import { ReturnDateForm } from '@/components/organisms/ReturnDateForm/ReturnDateForm';
@@ -68,6 +69,13 @@ const CALENDAR_GATE: MemberGateCopy = {
   guestTitle: 'Log in to manage your calendar',
   guestDescription: 'Your calendar is where you set when mentees can book you.',
 };
+
+/** The title and intro every state keeps (Calendar v2 header). */
+const HEADER = {
+  title: 'Your calendar',
+  subtitle: CALENDAR_PAGE_COPY.lede,
+  measure: 'narrow',
+} as const;
 
 /** /calendar — the mentor's availability (Calendar v2.dc.html, scene Available). */
 export function CalendarScreen() {
@@ -409,7 +417,7 @@ export function CalendarScreen() {
   else if (panel || loading || !ready)
     body = (
       <>
-        <PageHeader />
+        <PageHeader {...HEADER} />
         {panel ?? <CalendarSkeleton />}
       </>
     );
@@ -419,30 +427,33 @@ export function CalendarScreen() {
     const range = bookableRange(today, defaults.data!);
     body = (
       <>
-        <PageHeader>
-          {/* Busy for a mentor who paused themselves; Available for a listed one with
-              hours. An admin-unlisted mentor gets neither (they can't change it). */}
-          {busy ? (
-            <StatusPill
-              tone="busy"
-              label="Busy"
-              hint={busyHint(status.data?.returnOn ?? null, accountToday)}
-              switchRef={statusSwitch}
-              onChange={(on) => on && setAvailable()}
-            />
-          ) : (
-            status.data?.listed &&
-            hasHours && (
+        {/* Busy for a mentor who paused themselves; Available for a listed one with
+            hours. An admin-unlisted mentor gets neither (they can't change it). */}
+        <PageHeader
+          {...HEADER}
+          actions={
+            busy ? (
               <StatusPill
-                tone="available"
-                label="Available"
-                hint={CALENDAR_PAGE_COPY.availableHint}
+                tone="busy"
+                label="Busy"
+                hint={busyHint(status.data?.returnOn ?? null, accountToday)}
                 switchRef={statusSwitch}
-                onChange={(on) => !on && openReturn()}
+                onChange={(on) => on && setAvailable()}
               />
+            ) : (
+              status.data?.listed &&
+              hasHours && (
+                <StatusPill
+                  tone="available"
+                  label="Available"
+                  hint={CALENDAR_PAGE_COPY.availableHint}
+                  switchRef={statusSwitch}
+                  onChange={(on) => !on && openReturn()}
+                />
+              )
             )
-          )}
-        </PageHeader>
+          }
+        />
 
         {unlisted && (
           // Page content, not a change: not a live region.
@@ -793,19 +804,6 @@ export function CalendarScreen() {
       )}
       <LiveRegion message={announcement} />
     </>
-  );
-}
-
-/** The title and intro every state keeps (Calendar v2 header). */
-function PageHeader({ children }: { children?: ReactNode }) {
-  return (
-    <header className={styles.header}>
-      <div className={styles.intro}>
-        <h1 className={styles.title}>Your calendar</h1>
-        <p className={styles.lede}>{CALENDAR_PAGE_COPY.lede}</p>
-      </div>
-      {children}
-    </header>
   );
 }
 

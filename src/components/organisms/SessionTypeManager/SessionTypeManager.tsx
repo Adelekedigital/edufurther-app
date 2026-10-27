@@ -4,6 +4,7 @@ import { FormGrid } from '@/components/atoms/FormGrid/FormGrid';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { SessionTypeRow } from '@/components/molecules/SessionTypeRow/SessionTypeRow';
 import { TemplateCard } from '@/components/molecules/TemplateCard/TemplateCard';
 import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
@@ -73,7 +74,7 @@ function CreateAction({ href, off, limit }: { href: string; off: boolean; limit:
  * empty — and "Start from a template" under it in every state.
  */
 export function SessionTypeManager(p: SessionTypeManagerProps) {
-  const header = useRef<HTMLDivElement>(null);
+  const header = useRef<HTMLElement>(null);
   const { focusAfterRemoval, onFocused } = p;
   useEffect(() => {
     if (focusAfterRemoval !== 'create') return;
@@ -84,27 +85,28 @@ export function SessionTypeManager(p: SessionTypeManagerProps) {
   const limit = p.limit ?? null;
   return (
     <div className={styles.page}>
-      <div className={styles.header} ref={header}>
-        <div className={styles.intro}>
-          {/* The count reads with the title, "Sessions · 2 of 5" (owner, 2026-10-25). */}
-          <div className={styles.titleRow}>
-            <h1 className={styles.title}>{SESSIONS_COPY.title}</h1>
-            {limit !== null && p.list.data && (
-              <>
-                <span className={styles.count} aria-hidden="true">
-                  ·
-                </span>
-                <span className={styles.count}>
-                  {SESSIONS_COPY.count(p.list.data.length, limit)}
-                  <span className="sr-only"> sessions</span>
-                </span>
-              </>
-            )}
-          </div>
-          <p className={styles.lede}>{SESSIONS_COPY.lede}</p>
-        </div>
-        <CreateAction href={p.createHref} off={off} limit={limit} />
-      </div>
+      {/* The count reads with the title, "Sessions · 2 of 5" (owner, 2026-10-25). */}
+      <PageHeader
+        ref={header}
+        title={SESSIONS_COPY.title}
+        titleAside={
+          limit !== null &&
+          p.list.data && (
+            <>
+              <span className={styles.count} aria-hidden="true">
+                ·
+              </span>
+              <span className={styles.count}>
+                {SESSIONS_COPY.count(p.list.data.length, limit)}
+                <span className="sr-only"> sessions</span>
+              </span>
+            </>
+          )
+        }
+        subtitle={SESSIONS_COPY.lede}
+        measure="wide"
+        actions={<CreateAction href={p.createHref} off={off} limit={limit} />}
+      />
 
       <List {...p} />
 

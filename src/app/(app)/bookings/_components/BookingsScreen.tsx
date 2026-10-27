@@ -7,6 +7,7 @@ import { MoveFailureSnackbar } from '@/app/_sessions/MoveFailureSnackbar';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { BookingDetailsPanel } from '@/components/organisms/BookingDetailsPanel/BookingDetailsPanel';
 import { NextSessionCard } from '@/components/organisms/NextSessionCard/NextSessionCard';
@@ -395,10 +396,12 @@ export function BookingsScreen() {
     <>
       {gate ?? (
         <div className={cx(styles.page, showPanel && !asSheet && styles.withAside)}>
-          <header className={styles.header}>
-            <h1 className={styles.title}>Bookings</h1>
-            <TimezonePicker value={timeZone} onChange={setZone} deviceZone={deviceZone} />
-          </header>
+          <PageHeader
+            title="Bookings"
+            subtitle={
+              <TimezonePicker value={timeZone} onChange={setZone} deviceZone={deviceZone} />
+            }
+          />
 
           <Tabs items={items} value={tab} onChange={setTab} label="Bookings" />
 
