@@ -5,7 +5,6 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
-import { useHighlightOnPress } from '@/lib/utils/useHighlightOnPress';
 import styles from './LanguageChips.module.css';
 
 export type LanguageOption = { id: string; label: string };
@@ -74,8 +73,11 @@ export function LanguageChips({
   const [adding, setAdding] = useState(false);
   const addButton = useRef<HTMLButtonElement>(null);
   const field = useRef<HTMLElement>(null);
-  const addMatch = useRef<HTMLButtonElement>(null);
-  const highlighted = useHighlightOnPress(field, addMatch);
+  // The row the list last highlighted, for Add. Pressing Add closes the list
+  // first (its null arrives before Add's own events), so that null is not
+  // taken: typing, Escape and leaving the field forget the row instead.
+  const highlight = useRef<string | null>(null);
+  const pressed = useRef<string | null>(null);
   const group = useRef<HTMLDivElement>(null);
   // The failure line, heard: put into the always-present region after it
   // mounts (a region that arrives with its text in it is often skipped).
@@ -183,7 +185,12 @@ export function LanguageChips({
           {copy.add}
         </button>
       ) : (
-        <span className={styles.adder} onKeyDown={onKey}>
+        <span
+          className={styles.adder}
+          onKeyDown={onKey}
+          onKeyDownCapture={(e) => e.key === 'Escape' && (highlight.current = null)}
+          onBlurCapture={() => (highlight.current = null)}
+        >
           <Select
             ref={field}
             searchable
@@ -194,7 +201,11 @@ export function LanguageChips({
             aria-label={copy.add}
             placeholder={copy.placeholder}
             query={query}
-            onQueryChange={onQueryChange}
+            onQueryChange={(q) => {
+              highlight.current = null;
+              onQueryChange(q);
+            }}
+            onHighlight={(o) => o && (highlight.current = o.value)}
             value=""
             options={matches.map((m) => ({ value: m.id, label: m.label }))}
             onChange={(e) => pick(matches.find((m) => m.id === e.target.value))}
@@ -202,12 +213,14 @@ export function LanguageChips({
             copy={{ searching: copy.searching, failed: copy.searchFailed, noMatch: copy.noMatch }}
           />
           <Button
-            ref={addMatch}
             variant="secondary-outlined"
             size="medium"
             disabled={!chosen}
+            onPointerDown={() => (pressed.current = highlight.current)}
             onClick={(e) => {
-              const row = highlighted(e);
+              // detail 0: Enter or Space on Add, after Tab closed the list.
+              const row = e.detail > 0 ? pressed.current : null;
+              pressed.current = null;
               pick(matches.find((m) => m.id === row) ?? chosen);
             }}
           >

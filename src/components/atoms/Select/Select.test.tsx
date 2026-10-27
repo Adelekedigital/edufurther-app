@@ -211,6 +211,23 @@ describe('Select (select-only)', () => {
     expect(field()).toHaveValue('msc');
   });
 
+  it('onHighlight hears each new active row: arrows, typeahead, and null on close', async () => {
+    const user = userEvent.setup();
+    const onHighlight = vi.fn();
+    render(<Plain options={degrees} start="ba" onHighlight={onHighlight} />);
+    field().focus();
+    await user.keyboard('{Enter}');
+    await user.keyboard('{ArrowDown}');
+    await user.keyboard('p');
+    await user.keyboard('{Escape}');
+    expect(onHighlight.mock.calls.map(([o]) => o?.value ?? null)).toEqual([
+      'ba',
+      'bsc',
+      'phd',
+      null,
+    ]);
+  });
+
   it('a disabled field does not open', async () => {
     const user = userEvent.setup();
     render(<Plain disabled />);
@@ -426,6 +443,19 @@ describe('Select allowCustom', () => {
     expect(onPick).not.toHaveBeenCalled();
     expect(box()).toHaveValue('Kwame Nkrumah University');
     expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('onHighlight is null while Use "{typed}" or nothing is active', async () => {
+    const user = userEvent.setup();
+    const onHighlight = vi.fn();
+    render(<Search onHighlight={onHighlight} />);
+    screen.getByRole('combobox', { name: 'School' }).focus();
+    await user.keyboard('uni');
+    expect(onHighlight).not.toHaveBeenCalled();
+    await user.keyboard('{ArrowDown}');
+    expect(onHighlight).toHaveBeenLastCalledWith(schools[0]);
+    await user.keyboard('{ArrowDown}{ArrowDown}');
+    expect(onHighlight.mock.calls.map(([o]) => o?.value ?? null)).toEqual(['u1', 'u2', null]);
   });
 
   it('picking the Use row keeps the text', async () => {

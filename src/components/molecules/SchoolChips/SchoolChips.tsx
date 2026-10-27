@@ -4,7 +4,6 @@ import { useId, useRef } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
-import { useHighlightOnPress } from '@/lib/utils/useHighlightOnPress';
 import type { GoalSchool } from '@/types/settings';
 import styles from './SchoolChips.module.css';
 
@@ -70,8 +69,11 @@ export function SchoolChips({
   // click), so only Enter or the Use row adds it.
   const asked = useRef(false);
 
-  const addButton = useRef<HTMLButtonElement>(null);
-  const highlighted = useHighlightOnPress(input, addButton);
+  // The row the list last highlighted, for Add. Pressing Add closes the list
+  // first (its null arrives before Add's own events), so that null is not
+  // taken: typing, Escape and leaving the field forget the row instead.
+  const highlight = useRef<string | null>(null);
+  const pressed = useRef<string | null>(null);
 
   // The removed chip's button is gone: focus the next one, else the field.
   const remove = (i: number) => {
@@ -116,11 +118,17 @@ export function SchoolChips({
       )}
       <div
         className={styles.adder}
-        onKeyDownCapture={(e) => (asked.current = e.key === 'Enter')}
+        onKeyDownCapture={(e) => {
+          asked.current = e.key === 'Enter';
+          if (e.key === 'Escape') highlight.current = null;
+        }}
         onPointerDownCapture={(e) =>
           (asked.current = e.target instanceof Element && !!e.target.closest('[role="option"]'))
         }
-        onBlurCapture={() => (asked.current = false)}
+        onBlurCapture={() => {
+          asked.current = false;
+          highlight.current = null;
+        }}
         // Enter with the list closed (after Escape), which the Select leaves alone.
         onKeyDown={(e) => {
           if (e.key !== 'Enter' || e.defaultPrevented || e.target !== input.current) return;
@@ -148,7 +156,11 @@ export function SchoolChips({
           // the tenth, and says why with the line it describes itself by.
           readOnly={full}
           query={query}
-          onQueryChange={onQueryChange}
+          onQueryChange={(q) => {
+            highlight.current = null;
+            onQueryChange(q);
+          }}
+          onHighlight={(o) => o && (highlight.current = o.value)}
           value=""
           options={matches.map((m) => ({ value: m.id, label: m.name }))}
           onChange={(e) => add(matches.find((m) => m.id === e.target.value))}
@@ -159,12 +171,14 @@ export function SchoolChips({
           copy={{ searching: copy.searching, failed: copy.searchFailed }}
         />
         <Button
-          ref={addButton}
           variant="secondary-outlined"
           size="medium"
           disabled={full || !typed}
+          onPointerDown={() => (pressed.current = highlight.current)}
           onClick={(e) => {
-            const row = highlighted(e);
+            // detail 0: Enter or Space on Add, after Tab closed the list.
+            const row = e.detail > 0 ? pressed.current : null;
+            pressed.current = null;
             add(matches.find((m) => m.id === row));
             // The button disables once the field empties: keep focus in the field.
             input.current?.focus();
