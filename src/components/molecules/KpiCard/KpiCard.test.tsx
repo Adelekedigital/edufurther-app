@@ -17,6 +17,24 @@ describe('KpiCard', () => {
     expect(screen.getByText('+1.5 hrs this month')).toBeInTheDocument();
   });
 
+  it('holds the trend row while it loads, and drops the placeholder once it lands', () => {
+    const { container, rerender } = render(<KpiCard label="Sessions" value="12" trendPending />);
+    // The Skeleton bone: decorative, hidden from assistive tech.
+    const bone = () => container.querySelector('[class*="block"]');
+    expect(bone()).toHaveAttribute('aria-hidden');
+    expect(screen.queryByText(/this month/)).not.toBeInTheDocument();
+    rerender(
+      <KpiCard
+        label="Sessions"
+        value="12"
+        trendPending
+        trend={{ text: '+1 this month', icon: 'trending_up', tone: 'positive' }}
+      />,
+    );
+    expect(screen.getByText('+1 this month')).toBeInTheDocument();
+    expect(bone()).toBeNull();
+  });
+
   it('shows "No data yet" for a null value, and hides the unit', () => {
     render(<KpiCard label="Hours of guidance" value={null} unit="hrs" />);
     expect(screen.getByText('No data yet')).toBeInTheDocument();

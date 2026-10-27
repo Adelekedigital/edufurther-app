@@ -97,12 +97,28 @@ export function NextSessionCard({
   return (
     <DashboardNextSession variant={variant}>
       {isLoading ? (
-        <div className={styles.body} aria-busy>
+        // The row's own structure and line classes, so the loaded session lands
+        // in the same box (no layout shift on load). The no-break spaces give
+        // each line its real line height.
+        <div className={cx(styles.body, hero && styles.heroRow)} aria-busy>
           <span className="sr-only">Loading your next session</span>
           <Skeleton width="56px" height="56px" radius="lg" />
-          <div className={styles.lines}>
-            <Skeleton width="55%" height="16px" />
-            <Skeleton width="80%" height="12px" />
+          <div className={cx(styles.details, hero && styles.heroDetails)} aria-hidden>
+            <span className={cx(styles.sessionTitle, styles.boneLine)}>
+              {'\u00a0'}
+              <Skeleton width="55%" height="14px" />
+            </span>
+            <span className={cx(styles.meta, styles.boneLine)}>
+              {'\u00a0'}
+              <Skeleton width="80%" height="12px" />
+            </span>
+            <span className={cx(styles.sub, styles.boneLine)}>
+              {'\u00a0'}
+              <Skeleton width="30%" height="12px" />
+            </span>
+          </div>
+          <div className={cx(styles.actions, hero && styles.heroActions)} aria-hidden>
+            <Skeleton width="132px" height="40px" radius="md" />
           </div>
         </div>
       ) : error ? (

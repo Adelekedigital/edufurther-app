@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { InfoTip } from '@/components/atoms/InfoTip/InfoTip';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { cx } from '@/lib/utils/cx';
 import styles from './KpiCard.module.css';
 
@@ -21,6 +22,11 @@ type Common = {
   unit?: string;
   /** A trend line under the value. The design shows a trend or a link, not both. */
   trend?: KpiTrend;
+  /**
+   * The trend is still loading: hold its row with a placeholder, so the line
+   * arriving later doesn't push everything below the card down (CLS).
+   */
+  trendPending?: boolean;
   /** Colours the figure: warning (amber) or danger (red), as the Missed tile does. */
   valueTone?: 'warning' | 'danger';
   /**
@@ -91,6 +97,7 @@ function Figure({
   unit,
   info,
   trend,
+  trendPending,
   link,
   valueTone,
   row: Row,
@@ -118,6 +125,13 @@ function Figure({
         </span>
         {unit && !empty && <span className={styles.unit}>{unit}</span>}
       </Row>
+      {!trend && trendPending && (
+        // The no-break space gives the row the trend's own line height.
+        <span className={styles.trend}>
+          {'\u00a0'}
+          <Skeleton width="60%" height="12px" />
+        </span>
+      )}
       {trend && (
         <span className={cx(styles.trend, styles[trend.tone])}>
           {trend.icon && <Icon name={trend.icon} size={16} />}
