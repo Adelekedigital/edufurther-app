@@ -1,0 +1,29 @@
+/* Admin.dc.html modal `hasBalance`: Now → After. */
+.box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--ink-50);
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.label {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.value {
+  font-size: var(--text-h5);
+  font-weight: var(--weight-bold);
+}
+.after {
+  color: var(--green-700);
+}
+.arrow {
+  color: var(--ink-500);
+}
