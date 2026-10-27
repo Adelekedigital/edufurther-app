@@ -37,6 +37,9 @@ vi.mock('@/lib/api/data/sessionAnswers', async () =>
 vi.mock('@/lib/api/data/bookingActions', async () =>
   (await import('./sessionJoin.harness')).mocks.bookingActions(),
 );
+vi.mock('@/lib/api/data/moveSession', async () =>
+  (await import('./sessionJoin.harness')).mocks.moveSession(),
+);
 vi.mock('@/lib/api/data/booking', async (orig) =>
   (await import('./sessionJoin.harness')).mocks.booking(await orig()),
 );
@@ -409,9 +412,7 @@ describe('getting ready', () => {
     expect(tips.getByText('Your setup')).toBeVisible();
     // No deadline on this fixture, so the tip names no number at all rather
     // than guessing one it cannot know.
-    expect(
-      tips.getByText('Canceling or rescheduling in good time lets someone else book the time.'),
-    ).toBeVisible();
+    expect(tips.getByText('Canceling in good time lets someone else book the time.')).toBeVisible();
     expect(tips.queryByText(/\d+ hours before/)).not.toBeInTheDocument();
     expect(tips.queryByText(/One clear goal|message/i)).not.toBeInTheDocument();
   });
@@ -522,7 +523,7 @@ describe('getting ready', () => {
     renderAt('15:15:00');
     expect(
       within(aside()).getByText(
-        'Canceling or rescheduling at least 10 hours before lets someone else book the time.',
+        'Need another time? Use Cancel. Moving it at least 10 hours before lets someone else book this time.',
       ),
     ).toBeVisible();
     expect(screen.queryByText(/12 hours/)).not.toBeInTheDocument();

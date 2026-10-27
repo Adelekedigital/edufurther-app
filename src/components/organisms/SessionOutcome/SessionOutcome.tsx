@@ -53,6 +53,13 @@ export function SessionOutcome({ view, onAction, reason }: SessionOutcomeProps) 
   useEffect(() => {
     if (thanks) thanksRef.current?.focus();
   }, [thanks]);
+  // A canceled notice replaces the dialog that was open (the move that
+  // couldn't book): focus lands on the explanation itself, not the page top.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const canceled = view.kind === 'canceled';
+  useEffect(() => {
+    if (canceled) panelRef.current?.focus();
+  }, [canceled]);
 
   if (view.kind === 'completed')
     return (
@@ -74,7 +81,11 @@ export function SessionOutcome({ view, onAction, reason }: SessionOutcomeProps) 
     );
   return (
     <div className={styles.missed}>
-      <div className={cx(styles.panel, styles[view.tone])}>
+      <div
+        ref={panelRef}
+        tabIndex={canceled ? -1 : undefined}
+        className={cx(styles.panel, styles[view.tone])}
+      >
         <Icon name={view.icon} size={22} className={styles.panelIcon} />
         <div className={styles.panelText}>
           <span className={styles.panelTitle}>{view.title}</span>

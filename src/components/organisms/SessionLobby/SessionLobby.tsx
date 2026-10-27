@@ -105,7 +105,7 @@ export function SessionLobby({
     }
   }, [hasJoin]);
 
-  // The links go on a tick too: Reschedule and Cancel when cancelling closes,
+  // The links go on a tick too: Cancel when cancelling closes,
   // the whole row (Add to calendar's menu with it) when Join opens. Focus that
   // was in a link that went moves to the next link still there, else to Join,
   // else to the title, never to <body>.

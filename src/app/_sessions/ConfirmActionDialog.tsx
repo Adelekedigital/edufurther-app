@@ -3,18 +3,28 @@
 import { useId, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Switch } from '@/components/atoms/Switch/Switch';
 import { ReasonField } from '@/components/molecules/ReasonField/ReasonField';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { reasonError } from '@/lib/utils/reasons';
 import { slotLabel } from './SlotPicker';
-import { HOLD_HOURS, SuggestTimeStep, offerSentence, suggestDraft } from './SuggestTimeStep';
+import {
+  HOLD_HOURS,
+  SuggestTimeStep,
+  moveDraft,
+  moveSentence,
+  offerSentence,
+  suggestDraft,
+  swapSentence,
+} from './SuggestTimeStep';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
 import { canCancel, refundOnCancel, refundWindowFor } from '@/lib/utils/bookings';
 import { dayLabel, formatTime } from '@/lib/utils/format';
-import type { AppError } from '@/types/mentor';
+import { MOVE_COPY } from '@/lib/copy/session';
+import type { AppError, SessionType } from '@/types/mentor';
 import type { Booking, PickableReason } from '@/types/booking';
 import styles from './sessionDialogs.module.css';
 
@@ -33,6 +43,23 @@ type ConfirmActionDialogProps = {
   accountZone: string;
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
+  /**
+   * The mentee's move (PRD fix 1), Session Join only: given with the session's
+   * type as the mentor offers it now (unknown: not given), or `loading` while
+   * that is still being read. The dialog opens on it while the session is
+   * confirmed and cancelling still refunds by the row's own deadline;
+   * otherwise, or switched off, it is the cancel as built.
+   */
+  move?: MoveOption | 'loading';
+};
+
+export type MoveOption = {
+  sessionType: SessionType;
+  onMove: (input: { startsAt: string; message: string }) => void;
+  /** The whole sequence is running (prepare, cancel, book), or it has landed and the page is leaving. */
+  pending: boolean;
+  /** Why it stopped before anything changed, in our words. */
+  error: string | null;
 };
 
 // Every string below is `CancelModal.dc.html`'s, not ours. `withdraw` is the
@@ -123,7 +150,9 @@ export function ConfirmActionDialog({
   viewerId,
   accountZone,
   now = new Date(),
+  move: moveProp,
 }: ConfirmActionDialogProps) {
+  const move = moveProp === 'loading' ? undefined : moveProp;
   const [reasonCode, setReasonCode] = useState<PickableReason | null>(null);
   const [text, setText] = useState('');
   // Mentors only. The default is `true` because the two ways of being wrong are
@@ -156,6 +185,13 @@ export function ConfirmActionDialog({
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const fieldId = useId();
   const isPhone = useMediaQuery(PHONE);
+  // The mentee's move: on by default, as the design draws it.
+  const [moveOn, setMoveOn] = useState(true);
+  const [newTime, setNewTime] = useState<string | null>(null);
+  // `null` while the draft is still ours, as `message` above.
+  const [moveMessage, setMoveMessage] = useState<string | null>(null);
+  const [moveBad, setMoveBad] = useState(false);
+  const moveSwitchRef = useRef<HTMLButtonElement>(null);
 
   const first = b.other.firstName;
   const isMentor = b.side === 'mentor';
@@ -170,6 +206,28 @@ export function ConfirmActionDialog({
   // is open, so this one value decides which question is being asked.
   const offering = canSuggest && suggestOn;
   const when = { day: dayLabel(b.startsAt, timeZone), start: formatTime(b.startsAt, timeZone) };
+  // Offered only while the credit comes back (12+ hours out) by the row's own
+  // deadline: a move later would cost a second credit, so the plain cancel
+  // shows (owner default, open question 1), and with no deadline on the row
+  // there is no guessing one from the device clock. Re-read on every tick,
+  // like `tooLate`.
+  const moveFits =
+    action === 'cancel' &&
+    !isMentor &&
+    b.status === 'confirmed' &&
+    !!b.refundUntil &&
+    refunds &&
+    !tooLate;
+  const canMove = !!move && moveFits;
+  // Latched while it runs: the deadline passing mid-move must not swap in the
+  // plain cancel under "Working…".
+  const moving = (canMove && moveOn) || !!move?.pending;
+  const request = !!move?.sessionType.requiresConfirmation;
+  const moveDrafted = newTime
+    ? moveDraft({ first, origDay: when.day, slot: slotLabel(newTime, timeZone), request })
+    : '';
+  const moveText = moveMessage ?? moveDrafted;
+  const busy = !!move?.pending;
   // Rebuilt from whichever slot is picked, so an untouched box always names the
   // time actually on offer. Nothing drafted until there is a time to draft
   // about — the box is not on screen before then either.
@@ -218,6 +276,158 @@ export function ConfirmActionDialog({
         <strong>{b.other.name}</strong> asked for <strong>{when.day}</strong> at{' '}
         <strong>{when.start}</strong>. We’ll let them know so they can pick another time.
       </>
+    );
+
+  // In both views, at the same place and key, so switching keeps it (and its
+  // focus): turning it back on from the cancel view is one tap.
+  const moveSwitch = move && (
+    <div key="move-switch" className={styles.slotChoice}>
+      <Switch
+        ref={moveSwitchRef}
+        checked={moving}
+        // Not mid-move: switching off then would show a cancel for a session
+        // the running sequence is already canceling.
+        disabled={move.pending}
+        onChange={(v) => {
+          setMoveOn(v);
+          setMoveBad(false);
+          setReasonBad(null);
+          // The time and the message about it go together, as the mentor's
+          // offer does: a time nowhere on screen is never sent.
+          if (!v) {
+            setNewTime(null);
+            setMoveMessage(null);
+          }
+        }}
+        aria-labelledby={`${fieldId}-mv`}
+        aria-describedby={moveBad ? `${fieldId}-mv-hint ${fieldId}-mv-err` : `${fieldId}-mv-hint`}
+      />
+      <div>
+        <span id={`${fieldId}-mv`} className={styles.slotLabel}>
+          {MOVE_COPY.switchTitle(first)}
+        </span>
+        <p id={`${fieldId}-mv-hint`} className={styles.slotHint}>
+          {MOVE_COPY.switchSub(first, request)}
+        </p>
+        {moveBad && moving && (
+          <p id={`${fieldId}-mv-err`} role="alert" className={styles.moveError}>
+            {MOVE_COPY.pickFirst}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  // The move view (CancelModal.dc.html `move` on, viewer mentee). While the
+  // session type is still being read it is a skeleton with only the way out:
+  // a reason picked in a cancel view would be under the move view a moment later.
+  const moveLoading = moveProp === 'loading' && moveFits;
+  if ((moving && move) || moveLoading)
+    return (
+      <ModalShell
+        title={MOVE_COPY.title}
+        size="lg"
+        tone="danger"
+        onClose={onClose}
+        sheet={
+          isPhone
+            ? {
+                heading: MOVE_COPY.title,
+                leading: { icon: 'close', label: 'Close', onClick: onClose, disabled: busy },
+                showClose: false,
+              }
+            : undefined
+        }
+        contained={isPhone}
+        footer={
+          <div className={styles.confirmFooter}>
+            <Button
+              variant="secondary-outlined"
+              size="large"
+              aria-disabled={busy || undefined}
+              onClick={busy ? undefined : onClose}
+            >
+              {MOVE_COPY.keep}
+            </Button>
+            {move ? (
+              <Button
+                variant="primary"
+                size="large"
+                // Dimmed with no time (the design's opacity 0.6), but not
+                // disabled: pressing it says what is missing and focuses the switch.
+                className={!newTime ? styles.moveIncomplete : undefined}
+                busy={move.pending}
+                onClick={() => {
+                  if (!newTime) {
+                    setMoveBad(true);
+                    requestAnimationFrame(() => moveSwitchRef.current?.focus());
+                    return;
+                  }
+                  move.onMove({ startsAt: newTime, message: moveText });
+                }}
+              >
+                {move.pending ? 'Working…' : MOVE_COPY.confirm(request)}
+              </Button>
+            ) : (
+              <Skeleton height="48px" radius="md" />
+            )}
+          </div>
+        }
+      >
+        {move ? (
+          <div className={styles.confirmBody}>
+            <p className={styles.moveLead}>
+              {MOVE_COPY.lead.before}
+              <strong>{b.other.name}</strong>
+              {MOVE_COPY.lead.on}
+              <strong>{when.day}</strong>
+              {MOVE_COPY.lead.at}
+              <strong>{when.start}</strong>
+              {MOVE_COPY.lead.after}
+            </p>
+            {moveSwitch}
+            <SuggestTimeStep
+              booking={b}
+              // The mentor's open times: on a mentee's row, the other party.
+              mentorId={b.other.id}
+              accountZone={accountZone}
+              timeZone={timeZone}
+              value={newTime}
+              onChange={(v) => {
+                // As the mentor's draft: only our sentence naming the time is swapped.
+                setMoveMessage((m) =>
+                  m === null || !newTime || !v
+                    ? null
+                    : swapSentence(
+                        m,
+                        moveSentence(slotLabel(newTime, timeZone), request),
+                        moveSentence(slotLabel(v, timeZone), request),
+                      ),
+                );
+                setNewTime(v);
+                setMoveBad(false);
+              }}
+              message={moveText}
+              onMessage={setMoveMessage}
+              label={MOVE_COPY.pickerLabel}
+              hold={false}
+              copy={MOVE_COPY.slots(first)}
+              now={now}
+            />
+            {move.error && (
+              <p role="alert" className={styles.confirmError}>
+                {move.error}
+              </p>
+            )}
+          </div>
+        ) : (
+          <section className={styles.confirmBody} aria-busy="true" aria-label={MOVE_COPY.loading}>
+            <Skeleton height="16px" width="90%" />
+            <Skeleton height="64px" radius="lg" />
+            <Skeleton height="32px" width="70%" />
+          </section>
+        )}
+      </ModalShell>
     );
 
   return (
@@ -348,6 +558,7 @@ export function ConfirmActionDialog({
     >
       <div className={styles.confirmBody}>
         <p className={styles.confirmLead}>{lead}</p>
+        {canMove && moveSwitch}
         {/* Before the button, never after — and in the design's `Notice`
             tone="info" with no icon. The window is the server's, never the
             design's hard-coded twelve hours. */}
@@ -467,11 +678,10 @@ export function ConfirmActionDialog({
                 // their text is then left exactly as written — the chip above
                 // still shows which time is actually on offer, and quietly
                 // editing someone's prose is the worse of the two.
-                const was = offerSentence(slotLabel(suggested, timeZone));
-                const at = m.indexOf(was);
-                if (at === -1) return m;
-                return (
-                  m.slice(0, at) + offerSentence(slotLabel(v, timeZone)) + m.slice(at + was.length)
+                return swapSentence(
+                  m,
+                  offerSentence(slotLabel(suggested, timeZone)),
+                  offerSentence(slotLabel(v, timeZone)),
                 );
               });
               setSuggested(v);

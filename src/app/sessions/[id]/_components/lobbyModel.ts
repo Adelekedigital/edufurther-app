@@ -168,9 +168,9 @@ export type LobbyInput = {
   /** Join was followed: the page drops its last Join problem. */
   onFollow?: () => void;
   /**
-   * Present only while the session may still be called off. Reschedule opens
-   * the same dialog (J2): a mentor suggests a new time in it, a mentee cancels
-   * and books again.
+   * Present only while the session may still be called off. Cancel opens the
+   * shared dialog: a mentor can suggest a new time in it, a mentee can move
+   * the session (PRD fix 1).
    */
   onCancel?: () => void;
   /** Absolute URL of this page, for the calendar event (never the call link). */
@@ -248,7 +248,8 @@ export function lobbyModel({
     links:
       phase === 'upcoming' && onCancel
         ? [
-            { key: 'reschedule', icon: 'update', label: LOBBY_COPY.reschedule, onClick: onCancel },
+            // One link for both roles (PRD fix 1): a mentee moves the session
+            // from the same dialog, so Reschedule went.
             {
               key: 'cancel',
               icon: 'event_busy',
@@ -269,6 +270,31 @@ export function lobbyModel({
             venue: providerName(room.provider),
           }
         : undefined,
+  };
+}
+
+/**
+ * The lobby of a session the viewer's own move canceled when the new time
+ * couldn't be booked (PRD fix 1). Everywhere else a canceled session is
+ * Bookings' to show; here the page stays, so the notice under it can say what
+ * happened and offer Book again. PROVISIONAL: undesigned, ours (grey ground,
+ * a "Canceled" pill, no clock, Join or links).
+ */
+export function canceledLobby(room: SessionRoom, timeZone: string): LobbyProps {
+  const person = (p: BookingParty, name: string): LobbyProps['people'][number] => ({
+    person: p,
+    name,
+    presence: LOBBY_COPY.canceled,
+    tone: 'away',
+  });
+  return {
+    ground: 'grey',
+    status: { tone: 'neutral', label: LOBBY_COPY.canceled },
+    title: lobbyTitle(room),
+    meta: lobbyMeta(room, timeZone),
+    clock: null,
+    people: [person(room.me, 'You'), person(room.booking.other, room.booking.other.firstName)],
+    links: [],
   };
 }
 
@@ -295,7 +321,7 @@ export function guideTips(room: SessionRoom, hasAnswers: boolean): GuideTip[] {
       title: T.plans.title,
       // The window is deployment configuration (backend #413), so the number
       // comes from this session's own deadline; with none, no number at all.
-      body: b.refundUntil ? T.plans.body(refundWindowFor(b)) : T.plans.bodyNoWindow,
+      body: b.refundUntil ? T.plans.body[b.side](refundWindowFor(b)) : T.plans.bodyNoWindow[b.side],
     },
   ];
 }

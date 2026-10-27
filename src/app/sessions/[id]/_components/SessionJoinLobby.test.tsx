@@ -36,6 +36,9 @@ vi.mock('@/lib/api/data/sessionAnswers', async () =>
 vi.mock('@/lib/api/data/bookingActions', async () =>
   (await import('./sessionJoin.harness')).mocks.bookingActions(),
 );
+vi.mock('@/lib/api/data/moveSession', async () =>
+  (await import('./sessionJoin.harness')).mocks.moveSession(),
+);
 vi.mock('@/lib/api/data/booking', async (orig) =>
   (await import('./sessionJoin.harness')).mocks.booking(await orig()),
 );
@@ -109,18 +112,16 @@ describe('before the window', () => {
     expect(slotZones.every((z) => z === 'Africa/Lagos')).toBe(true);
   });
 
-  it('offers Add to calendar, Reschedule and Cancel while upcoming', () => {
-    renderAt('15:15:00');
-    expect(screen.getByRole('button', { name: 'Add to calendar' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Reschedule' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeVisible();
-  });
-
-  it('Reschedule opens the cancel dialog, where a mentor suggests a new time', async () => {
-    renderAt('15:15:00');
-    await userEvent.click(screen.getByRole('button', { name: 'Reschedule' }));
-    expect(screen.getByRole('dialog', { name: 'Cancel this booking?' })).toBeInTheDocument();
-  });
+  it.each(['mentor', 'mentee'] as const)(
+    'offers Add to calendar and Cancel while upcoming, and no Reschedule (%s)',
+    (side) => {
+      h.room = remote(sessionRoom({ side }));
+      renderAt('15:15:00');
+      expect(screen.getByRole('button', { name: 'Add to calendar' })).toBeVisible();
+      expect(screen.getByRole('button', { name: 'Cancel' })).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Reschedule' })).not.toBeInTheDocument();
+    },
+  );
 
   it('shows both people, neither in the call', () => {
     renderAt('15:15:00');
@@ -204,7 +205,7 @@ describe('the window is open', () => {
     expect(screen.getAllByText('Not in the call yet')).toHaveLength(2);
   });
 
-  it('no links once Join opens: no Add to calendar, Reschedule or Cancel', () => {
+  it('no links once Join opens: no Add to calendar or Cancel', () => {
     renderAt('16:56:00');
     expect(screen.queryByRole('button', { name: 'Add to calendar' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Reschedule' })).not.toBeInTheDocument();

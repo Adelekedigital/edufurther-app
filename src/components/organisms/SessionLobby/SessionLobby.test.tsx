@@ -83,10 +83,19 @@ describe('when Join goes away under the keyboard', () => {
 
 describe('when the links go away under the keyboard', () => {
   const noop = () => {};
+  // The lobby's one link (Session Join has no Reschedule); "Add to calendar"
+  // sits first in the same row.
   const both = [
-    { key: 'reschedule', icon: 'update' as const, label: 'Reschedule', onClick: noop },
     { key: 'cancel', icon: 'event_busy' as const, label: 'Cancel', onClick: noop, danger: true },
   ];
+  const calendar = {
+    id: 's1',
+    title: '1:1 call with Amara Okafor',
+    startsAt: '2026-10-04T17:00:00Z',
+    endsAt: '2026-10-04T17:30:00Z',
+    pageUrl: 'https://app.test/sessions/s1',
+    venue: 'EduFurther video',
+  };
   const locked = { label: 'Join opens in 00:01', enabled: false as const, hint: 'Soon.' };
   const open = {
     label: 'Join session',
@@ -97,16 +106,18 @@ describe('when the links go away under the keyboard', () => {
 
   it('Join opens and the row goes: focus moves to Join, not the page body', () => {
     const { rerender } = render(<SessionLobby {...base} join={locked} links={both} />);
-    screen.getByRole('button', { name: /Reschedule/ }).focus();
+    screen.getByRole('button', { name: /Cancel/ }).focus();
     rerender(<SessionLobby {...base} join={open} links={[]} />);
     expect(screen.getByRole('link', { name: 'Join session (opens in a new tab)' })).toHaveFocus();
   });
 
   it('one link goes and others stay: focus moves to the first one left', () => {
-    const { rerender } = render(<SessionLobby {...base} join={locked} links={both} />);
+    const { rerender } = render(
+      <SessionLobby {...base} join={locked} links={both} calendar={calendar} />,
+    );
     screen.getByRole('button', { name: /Cancel/ }).focus();
-    rerender(<SessionLobby {...base} join={locked} links={[both[0]!]} />);
-    expect(screen.getByRole('button', { name: /Reschedule/ })).toHaveFocus();
+    rerender(<SessionLobby {...base} join={locked} links={[]} calendar={calendar} />);
+    expect(screen.getByRole('button', { name: /Add to calendar/ })).toHaveFocus();
   });
 
   it('nothing else to go to: the title', () => {
