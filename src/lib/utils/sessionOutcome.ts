@@ -231,8 +231,8 @@ export function outcomeView({
         askReason: false,
         actions: [BOOKINGS],
       };
-    // "Offer a new time" waits on the founder's open question: a suggested
-    // time can't ride on a missed session yet, so Go to Bookings (PRD default).
+    // A mentor who missed is never offered a new time: Go to Bookings (owner,
+    // 25 Oct). Suggesting a time lives in the cancel and decline dialogs.
     if (who === 'me')
       return {
         kind: 'missed',
