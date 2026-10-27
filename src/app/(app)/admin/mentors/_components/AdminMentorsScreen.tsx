@@ -277,7 +277,11 @@ export function AdminMentorsScreen() {
         {selectable && liveChecked.length > 0 && (
           <MentorBulkBar
             count={liveChecked.length}
-            onClear={() => setChecked([])}
+            onClear={() => {
+              setChecked([]);
+              // The bar leaves with the checks: focus goes to the table, not the page.
+              requestAnimationFrame(() => tableRef.current?.focus());
+            }}
             onApprove={() =>
               setDialog({ kind: 'bulk', mentors: rows.filter((r) => liveChecked.includes(r.id)) })
             }

@@ -295,5 +295,6 @@ describe('the confirms', () => {
     expect(screen.getByText('4 selected')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Clear' }));
     expect(screen.queryByRole('region', { name: 'Bulk actions' })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('table').parentElement).toHaveFocus());
   });
 });
