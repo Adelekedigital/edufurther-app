@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ComponentProps } from 'react';
@@ -130,6 +132,30 @@ describe('Select (select-only)', () => {
     ]);
     expect(rows[2]!.textContent).toContain('check_circle');
     expect(rows[0]!.textContent).not.toContain('check_circle');
+  });
+
+  it('read-only: focusable and in the tab order, but it never opens', async () => {
+    const user = userEvent.setup();
+    const onPick = vi.fn();
+    render(<Plain readOnly onPick={onPick} />);
+    expect(field()).toHaveAttribute('aria-readonly', 'true');
+    expect(field()).not.toBeDisabled();
+    await user.tab();
+    expect(field()).toHaveFocus();
+    await user.keyboard('{Enter}{ArrowDown} m');
+    await user.click(field());
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(field()).toHaveAttribute('aria-expanded', 'false');
+    expect(field()).toHaveFocus();
+    expect(onPick).not.toHaveBeenCalled();
+  });
+
+  it('density md is the medium button height', () => {
+    render(<Plain density="md" />);
+    expect(field().parentElement).toHaveClass('md');
+    // jsdom applies no CSS: the rule itself must use the 40px button token.
+    const css = readFileSync(join(__dirname, 'Select.module.css'), 'utf8');
+    expect(css).toMatch(/\.md \.control \{\s*height: var\(--button-h-medium\);/);
   });
 
   it('a real option whose value is empty ("No year") carries the check when chosen', async () => {
@@ -314,6 +340,19 @@ describe('Select searchable', () => {
     await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
     expect(onPick).toHaveBeenCalledWith('u2');
     expect(box()).toHaveValue('University of Ghana');
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
+  it('read-only: typing does nothing and the list stays shut', async () => {
+    const user = userEvent.setup();
+    render(<Search readOnly />);
+    expect(box()).toHaveAttribute('aria-readonly', 'true');
+    expect(box()).toHaveAttribute('readonly');
+    await user.click(box());
+    await user.type(box(), 'Lagos');
+    await user.keyboard('{ArrowDown}');
+    expect(box()).toHaveValue('');
+    expect(box()).toHaveFocus();
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 

@@ -45,6 +45,11 @@ input.control {
 .control[aria-invalid='true'] {
   border-color: var(--border-danger);
 }
+/* Read-only (e.g. a list at its limit): still focusable, drawn as not taking input. */
+.control[aria-readonly='true'] {
+  background: var(--ink-50);
+  cursor: not-allowed;
+}
 .control:disabled {
   background: var(--surface-subtle);
   color: var(--ink-500);
@@ -64,6 +69,10 @@ input.control {
 }
 .compact .chevron {
   right: var(--space-1);
+}
+/* md: the medium button's height, for a field in a row of 40px buttons. */
+.md .control {
+  height: var(--button-h-medium);
 }
 .xl .control {
   height: var(--space-12);

@@ -38,9 +38,10 @@ type SelectProps = {
   invalid?: boolean;
   /**
    * compact: 36px, tighter padding and a 16px chevron (TimeSlots.dc.html `compact`).
+   * md: 40px, the height of the medium buttons it sits beside (chip adders).
    * xl: 48px flow-form field with a 24px chevron (Mentee Onboarding v5.dc.html).
    */
-  density?: 'default' | 'compact' | 'xl';
+  density?: 'default' | 'compact' | 'md' | 'xl';
   /**
    * sm: use in a form, beside text inputs: 14px like them (Mentor Settings.dc.html
    * profile selects), grey while nothing is picked. Default xs: the 12px rule
@@ -54,6 +55,11 @@ type SelectProps = {
   disabled?: boolean;
   /** A required answer: aria-required on the field (the form's own rule shows the error). */
   required?: boolean;
+  /**
+   * Read-only: focusable and in the tab order, but the list never opens and
+   * typing does nothing (aria-readonly). Say why with aria-describedby.
+   */
+  readOnly?: boolean;
   'aria-label'?: string;
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
@@ -119,6 +125,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
     id,
     disabled,
     required,
+    readOnly,
     searchable,
     placeholder,
     maxLength,
@@ -180,7 +187,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
         : rows.length === 0 && term
           ? 'none'
           : null;
-  const shown = open && !disabled && (rows.length > 0 || line !== null);
+  const shown = open && !disabled && !readOnly && (rows.length > 0 || line !== null);
 
   const placement = useListPosition(shown, wrapRef, popupRef, rows.length, () => leave());
 
@@ -377,6 +384,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
     'aria-activedescendant': activeId,
     'aria-invalid': invalid || undefined,
     'aria-required': required || undefined,
+    'aria-readonly': readOnly || undefined,
     'aria-label': props['aria-label'],
     'aria-labelledby': props['aria-labelledby'],
     'aria-describedby': props['aria-describedby'],
@@ -412,6 +420,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
           value={q}
           placeholder={placeholder}
           maxLength={maxLength}
+          readOnly={readOnly}
           onChange={(e) => {
             const next = e.target.value;
             if (query === undefined) setTypedOwn(next);
@@ -422,10 +431,10 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
           }}
           onFocus={(e) => e.target.select()}
           onClick={() => {
-            if (!open) openAt(Math.max(0, selectedIndex()));
+            if (!open && !readOnly) openAt(Math.max(0, selectedIndex()));
           }}
           onBlur={onInputBlur}
-          onKeyDown={onInputKey}
+          onKeyDown={readOnly ? undefined : onInputKey}
         />
       ) : (
         <button
@@ -440,11 +449,12 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
             // A click from inside the list (bubbled through a wrapping label) isn't a toggle.
             if (e.target instanceof Node && popupRef.current?.contains(e.target)) return;
             controlRef.current?.focus();
+            if (readOnly) return;
             if (open) close();
             else openAt(Math.max(0, selectedIndex()));
           }}
           onBlur={close}
-          onKeyDown={onButtonKey}
+          onKeyDown={readOnly ? undefined : onButtonKey}
         >
           <span className={styles.value}>{chosen?.label ?? ''}</span>
         </button>
