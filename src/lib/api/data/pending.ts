@@ -15,7 +15,6 @@ import { api } from './http';
 export type PendingIncomplete = { missing?: unknown };
 
 export type PendingResponses = {
-  'GET /api/v1/admin/mentors/summary': WireMentorSummary;
   'GET /api/v1/admin/mentors': { data: WireMentorRow[]; next_cursor: null };
   'GET /api/v1/admin/mentors/{user_id}': WireMentorDetail;
   'GET /api/v1/admin/mentors/{user_id}/notes': { data: WireAdminNote[] };
@@ -51,14 +50,6 @@ export type WireAdminPerson = {
 
 export type WireShowUpTier = 'on_track' | 'needs_attention' | 'at_risk';
 export type WireMentorTab = 'applications' | 'approved' | 'paused' | 'not_approved';
-
-/** A2 `GET /admin/mentors/summary`. */
-export type WireMentorSummary = {
-  counts: Record<WireMentorTab, number>;
-  applications_longest_wait_days: number | null;
-  approved_average_show_up: number | null;
-  at_risk: number;
-};
 
 /** A3 `GET /admin/mentors?tab=`: every field present, null where it doesn't apply. */
 export type WireMentorRow = WireAdminPerson & {

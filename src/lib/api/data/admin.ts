@@ -3,7 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { ApiError, retryOnce } from './errors';
 import { keys } from './keys';
-import { untyped, type WireMentorSummary } from './pending';
+import type { components } from '@/lib/api/generated/schema';
+import { api } from './http';
+
+type WireMentorSummary = components['schemas']['AdminMentorsSummaryRead'];
 
 /** The admin Mentors summary as the app reads it (cards, tab counts, the nav badge). */
 export type MentorSummary = {
@@ -28,7 +31,7 @@ export function toMentorSummary(w: WireMentorSummary): MentorSummary {
 }
 
 /**
- * GET /admin/mentors/summary (PENDING BACKEND, admin PR 1). `adminId` is the
+ * GET /admin/mentors/summary (Admin PRD A2). `adminId` is the
  * signed-in admin, or null for anyone else: a non-admin never asks (the API
  * would answer 404).
  */
@@ -36,9 +39,9 @@ export function useAdminSummary(adminId: string | null) {
   return useQuery({
     queryKey: keys.admin.summary(adminId ?? 'none'),
     queryFn: async ({ signal }) => {
-      const { data, response } = await untyped.GET('/api/v1/admin/mentors/summary', { signal });
+      const { data, response } = await api.GET('/api/v1/admin/mentors/summary', { signal });
       if (!response.ok || !data) throw new ApiError(response.status);
-      return toMentorSummary(data as WireMentorSummary);
+      return toMentorSummary(data);
     },
     enabled: adminId !== null,
     retry: retryOnce,

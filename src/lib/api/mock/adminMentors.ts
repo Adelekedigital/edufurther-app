@@ -1,4 +1,5 @@
-import type { WireMentorRow, WireMentorSummary, WireMentorTab } from '@/lib/api/data/pending';
+import type { WireMentorRow, WireMentorTab } from '@/lib/api/data/pending';
+import type { components } from '@/lib/api/generated/schema';
 
 /**
  * MOCK of the admin mentor lists (Admin PRD, backend A2/A3): the design's
@@ -115,7 +116,7 @@ export function mockMentorRows(tab: WireMentorTab, q: string): WireMentorRow[] {
   ).map(({ tab: _tab, ...r }) => r);
 }
 
-export function mockMentorSummary(): WireMentorSummary {
+export function mockMentorSummary(): components['schemas']['AdminMentorsSummaryRead'] {
   const of = (t: WireMentorTab) => ADMIN_MENTORS.filter((m) => m.tab === t);
   const rates = of('approved').flatMap((m) => (m.show_up_rate == null ? [] : [m.show_up_rate]));
   const waits = of('applications').map((m) => m.waiting_days ?? 0);
