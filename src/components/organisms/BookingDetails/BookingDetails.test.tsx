@@ -26,9 +26,11 @@ describe('what the panel says', () => {
     expect(screen.getByText('Attendance rate: 92%')).toBeVisible();
   });
 
-  it('says only "Mentee" with no attendance data — never 0%', () => {
-    panel({ booking: sampleBookingFor({ menteeAttendanceRate: null }) });
-    expect(screen.getByText('Mentee')).toBeVisible();
+  it('says "New mentee" for one new to EduFurther — never 0% (issue 241)', () => {
+    panel({
+      booking: sampleBookingFor({ menteeAttendanceRate: null, menteeAttendanceSessions: 0 }),
+    });
+    expect(screen.getByText('New mentee')).toBeVisible();
     expect(screen.queryByText(/0%/)).not.toBeInTheDocument();
   });
 

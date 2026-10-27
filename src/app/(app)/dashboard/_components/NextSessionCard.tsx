@@ -3,7 +3,8 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { DateChip } from '@/components/molecules/DateChip/DateChip';
 import { DashboardNextSession } from '@/components/organisms/DashboardNextSession/DashboardNextSession';
-import { daysBetween, timeRange } from '@/lib/utils/bookings';
+import { daysBetween, isNewMentee, NEW_MENTEE, timeRange } from '@/lib/utils/bookings';
+import { providerName } from '@/lib/utils/sessionPhase';
 import type { Booking } from '@/types/booking';
 import type { AppError } from '@/types/mentor';
 import { cx } from '@/lib/utils/cx';
@@ -23,7 +24,7 @@ type NextSessionCardProps = {
    * the hero with the session in an outlined row. Default: its own card.
    */
   variant?: 'card' | 'hero';
-  /** Added after the "In 6 days" line, e.g. "Your first booking". */
+  /** Added after the "In 6 days" line, e.g. "Your first booking"; wins over "New mentee". */
   note?: string;
 };
 
@@ -45,6 +46,9 @@ function SessionRow({
 }) {
   const days = daysBetween(now, new Date(booking.startsAt), timeZone);
   const rel = days <= 0 ? 'Today' : days === 1 ? 'Tomorrow' : `In ${days} days`;
+  const venue = providerName(booking.provider);
+  // The hero's own note ("Your first booking") replaces the tag, as drawn.
+  const tag = note ?? (isNewMentee(booking) ? NEW_MENTEE : undefined);
   // Join is never greyed out or swapped (owner, 26 Oct): the session's own page
   // shows the countdown, lobby or outcome for every phase.
   const sessionHref = `/sessions/${encodeURIComponent(booking.id)}`;
@@ -56,8 +60,9 @@ function SessionRow({
         <span className={styles.meta}>
           with <strong className={styles.who}>{booking.other.name}</strong> ·{' '}
           {inZone(booking.startsAt, timeZone, { weekday: 'short' })}, {timeRange(booking, timeZone)}
+          {venue && ` · ${venue}`}
         </span>
-        <span className={styles.sub}>{note ? `${rel} · ${note}` : rel}</span>
+        <span className={styles.sub}>{tag ? `${rel} · ${tag}` : rel}</span>
       </div>
       <div className={cx(styles.actions, hero && styles.heroActions)}>
         <ButtonLink href={sessionHref} variant="primary" size="medium">
@@ -74,9 +79,9 @@ function SessionRow({
  * checked before empty, so a failed load never reads as "no sessions". The
  * soonest confirmed session the mentor hosts is the hero row.
  *
- * Omitted from the design pending backend: the venue line (no per-row venue),
- * the "New mentee" tag (no first-time-with-you signal), and "Send a message"
- * (no endpoint — #334). The CTA is always "Join session", to the session page.
+ * The venue ends the "with" line; "New mentee" (new to EduFurther, #241) follows
+ * the day. Omitted: "Send a message" (no endpoint, #334). The CTA is always
+ * "Join session", to the session page.
  */
 export function NextSessionCard({
   isLoading,

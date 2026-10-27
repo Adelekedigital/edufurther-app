@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { Booking } from '@/types/booking';
+import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { AppError } from '@/types/mentor';
 import { NextSessionCard } from './NextSessionCard';
 
@@ -9,21 +10,17 @@ const iso = (ms: number) => new Date(ms).toISOString();
 
 function booking(over: Partial<Booking> = {}): Booking {
   const start = Date.now() + 8 * 864e5;
-  return {
+  return sampleBookingFor({
     id: 's1',
-    status: 'confirmed',
-    side: 'mentor',
-    other: { name: 'Amara Okafor' },
+    other: sampleParty({ name: 'Amara Okafor' }),
     title: 'SOP review',
     startsAt: iso(start),
     endsAt: iso(start + 36e5),
     durationMin: 60,
     joinOpensAt: iso(start - 6e5),
     joinClosesAt: iso(start + 36e5),
-    doorClosesAt: null,
-    myJoinedAt: null,
     ...over,
-  } as unknown as Booking;
+  });
 }
 
 const base = { onRetry: () => {}, timeZone: ZONE, now: new Date() };
@@ -75,6 +72,57 @@ describe('NextSessionCard', () => {
       '/sessions/s1',
     );
     expect(screen.queryByRole('link', { name: 'View session details' })).not.toBeInTheDocument();
+  });
+
+  // #241, as drawn: "with Amara · Sun, 12:00 – 1:00 pm · Google Meet" / "In 8 days · New mentee".
+  it('content: ends the "with" line with the venue, and tags a mentee new to EduFurther', () => {
+    render(
+      <NextSessionCard
+        {...base}
+        isLoading={false}
+        error={null}
+        booking={booking({
+          provider: 'google_meet',
+          menteeAttendanceRate: null,
+          menteeAttendanceSessions: 0,
+        })}
+      />,
+    );
+    expect(screen.getByText(/with/)).toHaveTextContent(/· Google Meet$/);
+    expect(screen.getByText('In 8 days · New mentee')).toBeInTheDocument();
+  });
+
+  it('content: no venue line part on an older row, and no tag for a mentee with history', () => {
+    render(
+      <NextSessionCard
+        {...base}
+        isLoading={false}
+        error={null}
+        booking={booking({ provider: null, menteeAttendanceRate: 90, menteeAttendanceSessions: 4 })}
+      />,
+    );
+    expect(screen.getByText(/with/)).not.toHaveTextContent(/EduFurther video|Google Meet/);
+    expect(screen.getByText('In 8 days')).toBeInTheDocument();
+  });
+
+  it('hero: its note wins over the New mentee tag, as drawn', () => {
+    render(
+      <NextSessionCard
+        {...base}
+        variant="hero"
+        note="Your first booking"
+        isLoading={false}
+        error={null}
+        booking={booking({
+          provider: 'daily',
+          menteeAttendanceRate: null,
+          menteeAttendanceSessions: 0,
+        })}
+      />,
+    );
+    expect(screen.getByText('In 8 days · Your first booking')).toBeInTheDocument();
+    expect(screen.queryByText(/New mentee/)).not.toBeInTheDocument();
+    expect(screen.getByText(/with/)).toHaveTextContent(/· EduFurther video$/);
   });
 
   // Every phase leads to the session page with the same enabled Join.

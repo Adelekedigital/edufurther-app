@@ -219,6 +219,7 @@ const booking = (over: Partial<Booking> = {}): Booking => ({
   refundUntil: null,
   menteeAttendanceRate: null,
   menteeAttendanceSessions: 0,
+  provider: null,
   ...over,
 });
 

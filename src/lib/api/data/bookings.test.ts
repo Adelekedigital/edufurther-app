@@ -56,6 +56,11 @@ describe('toBooking', () => {
     expect(toBooking(row(), 'them').other.name).toBe('Gbenga Adeyemi');
   });
 
+  it('carries the venue, null on an older row with none', () => {
+    expect(toBooking(row(), 'me').provider).toBe('daily');
+    expect(toBooking(row({ meeting_provider: null }), 'me').provider).toBeNull();
+  });
+
   it('derives the end from the duration', () => {
     expect(toBooking(row(), 'me').endsAt).toBe('2026-10-04T16:45:00.000Z');
   });

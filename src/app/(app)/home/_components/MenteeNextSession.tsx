@@ -8,6 +8,7 @@ import { DashboardNextSession } from '@/components/organisms/DashboardNextSessio
 import { cx } from '@/lib/utils/cx';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { joinState, nextSessionWhen, timeRange } from '@/lib/utils/bookings';
+import { providerName } from '@/lib/utils/sessionPhase';
 import type { Booking } from '@/types/booking';
 import { MenteeTipsModal } from './MenteeTipsModal';
 import styles from './MenteeNextSession.module.css';
@@ -96,6 +97,7 @@ export function MenteeNextSession({
   };
 
   const when = nextSessionWhen(b, now, timeZone);
+  const venue = providerName(b.provider);
   const soon = startsSoon(b, now, timeZone);
   const doneCount = done.filter(Boolean).length;
 
@@ -142,6 +144,7 @@ export function MenteeNextSession({
               </span>
               <span className={styles.time}>
                 {weekday(b.startsAt, timeZone)}, {timeRange(b, timeZone)}
+                {venue && ` · ${venue}`}
               </span>
             </div>
           </div>

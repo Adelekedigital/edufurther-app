@@ -75,7 +75,7 @@ export function lobbyTitle(room: SessionRoom): string {
  */
 export function lobbyMeta(room: SessionRoom, timeZone: string): string {
   const b = room.booking;
-  const venue = providerName(room.provider);
+  const venue = providerName(room.booking.provider);
   return [lobbyDate(b.startsAt, timeZone), lobbyTimes(b, timeZone), venue]
     .filter(Boolean)
     .join(' · ');
@@ -99,7 +99,7 @@ function people(room: SessionRoom, phase: DrawnPhase, timeZone: string): LobbyPr
     // The design's "Joined at 6:01 pm"; on a missed session the one who came
     // also "waited 15 min" (the row's wait, as the missed card says).
     const joinedLine = (p: BookingParty): string => {
-      const at = joinedTime(p, room.provider);
+      const at = joinedTime(p, room.booking.provider);
       if (!at) return 'Joined';
       const line = `Joined at ${formatTime(at, timeZone)}`;
       return phase === 'missed' ? `${line}, waited ${missedWaitMin(booking)} min` : line;
@@ -121,7 +121,7 @@ function people(room: SessionRoom, phase: DrawnPhase, timeZone: string): LobbyPr
     // Daily press with no room sighting may still be filled in by settlement.
     const line = (p: BookingParty): LobbyProps['people'][number] => {
       const name = p === me ? 'You' : p.firstName;
-      const at = joinedTime(p, room.provider);
+      const at = joinedTime(p, room.booking.provider);
       if (at)
         return {
           person: p,
@@ -146,7 +146,7 @@ function people(room: SessionRoom, phase: DrawnPhase, timeZone: string): LobbyPr
   // say, so its "Joined" is the Join press. The same for the viewer.
   const live = (p: BookingParty): LobbyProps['people'][number] => {
     const name = p === me ? 'You' : p.firstName;
-    const presence = showsLivePresence(phase) ? presenceOf(p, room.provider) : 'none';
+    const presence = showsLivePresence(phase) ? presenceOf(p, room.booking.provider) : 'none';
     if (presence === 'here') return { person: p, name, presence: 'Here now', tone: 'here' };
     if (presence === 'joined') return { person: p, name, presence: 'Joined', tone: 'joined' };
     return { person: p, name, presence: 'Not in the call yet', tone: 'away' };
@@ -203,7 +203,7 @@ export function lobbyModel({
   pageUrl,
 }: LobbyInput): LobbyProps {
   const b = room.booking;
-  const pv = providerJoin(room.provider);
+  const pv = providerJoin(room.booking.provider);
   const entry = entryFor(b, room.me.joinedAt, phase, now);
 
   let join: LobbyProps['join'];
@@ -267,7 +267,7 @@ export function lobbyModel({
             startsAt: b.startsAt,
             endsAt: b.endsAt,
             pageUrl,
-            venue: providerName(room.provider),
+            venue: providerName(room.booking.provider),
           }
         : undefined,
   };

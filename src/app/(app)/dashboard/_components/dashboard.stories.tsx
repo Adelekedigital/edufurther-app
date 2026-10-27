@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import type { Booking } from '@/types/booking';
+import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { Kpi } from '@/lib/api/data/dashboard';
 import { keys } from '@/lib/api/data/keys';
 import type { StatBlock, WindowStats } from '@/lib/api/data/mentorStats';
@@ -67,20 +68,18 @@ export const Setup: Story = {
 };
 
 const start = Date.now() + 8 * 864e5;
-const sample = {
+// As drawn: a Google Meet session with a mentee new to EduFurther (#241).
+const sample = sampleBookingFor({
   id: 's1',
-  status: 'confirmed',
-  side: 'mentor',
-  other: { name: 'Taofeeq Animasahun' },
+  other: sampleParty({ name: 'Taofeeq Animasahun' }),
   title: 'Statement of Purpose Review',
   startsAt: new Date(start).toISOString(),
   endsAt: new Date(start + 36e5).toISOString(),
   durationMin: 60,
   joinOpensAt: new Date(start - 6e5).toISOString(),
   joinClosesAt: new Date(start + 36e5).toISOString(),
-  doorClosesAt: null,
-  myJoinedAt: null,
-} as unknown as Booking;
+  provider: 'google_meet',
+});
 
 export const NextSession: Story = {
   render: () => (
@@ -114,10 +113,32 @@ export const NextSession: Story = {
 };
 
 const activeKpis: Kpi[] = [
-  { key: 'sessions', label: 'Sessions completed', value: '2', info: 'Sessions marked complete since you joined' },
-  { key: 'time', label: 'Mentoring time', value: '120', unit: 'min', info: '≈ 2 hours in total, shown in minutes for precision' },
-  { key: 'mentees', label: 'Mentees mentored', value: '1', info: 'Unique mentees with a completed session' },
-  { key: 'rating', label: 'Average rating', value: '4.8', unit: '/ 5', info: 'Average of mentee reviews after completed sessions' },
+  {
+    key: 'sessions',
+    label: 'Sessions completed',
+    value: '2',
+    info: 'Sessions marked complete since you joined',
+  },
+  {
+    key: 'time',
+    label: 'Mentoring time',
+    value: '120',
+    unit: 'min',
+    info: '≈ 2 hours in total, shown in minutes for precision',
+  },
+  {
+    key: 'mentees',
+    label: 'Mentees mentored',
+    value: '1',
+    info: 'Unique mentees with a completed session',
+  },
+  {
+    key: 'rating',
+    label: 'Average rating',
+    value: '4.8',
+    unit: '/ 5',
+    info: 'Average of mentee reviews after completed sessions',
+  },
 ];
 const freshKpis: Kpi[] = activeKpis.map((k) => ({ ...k, value: k.key === 'rating' ? null : '0' }));
 
@@ -155,7 +176,13 @@ const qualityQuote: ReviewQuote = {
   by: 'Pulane L. · Statement of Purpose Review',
 };
 
-function SeededQuality({ current, children }: { current: Partial<StatBlock>; children: ReactNode }) {
+function SeededQuality({
+  current,
+  children,
+}: {
+  current: Partial<StatBlock>;
+  children: ReactNode;
+}) {
   const [client] = useState(() => {
     const qc = new QueryClient({
       defaultOptions: { queries: { staleTime: Infinity, retry: false, refetchOnMount: false } },
