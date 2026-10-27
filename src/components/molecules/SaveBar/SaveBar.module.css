@@ -2,7 +2,7 @@
    the menu shadow. */
 .bar {
   position: fixed;
-  left: 50%;
+  left: var(--fixed-center-x);
   bottom: var(--space-6);
   z-index: 30;
   transform: translateX(-50%);

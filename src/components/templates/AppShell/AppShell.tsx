@@ -10,6 +10,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AccountMenu, type AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
+import { lockScroll } from '@/lib/utils/scrollLock';
 import { hasUnsavedChanges, heldLink, discardUnsaved, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { fullNavigate } from '@/lib/utils/hardNavigate';
 import { CreditsPill } from '@/components/molecules/CreditsPill/CreditsPill';
@@ -192,11 +193,7 @@ export function AppShell({
   // Phones: the page behind the sheet doesn't scroll (as under ModalShell).
   useEffect(() => {
     if (!creditsOpen || !window.matchMedia?.('(max-width: 767px)').matches) return;
-    const before = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = before;
-    };
+    return lockScroll();
   }, [creditsOpen]);
   // One pill shows at a time (the bar's on desktop, the header's on phones).
   const togglePill = (from: HTMLButtonElement) => {
@@ -244,6 +241,8 @@ export function AppShell({
     ...admin.map((n) => ({ ...n, icon: 'accessibility_new' as const })),
   ];
 
+  // The page behind the More sheet doesn't scroll (as under the credits sheet).
+  useEffect(() => (moreOpen ? lockScroll() : undefined), [moreOpen]);
   useEffect(() => {
     if (!moreOpen) return;
     const onKey = (e: KeyboardEvent) => {

@@ -1,7 +1,7 @@
 .pill {
   position: fixed;
   z-index: 25;
-  left: 50%;
+  left: var(--fixed-center-x);
   bottom: var(--pill-bottom);
   transform: translateX(-50%);
   width: max-content;
@@ -21,7 +21,7 @@
 }
 /* Docked: slides to the bottom-right so the centred pager stays clear. */
 .corner {
-  left: calc(100% - var(--space-6));
+  left: calc(100% - var(--space-6) - var(--fixed-edge-gap));
   transform: translateX(-100%);
 }
 .full {

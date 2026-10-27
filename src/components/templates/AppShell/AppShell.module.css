@@ -370,6 +370,7 @@
     inset: 0;
     z-index: 31;
     background: var(--overlay-scrim-sheet);
+    animation: fade var(--duration-base) var(--ease-standard);
   }
   .sheet {
     display: flex;
@@ -382,6 +383,8 @@
     background: var(--surface-card);
     border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
     padding: var(--space-3) var(--space-3) calc(var(--space-4) + env(safe-area-inset-bottom));
+    /* The app's sheet motion (ModalShell, BottomSheet): it rises solid. */
+    animation: rise var(--duration-slow) var(--ease-standard);
   }
   .handle {
     align-self: center;
@@ -464,4 +467,21 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheetScrim,
+  .sheet {
+    animation: none;
+  }
 }

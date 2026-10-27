@@ -139,6 +139,12 @@
   /* Breakpoint, for reference: CSS media queries cannot read a var, so the
      number 768px is repeated in modules. Keep them equal. */
   --bp-mobile-max: 767px;
+
+  /* Fixed elements while a dialog locks scrolling (lib/utils/scrollLock): the
+     page is padded by the hidden scrollbar's width (--scroll-lock-gap, set on
+     <html>), which fixed elements don't get. These keep them where they were. */
+  --fixed-center-x: calc(50% - var(--scroll-lock-gap, 0px) / 2);
+  --fixed-edge-gap: var(--scroll-lock-gap, 0px);
 }
 
 @media (max-width: 767px) {
