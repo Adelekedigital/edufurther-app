@@ -860,6 +860,23 @@ SVG ring — neutral `--ink-100` track, a value arc (`--action-primary` /
 | Admin phone tabs Mentors, Credits, Team calls and no More (`AppShell.dc.html` role=admin) | Mentors, Credits, More; the More sheet holds only the account items                                                                             | The phone header has no account control, so without More an admin can't log out; Team calls is out of scope, so More takes its slot and the bar keeps three tabs | design draws an admin phone account control |
 | `/` sends an admin to `/admin` (older settled rule)                                       | Admins keep their own home; the Admin nav item is the entry                                                                                     | PRD: "Admins keep their normal account and nav"                                                                                                                  | —                                           |
 
+### Admin — Credits page (`creditLayout=lookup`, route `/admin/credits`, PR 6), 2026-10-27
+
+Measured at 1440 against the design's inline values: 182 of 185 checks match (98.38%). The three misses are a shared-atom gap, not a divergence. **Pending follow-up:** `Select` gains a 44px density and `--radius-sm` in PR 5 (Mentors); Credits adopts it right after for the reason select (now 37px, `--radius-md`), and the "Find a mentee" field (the `Input` `lg` field, now `--radius-lg`) follows the same radius.
+
+| Design says | We do | Why | Reopen if |
+| --- | --- | --- | --- |
+| "Find a mentee" field: no clear button | The shared `SearchField` (`labelled`: label above, no glyph), with its × once there is text | One search field for the app; clearing is an interaction state | — |
+| Credit rules: steppers, a quiet-month row, a "Changes start at…" Notice, a save bar | The server's values, read-only (16px semibold where the stepper's number sat); no quiet-month row, notice or save bar | Founder, 2026-10-26: rules are shown, not edited; the backend has no quiet-month rule | editable rules get their PRD |
+| Add stepper stops at 10 | Stops at 3; at a bound the button stays focusable (`aria-disabled`, ink-500) | Founder: the API's cap. Focusable so a keyboard user pressing again keeps their place (ours, an interaction state) | the cap changes |
+| Confirm buttons: Cancel and Add credits, right-aligned, `size="sm"` | `ConfirmDialog`'s two equal large buttons, Cancel first; a bottom sheet on phones | The app's one confirm (`ConfirmActions`) | design revises the confirm |
+| Credit log: Mentee is a link (`<a href="#">`) | A button drawn as the link | It opens a dialog, it goes nowhere | — |
+| No load error, empty log or empty history drawn | Q12: "We couldn’t load credits" with the Mentors error body and Try again (the design's `listError` card); "No credit changes yet" (an EmptyState with `search-results` in the log, a line in the history) | PRD defaults | design draws them |
+| No paging drawn | The shared `LoadMore`, "Show older changes", only when the API returns a cursor (log, and a history past 50) | 50 a page (backend) | — |
+| Entries the design doesn't draw | "Unlocked: invited a friend", "Opening balance", "Credits expired" (All only), "Refunded: session canceled", "Refunded: {mentor} didn’t join", "Refunded: request not accepted" | PRD Q6 and Q12, backend PR 3's refund reasons | design or ux-writer words them |
+| Names are always present | A deleted mentee reads "Deleted account" with no drawer link; a deleted mentor leaves the sentence ("Booked a session", "Refunded: mentor canceled") | The API keeps entries with null names | — |
+| User ids like "U-20418" | The first 8 characters of the UUID; search takes the full one | PRD Q2 | — |
+
 ## Mentee home / dashboard (Mentee Dashboard v2.dc.html, route `/home`, PR 1)
 
 | Design says | We do | Why | Revisit when |
