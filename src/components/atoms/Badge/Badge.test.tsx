@@ -19,6 +19,18 @@ describe('Badge', () => {
     );
     expect(screen.getByText('Needs attention').className).toMatch(/warning-accent/);
   });
+  it('draws the round shapes Messages uses: the pill chip and the count', () => {
+    render(
+      <>
+        <Badge type="accent" size="sm" shape="pill">
+          Next
+        </Badge>
+        <Badge shape="count">3</Badge>
+      </>,
+    );
+    expect(screen.getByText('Next').className).toMatch(/pill/);
+    expect(screen.getByText('3').className).toMatch(/count/);
+  });
   it('defaults to the filled primary badge', () => {
     render(<Badge>New</Badge>);
     expect(screen.getByText('New').className).toMatch(/primary-filled/);

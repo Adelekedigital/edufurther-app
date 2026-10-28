@@ -67,6 +67,11 @@ export const NEW_MESSAGE_COPY = {
   searchLabel: 'Search people',
   searchPlaceholder: 'Search by name',
   noMatch: 'No one matches that name.',
+  /** No connections at all (no search typed). */
+  noPeople: (mentee: boolean) =>
+    mentee
+      ? 'You can message a mentor once they confirm your booking.'
+      : 'You can message a mentee once you confirm their booking.',
   bookFirst: 'Want to talk to someone new? Book a session first.',
   findMentor: 'Find a mentor',
 } as const;

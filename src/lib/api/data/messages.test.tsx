@@ -3,7 +3,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Thread } from '@/types/messages';
 import { resetOutbox, useOutbox, useSendMessage } from './messageSend';
-import { mergeNewer, mergeOlder, toChatPerson, toChats, toMessage, useThread } from './messages';
+import {
+  mergeNewer,
+  mergeOlder,
+  toChatPerson,
+  toChats,
+  toMessage,
+  useChats,
+  useThread,
+} from './messages';
 import type { WireChatPerson, WireMessage, WireThread } from './pending';
 
 const GET = vi.fn();
@@ -142,6 +150,18 @@ describe('merging reads', () => {
     const merged = mergeOlder(base(['m3']), base(['m1', 'm2'], false));
     expect(merged.items.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
     expect(merged.hasMore).toBe(false);
+  });
+});
+
+describe('useChats', () => {
+  it('says while a read is in flight, so a chat just connected can be waited for', async () => {
+    let answer!: (v: unknown) => void;
+    GET.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const { result } = renderHook(() => useChats(true), { wrapper });
+    await waitFor(() => expect(result.current.refreshing).toBe(true));
+    answer({ data: { data: [], next_cursor: null, total_unread: 0 }, response: res(200) });
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+    expect(result.current.data).toEqual({ rows: [], totalUnread: 0 });
   });
 });
 

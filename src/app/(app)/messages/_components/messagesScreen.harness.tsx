@@ -126,8 +126,12 @@ export const h = {
   peopleQuery: null as string | null,
   settings: remote<{ unreadEmails: boolean }>({ unreadEmails: true }),
   saveFailed: false,
+  /** A flip is still saving (the mutation's `isPending`). */
+  saving: false,
   /** `useChats` was asked to fetch. */
   chatsActive: false,
+  /** `useChats` has a read in flight. */
+  refreshing: false,
 };
 
 export function inbox(rows: ChatRow[]) {
@@ -142,7 +146,9 @@ export function resetHarness() {
   h.peopleQuery = null;
   h.settings = remote({ unreadEmails: true });
   h.saveFailed = false;
+  h.saving = false;
   h.chatsActive = false;
+  h.refreshing = false;
   replace.mockReset();
   push.mockReset();
   saveSettings.mockReset();
@@ -180,7 +186,7 @@ export const mocks = {
   messages: () => ({
     useChats: (active: boolean) => {
       h.chatsActive = active;
-      return h.chats;
+      return { ...h.chats, refreshing: h.refreshing };
     },
     useMessagePeople: (q: string) => {
       h.peopleQuery = q;
@@ -194,6 +200,9 @@ export const mocks = {
       },
       get isError() {
         return h.saveFailed;
+      },
+      get isPending() {
+        return h.saving;
       },
     }),
   }),

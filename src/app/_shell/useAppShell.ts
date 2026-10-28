@@ -120,8 +120,11 @@ export function useAppShell() {
   // The setup lock: nav items held until onboarding or approval (lib/utils/access).
   const access = accessFor(viewer);
   // The Messages badge: total unread, every 30 s app-wide, for a member who can
-  // open Messages (a locked item shows no count, so it asks nothing).
-  const unread = useUnreadTotal(MESSAGES_LIVE && !!member && !access.locked.has('Messages'));
+  // open Messages (a locked item shows no count, so it asks nothing). Not inside
+  // /admin, whose nav has no Messages.
+  const unread = useUnreadTotal(
+    MESSAGES_LIVE && !!member && !inAdmin && !access.locked.has('Messages'),
+  );
   const items = accountItems(
     member,
     () => {

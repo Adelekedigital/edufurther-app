@@ -21,10 +21,22 @@ export function MessageEmailsDialog({ onDone }: { onDone: (toast: string | null)
   const settings = useMessageSettings(true);
   const save = useSaveMessageSettings();
   const on = settings.data?.unreadEmails;
-  const close = () => onDone(on === undefined ? null : on ? SETTINGS_COPY.on : SETTINGS_COPY.off);
+  // While a flip is saving, the toast would claim a value that may roll back:
+  // Done (and the ×) wait for the answer.
+  const saving = save.isPending;
+  const close = () => {
+    if (saving) return;
+    onDone(on === undefined ? null : on ? SETTINGS_COPY.on : SETTINGS_COPY.off);
+  };
 
   return (
-    <ModalShell title={SETTINGS_COPY.title} size="sm" mobile="sheet" onClose={close}>
+    <ModalShell
+      title={SETTINGS_COPY.title}
+      size="sm"
+      mobile="sheet"
+      onClose={close}
+      closeDisabled={saving}
+    >
       <div className={styles.body}>
         <div className={styles.row}>
           <span className={styles.copy}>
@@ -66,7 +78,7 @@ export function MessageEmailsDialog({ onDone }: { onDone: (toast: string | null)
           <Icon name="schedule" size={18} className={styles.noteIcon} />
           <span>{SETTINGS_COPY.sessionNote}</span>
         </div>
-        <Button size="large" fullWidth onClick={close}>
+        <Button size="large" fullWidth busy={saving} onClick={close}>
           {SETTINGS_COPY.done}
         </Button>
       </div>

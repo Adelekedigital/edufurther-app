@@ -41,3 +41,23 @@ export const Labelled: Story = {
     );
   },
 };
+
+/** `compact` + `radius="md"`: Messages' list search, 40px on desktop (44px on phones). */
+export const Compact: Story = {
+  render: function Render() {
+    const [q, setQ] = useState('');
+    return (
+      <div style={{ maxWidth: 308 }}>
+        <SearchField
+          compact
+          radius="md"
+          label="Search messages"
+          placeholder="Search by name or school"
+          value={q}
+          onChange={setQ}
+          onClear={() => setQ('')}
+        />
+      </div>
+    );
+  },
+};

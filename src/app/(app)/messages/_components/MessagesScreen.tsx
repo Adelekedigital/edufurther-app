@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
@@ -41,7 +41,13 @@ export function MessagesScreen() {
   const [keepId, setKeepId] = useState<string | null>(null);
   const setFilter = (f: ChatFilter) => {
     setFilterState(f);
-    setKeepId(null);
+    // Desktop with no `?with=` opens the list's top chat, so Unread keeps that one
+    // too: read, it must not drop out and hand the pane to the next unread chat.
+    const top =
+      f === 'unread' && !isPhone && !url.withId
+        ? visibleRows(chats.data?.rows ?? [], q, 'unread', null)[0]
+        : undefined;
+    setKeepId(top?.person.id ?? null);
   };
   const [dialog, setDialog] = useState<'new' | 'settings' | null>(null);
   const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
@@ -71,12 +77,27 @@ export function MessagesScreen() {
 
   const rows = chats.data?.rows ?? [];
   const now = new Date();
-  const shown = visibleRows(rows, q, filter, keepId).map((r) => rowView(r, timeZone, now));
+  const visible = visibleRows(rows, q, filter, keepId);
+  const shown = visible.map((r) => rowView(r, timeZone, now));
+  // Desktop with no `?with=`: the top row of the list as shown (the filter and
+  // search included), so the open chat is always one the list can point at.
   const openRow = url.withId
     ? (rows.find((r) => r.person.id === url.withId) ?? null)
     : isPhone
       ? null
-      : (rows[0] ?? null);
+      : (visible[0] ?? null);
+
+  // Picked from New message but not in the list yet (connected since the last
+  // poll): read the list again, and wait for it before calling the chat gone.
+  const [awaiting, setAwaiting] = useState<string | null>(null);
+  const pick = (id: string) => {
+    if (!rows.some((r) => r.person.id === id)) {
+      setAwaiting(id);
+      chats.retry();
+    }
+    open(id);
+  };
+  const waitingFor = !openRow && url.withId === awaiting && chats.refreshing;
 
   const gate = memberGate(viewer, '/messages', MESSAGES_GATE) ?? lockedPageGate(access, 'Messages');
   if (gate) return gate;
@@ -89,7 +110,7 @@ export function MessagesScreen() {
           onClose={() => setDialog(null)}
           onPick={(id) => {
             setDialog(null);
-            open(id);
+            pick(id);
           }}
         />
       )}
@@ -107,15 +128,7 @@ export function MessagesScreen() {
 
   // No role UI until the role is known: the same neutral skeleton as loading.
   if (viewer.kind === 'loading' || (chats.isLoading && !chats.data && !chats.error)) {
-    return (
-      <div className={styles.pane} data-chat-open="false">
-        <ChatListSkeleton />
-        <div className={styles.chatSkeleton}>
-          <ChatPaneSkeleton />
-        </div>
-        {dialogs}
-      </div>
-    );
+    return <MessagesSkeleton>{dialogs}</MessagesSkeleton>;
   }
 
   // Error before empty: a list that never loaded isn't an empty inbox.
@@ -180,7 +193,9 @@ export function MessagesScreen() {
         onNew={() => setDialog('new')}
       />
       <div className={styles.chat}>
-        {openRow ? (
+        {waitingFor ? (
+          <ChatPaneSkeleton />
+        ) : openRow ? (
           <ChatPane
             key={openRow.person.id}
             person={openRow.person}
@@ -194,6 +209,19 @@ export function MessagesScreen() {
         )}
       </div>
       {dialogs}
+    </div>
+  );
+}
+
+/** The page while it loads: the list's and the chat's skeletons, nothing role-specific. */
+export function MessagesSkeleton({ children }: { children?: ReactNode }) {
+  return (
+    <div className={styles.pane} data-chat-open="false">
+      <ChatListSkeleton />
+      <div className={styles.chatSkeleton}>
+        <ChatPaneSkeleton />
+      </div>
+      {children}
     </div>
   );
 }

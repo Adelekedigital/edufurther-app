@@ -16,7 +16,7 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   tone?: 'default' | 'danger';
   /**
    * ring: the DS CircleIconButton, 40px, white with a hairline ring and a dark
-   * glyph (Messages.dc.html list header). Ignores `size` and `shape`.
+   * glyph (Messages.dc.html list header). Ignores `size`, `shape` and `tone`.
    */
   variant?: 'quiet' | 'ring';
   /** The glyph's px when the drawn control isn't one of the sizes (a 24px back arrow). */

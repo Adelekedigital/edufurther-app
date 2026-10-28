@@ -64,7 +64,7 @@ export function NewMessageDialog({
             ))
           ) : list.length === 0 ? (
             <p className={styles.line} role="status">
-              {NEW_MESSAGE_COPY.noMatch}
+              {query ? NEW_MESSAGE_COPY.noMatch : NEW_MESSAGE_COPY.noPeople(mentee)}
             </p>
           ) : (
             list.map((p) => (

@@ -169,6 +169,47 @@ describe('Messages: which chat is open', () => {
     expect(push).toHaveBeenCalledWith('/messages?with=u-hugh', { scroll: false });
   });
 
+  it('desktop with no ?with=: the top of the list as shown opens, and Unread keeps it once read', () => {
+    h.chats = inbox([
+      chatRow({ person: person({ id: 'u-a', name: 'Ann Read' }) }),
+      chatRow({ person: person({ id: 'u-b', name: 'Bo Unread' }), unread: 1 }),
+      chatRow({ person: person({ id: 'u-c', name: 'Cy Unread' }), unread: 2 }),
+    ]);
+    const { rerender } = render(<MessagesScreen />);
+    expect(screen.getByRole('region', { name: 'Chat with Ann Read' })).toBeInTheDocument();
+    act(() => screen.getByRole('radio', { name: 'Unread (3)' }).click());
+    expect(screen.getByRole('region', { name: 'Chat with Bo Unread' })).toBeInTheDocument();
+    // Bo is read now: still listed and open, not handed to Cy.
+    h.chats = inbox([
+      chatRow({ person: person({ id: 'u-a', name: 'Ann Read' }) }),
+      chatRow({ person: person({ id: 'u-b', name: 'Bo Unread' }) }),
+      chatRow({ person: person({ id: 'u-c', name: 'Cy Unread' }), unread: 2 }),
+    ]);
+    rerender(<MessagesScreen />);
+    expect(rowNames()).toEqual(['Bo Unread', 'Cy Unread, 2 unread']);
+    expect(screen.getByRole('region', { name: 'Chat with Bo Unread' })).toBeInTheDocument();
+  });
+
+  it('phones: Back after opening from the list steps back; from a link it drops ?with=', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+    setPhone(true);
+    const { rerender, unmount } = render(<MessagesScreen />);
+    await user.click(list().getByRole('button', { name: 'Hugh Momah' }));
+    h.search = 'with=u-hugh';
+    rerender(<MessagesScreen />);
+    await user.click(screen.getByRole('button', { name: 'Back to messages' }));
+    expect(historyBack).toHaveBeenCalledTimes(1);
+    expect(replace).not.toHaveBeenCalled();
+    unmount();
+    // Opened from a link (an email, a Message button): nothing to step back to here.
+    render(<MessagesScreen />);
+    await user.click(screen.getByRole('button', { name: 'Back to messages' }));
+    expect(historyBack).toHaveBeenCalledTimes(1);
+    expect(replace).toHaveBeenCalledWith('/messages', { scroll: false });
+    historyBack.mockRestore();
+  });
+
   it('a ?with= that is none of my chats says the chat isn’t available', () => {
     h.search = 'with=u-stranger';
     render(<MessagesScreen />);
@@ -301,13 +342,43 @@ describe('Messages: New message', () => {
     expect(dialog.getByText('No one matches that name.')).toBeInTheDocument();
     expect(dialog.queryByRole('link', { name: 'Find a mentor' })).toBeNull();
   });
+
+  it('with nothing typed and no one connected, it says how people connect (not "no match")', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<MessagesScreen />);
+    await user.click(screen.getByRole('button', { name: 'New message' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'New message' }));
+    expect(
+      dialog.getByText('You can message a mentor once they confirm your booking.'),
+    ).toBeInTheDocument();
+    expect(dialog.queryByText('No one matches that name.')).toBeNull();
+  });
+
+  it('someone connected since the last poll: the list is read again, and the chat waits for it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const retry = vi.fn();
+    h.chats = { ...inbox(menteeRows()), retry };
+    h.people = remote([person({ id: 'u-new', name: 'Ada New' })]);
+    const { rerender } = render(<MessagesScreen />);
+    await user.click(screen.getByRole('button', { name: 'New message' }));
+    await user.click(screen.getByRole('button', { name: /Ada New/ }));
+    expect(retry).toHaveBeenCalled();
+    h.search = 'with=u-new';
+    h.refreshing = true;
+    rerender(<MessagesScreen />);
+    expect(screen.queryByRole('heading', { name: 'This chat isn’t available.' })).toBeNull();
+    // The read came back without them: now it says so.
+    h.refreshing = false;
+    rerender(<MessagesScreen />);
+    expect(screen.getByRole('heading', { name: 'This chat isn’t available.' })).toBeInTheDocument();
+  });
 });
 
 describe('Messages: Message emails', () => {
   it('the switch saves on flip; Done closes with the toast for the saved state', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     h.settings = remote({ unreadEmails: false });
-    render(<MessagesScreen />);
+    const { rerender } = render(<MessagesScreen />);
     await user.click(screen.getByRole('button', { name: 'Message settings' }));
     const dialog = within(screen.getByRole('dialog', { name: 'Message emails' }));
     const sw = dialog.getByRole('switch', { name: 'Email me about unread messages' });
@@ -319,9 +390,23 @@ describe('Messages: Message emails', () => {
     ).toBeInTheDocument();
     await user.click(sw);
     expect(saveSettings).toHaveBeenCalledWith({ unreadEmails: true });
+    // The cache now holds the saved value, as the real (optimistic) hook does.
+    rerender(<MessagesScreen />);
+    expect(dialog.getByRole('switch', { name: 'Email me about unread messages' })).toBeChecked();
     await user.click(dialog.getByRole('button', { name: 'Done' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(await screen.findByText('Unread message emails are off.')).toBeInTheDocument();
+    expect(await screen.findByText('Unread message emails are on.')).toBeInTheDocument();
+  });
+
+  it('while a flip is saving, Done waits: no toast for a value that may roll back', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    h.saving = true;
+    render(<MessagesScreen />);
+    await user.click(screen.getByRole('button', { name: 'Message settings' }));
+    const dialog = within(screen.getByRole('dialog', { name: 'Message emails' }));
+    await user.click(dialog.getByRole('button', { name: 'Done' }));
+    expect(screen.getByRole('dialog', { name: 'Message emails' })).toBeInTheDocument();
+    expect(screen.queryByText(/^Unread message emails are/)).toBeNull();
   });
 
   it('?settings=1 opens it; closing drops the param', async () => {
@@ -334,7 +419,7 @@ describe('Messages: Message emails', () => {
     expect(replace).toHaveBeenCalledWith('/messages?mockViewer=mentee', { scroll: false });
   });
 
-  it('a failed save says so', async () => {
+  it('a save that failed says so', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     h.saveFailed = true;
     render(<MessagesScreen />);

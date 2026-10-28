@@ -90,6 +90,12 @@
   background: var(--surface-subtle);
   color: var(--ink-900);
 }
+/* Off, it keeps its white ground and ring; the glyph dims to --ink-500, as above. */
+.ring:disabled,
+.ring:disabled:hover {
+  background: var(--surface-card);
+  color: var(--ink-500);
+}
 @media (max-width: 767px) {
   /* Drawn at 40px on phones too; an invisible area reaches 44px (CTA rule 5). */
   .ring {

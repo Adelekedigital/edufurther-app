@@ -73,10 +73,6 @@
   flex-direction: column;
   gap: 2px;
 }
-/* The description wrapper only names the lines; the column lays them out. */
-.rowDesc {
-  display: contents;
-}
 .rowTop {
   display: flex;
   align-items: baseline;
@@ -131,33 +127,10 @@
   color: var(--ink-900);
   font-weight: var(--weight-semibold);
 }
-.count {
-  flex: none;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  box-sizing: border-box;
-  border-radius: var(--radius-full);
-  background: var(--blue-500);
-  color: var(--white);
-  font-size: var(--text-message-meta);
-  font-weight: var(--weight-semibold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 .chip {
   align-self: flex-start;
   display: flex;
-  align-items: center;
-  gap: var(--space-1);
   margin-top: var(--space-1);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--blue-50);
-  color: var(--blue-700);
-  font-size: var(--text-caption-xs);
-  font-weight: var(--weight-semibold);
 }
 .noRows {
   flex: 1;
