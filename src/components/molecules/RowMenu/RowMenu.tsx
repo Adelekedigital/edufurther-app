@@ -60,7 +60,10 @@ type RowMenuProps = {
      * focus, unlike a swapped-out control, and doesn't open (review of PR 125).
      */
     disabled?: boolean;
-    /** The DS CircleIconButton (`IconButton variant="ring"`): Messages' "More options". */
+    /**
+     * The DS CircleIconButton (`IconButton variant="ring"`): Messages' "More
+     * options". It draws itself: `size`, `className` and `text` are ignored.
+     */
     ring?: boolean;
   };
   /**

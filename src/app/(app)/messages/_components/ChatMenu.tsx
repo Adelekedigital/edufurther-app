@@ -43,7 +43,8 @@ export function ChatMenu({
   nextBooking: NextBooking | null;
   viewerIsMentee: boolean;
   phone: boolean;
-  reporter: Reporter;
+  /** Null until my name and email are known: Report waits for them (the email signs with both). */
+  reporter: Reporter | null;
 }) {
   const router = useRouter();
   const profile = profileHref(person, viewerIsMentee);
@@ -69,17 +70,22 @@ export function ChatMenu({
           },
         ]
       : []),
-    {
-      key: 'report',
-      icon: 'flag',
-      label: CHAT_COPY.report,
-      // A divider only when something sits above it.
-      divider: !!profile || (phone && !!nextBooking),
-      onSelect: () => {
-        window.location.href = reportHref(person, reporter, window.location.origin);
-      },
-    },
+    ...(reporter
+      ? [
+          {
+            key: 'report',
+            icon: 'flag' as const,
+            label: CHAT_COPY.report,
+            // A divider only when something sits above it.
+            divider: !!profile || (phone && !!nextBooking),
+            onSelect: () => {
+              window.location.href = reportHref(person, reporter, window.location.origin);
+            },
+          },
+        ]
+      : []),
   ];
+  if (items.length === 0) return null;
   return (
     <RowMenu label={CHAT_COPY.more} items={items} trigger={{ icon: 'more_vert', ring: true }} />
   );

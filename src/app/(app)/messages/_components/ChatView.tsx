@@ -77,7 +77,7 @@ export function ChatView({
   useEffect(() => {
     if (!shown || !visible || !newest || sentFor.current === newest) return;
     sentFor.current = newest;
-    // A failed read is tried again on the next render that still has it unread.
+    // A failed read is tried again with the next poll's answer (`t` changes), not in a loop.
     mutate(
       { withId: person.id, upTo: newest },
       {
@@ -86,7 +86,7 @@ export function ChatView({
         },
       },
     );
-  }, [shown, visible, newest, person.id, mutate]);
+  }, [shown, visible, newest, person.id, mutate, t]);
 
   // Newest at the bottom: on open, on my send, and when new ones arrive while at
   // the bottom. An older page keeps the reader where they were.

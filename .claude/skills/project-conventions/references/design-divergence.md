@@ -1277,7 +1277,8 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | Report divider is always drawn | A divider only when an item sits above Report (a mentor on desktop has Report alone) | A lone line at the menu's top reads as a mistake | never |
 | "Sending" shows one tick at once | No tick until the server stores it (Sent), "Waiting to send" offline, "Not sent." on failure | A tick claims a save that hasn't happened | never |
 | Starter "{start term}" reads "next year" | " for {target_start_term}" when the goal has one, else nothing | Filled from data (founder, Oct 26) | design redraws the templates |
-| Starter topic: "choosing between my top three schools" | The first help area's onboarding wording ("choosing a school", HELP_AREAS `reason`) | Q6; one wording per help area | ux-writer gives per-area lines |
+| Starter topic: "choosing between my top three schools" | The first help area in the mentee's own words (`STARTERS.topics`: "choosing a school", "my application documents", …) | Q6: filled from data; onboarding's `reason` lines are written from the mentor's side | the founder signs off other wordings |
+| Not drawn: the thread as a landmark | The thread is a focusable `role="log"` named "Chat with {Name}" | Keyboard scrolling, and new messages are read out politely | never |
 | `/read` whenever the chat is open and visible | Only when their newest message is past my read mark | No write that changes nothing | never |
 | A file in a message: the file card | Until the files build: the file's name as text | Builder C adds the card (FileViewer) | files PR |
 | The textarea grows with `field-sizing: content` | Measured with `scrollHeight` on change (44 to 140px) | `field-sizing` isn't in every browser yet | `field-sizing` ships everywhere |

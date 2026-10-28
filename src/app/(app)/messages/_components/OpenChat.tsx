@@ -77,11 +77,15 @@ export function OpenChat({
           nextBooking={nextBooking}
           viewerIsMentee={mentee}
           phone={phone}
-          reporter={{
-            name: me.profile?.name || member.firstName,
-            email: me.profile?.email ?? '',
-            mentor: !mentee,
-          }}
+          reporter={
+            me.profile?.email
+              ? {
+                  name: me.profile.name || member.firstName,
+                  email: me.profile.email,
+                  mentor: !mentee,
+                }
+              : null
+          }
         />
       }
     >

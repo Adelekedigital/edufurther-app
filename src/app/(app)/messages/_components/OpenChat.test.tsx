@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError, normaliseError } from '@/lib/api/data/errors';
 import type { Message, Thread } from '@/types/messages';
@@ -143,11 +143,27 @@ describe('the thread', () => {
     expect(await screen.findByText('Message sent.')).toBeInTheDocument();
   });
 
-  it('a 404 chat is gone', () => {
+  it('a 404 chat is gone: no composer, nothing to retry', () => {
     h.threads[UJ] = remote<Thread>(null, { error: normaliseError(new ApiError(404)) });
     h.search = `with=${UJ}`;
     render(<MessagesScreen />);
     expect(screen.getByRole('heading', { name: 'This chat isn’t available.' })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+  });
+
+  it('any other failed read says so, with Try again', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const retry = vi.fn();
+    h.threads[UJ] = remote<Thread>(null, { error: normaliseError(new ApiError(500)), retry });
+    h.search = `with=${UJ}`;
+    render(<MessagesScreen />);
+    expect(
+      chat().getByRole('heading', { name: 'We couldn’t load this chat.' }),
+    ).toBeInTheDocument();
+    await user.click(chat().getByRole('button', { name: 'Try again' }));
+    expect(retry).toHaveBeenCalled();
+    expect(chat().queryByRole('textbox')).toBeNull();
   });
 });
 
@@ -158,7 +174,7 @@ describe('read marking', () => {
     });
     render(<MessagesScreen />);
     const newest = h.threads[UJ]!.data!.items[1]!.id;
-    expect(markRead).toHaveBeenCalledWith({ withId: UJ, upTo: newest });
+    expect(markRead).toHaveBeenCalledWith({ withId: UJ, upTo: newest }, expect.anything());
     expect(markRead).toHaveBeenCalledTimes(1);
   });
 
@@ -166,6 +182,17 @@ describe('read marking', () => {
     open({ myLastReadAt: ago(1), items: [msg(false, ago(5), 'Old'), msg(true, ago(2), 'Mine')] });
     render(<MessagesScreen />);
     expect(markRead).not.toHaveBeenCalled();
+  });
+
+  it('a failed /read is tried again with the next poll', () => {
+    markRead.mockImplementationOnce((_v: unknown, o?: { onError?: () => void }) => o?.onError?.());
+    open({ items: [msg(false, ago(5), 'Two')] });
+    const { rerender } = render(<MessagesScreen />);
+    expect(markRead).toHaveBeenCalledTimes(1);
+    // The poll answers: a new read of the same chat.
+    h.threads[UJ] = remote({ ...h.threads[UJ]!.data! });
+    rerender(<MessagesScreen />);
+    expect(markRead).toHaveBeenCalledTimes(2);
   });
 
   it('never while the page is hidden; once it shows, it does', () => {
@@ -274,6 +301,18 @@ describe('the composer', () => {
     await user.type(box, 'See you then{Enter}');
     expect(sent).toHaveBeenCalledWith({ to: UJ, body: 'See you then', file: null });
     expect(box).toHaveValue('');
+  });
+
+  it('an Enter that ends an IME composition never sends', () => {
+    open({ items: [msg(false, ago(5), 'Hi')] });
+    render(<MessagesScreen />);
+    const box = chat().getByRole('textbox', { name: 'Message Ujunwa' });
+    fireEvent.change(box, { target: { value: '你好' } });
+    fireEvent.keyDown(box, { key: 'Enter', keyCode: 229 });
+    fireEvent.keyDown(box, { key: 'Enter', isComposing: true });
+    expect(sent).not.toHaveBeenCalled();
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect(sent).toHaveBeenCalledWith({ to: UJ, body: '你好', file: null });
   });
 
   it('phones: Enter adds a line; the button sends', async () => {
@@ -387,6 +426,18 @@ describe('the More options menu', () => {
     render(<MessagesScreen />);
     await user.click(chat().getByRole('button', { name: 'More options' }));
     expect(screen.getAllByRole('menuitem').map(menuName)).toEqual(['Report']);
+  });
+
+  it('my side comes from the chat: a mentor account chatting with their own mentor is the mentee there', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    h.viewer = MENTOR;
+    h.chats = inbox([chatRow({ last: null })]);
+    open({});
+    render(<MessagesScreen />);
+    expect(chat().getByRole('button', { name: 'Ask what to prepare' })).toBeInTheDocument();
+    expect(chat().queryByRole('button', { name: 'Welcome them' })).toBeNull();
+    await user.click(chat().getByRole('button', { name: 'More options' }));
+    expect(screen.getAllByRole('menuitem').map(menuName)).toEqual(['View profile', 'Report']);
   });
 
   it('Report is an email to support with the chat, both names and the account', () => {
