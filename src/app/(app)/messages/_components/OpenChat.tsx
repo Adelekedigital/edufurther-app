@@ -41,8 +41,10 @@ export function OpenChat({
   onBack: () => void;
   onToast: (text: string) => void;
 }) {
-  const mentee = !member.isMentor;
   const { person, nextBooking } = row;
+  // My side in this chat comes from theirs, not from my account: someone who
+  // keeps a declined mentor profile is still the mentee to their mentor.
+  const mentee = person.role === 'mentor';
   const goals = useMenteeGoals(mentee ? member.id : null);
   const me = useMenteeProfile(member.id);
   const goal = goals.read?.goal ?? null;

@@ -8,6 +8,17 @@
   gap: var(--space-2);
   padding: var(--space-4);
 }
+.scroll:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+.state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+}
 .privacy {
   align-self: center;
   display: flex;

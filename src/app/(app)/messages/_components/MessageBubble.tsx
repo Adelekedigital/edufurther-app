@@ -58,10 +58,13 @@ export function MessageBubble({
  */
 export function OutboxBubble({
   item,
+  announce,
   timeZone,
   onRetry,
 }: {
   item: OutboxItem;
+  /** The chat's newest failure: its line is the one alert. */
+  announce: boolean;
   timeZone: string;
   onRetry: () => void;
 }) {
@@ -77,7 +80,7 @@ export function OutboxBubble({
         </span>
       </div>
       {failed && (
-        <span role="alert" className={styles.failed}>
+        <span role={announce ? 'alert' : undefined} className={styles.failed}>
           <Icon name="error" size={16} />
           {CHAT_COPY.notSent}
           <button type="button" className={styles.retry} onClick={onRetry}>

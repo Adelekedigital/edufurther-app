@@ -161,6 +161,7 @@ export const thread = (over: Partial<Thread> = {}): Thread => ({
   theirLastReadAt: null,
   myLastReadAt: null,
   hasMore: false,
+  cursor: null,
   ...over,
 });
 

@@ -58,15 +58,22 @@ export function ChatGone({ onBack }: { onBack: () => void }) {
           onClick={onBack}
         />
       </div>
-      <div className={styles.state}>
-        <EmptyState
-          illustration="chat"
-          size={120}
-          title={CHAT_COPY.gone}
-          description={CHAT_COPY.goneBody}
-        />
-      </div>
+      <GoneState />
     </section>
+  );
+}
+
+/** "This chat isn't available.": a `?with=` that isn't a chat, or a thread read that 404s. */
+export function GoneState() {
+  return (
+    <div className={styles.state}>
+      <EmptyState
+        illustration="chat"
+        size={120}
+        title={CHAT_COPY.gone}
+        description={CHAT_COPY.goneBody}
+      />
+    </div>
   );
 }
 

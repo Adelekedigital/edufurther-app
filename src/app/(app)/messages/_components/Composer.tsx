@@ -6,7 +6,7 @@ import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { COMPOSER_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
-import { CONTACT_RE } from './threadItems';
+import { hasContactDetails } from '@/lib/utils/contactDetails';
 import styles from './Composer.module.css';
 
 /** PRD Q10: 2,000 characters, as the server allows; no counter in Messages. */
@@ -46,7 +46,10 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     el.style.height = `${Math.min(el.scrollHeight, MAX_BOX)}px`;
   }, [value]);
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key !== 'Enter' || e.shiftKey || phone || e.nativeEvent.isComposing) return;
+    // Safari ends an IME composition with an Enter that says isComposing false
+    // and keyCode 229: neither may send.
+    const composing = e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229;
+    if (e.key !== 'Enter' || e.shiftKey || phone || composing) return;
     e.preventDefault();
     if (canSend) onSend();
   };
@@ -54,12 +57,13 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
   return (
     <div className={styles.composer}>
       {offline && (
-        <span role="status" className={styles.offline}>
+        // Plain text: the app shell's offline banner already says it out loud.
+        <span className={styles.offline}>
           <Icon name="cloud_off" size={16} />
           {COMPOSER_COPY.offline}
         </span>
       )}
-      {CONTACT_RE.test(value) && (
+      {hasContactDetails(value) && (
         <Notice tone="info" showIcon={false}>
           <span className={styles.notice}>{COMPOSER_COPY.contactNotice}</span>
         </Notice>

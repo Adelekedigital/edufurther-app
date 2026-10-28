@@ -14,10 +14,21 @@ describe('startersFor (PRD "Starters")', () => {
     const s = startersFor('mentee', 'Hugh', { mentee: data(), theirInstitution: 'LSE' });
     expect(s.map((x) => x.text)).toEqual([
       'Hi Hugh, I’m Amara. I’m applying for an MBA in Finance. Looking forward to our session!',
-      'Hi Hugh, in our session I’d love to focus on scholarships.',
+      'Hi Hugh, in our session I’d love to focus on finding scholarships.',
       'Hi Hugh, is there anything I should prepare or send before our session?',
       'Hi Hugh, what was applying to LSE like for you?',
     ]);
+  });
+
+  it('the topic is in the mentee’s own words, for every help area', () => {
+    const cover = (firstNeed: string) =>
+      startersFor('mentee', 'Hugh', { mentee: data({ firstNeed }), theirInstitution: null }).find(
+        (x) => x.key === 'cover',
+      )?.text;
+    expect(cover('document-preparation')).toBe(
+      'Hi Hugh, in our session I’d love to focus on my application documents.',
+    );
+    expect(cover('unknown-area')).toBeUndefined();
   });
 
   it('a chip whose data is missing is hidden; Ask what to prepare always shows', () => {

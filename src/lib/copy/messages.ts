@@ -105,7 +105,7 @@ export const CHAT_COPY = {
 export const EMPTY_CHAT_COPY = {
   title: (first: string) => `Say hello to ${first}`,
   menteeUpcoming: (first: string, when: string) =>
-    `${first} confirmed your session for ${when}. Say hi and share what you'd like to cover.`,
+    `${first} confirmed your session for ${when}. Say hi and share what you’d like to cover.`,
   mentorUpcoming: (when: string) => `They booked ${when}. Say hi and tell them how to prepare.`,
   /** Both roles with nothing upcoming (Q5 default for mentors). */
   noneUpcoming: 'Pick up where your last session left off.',
@@ -154,6 +154,18 @@ export const STARTERS = {
     text: (first: string) =>
       `Hi ${first}, before we meet, write down your top two questions so we can start there.`,
   },
+  /**
+   * "Share what to cover": each onboarding help area (catalog slug) in the
+   * mentee's own voice, as it reads after "focus on".
+   */
+  topics: {
+    'program-selection': 'choosing a program',
+    'test-preparation': 'preparing for my tests',
+    'document-preparation': 'my application documents',
+    'school-selection': 'choosing a school',
+    'scholarships-financial-aid': 'finding scholarships',
+    'interview-preparation': 'preparing for interviews and visas',
+  } as Record<string, string>,
   /** The degree goal as it reads after "applying for" (DEGREE_OPTIONS values). */
   degree: { bachelors: 'a bachelor’s', masters: 'a master’s', mba: 'an MBA', doctorate: 'a PhD' },
 } as const;

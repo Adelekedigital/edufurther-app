@@ -12,10 +12,11 @@ import { CHAT_COPY, EMPTY_CHAT_COPY, LOCK_COPY, STARTERS_COPY } from '@/lib/copy
 import { formatNextAvailable } from '@/lib/utils/format';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { ChatPerson, NextBooking } from '@/types/messages';
+import { GoneState } from './ChatPane';
 import { Composer } from './Composer';
 import { MessageBubble, OutboxBubble } from './MessageBubble';
 import { type Starter } from './starters';
-import { newestTheirs, threadItems } from './threadItems';
+import { newDivider, newestTheirs, threadItems, type NewDivider } from './threadItems';
 import { usePageVisible } from './usePageVisible';
 import composerStyles from './Composer.module.css';
 import styles from './Thread.module.css';
@@ -62,8 +63,8 @@ export function ChatView({
   const messages = useMemo(() => t?.items ?? [], [t]);
 
   // The "{N} new" divider stays where it was when the chat opened.
-  const [markAtOpen, setMarkAtOpen] = useState<string | null | undefined>(undefined);
-  if (t && markAtOpen === undefined) setMarkAtOpen(t.myLastReadAt);
+  const [divider, setDivider] = useState<NewDivider | null | undefined>(undefined);
+  if (t && divider === undefined) setDivider(newDivider(t.items, t.myLastReadAt));
 
   // Read: the newest message of theirs, while the chat is shown and the page
   // visible, and only when it's past my read mark (nothing to move otherwise).
@@ -76,26 +77,50 @@ export function ChatView({
   useEffect(() => {
     if (!shown || !visible || !newest || sentFor.current === newest) return;
     sentFor.current = newest;
-    mutate({ withId: person.id, upTo: newest });
+    // A failed read is tried again on the next render that still has it unread.
+    mutate(
+      { withId: person.id, upTo: newest },
+      {
+        onError: () => {
+          sentFor.current = null;
+        },
+      },
+    );
   }, [shown, visible, newest, person.id, mutate]);
 
-  // Newest at the bottom: on open, on my send, and when new ones arrive while at the bottom.
+  // Newest at the bottom: on open, on my send, and when new ones arrive while at
+  // the bottom. An older page keeps the reader where they were.
   const atBottom = useRef(true);
+  const olderFrom = useRef<number | null>(null);
   const count = messages.length + outbox.length;
   const loaded = !!t;
   useLayoutEffect(() => {
     const el = scrollRef.current;
-    if (el && atBottom.current) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    if (olderFrom.current !== null) {
+      el.scrollTop += el.scrollHeight - olderFrom.current;
+      olderFrom.current = null;
+    } else if (atBottom.current) el.scrollTop = el.scrollHeight;
   }, [count, loaded]);
+  // The box growing (or the window) shrinks the thread: stay on the newest.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => {
+      if (atBottom.current) el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loaded]);
 
   const items = useMemo(
     () =>
       threadItems(messages, outbox, {
         timeZone,
-        readMarkAtOpen: markAtOpen,
+        divider: divider ?? null,
         theirLastReadAt: t?.theirLastReadAt ?? null,
       }),
-    [messages, outbox, timeZone, markAtOpen, t?.theirLastReadAt],
+    [messages, outbox, timeZone, divider, t?.theirLastReadAt],
   );
 
   const first = person.firstName;
@@ -111,30 +136,34 @@ export function ChatView({
   };
 
   if (thread.error && !t) {
-    const gone = thread.error.status === 404;
+    // Not connected (404) is the same state as a `?with=` that isn't a chat.
+    if (thread.error.status === 404) return <GoneState />;
     return (
-      <div className={styles.scroll}>
+      <div className={styles.state}>
         <EmptyState
           illustration="chat"
           size={120}
-          title={gone ? CHAT_COPY.gone : CHAT_COPY.loadError}
-          description={gone ? CHAT_COPY.goneBody : undefined}
+          title={CHAT_COPY.loadError}
           actions={
-            gone ? undefined : (
-              <Button size="large" onClick={thread.retry}>
-                {CHAT_COPY.tryAgain}
-              </Button>
-            )
+            <Button size="large" onClick={thread.retry}>
+              {CHAT_COPY.tryAgain}
+            </Button>
           }
         />
       </div>
     );
   }
+  // One alert for the newest failure: reopening a chat doesn't read every one out.
+  const lastFailed = outbox.filter((o) => o.status === 'failed').at(-1)?.clientId;
 
   return (
     <>
       <div
         ref={scrollRef}
+        role="log"
+        aria-label={CHAT_COPY.chatLabel(person.name)}
+        // Focusable, so the thread scrolls from the keyboard too.
+        tabIndex={0}
         className={styles.scroll}
         aria-busy={!t || undefined}
         onScroll={(e) => {
@@ -154,6 +183,7 @@ export function ChatView({
             className={styles.earlier}
             onClick={() => {
               atBottom.current = false;
+              olderFrom.current = scrollRef.current?.scrollHeight ?? null;
               void thread.loadOlder();
             }}
           >
@@ -193,7 +223,12 @@ export function ChatView({
               {it.label}
             </div>
           ) : it.kind === 'new' ? (
-            <div key={it.key} role="separator" className={styles.newLine}>
+            <div
+              key={it.key}
+              role="separator"
+              aria-label={CHAT_COPY.newCount(it.count)}
+              className={styles.newLine}
+            >
               {CHAT_COPY.newCount(it.count)}
             </div>
           ) : it.kind === 'message' ? (
@@ -202,6 +237,7 @@ export function ChatView({
             <OutboxBubble
               key={it.key}
               item={it.item}
+              announce={it.item.clientId === lastFailed}
               timeZone={timeZone}
               onRetry={() =>
                 void retry(it.item.clientId).then((ok) => {

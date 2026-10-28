@@ -8,20 +8,34 @@ export type ThreadItem =
   | { kind: 'message'; key: string; message: Message; read: boolean }
   | { kind: 'outbox'; key: string; item: OutboxItem };
 
+/** Where "{N} new" goes: above this message, counting these. */
+export type NewDivider = { id: string; count: number };
+
+/**
+ * The divider as the chat opens (Messages.dc.html `newLine`): above the first
+ * message of theirs after my read mark, counting those. Worked out once, at
+ * open, so it neither moves nor grows as messages are read or arrive.
+ */
+export function newDivider(messages: Message[], myLastReadAt: string | null): NewDivider | null {
+  const mark = myLastReadAt ? Date.parse(myLastReadAt) : null;
+  const unseen = messages.filter(
+    (m) => !m.mine && !m.deleted && (mark === null || Date.parse(m.sentAt) > mark),
+  );
+  return unseen[0] ? { id: unseen[0].id, count: unseen.length } : null;
+}
+
 /**
  * The thread as drawn: a day separator before each new day, the "{N} new"
- * divider above the first message of theirs after `myLastReadAt` (as it was
- * when the chat opened, so it stays put while they're read), then this
- * device's unsent messages last, in the order written. A message the server
- * has stored drops its outbox twin (same `client_id`).
+ * divider where it was at open, then this device's unsent messages last, in
+ * the order written. A message the server has stored drops its outbox twin
+ * (same `client_id`).
  */
 export function threadItems(
   messages: Message[],
   outbox: OutboxItem[],
   opts: {
     timeZone: string;
-    /** My read mark when the chat opened; null: nothing read yet. */
-    readMarkAtOpen: string | null | undefined;
+    divider: NewDivider | null;
     theirLastReadAt: string | null;
     now?: Date;
   },
@@ -34,21 +48,11 @@ export function threadItems(
     lastDay = k;
     out.push({ kind: 'day', key: `day-${k}`, label: separatorLabel(at, opts.timeZone, opts.now) });
   };
-  // undefined: the mark isn't known yet (no divider); null: never read.
-  const mark = opts.readMarkAtOpen;
-  const unseen =
-    mark === undefined
-      ? []
-      : messages.filter(
-          (m) =>
-            !m.mine && !m.deleted && (mark === null || Date.parse(m.sentAt) > Date.parse(mark)),
-        );
-  const firstNew = unseen[0]?.id;
+  const theirMark = opts.theirLastReadAt ? Date.parse(opts.theirLastReadAt) : null;
   for (const m of messages) {
     day(m.sentAt);
-    if (m.id === firstNew) out.push({ kind: 'new', key: 'new', count: unseen.length });
-    const read =
-      m.mine && !!opts.theirLastReadAt && Date.parse(m.sentAt) <= Date.parse(opts.theirLastReadAt);
+    if (m.id === opts.divider?.id) out.push({ kind: 'new', key: 'new', count: opts.divider.count });
+    const read = m.mine && theirMark !== null && Date.parse(m.sentAt) <= theirMark;
     out.push({ kind: 'message', key: m.id, message: m, read });
   }
   const stored = new Set(messages.map((m) => m.clientId).filter(Boolean));
@@ -65,6 +69,3 @@ export function newestTheirs(messages: Message[]): Message | null {
   for (let i = messages.length - 1; i >= 0; i--) if (!messages[i]!.mine) return messages[i]!;
   return null;
 }
-
-/** The design's contact-details pattern (CONTACT_RE): an email address or a phone number. */
-export const CONTACT_RE = /[\w.+-]+@[\w-]+\.[\w.]+|\+?\d[\d\s().-]{7,}\d/;

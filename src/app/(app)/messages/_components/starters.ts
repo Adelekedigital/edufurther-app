@@ -1,5 +1,4 @@
 import { STARTERS } from '@/lib/copy/messages';
-import { HELP_AREAS } from '@/lib/copy/onboarding';
 
 export type Starter = { key: string; label: string; text: string };
 
@@ -36,9 +35,7 @@ export function startersFor(
     ];
   const m = data.mentee;
   const degree = m?.degree ? STARTERS.degree[m.degree as keyof typeof STARTERS.degree] : undefined;
-  const topic = m?.firstNeed
-    ? HELP_AREAS.find((a) => a.slug === m.firstNeed)?.copy.reason
-    : undefined;
+  const topic = m?.firstNeed ? STARTERS.topics[m.firstNeed] : undefined;
   const out: (Starter | null)[] = [
     m && degree && m.field.trim()
       ? {
