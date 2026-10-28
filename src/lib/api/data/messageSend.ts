@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { Message, MessageFile, OutboxItem, Thread } from '@/types/messages';
 import { apiError, ApiError } from './errors';
@@ -121,11 +121,13 @@ const EMPTY: OutboxItem[] = [];
 
 /** The unsent messages to one person, oldest first. */
 export function useOutbox(to: string | null): OutboxItem[] {
-  return useSyncExternalStore(
+  const all = useSyncExternalStore(
     subscribe,
     () => (to ? items : EMPTY),
     () => EMPTY,
-  ).filter((i) => i.to === to);
+  );
+  // The same array until the outbox changes, so a thread built from it isn't rebuilt per keystroke.
+  return useMemo(() => all.filter((i) => i.to === to), [all, to]);
 }
 
 export type SendInput = { to: string; body: string; file: MessageFile | null };
