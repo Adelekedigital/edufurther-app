@@ -1253,3 +1253,18 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | Edit About and Add hours only mark the move done              | They mark it done, then open the mentor's profile and Calendar                                                                                                                                                              | Founder, Oct 25 (PRD)                                                    | never                     |
 | A move's done state lives in component state (lost on reload) | Kept per mentor and ISO week in `localStorage` (`ef-dash-week-{userId}-{yyyy-ww}`, try/catch); a new week shows the buttons again                                                                                           | PRD: done when pressed this ISO week, kept across reloads                | a backend record of moves |
 | Share marks done on press                                     | Marks done once the copy lands (a refused clipboard says so and leaves it to do); copying from the header's share menu or the setup banner counts too, and also completes the setup banner's Share step (design `shared()`) | Honest: nothing was shared if the copy failed                            | never                     |
+
+## Messages — inbox, nav and settings (`Messages.dc.html` `layout` split, PRD Messages PR 4a), 2026-10-27
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Times "3:00 PM", dates "28 Oct" | The app's formatters: "3:00 pm", "Oct 28" (`rowTime`, `formatNextAvailable`) | One time style across the app (brief, reconciled) | never |
+| List search: a hand-drawn 40px label, `--radius-md` | The shared `SearchField` (`compact`, `radius="md"`): 40px, 44px on phones | One search field; phones keep the 44px input rule | never |
+| Header buttons: DS `CircleIconButton` (ring `#dbdee7` at 0.714px) | `IconButton variant="ring"`: hairline `--border-subtle` ring | No raw hex; the ring tone sits between ink-200 and ink-300 | DS tokenises the ring |
+| Filters: `role="tab"` pills | `RadioChips look="dark"` (a radio group: one choice that filters the list, no tab panels) | Tabs need panels; the list isn't one | never |
+| Message emails switch: a hand-drawn 44×24 switch | The shared `Switch` atom (39×24, DS `FormControl` toggle) | One switch across the app | never |
+| Phones: no Messages count anywhere (tabs count Bookings only; More sheet rows draw none) | The More sheet row's icon carries the count, as the rail's does | PRD: the nav badge; on phones Messages lives in More | design draws a phone badge |
+| Empty inbox has no heading for the page | A visually hidden h1 "Messages" | Every page has one h1 | never |
+| A `?with=` that isn't one of my chats: not drawn | EmptyState `chat`, "This chat isn't available." (CHAT_COPY.gone) | _ours_ | design draws it |
+| `inbox.svg` | Main's stripped copy: a few pale outline strokes in the backdrop's own tint are left out | Looks the same; smaller file | the illustration changes |
+| No guest state drawn | `memberGate` with "Log in to see your messages" (MESSAGES_GATE) | _ours_: a guest never reaches Messages from the nav | design draws it |

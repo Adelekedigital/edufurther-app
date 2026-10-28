@@ -75,3 +75,29 @@
     inset: -6px;
   }
 }
+
+/* DS CircleIconButton (_ds_bundle CircleIconButton.jsx, size 40): white, a
+   hairline inset ring, ink-900 glyph, surface-subtle on hover. DIVERGENCE: the
+   DS ring is a raw #dbdee7 at 0.714px; ours is the hairline --border-subtle. */
+.ring {
+  width: var(--button-h-medium);
+  height: var(--button-h-medium);
+  background: var(--surface-card);
+  box-shadow: inset 0 0 0 var(--border-hairline) var(--border-subtle);
+  color: var(--ink-900);
+}
+.ring:hover {
+  background: var(--surface-subtle);
+  color: var(--ink-900);
+}
+@media (max-width: 767px) {
+  /* Drawn at 40px on phones too; an invisible area reaches 44px (CTA rule 5). */
+  .ring {
+    position: relative;
+  }
+  .ring::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+  }
+}

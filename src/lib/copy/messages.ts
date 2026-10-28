@@ -29,6 +29,17 @@ export const LIST_COPY = {
   loadError: 'We couldn’t load your messages.',
   loadErrorBody: 'Check your connection and try again.',
   tryAgain: 'Try again',
+  /** The busy list, for screen readers. */
+  loading: 'Loading your messages',
+  /** The nav badge's meaning, read after "Messages". */
+  navCount: (n: number) => (n === 1 ? '1 unread message' : `${n} unread messages`),
+} as const;
+
+/** What `/messages` says to a guest (ours: a guest never reaches it from the nav). */
+export const MESSAGES_GATE_COPY = {
+  guestTitle: 'Log in to see your messages',
+  guestDescription:
+    'Chat with the mentors and mentees you’ve booked with, before and after your sessions.',
 } as const;
 
 export const EMPTY_INBOX_COPY = {
@@ -129,6 +140,8 @@ export const SETTINGS_COPY = {
   on: 'Unread message emails are on.',
   off: 'Unread message emails are off.',
   saveError: 'We couldn’t save that. Try again.',
+  loadError: 'We couldn’t load your email settings. Check your connection and try again.',
+  tryAgain: 'Try again',
 } as const;
 
 /** Report (v1): a prefilled email to support, in the support-email pattern. */

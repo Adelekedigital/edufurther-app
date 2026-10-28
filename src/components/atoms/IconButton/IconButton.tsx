@@ -1,4 +1,4 @@
-import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { forwardRef, type ButtonHTMLAttributes, type ComponentProps } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '../Icon/Icon';
 import type { IconName } from '../Icon/iconNames';
@@ -14,16 +14,35 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   shape?: 'round' | 'square';
   /** danger: hover turns red — for a delete that then confirms. */
   tone?: 'default' | 'danger';
+  /**
+   * ring: the DS CircleIconButton, 40px, white with a hairline ring and a dark
+   * glyph (Messages.dc.html list header). Ignores `size` and `shape`.
+   */
+  variant?: 'quiet' | 'ring';
+  /** The glyph's px when the drawn control isn't one of the sizes (a 24px back arrow). */
+  glyph?: ComponentProps<typeof Icon>['size'];
 };
 
 const ICON_SIZE = { sm: 18, md: 20, lg: 22 } as const;
+/** DS CircleIconButton: the glyph is 0.6 of the 40px circle. */
+const RING_GLYPH = 24;
 
 /**
  * Quiet icon control (search clear, modal close, dismiss; square for row actions).
  * 44px hit area on phones.
  */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
-  { icon, size = 'md', shape = 'round', tone = 'default', className, type, ...rest },
+  {
+    icon,
+    size = 'md',
+    shape = 'round',
+    tone = 'default',
+    variant = 'quiet',
+    glyph,
+    className,
+    type,
+    ...rest
+  },
   ref,
 ) {
   return (
@@ -32,14 +51,14 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       type={type ?? 'button'}
       className={cx(
         styles.button,
-        styles[size],
-        shape === 'square' && styles.square,
+        variant === 'ring' ? styles.ring : styles[size],
+        variant !== 'ring' && shape === 'square' && styles.square,
         tone === 'danger' && styles.danger,
         className,
       )}
       {...rest}
     >
-      <Icon name={icon} size={ICON_SIZE[size]} />
+      <Icon name={icon} size={glyph ?? (variant === 'ring' ? RING_GLYPH : ICON_SIZE[size])} />
     </button>
   );
 });

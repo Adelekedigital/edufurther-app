@@ -55,3 +55,7 @@ Mentee Onboarding v5.dc.html saved defaults, PRD "Mentee Onboarding v5" (rev 95)
 PR 4 (booking guest step): the booking modal's guest step signs people in for real (BookingModal.dc.html, `signupAt=afterTime`) — email → code → name, Google with a return to the reopened modal, PRD F3 copy (no hold claimed). The code logic is shared with the sign-in page (`useEmailCodeAuth`). PR 5: the sign-in page's booking context line and mentor-named toasts. Invites: #281; waitlist line: #282.
 
 PR 5 (booking context): the sign-in page shows "Log in or sign up to finish booking {First L.}" with the mentor's avatar when `next` is a booking, on the mentee pages; booking toasts name the mentor ("…your booking with {First}…"). This closes the Sign up and log in build; open follow-ups: #281 (invites, after onboarding), #282 (waitlist line, no waitlist screen yet).
+
+## Messages (`Messages.dc.html`, route `/messages`, behind `MESSAGES_LIVE`)
+
+PR 4a (inbox, nav and settings): the list (search, All / Unread, rows, no-rows states), the desktop split pane and the phone list-then-chat, `?with=` and `?settings=1`, New message, Message emails, the chat header (body empty), the Messages nav item after Bookings with its unread badge (rail; More sheet on phones). PR 4b fills the chat: thread, composer, read marking, menu and Report.

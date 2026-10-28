@@ -1,0 +1,87 @@
+/* Messages.dc.html `showThread`: the chat fills the rest of the pane. */
+.pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: var(--border-hairline) solid var(--border-subtle);
+}
+.goneHeader {
+  display: none;
+}
+/* Back to the list: phones only, 44px, the design's 24px ink-900 arrow. */
+.pane .back {
+  display: none;
+}
+.pane .back,
+.pane .back:hover {
+  color: var(--ink-900);
+}
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.name {
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+  text-decoration: none;
+}
+a.name:hover {
+  color: var(--blue-700);
+}
+a.name:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+.sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+}
+
+@media (max-width: 767px) {
+  .pane .back {
+    display: inline-flex;
+    margin-left: calc(var(--space-2) * -1);
+  }
+  .goneHeader {
+    display: flex;
+    min-height: 64px;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+  }
+}

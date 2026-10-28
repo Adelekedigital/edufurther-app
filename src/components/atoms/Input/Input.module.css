@@ -78,3 +78,6 @@
 .radiusSm {
   border-radius: var(--radius-sm);
 }
+.radiusMd {
+  border-radius: var(--radius-md);
+}

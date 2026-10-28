@@ -39,8 +39,8 @@ type ShownItem = NavItem & {
 };
 
 /**
- * Mentee navigation (design AppShell role=mentee). Messages is held until it's
- * built (product 2026-09-30). Routes belong to their own screens.
+ * Mentee navigation (design AppShell role=mentee). Messages joins after
+ * Bookings while it's on (`messages`). Routes belong to their own screens.
  *
  * Home links straight to the mentee home — `/home` (`homeFor`) — not to `/`,
  * so in-app Home nav skips the 307 redirect (ADR 0007).
@@ -74,6 +74,22 @@ const ADMIN_NAV: NavItem[] = [
 ];
 /** `unknown`: signed in, role not known yet — no items rather than the wrong set. */
 const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, admin: ADMIN_NAV, unknown: [] as NavItem[] };
+/**
+ * Messages (AppShell.dc.html defs): after Bookings in both member navs, in the
+ * rail's daily group. Not a phone tab: it sits in the More sheet, its count with it.
+ */
+const MESSAGES_ITEM: NavItem = {
+  label: 'Messages',
+  href: '/messages',
+  icon: 'chat',
+  group: 'daily',
+};
+
+/** A member nav with Messages after Bookings; the admin nav never has it. */
+function withMessages(items: NavItem[]): NavItem[] {
+  const at = items.findIndex((n) => n.label === 'Bookings');
+  return at < 0 ? items : [...items.slice(0, at + 1), MESSAGES_ITEM, ...items.slice(at + 1)];
+}
 /**
  * Bottom tabs: max 4 — the first three, then "More" (design PWA pass). Admin
  * keeps More too, for its account items: the design's phone header has no
@@ -119,6 +135,8 @@ type AppShellProps = {
   nav?: 'mentee' | 'mentor' | 'admin' | 'unknown';
   /** A platform admin in the member app: the Admin item (design `showAdmin`). */
   adminEntry?: boolean;
+  /** Messages is on (MESSAGES_LIVE): its nav item shows. */
+  messages?: boolean;
   /**
    * guest: public header (Log in / Get started), no navigation.
    * member: rail / tabs and the account menu.
@@ -153,6 +171,7 @@ export function AppShell({
   active,
   nav = 'mentee',
   adminEntry = false,
+  messages = false,
   chrome,
   account,
   access,
@@ -225,7 +244,9 @@ export function AppShell({
     lockReturn.current.focus();
     lockReturn.current = null;
   }, [lock]);
-  const items = NAV[nav].map((n) => shownItem(n, access, counts));
+  const items = (messages ? withMessages(NAV[nav]) : NAV[nav]).map((n) =>
+    shownItem(n, access, counts),
+  );
   const primary = PRIMARY_TABS[nav];
   // In the design's pick order: mentor tabs read Home, Calendar, Bookings.
   const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));
@@ -468,9 +489,14 @@ export function AppShell({
                       prefetch={PREFETCH}
                       className={styles.sheetItem}
                       aria-current={n.label === active ? 'page' : undefined}
+                      aria-label={n.name}
                       onClick={() => setMoreOpen(false)}
                     >
-                      <Icon name={n.icon} size={20} />
+                      {/* Messages lives here on phones, so its count does too. */}
+                      <span className={styles.sheetIcon}>
+                        <Icon name={n.icon} size={20} />
+                        <CountBadge count={n.count} />
+                      </span>
                       {n.label}
                     </Link>
                   )}

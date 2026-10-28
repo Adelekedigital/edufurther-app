@@ -1,0 +1,49 @@
+/* Messages.dc.html pane: one bordered box on desktop, calc(100vh - 136px), at least 520px. */
+.pane {
+  position: relative;
+  display: flex;
+  height: calc(100vh - 136px);
+  min-height: 520px;
+  border: var(--border-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface-card);
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+.chat,
+.chatSkeleton {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+}
+/* The empty inbox and the load error: one centred state in the pane. */
+.centred {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+}
+.empty {
+  max-width: 400px;
+}
+
+/* Phones: no border; the list fills the screen, and a chat (`?with=`) takes
+   its place full height (calc(100dvh - 152px)). */
+@media (max-width: 767px) {
+  .pane {
+    height: auto;
+    min-height: 0;
+    border: none;
+  }
+  .pane[data-chat-open='true'] {
+    height: calc(100dvh - 152px);
+  }
+  .pane[data-chat-open='true'] .list,
+  .pane[data-chat-open='false'] .chat,
+  .chatSkeleton {
+    display: none;
+  }
+  .centred {
+    min-height: calc(100dvh - 152px);
+  }
+}

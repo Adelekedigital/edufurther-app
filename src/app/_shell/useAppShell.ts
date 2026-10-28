@@ -6,6 +6,9 @@ import { usePathname } from 'next/navigation';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useAdminSummary } from '@/lib/api/data/admin';
 import { useSignOut } from '@/lib/api/data/auth';
+import { useUnreadTotal } from '@/lib/api/data/messages';
+import { MESSAGES_LIVE } from '@/lib/config/messages';
+import { LIST_COPY } from '@/lib/copy/messages';
 import { useViewer } from '@/lib/api/data/viewer';
 import { accessFor, inSetup, isUnder, setupCredits, type Access } from '@/lib/utils/access';
 import { personCover } from '@/lib/utils/person';
@@ -116,6 +119,9 @@ export function useAppShell() {
   const summary = useAdminSummary(inAdmin ? admin.id : null);
   // The setup lock: nav items held until onboarding or approval (lib/utils/access).
   const access = accessFor(viewer);
+  // The Messages badge: total unread, every 30 s app-wide, for a member who can
+  // open Messages (a locked item shows no count, so it asks nothing).
+  const unread = useUnreadTotal(MESSAGES_LIVE && !!member && !access.locked.has('Messages'));
   const items = accountItems(
     member,
     () => {
@@ -138,6 +144,8 @@ export function useAppShell() {
           ? ('mentor' as const)
           : ('mentee' as const),
     adminEntry: !!admin,
+    /** Messages is on: the nav shows its item (AppShell `messages`). */
+    messages: MESSAGES_LIVE,
     /** Mentors can't book (product, 2026-09-29): "View profile" instead of Book. */
     canBook: canBookFor(viewer),
     access,
@@ -168,7 +176,9 @@ export function useAppShell() {
                   ) ?? undefined)
                 : undefined,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
-            counts: inAdmin ? adminCounts(summary.data?.counts.applications) : countsFor(member),
+            counts: inAdmin
+              ? adminCounts(summary.data?.counts.applications)
+              : countsFor(member, MESSAGES_LIVE ? unread : null),
             logoutConfirm: confirmingLogout
               ? {
                   onKeep: () => setConfirmingLogout(false),
@@ -194,10 +204,22 @@ export function adminCounts(waiting: number | undefined) {
   };
 }
 
-/** The nav's count badges. Only Bookings has one; Messages waits (hidden). */
-export function countsFor(member: Extract<Viewer, { kind: 'member' }> | null) {
-  const n = member?.awaitingResponse ?? 0;
-  if (!member || n <= 0) return {};
+/**
+ * The nav's count badges: Bookings, requests awaiting a response; Messages,
+ * total unread (`unread`, null while unknown or off).
+ */
+export function countsFor(
+  member: Extract<Viewer, { kind: 'member' }> | null,
+  unread: number | null = null,
+) {
+  if (!member) return {};
+  const n = member.awaitingResponse ?? 0;
   const who = member.isMentor ? 'awaiting your response' : 'awaiting the mentor';
-  return { Bookings: { count: n, label: `${n} ${n === 1 ? 'request' : 'requests'} ${who}` } };
+  return {
+    ...(n > 0 && {
+      Bookings: { count: n, label: `${n} ${n === 1 ? 'request' : 'requests'} ${who}` },
+    }),
+    ...(unread !== null &&
+      unread > 0 && { Messages: { count: unread, label: LIST_COPY.navCount(unread) } }),
+  };
 }

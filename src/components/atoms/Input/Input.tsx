@@ -9,8 +9,11 @@ type InputProps = InputHTMLAttributes<HTMLInputElement> & {
   padEnd?: boolean;
   /** xl: 48px flow-form field (Mentee Onboarding v5, Sign In). */
   fieldSize?: 'md' | 'lg' | 'xl';
-  /** sm: `--radius-sm` corners (Admin.dc.html fields, like Select `radius="sm"`). Default: the size's own. */
-  radius?: 'sm';
+  /**
+   * sm: `--radius-sm` corners (Admin.dc.html fields, like Select `radius="sm"`);
+   * md: `--radius-md` (Messages.dc.html search). Default: the size's own.
+   */
+  radius?: 'sm' | 'md';
 };
 
 /**
@@ -30,6 +33,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         padStart && styles.padStart,
         padEnd && styles.padEnd,
         radius === 'sm' && styles.radiusSm,
+        radius === 'md' && styles.radiusMd,
         className,
       )}
       {...rest}

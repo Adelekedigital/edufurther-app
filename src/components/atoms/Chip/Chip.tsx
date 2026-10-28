@@ -11,8 +11,9 @@ type ChipProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'ari
    * pill   — 28px, fully round, no check (Mentor Profile review filters).
    * choice — the DS Chip itself: 40px, brand face, inset ring, no check
    *          (Session Types topics, stages, goals).
+   * dark   — 32px, fully round, ink-900 when on, no check (Messages' All / Unread).
    */
-  look?: 'filter' | 'pill' | 'choice';
+  look?: 'filter' | 'pill' | 'choice' | 'dark';
   children: ReactNode;
 };
 
@@ -37,6 +38,7 @@ export const Chip = forwardRef<HTMLButtonElement, ChipProps>(function Chip(
         styles.chip,
         look === 'pill' && styles.pill,
         look === 'choice' && styles.choice,
+        look === 'dark' && styles.dark,
         pressed && styles.on,
         className,
       )}

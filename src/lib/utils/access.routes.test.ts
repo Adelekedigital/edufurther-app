@@ -34,6 +34,7 @@ const MENTEE_PAGES = ['/home', '/onboarding/mentee'];
 const SHARED_PAGES = [
   '/explore',
   '/bookings',
+  '/messages',
   '/settings',
   '/settings/profile',
   '/settings/booking',
