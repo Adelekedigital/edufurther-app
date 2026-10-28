@@ -82,7 +82,20 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
   });
 });
 
-describe('countsFor (the Bookings badge)', () => {
+describe('countsFor (the Bookings and Messages badges)', () => {
+  it('Messages counts total unread, worded for screen readers; none at 0 or unknown', () => {
+    expect(countsFor(member(), 1)).toEqual({
+      Messages: { count: 1, label: '1 unread message' },
+    });
+    expect(countsFor(member({ awaitingResponse: 2 }), 5)).toEqual({
+      Bookings: { count: 2, label: '2 requests awaiting your response' },
+      Messages: { count: 5, label: '5 unread messages' },
+    });
+    expect(countsFor(member(), 0)).toEqual({});
+    expect(countsFor(member(), null)).toEqual({});
+    expect(countsFor(null, 4)).toEqual({});
+  });
+
   it('words the count by role, singular and plural', () => {
     expect(countsFor(member({ awaitingResponse: 1 }))).toEqual({
       Bookings: { count: 1, label: '1 request awaiting your response' },

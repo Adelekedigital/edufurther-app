@@ -29,6 +29,11 @@ type BadgeProps = (
 ) & {
   /** sm 10px caption / md 12px. */
   size?: 'sm' | 'md';
+  /**
+   * pill: fully round, 2px 8px, a 14px glyph (Messages.dc.html "Next: {when}").
+   * count: a 20px round number pill, 11px (Messages.dc.html unread count).
+   */
+  shape?: 'tag' | 'pill' | 'count';
   /** A leading glyph, decorative (InviteModal.dc.html's `check_circle` badge: 14px on md). */
   icon?: IconName;
   children: ReactNode;
@@ -40,13 +45,22 @@ export function Badge({
   type = 'filled',
   color = 'primary',
   size = 'md',
+  shape = 'tag',
   icon,
   children,
   className,
 }: BadgeProps) {
   return (
-    <span className={cx(styles.badge, styles[size], styles[`${color}-${type}`], className)}>
-      {icon && <Icon name={icon} size={size === 'md' ? 14 : 12} />}
+    <span
+      className={cx(
+        styles.badge,
+        styles[size],
+        shape !== 'tag' && styles[shape],
+        styles[`${color}-${type}`],
+        className,
+      )}
+    >
+      {icon && <Icon name={icon} size={size === 'md' || shape === 'pill' ? 14 : 12} />}
       {children}
     </span>
   );

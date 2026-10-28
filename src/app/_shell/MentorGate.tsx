@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import type { Illustration } from '@/components/molecules/EmptyState/EmptyState';
+import { MESSAGES_GATE_COPY } from '@/lib/copy/messages';
 import { SESSIONS_COPY } from '@/lib/copy/sessionTypes';
 import type { Access, NavKey } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
@@ -28,6 +29,12 @@ export const SESSION_GATE: MemberGateCopy = {
   illustration: 'calendar',
   guestTitle: 'Log in to join your session',
   guestDescription: 'Your session page has the countdown and the link to the call.',
+};
+
+/** Messages' copy (ours, undesigned: a guest never reaches Messages from the nav). */
+export const MESSAGES_GATE: MemberGateCopy = {
+  illustration: 'chat',
+  ...MESSAGES_GATE_COPY,
 };
 
 /** Settings' copy (PROVISIONAL, undesigned: a guest never reaches Settings from the nav). */
@@ -119,8 +126,7 @@ export function memberGate(viewer: Viewer, returnTo: string, copy: MemberGateCop
  * Run after memberGate, so a guest or a failed /me still gets those. A
  * wrong-role member never gets here: the page redirects (RoleRedirect).
  * Null means "not locked" (or /me still loading: accessFor locks nothing then),
- * so the page renders and shows its own loading. Keyed by nav item, so
- * Messages joins with one call when it ships.
+ * so the page renders and shows its own loading. Keyed by nav item.
  */
 export function lockedPageGate(access: Access, key: NavKey): ReactNode {
   const copy = access.copy;

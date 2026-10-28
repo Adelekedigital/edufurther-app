@@ -22,6 +22,7 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
   // Home opens the application for a mentor in review, declined or newly approved.
   'mentor-application': 'Home',
   bookings: 'Bookings',
+  messages: 'Messages',
   calendar: 'Calendar',
   explore: 'Explore',
   // A mentor's profile is reached from Explore, so Explore stays lit there.
@@ -52,7 +53,7 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { chrome, account, nav, adminEntry, access } = useAppShell();
+  const { chrome, account, nav, adminEntry, access, messages } = useAppShell();
   const online = useOnline();
 
   return (
@@ -60,6 +61,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       active={activeFor(pathname)}
       nav={nav}
       adminEntry={adminEntry}
+      messages={messages}
       chrome={chrome}
       account={account}
       access={access}
