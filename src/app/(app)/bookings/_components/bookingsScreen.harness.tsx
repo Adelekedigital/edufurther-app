@@ -203,9 +203,12 @@ export const mocks = {
       },
     };
   },
-  intakeFiles: () => ({
-    useIntakeFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
-    canPreview: () => true,
+  /** The real mapper; only the fetch is stubbed. */
+  privateFiles: async () => ({
+    ...(await vi.importActual<typeof import('@/lib/api/data/privateFiles')>(
+      '@/lib/api/data/privateFiles',
+    )),
+    usePrivateFile: () => ({ url: 'blob:stub', isLoading: false, error: null, retry: vi.fn() }),
   }),
 };
 

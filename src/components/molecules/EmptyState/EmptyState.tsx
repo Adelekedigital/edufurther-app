@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- static decorative SVGs; next/image adds nothing for vector art */
 import type { ReactNode } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { cx } from '@/lib/utils/cx';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import styles from './EmptyState.module.css';
 
@@ -33,6 +34,11 @@ type EmptyStateProps = Art & {
   headingLevel?: 1 | 2 | 3;
   /** The illustration's px; ignored when `icon` is set (the disc is a fixed size). */
   size?: number;
+  /**
+   * Sitting on a grey surface (FileViewer's well, ink-100): the description
+   * darkens to ink-700, because the DS ink-500 there is 4.38:1, under AA.
+   */
+  onTint?: boolean;
 };
 
 /** DS EmptyState: vertical, centred, illustration + copy + actions. Art is decorative. */
@@ -44,6 +50,7 @@ export function EmptyState({
   actions,
   headingLevel = 2,
   size = 140,
+  onTint = false,
 }: EmptyStateProps) {
   const H = `h${headingLevel}` as const;
   return (
@@ -63,7 +70,9 @@ export function EmptyState({
       )}
       <div className={styles.copy}>
         <H className={styles.title}>{title}</H>
-        {description && <p className={styles.description}>{description}</p>}
+        {description && (
+          <p className={cx(styles.description, onTint && styles.onTint)}>{description}</p>
+        )}
       </div>
       {actions && <div className={styles.actions}>{actions}</div>}
     </div>

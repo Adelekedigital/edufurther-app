@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import { toAnswer } from './sessionAnswers';
-import { canPreview } from './intakeFiles';
 import { fileSize } from '@/lib/utils/format';
 
 type Read = components['schemas']['SessionAnswerRead'];
@@ -71,45 +70,6 @@ describe('toAnswer — an answer becomes one string, in one place', () => {
     // carries a shape the question no longer asks for.
     expect(toAnswer(read({ question_type: 'multi_choice', options: [] })).text).toBe('');
     expect(toAnswer(read({ question_type: 'file_upload', file: null })).text).toBe('');
-  });
-});
-
-describe('a file is previewable only when the browser can show it', () => {
-  it('a PDF that is still there', () => {
-    expect(
-      canPreview({
-        id: 'f',
-        filename: 'a.pdf',
-        contentType: 'application/pdf',
-        size: 1,
-        available: true,
-      }),
-    ).toBe(true);
-  });
-
-  it('Word never previews — no browser renders one', () => {
-    expect(
-      canPreview({
-        id: 'f',
-        filename: 'a.docx',
-        contentType:
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        size: 1,
-        available: true,
-      }),
-    ).toBe(false);
-  });
-
-  it('a PDF retention has removed does not preview, so nothing fetches it', () => {
-    expect(
-      canPreview({
-        id: 'f',
-        filename: 'a.pdf',
-        contentType: 'application/pdf',
-        size: 1,
-        available: false,
-      }),
-    ).toBe(false);
   });
 });
 
