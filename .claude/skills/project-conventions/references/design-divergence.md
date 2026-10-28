@@ -1268,3 +1268,16 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | A `?with=` that isn't one of my chats: not drawn | EmptyState `chat`, "This chat isn't available." (CHAT_COPY.gone) | _ours_ | design draws it |
 | `inbox.svg` | Main's stripped copy: a few pale outline strokes in the backdrop's own tint are left out | Looks the same; smaller file | the illustration changes |
 | No guest state drawn | `memberGate` with "Log in to see your messages" (MESSAGES_GATE) | _ours_: a guest never reaches Messages from the nav | design draws it |
+
+### Messages — chat thread and composer (PRD Messages PR 4b), 2026-10-27
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Header menu: a hand-drawn menu (radius-md, 44px items, 20px icons) | The shared `RowMenu` (radius-lg, 40px items on desktop / 44 on phones, 18px icons) with a `ring` trigger and a `divider` item | One menu across the app | never |
+| Report divider is always drawn | A divider only when an item sits above Report (a mentor on desktop has Report alone) | A lone line at the menu's top reads as a mistake | never |
+| "Sending" shows one tick at once | No tick until the server stores it (Sent), "Waiting to send" offline, "Not sent." on failure | A tick claims a save that hasn't happened | never |
+| Starter "{start term}" reads "next year" | " for {target_start_term}" when the goal has one, else nothing | Filled from data (founder, Oct 26) | design redraws the templates |
+| Starter topic: "choosing between my top three schools" | The first help area's onboarding wording ("choosing a school", HELP_AREAS `reason`) | Q6; one wording per help area | ux-writer gives per-area lines |
+| `/read` whenever the chat is open and visible | Only when their newest message is past my read mark | No write that changes nothing | never |
+| A file in a message: the file card | Until the files build: the file's name as text | Builder C adds the card (FileViewer) | files PR |
+| The textarea grows with `field-sizing: content` | Measured with `scrollHeight` on change (44 to 140px) | `field-sizing` isn't in every browser yet | `field-sizing` ships everywhere |

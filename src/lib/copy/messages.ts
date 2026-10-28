@@ -115,6 +115,49 @@ export const STARTERS_COPY = {
   lead: 'Not sure what to say? Tap one to start.',
 } as const;
 
+/**
+ * The starter chips (PRD "Starters", Q6), filled from data; a chip whose data
+ * is missing isn't shown (startersFor). `{First}` is the other person.
+ */
+export const STARTERS = {
+  intro: {
+    label: 'Introduce yourself',
+    text: (first: string, me: string, degree: string, field: string, term: string | null) =>
+      `Hi ${first}, I’m ${me}. I’m applying for ${degree} in ${field}${term ? ` for ${term}` : ''}. Looking forward to our session!`,
+  },
+  cover: {
+    label: 'Share what to cover',
+    text: (first: string, topic: string) =>
+      `Hi ${first}, in our session I’d love to focus on ${topic}.`,
+  },
+  askPrepare: {
+    label: 'Ask what to prepare',
+    text: (first: string) =>
+      `Hi ${first}, is there anything I should prepare or send before our session?`,
+  },
+  school: {
+    label: 'Ask about your school',
+    text: (first: string, school: string) =>
+      `Hi ${first}, what was applying to ${school} like for you?`,
+  },
+  welcome: {
+    label: 'Welcome them',
+    text: (first: string) =>
+      `Hi ${first}, thanks for booking! What would you like to focus on in our session?`,
+  },
+  documents: {
+    label: 'Ask for documents',
+    text: (first: string) => `Hi ${first}, could you share your CV or draft here before we meet?`,
+  },
+  howToPrepare: {
+    label: 'Share how to prepare',
+    text: (first: string) =>
+      `Hi ${first}, before we meet, write down your top two questions so we can start there.`,
+  },
+  /** The degree goal as it reads after "applying for" (DEGREE_OPTIONS values). */
+  degree: { bachelors: 'a bachelor’s', masters: 'a master’s', mba: 'an MBA', doctorate: 'a PhD' },
+} as const;
+
 export const COMPOSER_COPY = {
   offline: 'You’re offline. We’ll send your messages when you’re back online.',
   contactNotice:

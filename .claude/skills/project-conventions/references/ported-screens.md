@@ -59,3 +59,5 @@ PR 5 (booking context): the sign-in page shows "Log in or sign up to finish book
 ## Messages (`Messages.dc.html`, route `/messages`, behind `MESSAGES_LIVE`)
 
 PR 4a (inbox, nav and settings): the list (search, All / Unread, rows, no-rows states), the desktop split pane and the phone list-then-chat, `?with=` and `?settings=1`, New message, Message emails, the chat header (body empty), the Messages nav item after Bookings with its unread badge (rail; More sheet on phones). PR 4b fills the chat: thread, composer, read marking, menu and Report.
+
+PR 4b (chat thread and composer): the header's More options (View profile for mentees, View booking on phones, Report as a support email), the thread (privacy line, day separators, "{N} new", bubbles, ticks from `their_last_read_at`, "Edited ·", deleted lines, unsent and failed messages with Try again, Show earlier messages), read marking only while the chat is open and the page visible, the empty chat with data-filled starters, the composer (offline line, contact-details notice, 2,000 characters, Enter rules, per-chat drafts) and the paused / closed read-only lines. File slots are marked for the files build.

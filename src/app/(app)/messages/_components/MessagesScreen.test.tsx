@@ -30,6 +30,15 @@ vi.mock('@/app/_shell/useAppShell', async () =>
 vi.mock('@/lib/api/data/messages', async () =>
   (await import('./messagesScreen.harness')).mocks.messages(),
 );
+vi.mock('@/lib/api/data/messageSend', async () =>
+  (await import('./messagesScreen.harness')).chatMocks.messageSend(),
+);
+vi.mock('@/lib/api/data/goals', async () =>
+  (await import('./messagesScreen.harness')).chatMocks.goals(),
+);
+vi.mock('@/lib/api/data/settings', async () =>
+  (await import('./messagesScreen.harness')).chatMocks.settings(),
+);
 // The setup lock's flags (lockedPage.harness): on, so an unfinished mentee is locked.
 vi.mock('@/lib/config/auth', async (orig) =>
   (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
