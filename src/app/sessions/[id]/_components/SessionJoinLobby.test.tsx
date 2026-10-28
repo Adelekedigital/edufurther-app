@@ -54,8 +54,8 @@ vi.mock('@/app/_reviews/ReviewDialog', async () =>
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
   (await import('./sessionJoin.harness')).mocks.bookingLauncher(),
 );
-vi.mock('@/lib/api/data/intakeFiles', async () =>
-  (await import('./sessionJoin.harness')).mocks.intakeFiles(),
+vi.mock('@/lib/api/data/privateFiles', async () =>
+  (await import('./sessionJoin.harness')).mocks.privateFiles(),
 );
 vi.mock('@/lib/api/data/missedReason', async () =>
   (await import('./sessionJoin.harness')).mocks.missedReason(),

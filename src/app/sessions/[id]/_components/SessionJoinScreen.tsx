@@ -26,7 +26,7 @@ import {
 } from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
 import { FocusPage } from '@/components/templates/FocusPage/FocusPage';
 import { ConfirmActionDialog, type MoveOption } from '@/app/_sessions/ConfirmActionDialog';
-import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
+import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
 import { useReviewAndRebook } from '@/app/_sessions/useReviewAndRebook';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
@@ -40,6 +40,7 @@ import {
 import { DELETED_NAME } from '@/lib/api/data/bookings';
 import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
+import { intakeSharer, intakeViewedFile } from '@/lib/api/data/privateFiles';
 import { useSessionTypes } from '@/lib/api/data/booking';
 import { useMoveSession } from '@/lib/api/data/moveSession';
 import { useSendMissedReason, type MissedReasonCode } from '@/lib/api/data/missedReason';
@@ -551,7 +552,13 @@ export function SessionJoinScreen({ id }: { id: string }) {
           )}
         </BottomSheet>
       )}
-      {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
+      {viewing && (
+        <FileViewerLauncher
+          file={intakeViewedFile(viewing)}
+          sharedBy={data?.booking ? intakeSharer(data.booking) : undefined}
+          onClose={() => setViewing(null)}
+        />
+      )}
       {rr.dialogs}
       {cancelling && data && (
         <ConfirmActionDialog
