@@ -17,6 +17,25 @@
   padding: 2px 8px;
   font-size: var(--text-p-xs);
 }
+/* Messages.dc.html row chip: round, 2px 8px, the UI face. */
+.pill {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-family: var(--font-ui);
+  line-height: normal;
+}
+/* Messages.dc.html unread count: a 20px round pill, 11px. */
+.count {
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  box-sizing: border-box;
+  border-radius: var(--radius-full);
+  font-family: var(--font-ui);
+  font-size: var(--text-message-meta);
+  line-height: 1;
+}
 .primary-filled {
   background: var(--blue-500);
   color: var(--white);

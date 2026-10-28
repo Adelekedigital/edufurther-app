@@ -13,6 +13,10 @@
   position: absolute;
   right: var(--space-2);
 }
+/* Messages.dc.html list search: 40px (phones keep the Input's 44px minimum). */
+.field .compact {
+  height: var(--button-h-medium);
+}
 /* `labelled`: the label above the field (Admin.dc.html "Find a mentee"). */
 .labelled {
   display: flex;

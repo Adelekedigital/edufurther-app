@@ -27,6 +27,21 @@ describe('RadioChips', () => {
     expect(screen.getByRole('radio', { name: 'Beta' })).toHaveAttribute('tabindex', '-1');
   });
 
+  it('a filter (required off, the dark look) is not announced as required', () => {
+    render(
+      <RadioChips
+        label="Filter"
+        look="dark"
+        required={false}
+        options={OPTIONS}
+        value="a"
+        onChange={() => {}}
+      />,
+    );
+    expect(screen.getByRole('radiogroup', { name: 'Filter' })).not.toHaveAttribute('aria-required');
+    expect(screen.getByRole('radio', { name: 'Alpha' })).toBeChecked();
+  });
+
   it('Tab enters at the chosen one; arrows move and choose, wrapping', async () => {
     render(<Harness initial="b" />);
     await userEvent.tab();

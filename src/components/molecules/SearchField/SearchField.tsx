@@ -21,8 +21,10 @@ type SearchFieldProps = {
    * "Find a mentee"). Default: the label is for screen readers, a glyph leads.
    */
   labelled?: boolean;
-  /** Passed to the Input: `sm` for the admin fields' 5px corners. */
-  radius?: 'sm';
+  /** Passed to the Input: `sm` for the admin fields' 5px corners, `md` for Messages'. */
+  radius?: 'sm' | 'md';
+  /** 40px on desktop (Messages.dc.html list search); 44px on phones like every field. */
+  compact?: boolean;
 };
 
 export function SearchField({
@@ -35,6 +37,7 @@ export function SearchField({
   disabled,
   labelled = false,
   radius,
+  compact = false,
 }: SearchFieldProps) {
   const id = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +54,7 @@ export function SearchField({
         type="search"
         fieldSize="lg"
         radius={radius}
+        className={compact ? styles.compact : undefined}
         padStart={!labelled}
         padEnd
         placeholder={placeholder}
