@@ -1253,3 +1253,18 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | Edit About and Add hours only mark the move done              | They mark it done, then open the mentor's profile and Calendar                                                                                                                                                              | Founder, Oct 25 (PRD)                                                    | never                     |
 | A move's done state lives in component state (lost on reload) | Kept per mentor and ISO week in `localStorage` (`ef-dash-week-{userId}-{yyyy-ww}`, try/catch); a new week shows the buttons again                                                                                           | PRD: done when pressed this ISO week, kept across reloads                | a backend record of moves |
 | Share marks done on press                                     | Marks done once the copy lands (a refused clipboard says so and leaves it to do); copying from the header's share menu or the setup banner counts too, and also completes the setup banner's Share step (design `shared()`) | Honest: nothing was shared if the copy failed                            | never                     |
+
+### FileViewer — the shared file viewer (PRD Messages, FileViewer.dc.html), 2026-10-27
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Zoom out / 50–200% / Zoom in and "{n} pages" above the file | Not drawn: the PDF opens in the browser's own viewer, which has its own zoom and pages | PRD Q8 default ("the browser's viewer, as built") | a drawn viewer (pdf.js) is approved |
+| Download glyph 20px | 18px; the design file is aligned to 18 (asked of the design-sync session, 2026-10-27) | The DS Button's glyph for filled buttons (CTA hierarchy): one design off from the DS | never |
+| EmptyState description ink-500 on the ink-100 well | ink-700 (`EmptyState onTint`) | ink-500 on ink-100 is 4.38:1, under AA (axe) | never |
+| Download in every state, with no rule for a file that isn't fetched yet | Pressed while loading or after a failure, it fetches (retrying) and saves as soon as the bytes arrive | Makes "or download it instead" true; the bytes come from one authenticated fetch | never |
+| No 404 state drawn | "This file isn't there anymore." in the well, no Try again, no Download | A removed or unreadable file can't be fetched by retrying | design draws one |
+| (intake, not drawn) | Intake answers keep "This file is no longer available. Uploads are kept for a while after a session, then removed." | PRD: intake chips keep their retention line | never |
+| PDF preview | A browser with no built-in PDF viewer (Chrome on Android, headless) shows the "No preview for this file" state inside the frame | `<object>` fallback; same words as Word | never |
+| `bodyMax: calc(100vh - 260px)` on every device | Phones (full screen): the well grows to fill the screen. Desktop PDF: `max(320px, 100vh - 260px)`, so a short window scrolls the dialog rather than collapsing the frame | The modal is full screen on phones (PRD) | never |
+| Every non-PDF is "Word document" | PDF, Word document (.docx), otherwise "File" | The shared viewer names only what it knows | never |
+| "Shared by {First}" | Omitted for a deleted account | Its name is no longer theirs to show | never |

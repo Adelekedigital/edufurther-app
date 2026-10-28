@@ -1,0 +1,96 @@
+/* FileViewer.dc.html, values from the markup. */
+
+.viewer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  flex: 1;
+  min-height: 0;
+}
+
+/* The drawn zoom and page count are the browser viewer's own here (PRD Q8),
+   so the row holds Download alone, pushed right by the drawn spacer. */
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 320px;
+  max-height: calc(100vh - 260px);
+  overflow: auto;
+  border-radius: var(--radius-md);
+  background: var(--ink-100);
+  padding: var(--space-5) var(--space-3);
+  box-sizing: border-box;
+}
+
+/* The PDF sits in the drawn well, padding and all, where the design draws its
+   pages; the browser's viewer scrolls and zooms inside it (PRD Q8). */
+.pdf {
+  /* `flex: 1` would set the basis to 0 and drop the height; on a desktop
+     dialog nothing above it has a height to grow into anyway. */
+  flex: none;
+  /* Never under the well's 320 floor: on a short window the dialog scrolls
+     rather than the frame collapsing. */
+  height: max(320px, calc(100vh - 260px));
+  max-height: none;
+  overflow: hidden;
+}
+
+.frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: none;
+  border-radius: var(--radius-md);
+}
+
+.centre {
+  flex: 1;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading {
+  gap: var(--space-3);
+  font-size: var(--text-p-sm);
+  color: var(--ink-600);
+}
+
+.note {
+  margin: 0;
+  max-width: 360px;
+  text-align: center;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+
+/* The drawn "Try again": a text action under the well, centred, 44px tall. */
+.retry {
+  align-self: center;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+
+@media (max-width: 767px) {
+  /* Full screen: the well takes what the screen has left. */
+  .body,
+  .pdf {
+    flex: 1;
+    max-height: none;
+    height: auto;
+  }
+}
