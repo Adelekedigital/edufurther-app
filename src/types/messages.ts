@@ -69,6 +69,12 @@ export type Thread = {
   theirLastReadAt: string | null;
   myLastReadAt: string | null;
   hasMore: boolean;
+  /**
+   * The last message id a server read returned: where the next poll asks
+   * `after=`. Not the cache's last item, which may be my own message patched in
+   * after a send, past messages of theirs the poll hasn't fetched yet.
+   */
+  cursor: string | null;
 };
 
 /** A message this device has written and the server hasn't stored yet. */
