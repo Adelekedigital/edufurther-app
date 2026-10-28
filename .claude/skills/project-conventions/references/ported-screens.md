@@ -59,3 +59,5 @@ PR 5 (booking context): the sign-in page shows "Log in or sign up to finish book
 ## Messages (`Messages.dc.html`, route `/messages`, behind `MESSAGES_LIVE`)
 
 PR 4a (inbox, nav and settings): the list (search, All / Unread, rows, no-rows states), the desktop split pane and the phone list-then-chat, `?with=` and `?settings=1`, New message, Message emails, the chat header (body empty), the Messages nav item after Bookings with its unread badge (rail; More sheet on phones). PR 4b fills the chat: thread, composer, read marking, menu and Report.
+
+Messages PR (shared FileViewer), 2026-10-27: `IntakeFileViewer` became `templates/FileViewer` (FileViewer.dc.html: file name, "PDF"/"Word document" · size · "Shared by", Download, browser PDF viewer, no-preview, loading, error) opened through `app/_shell/FileViewerLauncher`; one fetch `usePrivateFile` for `/intake-files/{id}` and `/message-files/{id}` (`lib/api/data/privateFiles`). Bookings and Session Join moved onto it.

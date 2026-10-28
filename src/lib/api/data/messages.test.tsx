@@ -215,16 +215,28 @@ describe('useThread', () => {
     // My send settles into the cache (as the outbox does) before the next poll;
     // their m2 was stored before it and hasn't been fetched yet.
     qc.setQueryData<Thread>(['messages', 'me-1', 'thread', 'u-1'], (cur) =>
-      cur ? { ...cur, items: [...cur.items, toMessage(wireMsg('m3', { mine: true }))] } : cur,
+      cur
+        ? {
+            ...cur,
+            items: [
+              ...cur.items,
+              toMessage(wireMsg('m3', { mine: true, sent_at: '2026-10-27T09:02:00Z' })),
+            ],
+          }
+        : cur,
     );
     GET.mockResolvedValueOnce({
-      data: wireThread([wireMsg('m2'), wireMsg('m3', { mine: true })]),
+      data: wireThread([
+        wireMsg('m2', { sent_at: '2026-10-27T09:01:00Z' }),
+        wireMsg('m3', { mine: true, sent_at: '2026-10-27T09:02:00Z' }),
+      ]),
       response: res(200),
     });
     await act(() => result.current.retry());
     await waitFor(() => expect(result.current.data?.items.map((m) => m.id)).toContain('m2'));
     expect(GET.mock.calls[1]![1]).toMatchObject({ params: { query: { after: 'm1' } } });
-    expect(result.current.data?.items.map((m) => m.id)).toEqual(['m1', 'm3', 'm2']);
+    // In the order stored: their m2 before my m3, though m3 reached the cache first.
+    expect(result.current.data?.items.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
   });
 
   it('older messages loaded while a poll is in flight survive the poll', async () => {

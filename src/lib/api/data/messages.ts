@@ -127,11 +127,24 @@ export function toThread(w: WireThread): Thread {
  * New messages after the cache's last one, appended without repeats. The
  * header fields (lock, next booking, read state) always come from the newer read.
  */
+/**
+ * Messages in the order they were stored. A poll can bring one of theirs that
+ * was stored before my own, already settled into the cache after a send, so
+ * new ones go where their time puts them, not after everything. Stable: equal
+ * times keep the order they came in.
+ */
+export function inTimeOrder(items: Message[]): Message[] {
+  return items
+    .map((m, i) => ({ m, i, t: Date.parse(m.sentAt) }))
+    .sort((a, b) => a.t - b.t || a.i - b.i)
+    .map((x) => x.m);
+}
+
 export function mergeNewer(prev: Thread, next: Thread): Thread {
   const seen = new Set(prev.items.map((m) => m.id));
   return {
     ...next,
-    items: [...prev.items, ...next.items.filter((m) => !seen.has(m.id))],
+    items: inTimeOrder([...prev.items, ...next.items.filter((m) => !seen.has(m.id))]),
     hasMore: prev.hasMore,
     cursor: next.cursor ?? prev.cursor,
   };

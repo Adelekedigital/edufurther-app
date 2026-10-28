@@ -1268,3 +1268,18 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | A `?with=` that isn't one of my chats: not drawn | EmptyState `chat`, "This chat isn't available." (CHAT_COPY.gone) | _ours_ | design draws it |
 | `inbox.svg` | Main's stripped copy: a few pale outline strokes in the backdrop's own tint are left out | Looks the same; smaller file | the illustration changes |
 | No guest state drawn | `memberGate` with "Log in to see your messages" (MESSAGES_GATE) | _ours_: a guest never reaches Messages from the nav | design draws it |
+
+### FileViewer — the shared file viewer (PRD Messages, FileViewer.dc.html), 2026-10-27
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Zoom out / 50–200% / Zoom in and "{n} pages" above the file | Not drawn: the PDF opens in the browser's own viewer, which has its own zoom and pages | PRD Q8 default ("the browser's viewer, as built") | a drawn viewer (pdf.js) is approved |
+| Download glyph 20px | 18px; the design file is aligned to 18 (asked of the design-sync session, 2026-10-27) | The DS Button's glyph for filled buttons (CTA hierarchy): one design off from the DS | never |
+| EmptyState description ink-500 on the ink-100 well | ink-700 (`EmptyState onTint`) | ink-500 on ink-100 is 4.38:1, under AA (axe) | never |
+| Download in every state, with no rule for a file that isn't fetched yet | Pressed while loading or after a failure, it fetches (retrying) and saves as soon as the bytes arrive | Makes "or download it instead" true; the bytes come from one authenticated fetch | never |
+| No 404 state drawn | "This file isn't there anymore." in the well, no Try again, no Download | A removed or unreadable file can't be fetched by retrying | design draws one |
+| (intake, not drawn) | Intake answers keep "This file is no longer available. Uploads are kept for a while after a session, then removed." | PRD: intake chips keep their retention line | never |
+| PDF preview | A browser with no built-in PDF viewer (Chrome on Android, headless) shows the "No preview for this file" state inside the frame | `<object>` fallback; same words as Word | never |
+| `bodyMax: calc(100vh - 260px)` on every device | Phones (full screen): the well grows to fill the screen. Desktop PDF: `max(320px, 100vh - 260px)`, so a short window scrolls the dialog rather than collapsing the frame | The modal is full screen on phones (PRD) | never |
+| Every non-PDF is "Word document" | PDF, Word document (.docx), otherwise "File" | The shared viewer names only what it knows | never |
+| "Shared by {First}" | Omitted for a deleted account | Its name is no longer theirs to show | never |

@@ -16,6 +16,7 @@ import {
   usePendingBookings,
   useUpcomingBookings,
 } from '@/lib/api/data/bookings';
+import { intakeSharer, intakeViewedFile } from '@/lib/api/data/privateFiles';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
@@ -30,7 +31,7 @@ import { cx } from '@/lib/utils/cx';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
-import { IntakeFileViewer } from '@/app/_sessions/IntakeFileViewer';
+import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
 import { useReviewAndRebook } from '@/app/_sessions/useReviewAndRebook';
 import {
   bookingHeading,
@@ -604,7 +605,13 @@ export function BookingsScreen() {
               />
             )}
           </div>
-          {viewing && <IntakeFileViewer file={viewing} onClose={() => setViewing(null)} />}
+          {viewing && (
+            <FileViewerLauncher
+              file={intakeViewedFile(viewing)}
+              sharedBy={open ? intakeSharer(open) : undefined}
+              onClose={() => setViewing(null)}
+            />
+          )}
           {rr.dialogs}
           {reminders.dialog}
           {confirming && pendingAction && (

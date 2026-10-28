@@ -61,8 +61,8 @@ vi.mock('@/lib/api/data/booking', async (orig) => ({
   ...(await orig<Record<string, unknown>>()),
   useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
 }));
-vi.mock('@/lib/api/data/intakeFiles', async () =>
-  (await import('./bookingsScreen.harness')).mocks.intakeFiles(),
+vi.mock('@/lib/api/data/privateFiles', async () =>
+  (await import('./bookingsScreen.harness')).mocks.privateFiles(),
 );
 
 beforeEach(resetHarness);
