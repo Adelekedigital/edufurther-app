@@ -10,10 +10,13 @@ import type { ChatPerson, NextBooking } from '@/types/messages';
 import { personLine } from './chatRows';
 import styles from './ChatPane.module.css';
 
-/** Where the name goes: a mentor's profile for a mentee; plain text for a mentor (PRD Q3). */
+/**
+ * Where the name goes: a mentor's profile for a mentee (by handle, else by id,
+ * which the route also takes); plain text for a mentor (PRD Q3).
+ */
 export function profileHref(person: ChatPerson, viewerIsMentee: boolean): string | null {
-  return viewerIsMentee && person.role === 'mentor' && person.handle
-    ? `/mentors/${encodeURIComponent(person.handle)}`
+  return viewerIsMentee && person.role === 'mentor' && person.state !== 'closed'
+    ? `/mentors/${encodeURIComponent(person.handle ?? person.id)}`
     : null;
 }
 

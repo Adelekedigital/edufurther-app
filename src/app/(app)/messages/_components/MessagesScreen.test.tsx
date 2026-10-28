@@ -190,6 +190,17 @@ describe('Messages: which chat is open', () => {
     expect(screen.getByRole('region', { name: 'Chat with Bo Unread' })).toBeInTheDocument();
   });
 
+  it('desktop: the chat opened by default stays open when a poll reorders the list', () => {
+    const a = chatRow({ person: person({ id: 'u-a', name: 'Ann First' }) });
+    const b = chatRow({ person: person({ id: 'u-b', name: 'Bo Second' }) });
+    h.chats = inbox([a, b]);
+    const { rerender } = render(<MessagesScreen />);
+    expect(screen.getByRole('region', { name: 'Chat with Ann First' })).toBeInTheDocument();
+    h.chats = inbox([b, a]);
+    rerender(<MessagesScreen />);
+    expect(screen.getByRole('region', { name: 'Chat with Ann First' })).toBeInTheDocument();
+  });
+
   it('phones: Back after opening from the list steps back; from a link it drops ?with=', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const historyBack = vi.spyOn(window.history, 'back').mockImplementation(() => {});
@@ -227,6 +238,16 @@ describe('Messages: the chat header', () => {
     );
     expect(chat.getByText(/^Next session Tomorrow, /)).toBeInTheDocument();
     expect(chat.getByRole('button', { name: 'Back to messages' })).toBeInTheDocument();
+  });
+
+  it('a mentor with no handle still links, by id (the route takes either)', () => {
+    h.chats = inbox([chatRow({ person: person({ id: 'u-x', name: 'Xu Mentor', handle: null }) })]);
+    render(<MessagesScreen />);
+    expect(
+      within(screen.getByRole('region', { name: 'Chat with Xu Mentor' })).getByRole('link', {
+        name: 'Xu Mentor',
+      }),
+    ).toHaveAttribute('href', '/mentors/u-x');
   });
 
   it('a mentor sees the mentee’s name as plain text (Q3) and "{Role} · {institution}" with nothing booked', () => {
@@ -404,6 +425,8 @@ describe('Messages: Message emails', () => {
     render(<MessagesScreen />);
     await user.click(screen.getByRole('button', { name: 'Message settings' }));
     const dialog = within(screen.getByRole('dialog', { name: 'Message emails' }));
+    // One save at a time: the switch waits too.
+    expect(dialog.getByRole('switch', { name: 'Email me about unread messages' })).toBeDisabled();
     await user.click(dialog.getByRole('button', { name: 'Done' }));
     expect(screen.getByRole('dialog', { name: 'Message emails' })).toBeInTheDocument();
     expect(screen.queryByText(/^Unread message emails are/)).toBeNull();

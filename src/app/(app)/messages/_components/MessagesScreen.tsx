@@ -80,12 +80,18 @@ export function MessagesScreen() {
   const visible = visibleRows(rows, q, filter, keepId);
   const shown = visible.map((r) => rowView(r, timeZone, now));
   // Desktop with no `?with=`: the top row of the list as shown (the filter and
-  // search included), so the open chat is always one the list can point at.
+  // search included), so the open chat is always one the list can point at. It
+  // stays open while it's listed: a poll reordering the list must not swap the
+  // chat (and lose the focus inside it) under the reader.
+  const [defaultId, setDefaultId] = useState<string | null>(null);
+  const defaultRow = visible.find((r) => r.person.id === defaultId) ?? visible[0] ?? null;
+  if (!url.withId && !isPhone && defaultRow && defaultRow.person.id !== defaultId)
+    setDefaultId(defaultRow.person.id);
   const openRow = url.withId
     ? (rows.find((r) => r.person.id === url.withId) ?? null)
     : isPhone
       ? null
-      : (visible[0] ?? null);
+      : defaultRow;
 
   // Picked from New message but not in the list yet (connected since the last
   // poll): read the list again, and wait for it before calling the chat gone.

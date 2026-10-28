@@ -57,6 +57,8 @@ export function MessageEmailsDialog({ onDone }: { onDone: (toast: string | null)
               aria-labelledby={titleId}
               aria-describedby={hintId}
               className={styles.switch}
+              // One save at a time: a second flip mid-save could land out of order.
+              disabled={saving}
               onChange={(next) => save.mutate({ unreadEmails: next })}
             />
           )}
