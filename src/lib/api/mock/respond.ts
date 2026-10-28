@@ -44,7 +44,7 @@ export function ok<P extends keyof paths, M extends MethodOf<P>>(
 }
 
 /** The error statuses the mocks answer with. */
-export type ErrorStatus = 404 | 409 | 413 | 422 | 429 | 500 | 503;
+export type ErrorStatus = 403 | 404 | 409 | 413 | 422 | 429 | 500 | 503;
 
 /** An RFC 9457 problem body; `status` is always the response's own. */
 export type ProblemBody = {
@@ -106,6 +106,7 @@ type Shipped<K> = K extends `${infer M} ${infer Path}`
 export function pendingOk<K extends keyof PendingResponses>(
   _op: Shipped<K> extends true ? never : K,
   body: PendingResponses[K],
+  init?: { status: 200 | 201 },
 ): NextResponse {
-  return NextResponse.json(body);
+  return NextResponse.json(body, init);
 }

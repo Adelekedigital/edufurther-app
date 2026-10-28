@@ -241,4 +241,17 @@ export const keys = {
     creditLog: (me: string, type: string) => ['admin', me, 'credit-log', type] as const,
     creditRules: (me: string) => ['admin', me, 'credit-rules'] as const,
   },
+  /**
+   * Messages (PRD Messages), keyed by the signed-in user (`me`). A read moves
+   * the thread's read mark and invalidates `chats` and `unread`; a send patches
+   * the thread with the stored message and invalidates `chats`.
+   */
+  messages: {
+    all: (me: string) => ['messages', me] as const,
+    chats: (me: string) => ['messages', me, 'chats'] as const,
+    unread: (me: string) => ['messages', me, 'unread'] as const,
+    people: (me: string, q: string) => ['messages', me, 'people', q] as const,
+    thread: (me: string, withId: string) => ['messages', me, 'thread', withId] as const,
+    settings: (me: string) => ['messages', me, 'settings'] as const,
+  },
 };
