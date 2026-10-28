@@ -82,3 +82,9 @@ export type OutboxItem = {
   createdAt: string;
   status: OutboxStatus;
 };
+
+/** Who a Message button writes to (SendMessage's `to`): a chat person's look, from any screen. */
+export type MessageRecipient = Pick<
+  ChatPerson,
+  'id' | 'name' | 'firstName' | 'initials' | 'avatarUrl' | 'avatarFocus' | 'cover' | 'role'
+> & { institution: string | null };

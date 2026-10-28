@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
+import { UPLOAD_ACCEPT, UPLOAD_MAX_BYTES } from '@/lib/utils/files';
 import { DEFAULT_HORIZON_DAYS, slotWindow } from '@/lib/utils/slots';
 import type {
   AppError,
@@ -16,6 +17,7 @@ import type {
 import { ApiError, apiError, normaliseError, retryAfterMinutes } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { fileBody } from './upload';
 
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
 type QuestionRead = components['schemas']['QuestionRead'];
@@ -394,9 +396,9 @@ export function requestError(e: unknown): BookingError {
 
 // ---- intake files (backend PR C) -----------------------------------------------
 
-/** What the upload endpoint takes (decided from the bytes, not the name). */
-export const INTAKE_ACCEPT = '.pdf,.docx';
-export const INTAKE_MAX_BYTES = 5 * 1024 * 1024;
+/** What the upload endpoint takes (decided from the bytes, not the name): every upload's limits. */
+export const INTAKE_ACCEPT = UPLOAD_ACCEPT;
+export const INTAKE_MAX_BYTES = UPLOAD_MAX_BYTES;
 
 /** Our copy for a refused upload, by status; the server's text is never shown. */
 export function uploadError(e: unknown): AppError {
@@ -437,16 +439,7 @@ export function useUploadIntakeFile() {
       if (file.size > INTAKE_MAX_BYTES) throw uploadError(new ApiError(413));
       let result;
       try {
-        result = await api.POST('/api/v1/me/intake-files', {
-          // The generated type calls the binary part a string (openapi-typescript
-          // and multipart); the serializer sends the File itself.
-          body: { file } as unknown as { file: string },
-          bodySerializer: (b) => {
-            const form = new FormData();
-            form.append('file', (b as unknown as { file: File }).file);
-            return form;
-          },
-        });
+        result = await api.POST('/api/v1/me/intake-files', fileBody(file));
       } catch (e) {
         throw uploadError(e);
       }

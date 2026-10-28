@@ -7,6 +7,7 @@ import { AnswerItem } from '@/components/molecules/AnswerItem/AnswerItem';
 import { SuggestionNotice } from '@/components/organisms/SuggestionNotice/SuggestionNotice';
 import { DetailFacts, type Fact } from '@/components/molecules/DetailFacts/DetailFacts';
 import { BOOKINGS_COPY } from '@/lib/copy/bookings';
+import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
 import {
   attendanceLine,
@@ -53,6 +54,8 @@ type BookingDetailsProps = {
    * Present, every upcoming session offers it, never greyed out (owner, 26 Oct).
    */
   joinHref?: string;
+  /** Opens SendMessage for the other person; left out on a request (B4) and for a deleted account. */
+  onMessage?: () => void;
   /** The reason is still being fetched: the block has a shape, not a gap. */
   outcomeLoading?: boolean;
   /** What the mentee wrote on the booking form (GET /sessions/{id}/answers). */
@@ -161,9 +164,8 @@ function outcomeHeading(o: BookingOutcome, b: Booking): string {
  * and the phone sheet — the two differ in their frame, never in what they say.
  *
  * The design pairs Join with "Send a message", and Cancel, Accept and Decline
- * sit in this footer too. Join, the call-off and the answer are all here; the
- * message control is the one thing still missing, because it has no endpoint.
- * Accept and Decline also stay on the pending row — the owner asked for both,
+ * sit in this footer too. "Send a message" comes as `onMessage` from the page,
+ * which leaves it out on a request (B4) and for a deleted account. Accept and Decline also stay on the pending row — the owner asked for both,
  * and the row is where someone scanning a list answers from.
  *
  * A footer with nothing in it does not render at all.
@@ -189,6 +191,7 @@ export function BookingDetails({
   answer,
   answerNotice,
   joinHref,
+  onMessage,
   now = new Date(),
 }: BookingDetailsProps) {
   const status = panelStatus(b, now);
@@ -211,6 +214,21 @@ export function BookingDetails({
       ? { action: 'cancel' as const, label: 'Cancel session' }
       : null;
   const showCallOff = !!onCallOff && !!callOff;
+  // Beside the call-off, outlined, while Join is the panel's one fill (the
+  // design's next session); the panel's own primary, full width, when nothing
+  // else is (a past session).
+  const messageBeside = !!onMessage && showJoin;
+  const messageAlone = !!onMessage && !showJoin;
+  const messageButton = (alone: boolean) => (
+    <Button
+      variant={alone ? 'primary' : 'secondary-outlined'}
+      size={alone ? 'large' : 'medium'}
+      fullWidth={alone}
+      onClick={onMessage}
+    >
+      {MESSAGE_BUTTON_COPY.send}
+    </Button>
+  );
   const answersTitle = b.side === 'mentee' ? 'Your answers' : `Answers from ${b.other.firstName}`;
   const credit = outcome ? creditLine(outcome, b, now) : '';
   // Collapsed, the preview shows the first two **answered** questions, not
@@ -438,7 +456,7 @@ export function BookingDetails({
         </div>
       </div>
 
-      {(showJoin || showCallOff || !!answer) && (
+      {(showJoin || showCallOff || !!answer || !!onMessage) && (
         <div className={styles.footer}>
           {/* Above the buttons, so it is read before it is acted on rather
               than explaining afterwards. */}
@@ -453,17 +471,21 @@ export function BookingDetails({
               Join session
             </ButtonLink>
           )}
+          {messageAlone && messageButton(true)}
           {/* The design's second line: the call-off, a quiet text button rather
-              than a second full-width one. */}
-          {showCallOff && (
+              than a second full-width one, with the message beside it. */}
+          {(showCallOff || messageBeside) && (
             <div className={styles.footRow}>
-              <Button
-                variant="text-destructive"
-                size="large"
-                onClick={() => onCallOff!(callOff!.action)}
-              >
-                {callOff!.label}
-              </Button>
+              {messageBeside && messageButton(false)}
+              {showCallOff && (
+                <Button
+                  variant="text-destructive"
+                  size="large"
+                  onClick={() => onCallOff!(callOff!.action)}
+                >
+                  {callOff!.label}
+                </Button>
+              )}
             </div>
           )}
         </div>

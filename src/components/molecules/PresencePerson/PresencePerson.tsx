@@ -1,4 +1,5 @@
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
+import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
 import type { BookingParty } from '@/types/booking';
 import styles from './PresencePerson.module.css';
@@ -16,10 +17,12 @@ type PresencePersonProps = {
    * ring). `away`: grey.
    */
   tone: 'here' | 'joined' | 'absent' | 'away';
+  /** "Message {First}" under the other person (theirs only), opening SendMessage. */
+  message?: { label: string; onClick: () => void };
 };
 
 /** Session Join.dc.html: one person in the lobby, with whether they're in the call. */
-export function PresencePerson({ person, name, presence, tone }: PresencePersonProps) {
+export function PresencePerson({ person, name, presence, tone, message }: PresencePersonProps) {
   return (
     <div
       className={cx(
@@ -44,6 +47,12 @@ export function PresencePerson({ person, name, presence, tone }: PresencePersonP
         <span aria-hidden className={styles.dot} />
         {presence}
       </span>
+      {message && (
+        <button type="button" className={styles.message} onClick={message.onClick}>
+          <Icon name="chat" size={18} />
+          {message.label}
+        </button>
+      )}
     </div>
   );
 }

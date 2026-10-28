@@ -11,6 +11,7 @@ import {
   type SessionStatusTone,
 } from '@/components/molecules/SessionStatusPill/SessionStatusPill';
 import type { CalendarEvent } from '@/lib/utils/calendarLinks';
+import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
 import type { BookingParty } from '@/types/booking';
 import styles from './SessionLobby.module.css';
@@ -72,6 +73,8 @@ type SessionLobbyProps = {
   onCalendarSheet?: () => void;
   /** A problem with the last Join press, under the button. */
   notice?: ReactNode;
+  /** "Message {First}" under the other person (Messages live, not deleted). */
+  onMessage?: () => void;
 };
 
 /** Session Join.dc.html `layout=lobby`: the hero with the clock, both people and Join. */
@@ -89,6 +92,7 @@ export function SessionLobby({
   calendar,
   onCalendarSheet,
   notice,
+  onMessage,
 }: SessionLobbyProps) {
   // Join can vanish under someone's focus (the window shuts, or the session
   // ends and settles, on a clock tick). Removing a focused element sends focus
@@ -139,8 +143,17 @@ export function SessionLobby({
       {clock && <SessionClock {...clock} />}
 
       <div className={styles.people}>
-        {people.map((p) => (
-          <PresencePerson key={p.person.id} {...p} />
+        {people.map((p, i) => (
+          <PresencePerson
+            key={p.person.id}
+            {...p}
+            // The second is always the other person; there is no one to write to on your own.
+            message={
+              i === 1 && onMessage
+                ? { label: MESSAGE_BUTTON_COPY.to(p.person.firstName), onClick: onMessage }
+                : undefined
+            }
+          />
         ))}
       </div>
 

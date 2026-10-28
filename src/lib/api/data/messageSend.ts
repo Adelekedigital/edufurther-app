@@ -128,7 +128,17 @@ export function useOutbox(to: string | null): OutboxItem[] {
   ).filter((i) => i.to === to);
 }
 
-export type SendInput = { to: string; body: string; file: MessageFile | null };
+export type SendInput = {
+  to: string;
+  body: string;
+  file: MessageFile | null;
+  /**
+   * The caller's own id for this message, so it can `retry(clientId)` the same
+   * one after a failure rather than send a second (SendMessage). Made here
+   * when left out.
+   */
+  clientId?: string;
+};
 
 /**
  * POST /me/messages/{user_id} through the outbox. `send` resolves true once
@@ -146,11 +156,11 @@ export function useSendMessage() {
     listen();
   }, [known, qc, me]);
 
-  const send = useCallback(({ to, body, file }: SendInput): Promise<boolean> => {
+  const send = useCallback(({ to, body, file, clientId }: SendInput): Promise<boolean> => {
     const text = body.trim();
     if (!text && !file) return Promise.resolve(false);
     const item: OutboxItem = {
-      clientId: crypto.randomUUID(),
+      clientId: clientId ?? crypto.randomUUID(),
       to,
       body: text || null,
       file,

@@ -107,3 +107,10 @@ export type WireUploadedFile = {
   size: number;
   content_type: string;
 };
+
+/**
+ * PENDING BACKEND (Messages PR 2): `can_message` on `GET /mentors/{handle}`,
+ * true only for a signed-in mentee connected to this mentor (M0). Absent
+ * until it ships, which hides the profile's Message button.
+ */
+export type PendingProfileFields = { can_message?: boolean };

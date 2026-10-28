@@ -91,3 +91,27 @@
 .absent .dot {
   background: var(--red-500);
 }
+
+/* Session Join.dc.html lobby `lp.canMsg`: a text button under the other person. */
+.message {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.message:hover {
+  background: var(--blue-50);
+}
+.message:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}

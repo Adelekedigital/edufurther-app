@@ -391,6 +391,8 @@ export type MentorProfile = {
   names: { first: string; last: string };
   /** Bookable right now (backend #301); false shows "Not taking bookings". */
   takingBookings: boolean;
+  /** The signed-in viewer is a mentee connected to this mentor: Message shows (PRD Messages). */
+  canMessage: boolean;
   headline: string | null;
   about: string | null;
   /** The About is still an untouched AI draft ("Drafted for you"). */

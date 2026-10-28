@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { mockMessagesContext } from '@/lib/api/mock/messages';
 import type { components } from '@/lib/api/generated/schema';
 import {
   mockAvailabilityState,
@@ -150,6 +151,10 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
     // Backend #301: approved, listed and bookable (fixtures' NOT_TAKING isn't).
     taking_bookings: m.taking_bookings !== false,
   };
+  // PENDING BACKEND (Messages PR 2): a signed-in mentee connected to this
+  // mentor. The mock connects the mentee viewer to every other mentor.
+  if (!own && mockMessagesContext(req).role === 'mentee' && i % 2 === 0)
+    Object.assign(body, { can_message: true });
   // The countries by id too (backend: names aren't unique; the writes take ids).
   Object.assign(body, {
     origin_country_id: countryIdByName(body.origin_country ?? null),

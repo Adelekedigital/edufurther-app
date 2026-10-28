@@ -112,6 +112,42 @@ export const COMPOSER_COPY = {
   wrongType: 'Use a PDF or Word (.docx) file.',
 } as const;
 
+/** SendMessage (SendMessage.dc.html): the pop-up behind every Message button. */
+export const SEND_MESSAGE_COPY = {
+  title: (first: string) => `Message ${first}`,
+  placeholder: (first: string) => `Write to ${first}`,
+  attach: COMPOSER_COPY.attach,
+  attachHint: COMPOSER_COPY.attachHint,
+  attachHintPhone: 'PDF or Word · 5 MB',
+  attached: '1 file attached',
+  viewFile: (name: string) => `View ${name}`,
+  removeFile: COMPOSER_COPY.removeFile,
+  left: (n: number) => `${n} left`,
+  contactNotice: COMPOSER_COPY.contactNotice,
+  where: (first: string) => `This goes to your chat with ${first} in Messages.`,
+  whereSoon: (first: string) =>
+    `Your session starts soon, so we’ll also email this to ${first} right away.`,
+  cancel: 'Cancel',
+  send: 'Send message',
+  sending: 'Sending…',
+  empty: (first: string) => `Write a message to ${first} first.`,
+  failed: 'Not sent. Check your connection and try again.',
+  uploading: 'Uploading…',
+  sentTitle: 'Message sent',
+  sentSub: (first: string) => `It’s in your chat with ${first} in Messages.`,
+  sentSubSoon: (first: string) =>
+    `It’s in your chat with ${first}, and we emailed it to them because your session starts soon.`,
+  openChat: 'Open chat',
+  done: 'Done',
+} as const;
+
+/** A Message button (Bookings, Session Join, Mentor Profile; PRD table). */
+export const MESSAGE_BUTTON_COPY = {
+  send: 'Send a message',
+  short: 'Message',
+  to: (first: string) => `Message ${first}`,
+} as const;
+
 export const LOCK_COPY = {
   paused: (first: string) =>
     `${first} isn’t taking messages right now. You can still read your chat.`,

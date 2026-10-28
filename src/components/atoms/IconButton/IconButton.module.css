@@ -69,7 +69,10 @@
     width: var(--space-8);
     height: var(--space-8);
   }
-  .square::after {
+  /* Only the 32px ones: a 44px square has its full area already, and is not
+     positioned, so an ::after there would cover its whole dialog. */
+  .square.sm::after,
+  .square.md::after {
     content: '';
     position: absolute;
     inset: -6px;
