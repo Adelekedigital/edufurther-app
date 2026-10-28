@@ -51,6 +51,8 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     const composing = e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229;
     if (e.key !== 'Enter' || e.shiftKey || phone || composing) return;
     e.preventDefault();
+    // A held Enter repeats: one message, however long it's held.
+    if (e.repeat) return;
     if (canSend) onSend();
   };
   const placeholder = COMPOSER_COPY.placeholder(first);

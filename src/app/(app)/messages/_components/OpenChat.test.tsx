@@ -315,6 +315,19 @@ describe('the composer', () => {
     expect(sent).toHaveBeenCalledWith({ to: UJ, body: '你好', file: null });
   });
 
+  it('a held Enter sends one message', () => {
+    open({ items: [msg(false, ago(5), 'Hi')] });
+    render(<MessagesScreen />);
+    const box = chat().getByRole('textbox', { name: 'Message Ujunwa' });
+    fireEvent.change(box, { target: { value: 'Once' } });
+    fireEvent.keyDown(box, { key: 'Enter', repeat: true });
+    expect(sent).not.toHaveBeenCalled();
+    fireEvent.keyDown(box, { key: 'Enter' });
+    fireEvent.keyDown(box, { key: 'Enter', repeat: true });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect(sent).toHaveBeenCalledTimes(1);
+  });
+
   it('phones: Enter adds a line; the button sends', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     setPhone(true);

@@ -127,9 +127,16 @@ export function ChatView({
   const lock = t?.lock ?? null;
   const empty = !!t && messages.length === 0 && outbox.length === 0;
 
+  // The draft clears on the next render: a second Enter (or tap) before then
+  // must not send the same words again as a new message.
+  const sentDraft = useRef<string | null>(null);
+  useEffect(() => {
+    if (draft === '') sentDraft.current = null;
+  }, [draft]);
   const doSend = () => {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || sentDraft.current === draft) return;
+    sentDraft.current = draft;
     atBottom.current = true;
     onDraft('');
     void send({ to: person.id, body: text, file: null });
