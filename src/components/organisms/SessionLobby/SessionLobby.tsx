@@ -61,7 +61,8 @@ type SessionLobbyProps = {
   /** The time zone switcher under the date line: every time on the page follows it. */
   zone?: { value: string; onChange: (zone: string) => void; deviceZone: string };
   clock: { label: string; value: string } | null;
-  people: [LobbyPerson, LobbyPerson];
+  /** Always you first, then the other person (lobbyModel): the Message button goes on `them`. */
+  people: [you: LobbyPerson, them: LobbyPerson];
   /** Join and the line under it. Absent once nobody can join. */
   join?: LobbyJoin;
   /** In place of Join when the session has moved past it (window closed, ended). */

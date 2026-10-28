@@ -132,6 +132,9 @@ export const SEND_MESSAGE_COPY = {
   sending: 'Sending…',
   empty: (first: string) => `Write a message to ${first} first.`,
   failed: 'Not sent. Check your connection and try again.',
+  /** Offline: the outbox holds it and sends it on reconnect. */
+  waiting: COMPOSER_COPY.offline,
+  waitUpload: 'Wait for your file to finish uploading.',
   uploading: 'Uploading…',
   sentTitle: 'Message sent',
   sentSub: (first: string) => `It’s in your chat with ${first} in Messages.`,

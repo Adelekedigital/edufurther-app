@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { UPLOAD_ACCEPT, UPLOAD_MAX_BYTES } from '@/lib/utils/files';
+import { UPLOAD_MAX_BYTES } from '@/lib/utils/files';
 import { DEFAULT_HORIZON_DAYS, slotWindow } from '@/lib/utils/slots';
 import type {
   AppError,
@@ -17,7 +17,7 @@ import type {
 import { ApiError, apiError, normaliseError, retryAfterMinutes } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import { fileBody } from './upload';
+import { fileBody, uploadError } from './upload';
 
 type SessionTypeRead = components['schemas']['SessionTypeRead'];
 type QuestionRead = components['schemas']['QuestionRead'];
@@ -396,38 +396,6 @@ export function requestError(e: unknown): BookingError {
 
 // ---- intake files (backend PR C) -----------------------------------------------
 
-/** What the upload endpoint takes (decided from the bytes, not the name): every upload's limits. */
-export const INTAKE_ACCEPT = UPLOAD_ACCEPT;
-export const INTAKE_MAX_BYTES = UPLOAD_MAX_BYTES;
-
-/** Our copy for a refused upload, by status; the server's text is never shown. */
-export function uploadError(e: unknown): AppError {
-  const n = normaliseError(e);
-  const s = e instanceof ApiError ? e.status : undefined;
-  if (s === 413 || s === 422)
-    return { ...n, message: 'Upload a PDF or Word (.docx) file under 5 MB.' };
-  if (s === 409)
-    return {
-      ...n,
-      message: 'You have too many files waiting to be used in a booking. Try again tomorrow.',
-    };
-  if (s === 401) return { ...n, message: 'Log in to upload a file.' };
-  // Ten an hour (backend #358). The generic copy ends "Try again", which here
-  // is advice that cannot succeed for up to an hour — so say when.
-  if (s === 429) {
-    const mins = retryAfterMinutes(e instanceof ApiError ? e.retryAfter : undefined);
-    return {
-      ...n,
-      message: mins
-        ? `You’ve uploaded a lot of files in the last hour. Try again in ${mins} ${mins === 1 ? 'minute' : 'minutes'}.`
-        : 'You’ve uploaded a lot of files in the last hour. Try again a little later.',
-    };
-  }
-  if (s !== undefined && s >= 500)
-    return { ...n, message: 'File uploads aren’t available right now. Try again later.' };
-  return { ...n, message: `We couldn’t upload it. ${n.message} Try again.` };
-}
-
 /**
  * POST /me/intake-files: upload when the mentee picks the file (an unused
  * upload is deleted after about a day), then answer with its id. A file that
@@ -436,7 +404,7 @@ export function uploadError(e: unknown): AppError {
 export function useUploadIntakeFile() {
   const mutation = useMutation<IntakeFile, AppError, File>({
     mutationFn: async (file) => {
-      if (file.size > INTAKE_MAX_BYTES) throw uploadError(new ApiError(413));
+      if (file.size > UPLOAD_MAX_BYTES) throw uploadError(new ApiError(413));
       let result;
       try {
         result = await api.POST('/api/v1/me/intake-files', fileBody(file));

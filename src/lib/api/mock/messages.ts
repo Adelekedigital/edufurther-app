@@ -332,6 +332,13 @@ export function mockPeople(role: Role, q: string): WireChatPerson[] {
     .filter((p) => !n || `${p.first_name} ${p.last_name}`.toLowerCase().includes(n));
 }
 
+/**
+ * The ids the mock may start a chat with: the sessions mock's booking parties
+ * (`mock-…`) and the mentor fixtures (`m-…`). Anyone else stays unconnected,
+ * so the inbox's gone (404) and not-connected (403) states still show.
+ */
+const startable = (id: string) => id.startsWith('mock-') || id.startsWith('m-');
+
 function startChat(role: Role, id: string): Chat {
   const c: Chat = {
     person: person(id, 'Booked', 'Person', role === 'mentor' ? 'mentee' : 'mentor', null),
@@ -358,7 +365,7 @@ export function mockThread(
   // SendMessage's status read (`limit=0`) is for a booking party or a profile
   // mentor the mock never seeded: answer as a connected pair with no messages
   // yet, as the real API does. A chat read for an unknown id stays a 404.
-  const c = find(role, id) ?? (q.limit === 0 ? startChat(role, id) : undefined);
+  const c = find(role, id) ?? (q.limit === 0 && startable(id) ? startChat(role, id) : undefined);
   if (!c) return 'notFound';
   let items = c.msgs;
   let hasMore = false;
@@ -398,8 +405,9 @@ export function mockSend(
 ): MockSend {
   // The real API creates the conversation on the first send. The mock's
   // booking parties and profile mentors aren't seeded chats, so a Message
-  // button there starts one, as for a connected pair (the mock checks no M0).
-  const c = find(role, id) ?? startChat(role, id);
+  // button there starts one, as for a connected pair (`startable`).
+  const c = find(role, id) ?? (startable(id) ? startChat(role, id) : undefined);
+  if (!c) return { status: 403, type: '/problems/not-connected' };
   if (c.person.deleted) return { status: 409, type: '/problems/recipient-closed' };
   if (c.person.paused) return { status: 409, type: '/problems/recipient-paused' };
   const text = body.body?.trim() ?? '';

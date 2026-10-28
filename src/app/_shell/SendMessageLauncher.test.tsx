@@ -9,7 +9,9 @@ const retry = vi.fn();
 const upload = vi.fn();
 let status: { data: Partial<Thread> | null; isLoading: boolean; error: null; retry: () => void };
 
+let outboxItems: { clientId: string; status: string }[] = [];
 vi.mock('@/lib/api/data/messageSend', () => ({
+  useOutbox: () => outboxItems,
   useSendMessage: () => ({
     send: (...a: unknown[]) => send(...a),
     retry: (...a: unknown[]) => retry(...a),
@@ -37,6 +39,7 @@ const TO: MessageRecipient = {
 };
 
 beforeEach(() => {
+  outboxItems = [];
   send.mockReset();
   retry.mockReset();
   upload.mockReset();
@@ -74,7 +77,10 @@ describe('SendMessageLauncher', () => {
   });
 
   it('a failure, then Send again retries the same message rather than sending a second', async () => {
-    send.mockResolvedValue(false);
+    send.mockImplementation(async ({ clientId }: { clientId: string }) => {
+      outboxItems = [{ clientId, status: 'failed' }];
+      return false;
+    });
     retry.mockResolvedValue(true);
     render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
     await userEvent.type(box(), 'Hello');
@@ -136,5 +142,57 @@ describe('SendMessageLauncher', () => {
     );
     expect(await screen.findByRole('alert')).toHaveTextContent('Use a PDF or Word (.docx) file.');
     expect(screen.getByRole('button', { name: 'Attach a file' })).toBeEnabled();
+  });
+
+  it('after a send, focus moves into the Sent dialog (Done)', async () => {
+    send.mockResolvedValue(true);
+    render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    await screen.findByRole('dialog', { name: 'Message sent' });
+    await vi.waitFor(() => expect(screen.getByRole('button', { name: 'Done' })).toHaveFocus());
+  });
+
+  it('offline: waiting, not failed, and Sent once the outbox lets it go', async () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    send.mockImplementation(async ({ clientId }: { clientId: string }) => {
+      outboxItems = [{ clientId, status: 'waiting' }];
+      return false;
+    });
+    const { rerender } = render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    expect(
+      await screen.findByText(/We’ll send your messages when you’re back online/),
+    ).toBeVisible();
+    expect(screen.queryByText(/Not sent/)).not.toBeInTheDocument();
+    // Back online: the outbox stores it and lets it go.
+    online.mockReturnValue(true);
+    outboxItems = [];
+    rerender(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    expect(await screen.findByRole('dialog', { name: 'Message sent' })).toBeVisible();
+    online.mockRestore();
+  });
+
+  it('Send while the file is still uploading waits, and sends nothing', async () => {
+    upload.mockReturnValue(new Promise(() => {}));
+    const { container } = render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.upload(
+      container.ownerDocument.querySelector('input[type=file]')!,
+      new File(['%PDF'], 'CV.pdf', { type: 'application/pdf' }),
+    );
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    expect(screen.getByRole('alert')).toHaveTextContent('Wait for your file to finish uploading.');
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it('a send that throws comes back to the form, failed, not stuck on Sending…', async () => {
+    send.mockRejectedValue(new Error('boom'));
+    render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not sent.');
+    expect(sendBtn()).toBeEnabled();
   });
 });

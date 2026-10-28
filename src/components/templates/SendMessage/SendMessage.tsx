@@ -27,8 +27,8 @@ export type SendMessageProps = {
   sessionWindow: boolean;
   /** Paused or closed: the read-only line replaces the form (PRD Q7). */
   lock: ChatLock;
-  /** Compose, sending, or sent. */
-  phase: 'compose' | 'sending' | 'sent';
+  /** Compose, sending, waiting (offline: sent on reconnect), or sent. */
+  phase: 'compose' | 'sending' | 'waiting' | 'sent';
   /** The last send failed (a retry sends the same message). */
   failed: boolean;
   onSend: (text: string) => void;
@@ -71,22 +71,29 @@ export function SendMessage({
   const phone = useMediaQuery('(max-width: 767px)');
   const [text, setText] = useState('');
   const [emptyTried, setEmptyTried] = useState(false);
+  // Send pressed while the file is still on its way: it would go without it.
+  const [waitUpload, setWaitUpload] = useState(false);
   const field = useRef<HTMLTextAreaElement>(null);
+  const lockLine = useRef<HTMLDivElement>(null);
   const errId = useId();
   const first = to.firstName;
   const has = text.trim().length > 0 || !!file;
-  const sending = phase === 'sending';
+  const sending = phase === 'sending' || phase === 'waiting';
 
-  // The text box takes focus when the pop-up opens (the design: 80ms after
-  // mount, once the dialog's own first focus has run).
+  // The chat's status can arrive after the form (a paused or closed chat):
+  // the text box goes, so focus moves to the line that says why.
   useEffect(() => {
-    const t = window.setTimeout(() => field.current?.focus({ preventScroll: true }), 80);
-    return () => window.clearTimeout(t);
-  }, []);
+    if (!lock) return;
+    const at = document.activeElement;
+    if (!at || at === document.body) lockLine.current?.focus({ preventScroll: true });
+  }, [lock]);
 
   if (phase === 'sent') {
     return (
       <ModalShell
+        // A new dialog, not the compose one changed: the trap places focus
+        // again (on Done) instead of leaving it on the Send that went away.
+        key="sent"
         title={C.sentTitle}
         subtitle={sessionWindow ? C.sentSubSoon(first) : C.sentSub(first)}
         icon="check_circle"
@@ -99,7 +106,7 @@ export function SendMessage({
           <ButtonLink variant="secondary-outlined" size="large" fullWidth href={chatHref}>
             {C.openChat}
           </ButtonLink>
-          <Button variant="primary" size="large" fullWidth onClick={onClose}>
+          <Button variant="primary" size="large" fullWidth onClick={onClose} data-autofocus>
             {C.done}
           </Button>
         </div>
@@ -108,12 +115,18 @@ export function SendMessage({
   }
 
   const showEmpty = emptyTried && !has;
-  const error = showEmpty ? C.empty(first) : failed ? C.failed : null;
+  const error = showEmpty
+    ? C.empty(first)
+    : waitUpload && uploading
+      ? C.waitUpload
+      : failed
+        ? C.failed
+        : null;
   const left = MAX - text.length;
   const sub = [LIST_COPY.role(to.role), to.institution].filter(Boolean).join(' · ');
 
   return (
-    <ModalShell title={C.title(first)} size="md" mobile="sheet" onClose={onClose}>
+    <ModalShell key="compose" title={C.title(first)} size="md" mobile="sheet" onClose={onClose}>
       <div className={styles.body}>
         <div className={styles.person}>
           <Avatar
@@ -131,7 +144,9 @@ export function SendMessage({
         </div>
 
         {lock ? (
-          <ChatLockLine lock={lock} firstName={first} />
+          <div ref={lockLine} tabIndex={-1} className={styles.lockFocus}>
+            <ChatLockLine lock={lock} firstName={first} />
+          </div>
         ) : (
           <>
             <div className={styles.compose}>
@@ -144,6 +159,8 @@ export function SendMessage({
               >
                 <textarea
                   ref={field}
+                  // The dialog's first focus (useFocusTrap): the box, as drawn.
+                  data-autofocus
                   className={styles.field}
                   value={text}
                   maxLength={MAX}
@@ -213,6 +230,12 @@ export function SendMessage({
               )}
             </div>
 
+            {phase === 'waiting' && (
+              <Notice tone="neutral" icon="cloud_off">
+                {C.waiting}
+              </Notice>
+            )}
+
             {hasContactDetails(text) && (
               <Notice tone="info" showIcon={false}>
                 <span className={styles.notice}>{C.contactNotice}</span>
@@ -241,6 +264,10 @@ export function SendMessage({
                 // writer finds out (design: send stays enabled).
                 onClick={() => {
                   if (sending) return;
+                  if (uploading) {
+                    setWaitUpload(true);
+                    return;
+                  }
                   if (!has) {
                     setEmptyTried(true);
                     field.current?.focus();

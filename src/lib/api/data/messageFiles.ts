@@ -5,7 +5,7 @@ import { COMPOSER_COPY } from '@/lib/copy/messages';
 import { pickedFileProblem } from '@/lib/utils/files';
 import type { MessageFile } from '@/types/messages';
 import type { AppError } from '@/types/mentor';
-import { uploadError } from './booking';
+import { uploadError } from './upload';
 import { ApiError, apiError, normaliseError } from './errors';
 import { toMessageFile } from './messages';
 import { untyped, type WireUploadedFile } from './pending';

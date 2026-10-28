@@ -202,3 +202,8 @@ button.fileName:focus-visible {
     min-height: 96px;
   }
 }
+
+/* Focus lands here when a locked chat's line replaces the form. */
+.lockFocus:focus {
+  outline: none;
+}

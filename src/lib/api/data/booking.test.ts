@@ -5,8 +5,8 @@ import {
   questionForPointer,
   toAnswers,
   toSessionType,
-  uploadError,
 } from './booking';
+import { uploadError } from './upload';
 import { ApiError, apiError, normaliseError } from './errors';
 
 describe('booking errors (POST /sessions)', () => {

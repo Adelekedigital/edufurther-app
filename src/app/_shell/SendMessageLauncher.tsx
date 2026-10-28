@@ -5,7 +5,7 @@ import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
 import { SendMessage } from '@/components/templates/SendMessage/SendMessage';
 import { useUploadMessageFile } from '@/lib/api/data/messageFiles';
 import { useChatStatus } from '@/lib/api/data/messages';
-import { useSendMessage } from '@/lib/api/data/messageSend';
+import { useOutbox, useSendMessage } from '@/lib/api/data/messageSend';
 import type { MessageFile, MessageRecipient } from '@/types/messages';
 
 type SendMessageLauncherProps = {
@@ -29,7 +29,7 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
   const status = useChatStatus(to.id);
   const { send, retry } = useSendMessage();
   const upload = useUploadMessageFile();
-  const [phase, setPhase] = useState<'compose' | 'sending' | 'sent'>('compose');
+  const [phase, setPhase] = useState<'compose' | 'sending' | 'waiting' | 'sent'>('compose');
   const [failed, setFailed] = useState(false);
   // The message that failed, kept with its id: Send again with nothing
   // changed retries it, so the server stores it once whatever happened to the
@@ -46,22 +46,40 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
   const [viewing, setViewing] = useState(false);
 
   const thread = status.data;
+  // This message in the shared outbox: there while unsent, gone once stored.
+  const outbox = useOutbox(to.id);
+  const pending = lastTry ? outbox.find((i) => i.clientId === lastTry.id) : undefined;
+  // Offline, the outbox holds it and sends it on reconnect (in order, same
+  // client_id). Waiting ends when it leaves the outbox: stored, so sent.
+  const shownPhase = phase === 'waiting' && !pending ? 'sent' : phase;
 
   const onSend = async (text: string) => {
+    const fileId = file?.id ?? null;
+    const same = !!lastTry && lastTry.text === text && lastTry.fileId === fileId;
+    // The same message, no longer in the outbox: it was stored meanwhile.
+    if (same && !pending) {
+      setPhase('sent');
+      return;
+    }
     setPhase('sending');
     setFailed(false);
-    let ok: boolean;
-    const fileId = file?.id ?? null;
-    if (lastTry && lastTry.text === text && lastTry.fileId === fileId) {
-      ok = await retry(lastTry.id);
-    } else {
-      const id = crypto.randomUUID();
-      setLastTry({ id, text, fileId });
-      ok = await send({ to: to.id, body: text, file, clientId: id });
-    }
-    if (ok) {
-      setPhase('sent');
-    } else {
+    try {
+      let ok: boolean;
+      if (same) {
+        ok = await retry(lastTry!.id);
+      } else {
+        const id = crypto.randomUUID();
+        setLastTry({ id, text, fileId });
+        ok = await send({ to: to.id, body: text, file, clientId: id });
+      }
+      if (ok) setPhase('sent');
+      // The outbox's own test for "no connection": it keeps the message waiting.
+      else if (typeof navigator !== 'undefined' && navigator.onLine === false) setPhase('waiting');
+      else {
+        setPhase('compose');
+        setFailed(true);
+      }
+    } catch {
       setPhase('compose');
       setFailed(true);
     }
@@ -85,7 +103,7 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
         to={to}
         sessionWindow={thread?.sessionWindow ?? false}
         lock={thread?.lock ?? null}
-        phase={phase}
+        phase={shownPhase}
         failed={failed}
         onSend={(text) => void onSend(text)}
         file={file}
