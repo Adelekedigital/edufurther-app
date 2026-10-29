@@ -5,6 +5,7 @@ import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { IconButton } from '@/components/atoms/IconButton/IconButton';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AttachFileButton } from '@/components/molecules/AttachFileButton/AttachFileButton';
 import { ChatLockLine } from '@/components/molecules/ChatLockLine/ChatLockLine';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -27,6 +28,11 @@ export type SendMessageProps = {
   sessionWindow: boolean;
   /** Paused or closed: the read-only line replaces the form (PRD Q7). */
   lock: ChatLock;
+  /**
+   * The chat's status: `loading` holds the form back (a lock arriving later
+   * would take the typed text with it); `refused` (403) says so up front.
+   */
+  status?: 'loading' | 'ready' | 'refused';
   /** Compose, sending, waiting (offline: sent on reconnect), or sent. */
   phase: 'compose' | 'sending' | 'waiting' | 'sent';
   /** Why the last send failed, already worded (a retry sends the same message); null if it didn't. */
@@ -56,6 +62,7 @@ export function SendMessage({
   to,
   sessionWindow,
   lock,
+  status = 'ready',
   phase,
   failure,
   onSend,
@@ -80,17 +87,28 @@ export function SendMessage({
   const attach = useRef<HTMLButtonElement>(null);
   const countId = useId();
   const errId = useId();
+  const fileErrId = useId();
   const first = to.firstName;
   const has = text.trim().length > 0 || !!file;
   const sending = phase === 'sending' || phase === 'waiting';
 
   // The chat's status can arrive after the form (a paused or closed chat):
   // the text box goes, so focus moves to the line that says why.
+  const locked = !!lock || status === 'refused';
   useEffect(() => {
-    if (!lock) return;
+    if (!locked) return;
     const at = document.activeElement;
     if (!at || at === document.body) lockLine.current?.focus({ preventScroll: true });
-  }, [lock]);
+  }, [locked]);
+  // Focus waited on the status (the box wasn't there to take it): once it is
+  // known, focus goes where the dialog's first focus would have gone.
+  const wasLoading = useRef(status === 'loading');
+  useEffect(() => {
+    if (status === 'loading' || !wasLoading.current) return;
+    wasLoading.current = false;
+    if (locked) lockLine.current?.focus({ preventScroll: true });
+    else field.current?.focus({ preventScroll: true });
+  }, [status, locked]);
 
   if (phase === 'sent') {
     return (
@@ -145,7 +163,19 @@ export function SendMessage({
           </span>
         </div>
 
-        {lock ? (
+        {status === 'loading' ? (
+          <div role="status" className={styles.loading}>
+            <span className="sr-only">{C.loading}</span>
+            <Skeleton height="120px" radius="md" />
+            <Skeleton height="18px" width="70%" />
+          </div>
+        ) : status === 'refused' ? (
+          <div ref={lockLine} tabIndex={-1} className={styles.lockFocus}>
+            <Notice tone="neutral" icon="person_off">
+              {C.cantMessage(first)}
+            </Notice>
+          </div>
+        ) : lock ? (
           <div ref={lockLine} tabIndex={-1} className={styles.lockFocus}>
             <ChatLockLine lock={lock} firstName={first} />
           </div>
@@ -170,7 +200,7 @@ export function SendMessage({
                   aria-label={C.placeholder(first)}
                   aria-invalid={showEmpty || undefined}
                   aria-describedby={
-                    [error && errId, text.length > COUNT_FROM && countId]
+                    [error && errId, fileError && fileErrId, text.length > COUNT_FROM && countId]
                       .filter(Boolean)
                       .join(' ') || undefined
                   }
@@ -253,7 +283,7 @@ export function SendMessage({
                 </span>
               )}
               {fileError && (
-                <span role="alert" className={styles.error}>
+                <span id={fileErrId} role="alert" className={styles.error}>
                   {fileError}
                 </span>
               )}

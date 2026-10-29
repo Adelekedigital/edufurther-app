@@ -21,8 +21,8 @@ type AttachFileButtonProps = {
 };
 
 /**
- * The paperclip that opens the file picker (SendMessage.dc.html and the
- * Messages composer): a 44px icon button over a hidden file input that takes
+ * The paperclip that opens the file picker (SendMessage.dc.html; the Messages
+ * composer takes it in the files build): a 44px icon button over a hidden file input that takes
  * what every upload takes (PDF or .docx). Picking the same file again fires
  * again, so a refused file can be re-picked once fixed.
  */

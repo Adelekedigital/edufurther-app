@@ -165,8 +165,9 @@ function outcomeHeading(o: BookingOutcome, b: Booking): string {
  *
  * The design pairs Join with "Send a message", and Cancel, Accept and Decline
  * sit in this footer too. "Send a message" comes as `onMessage` from the page,
- * which leaves it out on a request (B4) and for a deleted account. Accept and Decline also stay on the pending row — the owner asked for both,
- * and the row is where someone scanning a list answers from.
+ * which leaves it out on a request (B4) and for a deleted account. Accept and
+ * Decline also stay on the pending row — the owner asked for both, and the row
+ * is where someone scanning a list answers from.
  *
  * A footer with nothing in it does not render at all.
  */

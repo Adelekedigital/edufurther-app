@@ -55,6 +55,9 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
   // client_id). Waiting ends when it leaves the outbox: stored, so sent.
   // A queued send that the reconnect then refuses comes back to the form,
   // failed, so Send again retries it (same client_id), never stuck on Sending….
+  // After a send that didn't land, the outbox item's own status decides what
+  // shows (waiting offline, sending again on reconnect, failed), never a second
+  // look at the connection that may have changed meanwhile.
   let shownPhase = phase;
   let shownFailed = failed;
   if (phase === 'waiting') {
@@ -89,14 +92,11 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
         setLastTry({ id, text, fileId });
         ok = await send({ to: to.id, body: text, file, clientId: id });
       }
-      if (ok) setPhase('sent');
-      // The outbox's own test for "no connection": it keeps the message waiting.
-      else if (typeof navigator !== 'undefined' && navigator.onLine === false) setPhase('waiting');
-      else {
-        setPhase('compose');
-        setFailed(true);
-      }
+      setPhase(ok ? 'sent' : 'waiting');
     } catch {
+      // Nothing was queued for a new message: Send again must send it, not
+      // take its absence from the outbox for "stored".
+      if (!same) setLastTry(null);
       setPhase('compose');
       setFailed(true);
     }
@@ -122,6 +122,9 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
         to={to}
         sessionWindow={thread?.sessionWindow ?? false}
         lock={thread?.lock ?? null}
+        status={
+          status.isLoading ? 'loading' : status.error?.kind === 'forbidden' ? 'refused' : 'ready'
+        }
         phase={shownPhase}
         failure={failure}
         onSend={(text) => void onSend(text)}

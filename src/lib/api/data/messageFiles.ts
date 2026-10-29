@@ -18,9 +18,9 @@ import { untyped, type WireUploadedFile } from './pending';
 export function messageFileError(e: unknown): AppError {
   const s = e instanceof ApiError ? e.status : undefined;
   const type = e instanceof ApiError ? e.type : undefined;
-  if (s === 413 || type === '/problems/file-too-large')
+  if (s === 413 || type?.endsWith('/problems/file-too-large'))
     return { ...normaliseError(e), message: COMPOSER_COPY.tooBig };
-  if (type === '/problems/file-type-not-allowed')
+  if (type?.endsWith('/problems/file-type-not-allowed'))
     return { ...normaliseError(e), message: COMPOSER_COPY.wrongType };
   // The cap on unsent uploads; the intake wording (a booking) would be wrong here.
   if (s === 409) return { ...normaliseError(e), message: COMPOSER_COPY.tooManyUnsent };

@@ -209,6 +209,10 @@ export const SEND_MESSAGE_COPY = {
   failed: 'Not sent. Check your connection and try again.',
   /** 403: no booked session links the two any more; trying again can't help. */
   notConnected: (first: string) => `Not sent. You can’t message ${first} right now.`,
+  /** The chat's status read refused (403) before anything was written. */
+  cantMessage: (first: string) => `You can’t message ${first} right now.`,
+  /** The chat's status still loading: the form waits for it. */
+  loading: 'Loading your chat',
   /** Offline: the outbox holds it and sends it on reconnect. */
   waiting: COMPOSER_COPY.offline,
   waitUpload: 'Wait for your file to finish uploading.',

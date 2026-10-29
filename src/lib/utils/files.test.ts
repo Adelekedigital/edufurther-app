@@ -31,6 +31,8 @@ describe('pickedFileProblem: the obvious refusals, before anything is sent', () 
     expect(pickedFileProblem(file('a.pdf', 5 * 1024 * 1024, PDF))).toBeNull();
     expect(pickedFileProblem(file('cv.DOCX', 1000, DOCX))).toBeNull();
     expect(pickedFileProblem(file('cv.docx', 1000, ''))).toBeNull();
+    // Some Windows and Android pickers report a .docx as octet-stream: the name decides.
+    expect(pickedFileProblem(file('cv.docx', 1000, 'application/octet-stream'))).toBeNull();
   });
   it('over 5 MB is too big', () => {
     expect(pickedFileProblem(file('a.pdf', 5 * 1024 * 1024 + 1, PDF))).toBe('tooBig');
@@ -38,6 +40,7 @@ describe('pickedFileProblem: the obvious refusals, before anything is sent', () 
   it('anything else is the wrong type, whatever its size', () => {
     expect(pickedFileProblem(file('a.doc', 10, 'application/msword'))).toBe('wrongType');
     expect(pickedFileProblem(file('a.docm', 10, ''))).toBe('wrongType');
+    expect(pickedFileProblem(file('a.exe', 10, 'application/octet-stream'))).toBe('wrongType');
     expect(pickedFileProblem(file('a.png', 9e9, 'image/png'))).toBe('wrongType');
     expect(pickedFileProblem(file('fake.pdf', 10, 'text/html'))).toBe('wrongType');
   });

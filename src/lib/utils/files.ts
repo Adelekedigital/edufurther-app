@@ -27,8 +27,10 @@ const UPLOAD_TYPES = [
  */
 export function pickedFileProblem(file: File): 'tooBig' | 'wrongType' | null {
   const named = /\.(pdf|docx)$/i.test(file.name);
-  // Some systems report no type for a .docx; the name decides then.
-  const typed = !file.type || UPLOAD_TYPES.includes(file.type);
+  // Some systems report no type, or the generic octet-stream, for a .docx;
+  // the name decides then.
+  const typed =
+    !file.type || file.type === 'application/octet-stream' || UPLOAD_TYPES.includes(file.type);
   if (!named || !typed) return 'wrongType';
   if (file.size > UPLOAD_MAX_BYTES) return 'tooBig';
   return null;

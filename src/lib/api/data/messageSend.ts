@@ -182,7 +182,8 @@ export function useSendMessage() {
 
   const retry = useCallback((clientId: string): Promise<boolean> => {
     const item = items.find((i) => i.clientId === clientId);
-    if (!item) return Promise.resolve(false);
+    // Already on its way (a reconnect flush): a second post would only race it.
+    if (!item || item.status === 'sending') return Promise.resolve(false);
     const status = offline() ? 'waiting' : 'sending';
     update(clientId, { status });
     if (status === 'waiting') return Promise.resolve(false);

@@ -344,8 +344,9 @@ export function mockPeople(role: Role, q: string): WireChatPerson[] {
  */
 const startable = (id: string) => id.startsWith('mock-') || id.startsWith('m-');
 
-function startChat(role: Role, id: string): Chat {
-  const c: Chat = {
+/** A new, empty chat with a startable id; `startChat` also stores it. */
+function newChat(role: Role, id: string): Chat {
+  return {
     person: person(id, 'Booked', 'Person', role === 'mentor' ? 'mentee' : 'mentor', null),
     msgs: [],
     myLastRead: null,
@@ -353,6 +354,10 @@ function startChat(role: Role, id: string): Chat {
     next: null,
     bookedAt: new Date().toISOString(),
   };
+}
+
+function startChat(role: Role, id: string): Chat {
+  const c = newChat(role, id);
   store(role).push(c);
   return c;
 }
@@ -369,8 +374,10 @@ export function mockThread(
   if (q.before && q.after) return 'badRequest';
   // SendMessage's status read (`limit=0`) is for a booking party or a profile
   // mentor the mock never seeded: answer as a connected pair with no messages
-  // yet, as the real API does. A chat read for an unknown id stays a 404.
-  const c = find(role, id) ?? (q.limit === 0 && startable(id) ? startChat(role, id) : undefined);
+  // yet, as the real API does, without storing it: the chat only exists once
+  // a message is sent (`mockSend`), so /messages doesn't list an empty one.
+  // A chat read for an unknown id stays a 404.
+  const c = find(role, id) ?? (q.limit === 0 && startable(id) ? newChat(role, id) : undefined);
   if (!c) return 'notFound';
   let items = c.msgs;
   let hasMore = false;
@@ -456,7 +463,10 @@ export function mockUpload(name: string, size: number, type: string): WireMessag
     : lower.endsWith('.docx')
       ? docx
       : null;
-  if (!contentType || (type && type !== contentType)) return '/problems/file-type-not-allowed';
+  // A picker's generic octet-stream says nothing; the name (the mock's "bytes") decides.
+  const claimed = type === 'application/octet-stream' ? '' : type;
+  if (!contentType || (claimed && claimed !== contentType))
+    return '/problems/file-type-not-allowed';
   // The backend's cap: at most 10 uploaded and not yet sent (a 409).
   if (uploads.size >= 10) return 'tooManyUnsent';
   seq += 1;

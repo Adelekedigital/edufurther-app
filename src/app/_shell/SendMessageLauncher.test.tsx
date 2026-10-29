@@ -7,7 +7,12 @@ import { SendMessageLauncher } from './SendMessageLauncher';
 const send = vi.fn();
 const retry = vi.fn();
 const upload = vi.fn();
-let status: { data: Partial<Thread> | null; isLoading: boolean; error: null; retry: () => void };
+let status: {
+  data: Partial<Thread> | null;
+  isLoading: boolean;
+  error: { kind: string; message: string } | null;
+  retry: () => void;
+};
 
 let outboxItems: { clientId: string; status: string; problem?: string }[] = [];
 vi.mock('@/lib/api/data/messageSend', () => ({
@@ -93,7 +98,13 @@ describe('SendMessageLauncher', () => {
   });
 
   it('changed text after a failure is a new message', async () => {
-    send.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+    // A false send leaves the message in the outbox, failed (the real outbox).
+    send
+      .mockImplementationOnce(async ({ clientId }: { clientId: string }) => {
+        outboxItems = [{ clientId, status: 'failed' }];
+        return false;
+      })
+      .mockResolvedValueOnce(true);
     render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
     await userEvent.type(box(), 'Hello');
     await userEvent.click(sendBtn());
@@ -247,5 +258,50 @@ describe('SendMessageLauncher', () => {
     await userEvent.click(sendBtn());
     expect(await screen.findByRole('alert')).toHaveTextContent('Not sent.');
     expect(sendBtn()).toBeEnabled();
+  });
+
+  it('Send again after a throw sends it, never a false "Message sent"', async () => {
+    send.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce(true);
+    render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not sent.');
+    await userEvent.click(sendBtn());
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(retry).not.toHaveBeenCalled();
+    expect(await screen.findByRole('dialog', { name: 'Message sent' })).toBeVisible();
+  });
+
+  it('a send that fails while the outbox re-queues it shows Sending…, not Not sent', async () => {
+    send.mockImplementation(async ({ clientId }: { clientId: string }) => {
+      outboxItems = [{ clientId, status: 'sending' }];
+      return false;
+    });
+    render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    expect(await screen.findByRole('button', { name: 'Sending…' })).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('holds the form back while the chat status loads, then focuses the box', () => {
+    status = { ...status, data: null, isLoading: true };
+    const { rerender } = render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading your chat');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    status = { ...status, data: { lock: null, sessionWindow: false }, isLoading: false };
+    rerender(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    expect(box()).toHaveFocus();
+  });
+
+  it('a refused status read (403) says so up front, with no form', () => {
+    status = {
+      ...status,
+      data: null,
+      error: { kind: 'forbidden', message: 'x' },
+    };
+    render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    expect(screen.getByText('You can’t message Amara right now.')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 });

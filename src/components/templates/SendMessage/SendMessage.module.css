@@ -211,3 +211,10 @@ button.fileName:focus-visible {
 .lockFocus:focus {
   outline: none;
 }
+
+/* The chat's status on its way: the box and the where line, held back. */
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

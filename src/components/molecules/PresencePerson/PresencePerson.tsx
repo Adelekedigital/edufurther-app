@@ -1,5 +1,5 @@
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
-import { Icon } from '@/components/atoms/Icon/Icon';
+import { Button } from '@/components/atoms/Button/Button';
 import { cx } from '@/lib/utils/cx';
 import type { BookingParty } from '@/types/booking';
 import styles from './PresencePerson.module.css';
@@ -48,10 +48,9 @@ export function PresencePerson({ person, name, presence, tone, message }: Presen
         {presence}
       </span>
       {message && (
-        <button type="button" className={styles.message} onClick={message.onClick}>
-          <Icon name="chat" size={18} />
+        <Button variant="ghost" size="small" icon="chat" onClick={message.onClick}>
           {message.label}
-        </button>
+        </Button>
       )}
     </div>
   );
