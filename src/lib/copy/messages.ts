@@ -183,6 +183,8 @@ export const COMPOSER_COPY = {
   attachHint: 'PDF or Word (.docx) · max 5 MB',
   placeholder: (first: string) => `Message ${first}`,
   send: 'Send',
+  /** Send's description while there is nothing to send (it stays focusable). */
+  sendEmpty: 'Write a message or attach a file to send.',
   removeFile: 'Remove file',
   viewFile: (name: string) => `View ${name}`,
   uploading: 'Uploading…',

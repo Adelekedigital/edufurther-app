@@ -171,7 +171,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           glyph={22}
           aria-label={COMPOSER_COPY.send}
           className={cx(styles.send, canSend && styles.sendOn)}
-          disabled={!canSend}
+          // Off while empty, but focusable, so keyboard and screen-reader users find it and hear why.
+          unavailable={!canSend}
+          title={canSend ? undefined : COMPOSER_COPY.sendEmpty}
           onClick={trySend}
         />
       </div>

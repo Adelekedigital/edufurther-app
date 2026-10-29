@@ -100,7 +100,7 @@ describe('attaching a file in the composer', () => {
     open();
     render(<MessagesScreen />);
     const send = chat().getByRole('button', { name: 'Send' });
-    expect(send).toBeDisabled();
+    expect(send).toHaveAttribute('aria-disabled', 'true');
 
     await user.upload(picker(), pdfFile());
     expect(uploaded).toHaveBeenCalledWith(expect.objectContaining({ name: 'CV.pdf' }));
@@ -151,7 +151,7 @@ describe('attaching a file in the composer', () => {
       'That file is over 5 MB. Choose a smaller one.',
     );
     expect(chat().queryByRole('button', { name: /^View / })).toBeNull();
-    expect(chat().getByRole('button', { name: 'Send' })).toBeDisabled();
+    expect(chat().getByRole('button', { name: 'Send' })).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('Remove file drops it and puts focus on Attach; View opens it as mine', async () => {
