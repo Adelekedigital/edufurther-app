@@ -1315,6 +1315,7 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | `/read` whenever the chat is open and visible | Only when their newest message is past my read mark | No write that changes nothing | never |
 | A file in a message: the file card | Until the files build: the file's name as text | Builder C adds the card (FileViewer) | files PR |
 | The textarea grows with `field-sizing: content` | Measured with `scrollHeight` on change (44 to 140px) | `field-sizing` isn't in every browser yet | `field-sizing` ships everywhere |
+| Send is off while the box is empty (`sendBg` grey) | Drawn the same, but `aria-disabled` (IconButton `unavailable`), not `disabled`: it stays in the tab order, a press sends nothing, and its description says "Write a message or attach a file to send." | Keyboard and screen-reader users can reach Send and learn why it is off (_ours_, as the sign-in Resend link) | never |
 
 ### Messages: files in chats, 2026-10-29
 
