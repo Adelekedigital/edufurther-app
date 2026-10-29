@@ -66,6 +66,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ handle: string 
     first_name: m.first_name,
     last_name: m.last_name,
     timezone: 'America/Chicago',
+    // The mock viewer is connected to every mentor but themself (Message on the profile).
+    can_message: !own,
     headline: sparse
       ? null
       : [m.degree && m.study_course ? `${m.degree} ${m.study_course}` : null, m.institution]

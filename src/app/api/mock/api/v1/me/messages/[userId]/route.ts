@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { mockMessagesContext, mockSend, mockThread } from '@/lib/api/mock/messages';
-import { pendingOk, problem } from '@/lib/api/mock/respond';
+import { ok, okStatus, problem } from '@/lib/api/mock/respond';
 
 type Params = { params: Promise<{ userId: string }> };
 
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest, { params }: Params) {
   });
   if (res === 'notFound') return problem(404, { title: 'Not found' });
   if (res === 'badRequest') return problem(422, { title: 'Validation failed' });
-  return pendingOk('GET /api/v1/me/messages/{user_id}', res);
+  return ok('/api/v1/me/messages/{user_id}', 'get', res);
 }
 
 /** MOCK of POST /api/v1/me/messages/{user_id}: 201 new, 200 for a repeated client_id. */
@@ -32,7 +32,7 @@ export async function POST(req: Request, { params }: Params) {
   const res = mockSend(mockMessagesContext(req).role, userId, body);
   if ('status' in res)
     return problem(res.status, { title: 'Refused', ...(res.type ? { type: res.type } : {}) });
-  return pendingOk('POST /api/v1/me/messages/{user_id}', res.ok, {
-    status: res.created ? 201 : 200,
-  });
+  return res.created
+    ? okStatus('/api/v1/me/messages/{user_id}', 'post', 201, res.ok)
+    : okStatus('/api/v1/me/messages/{user_id}', 'post', 200, res.ok);
 }
