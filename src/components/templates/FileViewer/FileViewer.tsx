@@ -138,7 +138,8 @@ export function FileViewer({
   );
 
   const body = gone ? (
-    <div className={styles.centre}>
+    // An alert, as `failed` is: a removed file must not open in silence.
+    <div className={styles.centre} role="alert">
       <p className={styles.note}>{gone}</p>
     </div>
   ) : failed ? (

@@ -22,6 +22,31 @@ const setup = () => {
 };
 
 describe('RowMenu (WAI-ARIA menu button)', () => {
+  it('a ring trigger is the DS CircleIconButton, and keeps the menu-button behaviour; a divider item starts a group', async () => {
+    const user = userEvent.setup();
+    const report = vi.fn();
+    render(
+      <RowMenu
+        label="More options"
+        trigger={{ icon: 'more_vert', ring: true }}
+        items={[
+          { key: 'p', icon: 'person', label: 'View profile', onSelect: vi.fn() },
+          { key: 'r', icon: 'flag', label: 'Report', onSelect: report, divider: true },
+        ]}
+      />,
+    );
+    const trigger = screen.getByRole('button', { name: 'More options' });
+    expect(trigger.className).toMatch(/ring/);
+    expect(trigger).toHaveAttribute('aria-haspopup', 'menu');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    const item = screen.getByRole('menuitem', { name: 'Report' });
+    expect(item.className).toMatch(/divider/);
+    expect(item.className).not.toMatch(/danger/);
+    await user.click(item);
+    expect(report).toHaveBeenCalled();
+  });
+
   it('opens on the first item; arrows, Home and End move; Escape returns to the button', async () => {
     const user = userEvent.setup();
     const { trigger } = setup();

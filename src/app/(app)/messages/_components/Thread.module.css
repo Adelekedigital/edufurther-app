@@ -1,0 +1,202 @@
+/* Messages.dc.html thread: scrolls, 8px between items, 16px inside. */
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+.scroll:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+.state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+}
+.privacy {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 420px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  font-size: var(--text-caption-xs);
+  line-height: var(--lh-caption);
+  color: var(--ink-600);
+  text-align: center;
+  text-wrap: pretty;
+}
+.privacyIcon {
+  flex: none;
+}
+.earlier {
+  align-self: center;
+}
+.day {
+  align-self: center;
+  margin: var(--space-2) 0;
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+.newLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+  color: var(--blue-700);
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+}
+.newLine::before,
+.newLine::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--blue-500);
+}
+.bubble {
+  max-width: min(78%, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+}
+.theirs {
+  align-self: flex-start;
+  background: var(--white);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs);
+}
+.mine {
+  align-self: flex-end;
+  background: var(--blue-50);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg);
+}
+.outbox {
+  align-self: flex-end;
+  max-width: min(78%, 520px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+}
+.outbox .bubble {
+  max-width: 100%;
+}
+.faded {
+  opacity: 0.7;
+}
+.text {
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.meta {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-message-meta);
+  color: var(--ink-600);
+}
+.tick {
+  color: var(--ink-600);
+}
+.tickRead {
+  color: var(--blue-500);
+}
+.deleted {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-hairline) dashed var(--ink-300);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-p-xs);
+  font-style: italic;
+  color: var(--ink-600);
+}
+.deletedMine {
+  align-self: flex-end;
+}
+.deletedIcon {
+  font-style: normal;
+}
+.deletedTime {
+  font-style: normal;
+  font-size: var(--text-message-meta);
+}
+.failed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-caption-xs);
+  color: var(--red-500);
+}
+.retry {
+  min-height: var(--button-compact-h);
+  padding: 0 var(--space-1);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.retry:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+@media (max-width: 767px) {
+  .retry {
+    min-height: var(--touch-target-min);
+  }
+}
+
+/* Empty chat (Messages.dc.html `isEmptyThread`). */
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  padding: var(--space-6) 0;
+  text-align: center;
+}
+.emptyCopy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 360px;
+}
+.emptyTitle {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.emptySub {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+  text-wrap: pretty;
+}
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

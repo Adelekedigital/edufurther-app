@@ -105,14 +105,71 @@ export const CHAT_COPY = {
 export const EMPTY_CHAT_COPY = {
   title: (first: string) => `Say hello to ${first}`,
   menteeUpcoming: (first: string, when: string) =>
-    `${first} confirmed your session for ${when}. Say hi and share what you'd like to cover.`,
+    `${first} confirmed your session for ${when}. Say hi and share what you’d like to cover.`,
   mentorUpcoming: (when: string) => `They booked ${when}. Say hi and tell them how to prepare.`,
   /** Both roles with nothing upcoming (Q5 default for mentors). */
   noneUpcoming: 'Pick up where your last session left off.',
 } as const;
 
 export const STARTERS_COPY = {
-  lead: 'Not sure what to say? Tap one to start.',
+  lead: 'Not sure what to say? Pick one, then make it yours.',
+} as const;
+
+/**
+ * The starter chips (PRD "Starters", Q6), filled from data; a chip whose data
+ * is missing isn't shown (startersFor). `{First}` is the other person.
+ */
+export const STARTERS = {
+  intro: {
+    label: 'Introduce yourself',
+    text: (first: string, me: string, degree: string, field: string, term: string | null) =>
+      `Hi ${first}, I’m ${me}. I’m applying for ${degree} in ${field}${term ? ` for ${term}` : ''}. Looking forward to our session!`,
+  },
+  cover: {
+    label: 'Share what to cover',
+    text: (first: string, topic: string) =>
+      `Hi ${first}, in our session I’d love to focus on ${topic}.`,
+  },
+  askPrepare: {
+    label: 'Ask what to prepare',
+    text: (first: string) =>
+      `Hi ${first}, is there anything I should prepare or send before our session?`,
+  },
+  school: {
+    label: 'Ask about your school',
+    text: (first: string, school: string) =>
+      `Hi ${first}, what was applying to ${school} like for you?`,
+  },
+  welcome: {
+    label: 'Welcome them',
+    text: (first: string) =>
+      `Hi ${first}, thanks for booking! What would you like to focus on in our session?`,
+  },
+  documents: {
+    label: 'Ask for documents',
+    text: (first: string) => `Hi ${first}, could you share your CV or draft here before we meet?`,
+  },
+  howToPrepare: {
+    label: 'Share how to prepare',
+    text: (first: string) =>
+      `Hi ${first}, before we meet, write down your top two questions so we can start there.`,
+  },
+  /**
+   * "Share what to cover": each onboarding help area (catalog slug) in the
+   * mentee's own voice, as it reads after "focus on". Generic per area, never
+   * narrower or wider than its catalog name: the mentee adds specifics by editing
+   * (owner, 2026-10-28). An area missing here falls back to its catalog name.
+   */
+  topics: {
+    'program-selection': 'choosing a program',
+    'test-preparation': 'preparing for my tests',
+    'document-preparation': 'my application documents',
+    'school-selection': 'choosing a school',
+    'scholarships-financial-aid': 'finding scholarships',
+    'interview-preparation': 'preparing for my interviews',
+  } as Record<string, string>,
+  /** The degree goal as it reads after "applying for" (DEGREE_OPTIONS values). */
+  degree: { bachelors: 'a bachelor’s', masters: 'a master’s', mba: 'an MBA', doctorate: 'a PhD' },
 } as const;
 
 export const COMPOSER_COPY = {

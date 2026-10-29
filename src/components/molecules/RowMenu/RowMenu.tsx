@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import styles from './RowMenu.module.css';
 
@@ -29,6 +30,8 @@ export type RowMenuItem = {
   disabled?: boolean;
   /** Why it's off: its title, so hover shows it and a screen reader hears it. */
   reason?: string;
+  /** A hairline above it, starting a new group (Messages' "Report"). */
+  divider?: boolean;
 };
 
 type RowMenuProps = {
@@ -57,6 +60,11 @@ type RowMenuProps = {
      * focus, unlike a swapped-out control, and doesn't open (review of PR 125).
      */
     disabled?: boolean;
+    /**
+     * The DS CircleIconButton (`IconButton variant="ring"`): Messages' "More
+     * options". It draws itself: `size`, `className` and `text` are ignored.
+     */
+    ring?: boolean;
   };
   /**
    * A menu drawn its own way (the photo menu, ProfilePhoto.dc.html): classes
@@ -178,30 +186,39 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
     }
   };
 
+  const setButton = (el: HTMLButtonElement | null) => {
+    button.current = el;
+    if (triggerRef) triggerRef.current = el;
+  };
+  const triggerProps = {
+    'aria-label': label,
+    'aria-haspopup': 'menu' as const,
+    'aria-disabled': inert || undefined,
+    'aria-expanded': open,
+    'aria-controls': open ? menuId : undefined,
+    onClick: () => {
+      if (inert) return;
+      if (open) close(false);
+      else openAt(0);
+    },
+    onKeyDown: onButtonKey,
+  };
+
   return (
     <span className={styles.wrap}>
-      <button
-        ref={(el) => {
-          button.current = el;
-          if (triggerRef) triggerRef.current = el;
-        }}
-        type="button"
-        className={trigger?.className ?? styles.trigger}
-        aria-label={label}
-        aria-haspopup="menu"
-        aria-disabled={inert || undefined}
-        aria-expanded={open}
-        aria-controls={open ? menuId : undefined}
-        onClick={() => {
-          if (inert) return;
-          if (open) close(false);
-          else openAt(0);
-        }}
-        onKeyDown={onButtonKey}
-      >
-        <Icon name={trigger?.icon ?? 'more_horiz'} size={trigger?.size ?? 20} />
-        {trigger?.text}
-      </button>
+      {trigger?.ring ? (
+        <IconButton ref={setButton} variant="ring" icon={trigger.icon} {...triggerProps} />
+      ) : (
+        <button
+          ref={setButton}
+          type="button"
+          className={trigger?.className ?? styles.trigger}
+          {...triggerProps}
+        >
+          <Icon name={trigger?.icon ?? 'more_horiz'} size={trigger?.size ?? 20} />
+          {trigger?.text}
+        </button>
+      )}
       {open && (
         <div
           ref={menu}
@@ -225,6 +242,7 @@ export function RowMenu({ label, items, triggerRef, trigger, menu: drawn }: RowM
                 styles.item,
                 drawn?.itemClassName,
                 it.danger && styles.danger,
+                it.divider && styles.divider,
                 it.danger && drawn?.dangerClassName,
                 it.disabled && styles.disabled,
               )}
