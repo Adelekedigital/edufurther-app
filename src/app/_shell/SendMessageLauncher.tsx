@@ -73,6 +73,9 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
       ? C.notConnected(to.firstName)
       : C.failed;
 
+  // A 403, or a 404 ("not connected", as for the chat itself): said up front.
+  const refused = status.error?.kind === 'forbidden' || status.error?.kind === 'notFound';
+
   const onSend = async (text: string) => {
     const fileId = file?.id ?? null;
     const same = !!lastTry && lastTry.text === text && lastTry.fileId === fileId;
@@ -122,9 +125,7 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
         to={to}
         sessionWindow={thread?.sessionWindow ?? false}
         lock={thread?.lock ?? null}
-        status={
-          status.isLoading ? 'loading' : status.error?.kind === 'forbidden' ? 'refused' : 'ready'
-        }
+        status={status.isLoading ? 'loading' : refused ? 'refused' : 'ready'}
         phase={shownPhase}
         failure={failure}
         onSend={(text) => void onSend(text)}
