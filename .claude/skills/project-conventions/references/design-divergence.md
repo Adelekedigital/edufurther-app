@@ -1298,3 +1298,19 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | A send refused as not connected (`403`), not drawn | "Not sent. You can’t message {First} right now." instead of the connection line | Trying again can't help, so the connection advice would mislead | never |
 | The status read failing (not drawn) | The form shows with the ordinary line; a locked chat refuses the send (`409`) and the line then shows | A failed side read must not block writing | never |
 
+
+### Messages — chat thread and composer (PRD Messages PR 4b), 2026-10-27
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Header menu: a hand-drawn menu (radius-md, 44px items, 20px icons) | The shared `RowMenu` (radius-lg, 40px items on desktop / 44 on phones, 18px icons) with a `ring` trigger and a `divider` item | One menu across the app | never |
+| Report divider is always drawn | A divider only when an item sits above Report (a mentor on desktop has Report alone) | A lone line at the menu's top reads as a mistake | never |
+| "Sending" shows one tick at once | No tick until the server stores it (Sent), "Waiting to send" offline, "Not sent." on failure | A tick claims a save that hasn't happened | never |
+| Starter "{start term}" reads "next year" | " for {target_start_term}" when the goal has one, else nothing | Filled from data (founder, Oct 26) | design redraws the templates |
+| Starter topic: "choosing between my top three schools" | The first help area in the mentee's own words (`STARTERS.topics`: "choosing a school", "my application documents", …) | Q6: filled from data; onboarding's `reason` lines are written from the mentor's side | the founder signs off other wordings |
+| Starter topic for a help area with no phrase in `STARTERS.topics` (the list grows) | The area's catalog `display_name` in lower case ("Visa guidance" reads "visa guidance"); "Share what to cover" never hides for it. Phrases stay generic per area, never narrower or wider than its name; "interview-preparation" reads "preparing for my interviews" | Owner, 2026-10-28: the mentee adds specifics by editing | never |
+| Starters lead line: "Not sure what to say? Tap one to start." | "Not sure what to say? Pick one, then make it yours." (small copy change, ux-writer) | Owner, 2026-10-28: invite the person to edit the starter; "Pick" reads for touch and mouse | design updates the line |
+| Not drawn: the thread as a landmark | The thread is a focusable `role="log"` named "Chat with {Name}" | Keyboard scrolling, and new messages are read out politely | never |
+| `/read` whenever the chat is open and visible | Only when their newest message is past my read mark | No write that changes nothing | never |
+| A file in a message: the file card | Until the files build: the file's name as text | Builder C adds the card (FileViewer) | files PR |
+| The textarea grows with `field-sizing: content` | Measured with `scrollHeight` on change (44 to 140px) | `field-sizing` isn't in every browser yet | `field-sizing` ships everywhere |

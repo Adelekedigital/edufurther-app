@@ -4,8 +4,9 @@
  * (`vi.mock(path, async () => (await import(harness)).mocks.x())`), as the
  * Bookings harness does. `resetHarness` in `beforeEach` puts it all back.
  */
+import type { components } from '@/lib/api/generated/schema';
 import { accessFor } from '@/lib/utils/access';
-import type { ChatPerson, ChatRow } from '@/types/messages';
+import type { ChatPerson, ChatRow, OutboxItem, Thread } from '@/types/messages';
 import type { Remote, Viewer } from '@/types/mentor';
 
 export const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
@@ -132,7 +133,38 @@ export const h = {
   chatsActive: false,
   /** `useChats` has a read in flight. */
   refreshing: false,
+  /** The open chat's read (`useThread`), by person id; absent: still loading. */
+  threads: {} as Record<string, Remote<Thread>>,
+  /** `useThread` was asked for these ids. */
+  threadAsked: [] as (string | null)[],
+  outbox: [] as OutboxItem[],
+  /** The mentee's goal as `useMenteeGoals` reads it. */
+  goal: null as null | {
+    degree_goal: { code: string } | null;
+    degree_goal_raw: string | null;
+    field_of_study: string | null;
+    target_start_term: string | null;
+    needs: Pick<components['schemas']['LookupRef'], 'code' | 'display_name'>[];
+  },
 };
+
+export const sent = vi.fn();
+export const retried = vi.fn();
+export const markRead = vi.fn();
+export const loadOlder = vi.fn();
+
+export const thread = (over: Partial<Thread> = {}): Thread => ({
+  person: person(),
+  lock: null,
+  nextBooking: null,
+  sessionWindow: false,
+  items: [],
+  theirLastReadAt: null,
+  myLastReadAt: null,
+  hasMore: false,
+  cursor: null,
+  ...over,
+});
 
 export function inbox(rows: ChatRow[]) {
   return remote({ rows, totalUnread: rows.reduce((n, r) => n + r.unread, 0) });
@@ -149,6 +181,15 @@ export function resetHarness() {
   h.saving = false;
   h.chatsActive = false;
   h.refreshing = false;
+  h.threads = {};
+  h.threadAsked = [];
+  h.outbox = [];
+  h.goal = null;
+  sent.mockReset();
+  retried.mockReset();
+  retried.mockResolvedValue(true);
+  markRead.mockReset();
+  loadOlder.mockReset();
   replace.mockReset();
   push.mockReset();
   saveSettings.mockReset();
@@ -193,6 +234,11 @@ export const mocks = {
       return h.people;
     },
     useMessageSettings: () => h.settings,
+    useThread: (id: string | null) => {
+      h.threadAsked.push(id);
+      return { ...(h.threads[id ?? ''] ?? remote<Thread>(null, { isLoading: true })), loadOlder };
+    },
+    useMarkRead: () => ({ mutate: markRead }),
     useSaveMessageSettings: () => ({
       mutate: (next: { unreadEmails: boolean }) => {
         saveSettings(next);
@@ -204,6 +250,30 @@ export const mocks = {
       get isPending() {
         return h.saving;
       },
+    }),
+  }),
+};
+
+/** The chat's other reads and writes: the outbox, the viewer's goal and /me. */
+export const chatMocks = {
+  messageSend: () => ({
+    useOutbox: (to: string | null) => h.outbox.filter((o) => o.to === to),
+    useSendMessage: () => ({ send: sent, retry: retried }),
+  }),
+  goals: () => ({
+    useMenteeGoals: (id: string | null) => ({
+      read: id ? { goal: h.goal, originCode: null, currentCode: null } : null,
+      status: 'ready',
+      retry: vi.fn(),
+      retrying: false,
+    }),
+  }),
+  settings: () => ({
+    useMenteeProfile: () => ({
+      profile: { name: 'Amara Okafor', email: 'amara@example.com' },
+      status: 'ready',
+      retry: vi.fn(),
+      retrying: false,
     }),
   }),
 };

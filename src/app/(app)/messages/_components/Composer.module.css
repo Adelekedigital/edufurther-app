@@ -1,0 +1,129 @@
+/* Messages.dc.html footer: 12px between parts, a hairline above. */
+.composer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: var(--border-hairline) solid var(--ink-200);
+}
+.offline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+}
+.notice {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+}
+.box {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-1);
+  border: var(--border-hairline) solid var(--ink-300);
+  border-radius: var(--radius-lg);
+}
+.box:focus-within {
+  border-color: var(--border-focus);
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--touch-target-min);
+  max-height: 140px;
+  box-sizing: border-box;
+  padding: 11px var(--space-1);
+  border: none;
+  outline: none;
+  resize: none;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  /* 22px lines in 11px padding: one line fills the 44px floor exactly. */
+  line-height: calc(var(--touch-target-min) / 2);
+  color: var(--ink-900);
+}
+.input::placeholder {
+  color: var(--ink-500);
+}
+/* Send: 44px, grey and off while empty, blue with text (design `sendBg`). */
+.box .send,
+.box .send:disabled,
+.box .send:disabled:hover {
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  border-radius: var(--radius-md);
+  background: var(--ink-100);
+  color: var(--ink-400);
+}
+.box .sendOn,
+.box .sendOn:hover {
+  background: var(--blue-500);
+  color: var(--white);
+}
+@media (max-width: 767px) {
+  /* 16px so iOS doesn't zoom into the box (design PWA pass). */
+  .input {
+    font-size: var(--text-p-md);
+  }
+}
+
+/* Starters (`startersChips`): the lead line, then chips that wrap; one row that scrolls on phones. */
+.starters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.startersLead {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+.chips {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chip {
+  flex: none;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-full);
+  border: var(--border-hairline) solid var(--ink-300);
+  background: var(--white);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  color: var(--ink-900);
+  white-space: nowrap;
+}
+.chip:hover {
+  border-color: var(--blue-500);
+  color: var(--blue-700);
+}
+.chip:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+@media (max-width: 767px) {
+  .chips {
+    flex-wrap: nowrap;
+  }
+  /* Drawn at 36px; an invisible area reaches 44px (CTA rule 5). */
+  .chip {
+    position: relative;
+  }
+  .chip::after {
+    content: '';
+    position: absolute;
+    inset: calc((100% - var(--touch-target-min)) / 2) 0;
+  }
+}

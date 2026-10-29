@@ -13,10 +13,11 @@ import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { lockedPageGate, memberGate, MESSAGES_GATE } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { ChatList, ChatListSkeleton } from './ChatList';
-import { ChatGone, ChatPane, ChatPaneSkeleton } from './ChatPane';
+import { ChatGone, ChatPaneSkeleton } from './ChatPane';
 import { noRowsKind, rowView, visibleRows, type ChatFilter } from './chatRows';
 import { MessageEmailsDialog } from './MessageEmailsDialog';
 import { NewMessageDialog } from './NewMessageDialog';
+import { OpenChat } from './OpenChat';
 import { useMessagesUrl } from './useMessagesUrl';
 import styles from './MessagesScreen.module.css';
 
@@ -51,6 +52,9 @@ export function MessagesScreen() {
   };
   const [dialog, setDialog] = useState<'new' | 'settings' | null>(null);
   const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
+  const say = (text: string) => setToast({ text, id: Date.now() });
+  // Each chat keeps its unsent text while you switch chats (PRD "Drafts").
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   // `?settings=1` (the emails' "Turn off these emails") opens it too; closing drops the param.
   // After hydration: the dialog renders into <body>, which the server render has none of.
@@ -124,7 +128,7 @@ export function MessagesScreen() {
         <MessageEmailsDialog
           onDone={(text) => {
             closeSettings();
-            if (text) setToast({ text, id: Date.now() });
+            if (text) say(text);
           }}
         />
       )}
@@ -201,14 +205,20 @@ export function MessagesScreen() {
       <div className={styles.chat}>
         {waitingFor ? (
           <ChatPaneSkeleton />
-        ) : openRow ? (
-          <ChatPane
+        ) : openRow && member ? (
+          <OpenChat
             key={openRow.person.id}
-            person={openRow.person}
-            nextBooking={openRow.nextBooking}
-            viewerIsMentee={mentee}
+            row={openRow}
+            member={member}
             timeZone={timeZone}
+            phone={isPhone}
+            // Only on screen once the client knows the width: a phone showing the
+            // list must never mark the top chat read.
+            shown={hydrated && (!isPhone || chatOpen)}
+            draft={drafts[openRow.person.id] ?? ''}
+            onDraft={(v) => setDrafts((d) => ({ ...d, [openRow.person.id]: v }))}
             onBack={back}
+            onToast={say}
           />
         ) : (
           url.withId && <ChatGone onBack={back} />

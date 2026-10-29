@@ -128,6 +128,7 @@ describe('FileViewer: every state', () => {
   it('a missing file (404) says so, with no retry and no Download', () => {
     view({ url: null, error: failure('notFound') });
     expect(screen.getByText('This file isn’t there anymore.')).toBeVisible();
+    expect(screen.getByRole('alert')).toHaveTextContent('This file isn’t there anymore.');
     expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Download' })).not.toBeInTheDocument();
   });
