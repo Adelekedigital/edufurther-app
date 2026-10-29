@@ -27,6 +27,14 @@
 .trigger:hover {
   text-decoration: underline;
 }
+/* Ours: on a tinted ground (onTint) --ink-500 and --blue-500 are about 4.3:1 at
+   12px; --ink-700 (9.3:1) and --blue-700 (7.3:1 on green-50) keep AA. */
+.onTint {
+  color: var(--text-secondary);
+}
+.onTint .trigger {
+  color: var(--blue-700);
+}
 .trigger:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);

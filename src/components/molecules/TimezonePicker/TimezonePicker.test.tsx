@@ -22,6 +22,17 @@ describe('TimezonePicker', () => {
     expect(change).toHaveTextContent(/^Change$/);
   });
 
+  it('darkens its line only when asked to sit on a tinted ground (onTint)', () => {
+    const { unmount } = render(
+      <TimezonePicker value="Africa/Lagos" onChange={vi.fn()} deviceZone="Africa/Lagos" />,
+    );
+    const wrapOf = () => screen.getByText('Lagos (WAT)').parentElement!;
+    expect(wrapOf()).not.toHaveClass('onTint');
+    unmount();
+    picker({ onTint: true });
+    expect(wrapOf()).toHaveClass('wrap', 'onTint');
+  });
+
   it('opens on common zones, with the device shortcut when it differs', async () => {
     picker({ deviceZone: 'Europe/London' });
     await userEvent.click(screen.getByRole('button', { name: /Change time zone/ }));

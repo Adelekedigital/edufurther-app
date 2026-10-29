@@ -201,3 +201,18 @@ describe('Join as a link to the entry route (issue 207)', () => {
     expect(onFollow).toHaveBeenCalledTimes(2);
   });
 });
+
+describe('the time zone line', () => {
+  const zone = { value: 'Africa/Lagos', onChange: vi.fn(), deviceZone: 'Africa/Lagos' };
+  const wrap = () => screen.getByText('Lagos (WAT)').parentElement!;
+
+  it('darkens on a tinted ground, where the DS grey is under 4.5:1', () => {
+    render(<SessionLobby {...base} zone={zone} />);
+    expect(wrap()).toHaveClass('onTint');
+  });
+
+  it('keeps the DS grey on the white ground', () => {
+    render(<SessionLobby {...base} ground="white" zone={zone} />);
+    expect(wrap()).not.toHaveClass('onTint');
+  });
+});

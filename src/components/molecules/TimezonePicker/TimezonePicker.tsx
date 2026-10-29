@@ -21,6 +21,7 @@ import {
   zoneRows,
   type ZoneRow,
 } from '@/lib/utils/timezones';
+import { cx } from '@/lib/utils/cx';
 import { useFocusTrap } from '@/lib/utils/useFocusTrap';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { loadZoneData, type ZoneData } from '@/lib/vendor/tz/zoneData';
@@ -43,6 +44,12 @@ type TimezonePickerProps = {
   /** The device's zone, offered as a one-tap shortcut when it differs. */
   deviceZone: string;
   prefix?: string;
+  /**
+   * On a tinted ground (the Session Join lobby's blue, green, red or grey): the
+   * DS ink-500 line and blue-500 Change are about 4.3:1 there, under AA, so they
+   * darken to ink-700 and blue-700.
+   */
+  onTint?: boolean;
 };
 
 /**
@@ -55,6 +62,7 @@ export function TimezonePicker({
   onChange,
   deviceZone,
   prefix = 'Times shown in',
+  onTint = false,
 }: TimezonePickerProps) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
@@ -126,7 +134,7 @@ export function TimezonePicker({
   return (
     <span
       ref={wrapRef}
-      className={styles.wrap}
+      className={cx(styles.wrap, onTint && styles.onTint)}
       onKeyDown={(e) => {
         if (e.key === 'Escape' && open) {
           e.stopPropagation();

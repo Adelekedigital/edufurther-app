@@ -138,7 +138,7 @@ export function SessionLobby({
           {title}
         </h1>
         <span className={styles.meta}>{meta}</span>
-        {zone && <TimezonePicker {...zone} />}
+        {zone && <TimezonePicker {...zone} onTint={ground !== 'white'} />}
       </div>
 
       {clock && <SessionClock {...clock} />}
