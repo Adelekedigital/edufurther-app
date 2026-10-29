@@ -143,7 +143,7 @@ export const h = {
     degree_goal_raw: string | null;
     field_of_study: string | null;
     target_start_term: string | null;
-    needs: { code: string }[];
+    needs: { code: string; display_name: string }[];
   },
 };
 
