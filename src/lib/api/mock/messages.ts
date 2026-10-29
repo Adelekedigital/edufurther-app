@@ -77,12 +77,24 @@ function msg(
   };
 }
 
-const pdf = (name: string, size: number): WireMessageFile => ({
-  id: `f-${name}`,
-  filename: name,
-  size,
-  content_type: 'application/pdf',
-});
+/** Every file the mock knows (seeded or uploaded), for `GET /message-files/{id}`. */
+const known = new Map<string, WireMessageFile>();
+
+const pdf = (name: string, size: number): WireMessageFile => {
+  const f: WireMessageFile = {
+    id: `f-${name}`,
+    filename: name,
+    size,
+    content_type: 'application/pdf',
+  };
+  known.set(f.id, f);
+  return f;
+};
+
+/** A message file's type, or null for one the mock never saw (a 404). */
+export function mockMessageFileType(id: string): string | null {
+  return known.get(id)?.content_type ?? null;
+}
 
 function seedMentee(): Chat[] {
   const D = 24 * 60 * MIN;
@@ -325,6 +337,31 @@ export function mockPeople(role: Role, q: string): WireChatPerson[] {
     .filter((p) => !n || `${p.first_name} ${p.last_name}`.toLowerCase().includes(n));
 }
 
+/**
+ * The ids the mock may start a chat with: the sessions mock's booking parties
+ * (`mock-…`) and the mentor fixtures (`m-…`). Anyone else stays unconnected,
+ * so the inbox's gone (404) and not-connected (403) states still show.
+ */
+const startable = (id: string) => id.startsWith('mock-') || id.startsWith('m-');
+
+/** A new, empty chat with a startable id; `startChat` also stores it. */
+function newChat(role: Role, id: string): Chat {
+  return {
+    person: person(id, 'Booked', 'Person', role === 'mentor' ? 'mentee' : 'mentor', null),
+    msgs: [],
+    myLastRead: null,
+    theirLastRead: null,
+    next: null,
+    bookedAt: new Date().toISOString(),
+  };
+}
+
+function startChat(role: Role, id: string): Chat {
+  const c = newChat(role, id);
+  store(role).push(c);
+  return c;
+}
+
 function find(role: Role, id: string): Chat | undefined {
   return store(role).find((c) => c.person.id === id);
 }
@@ -335,7 +372,12 @@ export function mockThread(
   q: { before: string | null; after: string | null; limit: number },
 ): WireThread | 'notFound' | 'badRequest' {
   if (q.before && q.after) return 'badRequest';
-  const c = find(role, id);
+  // SendMessage's status read (`limit=0`) is for a booking party or a profile
+  // mentor the mock never seeded: answer as a connected pair with no messages
+  // yet, as the real API does, without storing it: the chat only exists once
+  // a message is sent (`mockSend`), so /messages doesn't list an empty one.
+  // A chat read for an unknown id stays a 404.
+  const c = find(role, id) ?? (q.limit === 0 && startable(id) ? newChat(role, id) : undefined);
   if (!c) return 'notFound';
   let items = c.msgs;
   let hasMore = false;
@@ -373,7 +415,10 @@ export function mockSend(
   id: string,
   body: { client_id?: string; body?: string; file_id?: string },
 ): MockSend {
-  const c = find(role, id);
+  // The real API creates the conversation on the first send. The mock's
+  // booking parties and profile mentors aren't seeded chats, so a Message
+  // button there starts one, as for a connected pair (`startable`).
+  const c = find(role, id) ?? (startable(id) ? startChat(role, id) : undefined);
   if (!c) return { status: 403, type: '/problems/not-connected' };
   if (c.person.deleted) return { status: 409, type: '/problems/recipient-closed' };
   if (c.person.paused) return { status: 409, type: '/problems/recipient-paused' };
@@ -418,9 +463,15 @@ export function mockUpload(name: string, size: number, type: string): WireMessag
     : lower.endsWith('.docx')
       ? docx
       : null;
-  if (!contentType || (type && type !== contentType)) return '/problems/file-type-not-allowed';
+  // A picker's generic octet-stream says nothing; the name (the mock's "bytes") decides.
+  const claimed = type === 'application/octet-stream' ? '' : type;
+  if (!contentType || (claimed && claimed !== contentType))
+    return '/problems/file-type-not-allowed';
+  // The backend's cap: at most 10 uploaded and not yet sent (a 409).
+  if (uploads.size >= 10) return 'tooManyUnsent';
   seq += 1;
   const f = { id: `f-up-${seq}`, filename: name, size, content_type: contentType };
   uploads.set(f.id, f);
+  known.set(f.id, f);
   return f;
 }

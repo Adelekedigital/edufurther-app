@@ -1,0 +1,220 @@
+/* SendMessage.dc.html, values from the markup. */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+
+.sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+}
+
+.compose {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.box {
+  display: flex;
+  flex-direction: column;
+  border: var(--border-hairline) solid var(--ink-300);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  cursor: text;
+}
+.box:hover {
+  border-color: var(--ink-400);
+}
+.box:focus-within {
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring-color);
+}
+.invalid,
+.invalid:hover,
+.invalid:focus-within {
+  border-color: var(--red-500);
+}
+
+.field {
+  min-height: 120px;
+  max-height: 240px;
+  resize: none;
+  box-sizing: border-box;
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border: none;
+  outline: none;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+  field-sizing: content;
+}
+
+.fileRow {
+  padding: 0 var(--space-3) var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  cursor: default;
+}
+
+.pdf {
+  flex: none;
+  color: var(--red-500);
+}
+/* Ours: the design draws only the PDF chip; a Word file's glyph is neutral. */
+.doc {
+  color: var(--ink-600);
+}
+
+.fileName {
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+button.fileName {
+  cursor: pointer;
+}
+button.fileName:hover {
+  text-decoration: underline;
+}
+button.fileName:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.fileSize {
+  flex: none;
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+}
+
+.remove {
+  color: var(--ink-500);
+}
+.remove:hover {
+  background: none;
+  color: var(--red-500);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-2) 0 var(--space-1);
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+
+.hint,
+.count {
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+}
+.hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.count {
+  flex: none;
+}
+
+.error {
+  font-size: var(--text-caption-xs);
+  color: var(--red-500);
+}
+
+.notice {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+}
+
+.where {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+  text-wrap: pretty;
+}
+.forum {
+  flex: none;
+  color: var(--ink-500);
+}
+.soon {
+  flex: none;
+  color: var(--blue-500);
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 767px) {
+  .field {
+    min-height: 96px;
+  }
+}
+
+/* Focus lands here when a locked chat's line replaces the form. */
+.lockFocus:focus {
+  outline: none;
+}
+
+/* The chat's status on its way: the box and the where line, held back. */
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}

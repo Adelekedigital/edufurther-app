@@ -8,7 +8,8 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { useMarkRead, useThread } from '@/lib/api/data/messages';
 import { useOutbox, useSendMessage } from '@/lib/api/data/messageSend';
-import { CHAT_COPY, EMPTY_CHAT_COPY, LOCK_COPY, STARTERS_COPY } from '@/lib/copy/messages';
+import { CHAT_COPY, EMPTY_CHAT_COPY, STARTERS_COPY } from '@/lib/copy/messages';
+import { ChatLockLine } from '@/components/molecules/ChatLockLine/ChatLockLine';
 import { formatNextAvailable } from '@/lib/utils/format';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { ChatPerson, NextBooking } from '@/types/messages';
@@ -257,16 +258,7 @@ export function ChatView({
       </div>
       {lock ? (
         <div className={composerStyles.composer}>
-          <div role="status" className={composerStyles.lock}>
-            <Icon
-              name={lock === 'paused' ? 'pause_circle' : 'person_off'}
-              size={20}
-              className={composerStyles.lockIcon}
-            />
-            <span className={composerStyles.lockText}>
-              {lock === 'paused' ? LOCK_COPY.paused(first) : LOCK_COPY.closed(first)}
-            </span>
-          </div>
+          <ChatLockLine lock={lock} firstName={first} />
         </div>
       ) : (
         t && (
