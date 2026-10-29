@@ -294,6 +294,13 @@ describe('SendMessageLauncher', () => {
     expect(box()).toHaveFocus();
   });
 
+  it('a status read of 404 ("not connected") says so up front too', () => {
+    status = { ...status, data: null, error: { kind: 'notFound', message: 'x' } };
+    render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    expect(screen.getByText('You can’t message Amara right now.')).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
   it('a refused status read (403) says so up front, with no form', () => {
     status = {
       ...status,
