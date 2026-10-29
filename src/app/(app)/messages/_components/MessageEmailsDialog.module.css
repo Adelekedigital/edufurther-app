@@ -1,0 +1,52 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+/* Messages.dc.html `modalPrefs`: the words beside the switch, 16px apart. */
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+.copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.hint {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+  text-wrap: pretty;
+}
+.switch {
+  margin-top: 2px;
+}
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-wrap: pretty;
+}
+.noteIcon {
+  flex: none;
+  color: var(--ink-500);
+}
+.error {
+  margin: 0;
+  font-size: var(--text-caption-xs);
+  color: var(--red-500);
+}

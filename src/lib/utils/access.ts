@@ -9,7 +9,7 @@ import type { MentorStage, Viewer } from '@/types/mentor';
  * lives in one place.
  */
 
-/** Every nav item by its label. Messages isn't built, but its rule is kept for when it ships. */
+/** Every nav item by its label. */
 export type NavKey =
   | 'Home'
   | 'Explore'
@@ -183,6 +183,7 @@ export const SHARED_ROUTES: readonly string[] = [
   '/explore',
   '/mentors',
   '/bookings',
+  '/messages',
   '/settings',
   '/sessions',
   '/onboarding',

@@ -172,8 +172,13 @@ function useMe(): { me: string | null } {
   return { me: session.status === 'unknown' ? null : sessionKey(session) };
 }
 
+export type ChatsRemote = Remote<Chats> & {
+  /** A read is in flight (the 30 s poll, or a retry): a missing chat may be on its way. */
+  refreshing: boolean;
+};
+
 /** GET /me/messages: every connected person, refreshed every 30 s while shown. */
-export function useChats(active = true): Remote<Chats> {
+export function useChats(active = true): ChatsRemote {
   const { me } = useMe();
   const enabled = active && !!me;
   const query = useQuery({
@@ -187,7 +192,7 @@ export function useChats(active = true): Remote<Chats> {
     refetchInterval: LIST_POLL_MS,
     retry: retryOnce,
   });
-  return remote(query, () => void query.refetch(), enabled);
+  return { ...remote(query, () => void query.refetch(), enabled), refreshing: query.isFetching };
 }
 
 /**

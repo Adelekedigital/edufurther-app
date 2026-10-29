@@ -1,0 +1,170 @@
+/* Messages.dc.html `showList`: 340px (at least 260) beside the chat, a hairline on its right. */
+.list {
+  flex: 0 1 340px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  border-right: var(--border-hairline) solid var(--border-subtle);
+}
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-4) var(--space-3);
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: var(--ls-h6);
+  font-weight: var(--weight-semibold);
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rows {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-2) var(--space-3);
+}
+
+/* A chat row: 72px or more, the open one tinted on desktop. */
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 72px;
+  padding: var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+.row:hover {
+  background: var(--ink-50);
+}
+.row:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+.current,
+.current:hover {
+  background: var(--blue-50);
+}
+.rowBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rowTop {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.rowName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.rowTime {
+  flex: none;
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+  font-weight: var(--weight-regular);
+}
+.rowSub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+}
+.rowLine {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.rowPreview {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+  font-weight: var(--weight-regular);
+}
+/* Unread: the name bold, the time blue-700 semibold, the preview ink-900 semibold. */
+.unread .rowName {
+  font-weight: var(--weight-bold);
+}
+.unread .rowTime {
+  color: var(--blue-700);
+  font-weight: var(--weight-semibold);
+}
+.unread .rowPreview {
+  color: var(--ink-900);
+  font-weight: var(--weight-semibold);
+}
+.chip {
+  align-self: flex-start;
+  display: flex;
+  margin-top: var(--space-1);
+}
+.noRows {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8) var(--space-4);
+}
+
+.skeletonPills {
+  display: flex;
+  gap: var(--space-2);
+}
+.skeletonRow {
+  display: flex;
+  gap: var(--space-3);
+  min-height: 72px;
+  padding: var(--space-3);
+}
+.skeletonLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Phones: the list fills the screen, no hairline; the tint never shows (no chat beside it). */
+@media (max-width: 767px) {
+  .list {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-right: none;
+  }
+  .current {
+    background: transparent;
+  }
+}
