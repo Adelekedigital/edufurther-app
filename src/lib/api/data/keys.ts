@@ -1,3 +1,5 @@
+import type { PrivateFileKind } from '@/types/files';
+
 /** Every query key, in one module (data-layer skill). */
 export type MentorFilters = { q: string; offerings: string[] };
 
@@ -157,8 +159,13 @@ export const keys = {
      */
     reviewable: (who: string) => ['bookings', 'reviewable', who] as const,
   },
-  /** One intake file's bytes, held only while its viewer is open (gcTime 0). */
-  intakeFile: (id: string, who: string) => ['intakeFile', id, who] as const,
+  /**
+   * One private file's bytes (an intake answer or a message file), held only
+   * while its viewer is open (gcTime 0). The kind is in the key: the two are
+   * different endpoints and their ids are not one namespace.
+   */
+  privateFile: (kind: PrivateFileKind, id: string, who: string) =>
+    ['privateFile', kind, id, who] as const,
   /** The owner's mentor performance stats (GET /me/mentor-stats[/monthly]). */
   mentorStats: {
     monthly: (userId: string, months: number) =>
