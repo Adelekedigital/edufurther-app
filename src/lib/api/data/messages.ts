@@ -119,6 +119,7 @@ export function toThread(w: WireThread): Thread {
     theirLastReadAt: w.their_last_read_at,
     myLastReadAt: w.my_last_read_at,
     hasMore: w.has_more,
+    cursor: w.items.at(-1)?.id ?? null,
   };
 }
 
@@ -126,12 +127,26 @@ export function toThread(w: WireThread): Thread {
  * New messages after the cache's last one, appended without repeats. The
  * header fields (lock, next booking, read state) always come from the newer read.
  */
+/**
+ * Messages in the order they were stored. A poll can bring one of theirs that
+ * was stored before my own, already settled into the cache after a send, so
+ * new ones go where their time puts them, not after everything. Stable: equal
+ * times keep the order they came in.
+ */
+export function inTimeOrder(items: Message[]): Message[] {
+  return items
+    .map((m, i) => ({ m, i, t: Date.parse(m.sentAt) }))
+    .sort((a, b) => a.t - b.t || a.i - b.i)
+    .map((x) => x.m);
+}
+
 export function mergeNewer(prev: Thread, next: Thread): Thread {
   const seen = new Set(prev.items.map((m) => m.id));
   return {
     ...next,
-    items: [...prev.items, ...next.items.filter((m) => !seen.has(m.id))],
+    items: inTimeOrder([...prev.items, ...next.items.filter((m) => !seen.has(m.id))]),
     hasMore: prev.hasMore,
+    cursor: next.cursor ?? prev.cursor,
   };
 }
 
@@ -142,6 +157,7 @@ export function mergeOlder(prev: Thread, older: Thread): Thread {
     ...prev,
     items: [...older.items.filter((m) => !seen.has(m.id)), ...prev.items],
     hasMore: older.hasMore,
+    cursor: prev.cursor ?? older.cursor,
   };
 }
 
@@ -250,9 +266,11 @@ export function useThread(withId: string | null): ThreadRemote {
     enabled,
     queryFn: async ({ signal }) => {
       const prev = qc.getQueryData<Thread>(key);
-      const lastId = prev?.items.at(-1)?.id;
-      if (!prev || !lastId) return readThread(withId!, {}, signal);
-      return mergeNewer(prev, await readThread(withId!, { after: lastId }, signal));
+      if (!prev || !prev.cursor) return readThread(withId!, {}, signal);
+      const newer = await readThread(withId!, { after: prev.cursor }, signal);
+      // Merged into the cache as it is now, not as it was before the request:
+      // older pages loaded (or my sends settled) meanwhile must survive.
+      return mergeNewer(qc.getQueryData<Thread>(key) ?? prev, newer);
     },
     refetchInterval: THREAD_POLL_MS,
     refetchOnWindowFocus: 'always',
@@ -304,8 +322,15 @@ export function useMarkRead() {
       });
       if (!response.ok) throw apiError(response.status, error, response);
     },
-    onSuccess: () => {
+    onSuccess: (_d, { withId, upTo }) => {
       if (!me) return;
+      // The chat's own read mark moves too, so reopening it shows nothing as new.
+      qc.setQueryData<Thread>(keys.messages.thread(me, withId), (cur) => {
+        const at = cur?.items.find((m) => m.id === upTo)?.sentAt;
+        if (!cur || !at) return cur;
+        const moved = !cur.myLastReadAt || Date.parse(at) > Date.parse(cur.myLastReadAt);
+        return moved ? { ...cur, myLastReadAt: at } : cur;
+      });
       void qc.invalidateQueries({ queryKey: keys.messages.unread(me) });
       void qc.invalidateQueries({ queryKey: keys.messages.chats(me) });
     },

@@ -242,8 +242,9 @@ export const keys = {
     creditRules: (me: string) => ['admin', me, 'credit-rules'] as const,
   },
   /**
-   * Messages (PRD Messages), keyed by the signed-in user (`me`). A send or a
-   * read invalidates `messages.all(me)`, so the list, the badge and the chat agree.
+   * Messages (PRD Messages), keyed by the signed-in user (`me`). A read moves
+   * the thread's read mark and invalidates `chats` and `unread`; a send patches
+   * the thread with the stored message and invalidates `chats`.
    */
   messages: {
     all: (me: string) => ['messages', me] as const,

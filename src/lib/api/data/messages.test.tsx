@@ -3,7 +3,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Thread } from '@/types/messages';
 import { resetOutbox, useOutbox, useSendMessage } from './messageSend';
-import { mergeNewer, mergeOlder, toChatPerson, toChats, toMessage, useThread } from './messages';
+import {
+  mergeNewer,
+  mergeOlder,
+  toChatPerson,
+  toChats,
+  toMessage,
+  useMarkRead,
+  useThread,
+} from './messages';
 import type { WireChatPerson, WireMessage, WireThread } from './pending';
 
 const GET = vi.fn();
@@ -61,6 +69,18 @@ const wireThread = (items: WireMessage[], over: Partial<WireThread> = {}): WireT
 });
 
 const res = (status: number) => new Response(null, { status });
+
+const toThreadLike = (): Thread => ({
+  person: toChatPerson(person()),
+  lock: null,
+  nextBooking: null,
+  sessionWindow: false,
+  items: [],
+  theirLastReadAt: null,
+  myLastReadAt: null,
+  hasMore: false,
+  cursor: null,
+});
 
 let qc: QueryClient;
 function wrapper({ children }: { children: ReactNode }) {
@@ -127,6 +147,7 @@ describe('merging reads', () => {
     theirLastReadAt: null,
     myLastReadAt: null,
     hasMore,
+    cursor: ids.at(-1) ?? null,
   });
 
   it('newer appends without repeats and takes the newer header', () => {
@@ -145,6 +166,20 @@ describe('merging reads', () => {
   });
 });
 
+describe('useMarkRead', () => {
+  it('moves the chat’s own read mark forward, so reopening it shows nothing as new', async () => {
+    const key = ['messages', 'me-1', 'thread', 'u-1'];
+    qc.setQueryData<Thread>(key, {
+      ...toThreadLike(),
+      items: [toMessage(wireMsg('m1', { sent_at: '2026-10-27T10:00:00Z' }))],
+    });
+    POST.mockResolvedValueOnce({ response: res(204) });
+    const { result } = renderHook(() => useMarkRead(), { wrapper });
+    await act(() => result.current.mutateAsync({ withId: 'u-1', upTo: 'm1' }));
+    expect(qc.getQueryData<Thread>(key)?.myLastReadAt).toBe('2026-10-27T10:00:00Z');
+  });
+});
+
 describe('useThread', () => {
   it('reads the newest page, then only what is after the last message', async () => {
     GET.mockResolvedValueOnce({ data: wireThread([wireMsg('m1')]), response: res(200) });
@@ -158,6 +193,55 @@ describe('useThread', () => {
     await act(() => result.current.retry());
     await waitFor(() => expect(result.current.data?.items).toHaveLength(2));
     expect(GET.mock.calls[1]![1]).toMatchObject({ params: { query: { after: 'm1' } } });
+  });
+
+  it('polls after the last message a server read returned, not my own patched in after a send', async () => {
+    GET.mockResolvedValueOnce({ data: wireThread([wireMsg('m1')]), response: res(200) });
+    const { result } = renderHook(() => useThread('u-1'), { wrapper });
+    await waitFor(() => expect(result.current.data?.items).toHaveLength(1));
+    // My send settles into the cache (as the outbox does) before the next poll;
+    // their m2 was stored before it and hasn't been fetched yet.
+    qc.setQueryData<Thread>(['messages', 'me-1', 'thread', 'u-1'], (cur) =>
+      cur
+        ? {
+            ...cur,
+            items: [
+              ...cur.items,
+              toMessage(wireMsg('m3', { mine: true, sent_at: '2026-10-27T09:02:00Z' })),
+            ],
+          }
+        : cur,
+    );
+    GET.mockResolvedValueOnce({
+      data: wireThread([
+        wireMsg('m2', { sent_at: '2026-10-27T09:01:00Z' }),
+        wireMsg('m3', { mine: true, sent_at: '2026-10-27T09:02:00Z' }),
+      ]),
+      response: res(200),
+    });
+    await act(() => result.current.retry());
+    await waitFor(() => expect(result.current.data?.items.map((m) => m.id)).toContain('m2'));
+    expect(GET.mock.calls[1]![1]).toMatchObject({ params: { query: { after: 'm1' } } });
+    // In the order stored: their m2 before my m3, though m3 reached the cache first.
+    expect(result.current.data?.items.map((m) => m.id)).toEqual(['m1', 'm2', 'm3']);
+  });
+
+  it('older messages loaded while a poll is in flight survive the poll', async () => {
+    GET.mockResolvedValueOnce({
+      data: wireThread([wireMsg('m5')], { has_more: true }),
+      response: res(200),
+    });
+    const { result } = renderHook(() => useThread('u-1'), { wrapper });
+    await waitFor(() => expect(result.current.data?.items).toHaveLength(1));
+    let answerPoll!: (v: unknown) => void;
+    GET.mockReturnValueOnce(new Promise((r) => (answerPoll = r)));
+    act(() => void result.current.retry());
+    GET.mockResolvedValueOnce({ data: wireThread([wireMsg('m4')]), response: res(200) });
+    await act(() => result.current.loadOlder());
+    answerPoll({ data: wireThread([wireMsg('m6')]), response: res(200) });
+    await waitFor(() =>
+      expect(result.current.data?.items.map((m) => m.id)).toEqual(['m4', 'm5', 'm6']),
+    );
   });
 
   it('a 404 is an error the page can show (not connected)', async () => {

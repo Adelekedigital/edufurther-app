@@ -1275,7 +1275,7 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | --- | --- | --- | --- |
 | Bookings details panel, a later upcoming session: "Send a message" primary, full width, with "Join opens 10 min before" | Outlined, beside Cancel session, as for the next session | Join shows on every upcoming session here (owner, 26 Oct: never greyed out), so a second fill would compete with it (CTA hierarchy) | never |
 | Row button "Message" (Later rows, mentor History rows) | "Message", named "Message {First}" | The visible label as drawn; the name tells one row's button from the next in a list | never |
-| Session Join: the chat icon button on the other person's card | Not built: the people cards aren't part of the built page | The lobby's "Message {First}" is the way in | the people cards are built |
+| Session Join: the chat icon button on the other person's card | Not built | The people-card grid sits in `classicTop` (not `lobbyHero`), so it is not in the saved layout (`lobbySplit`); the lobby's "Message {First}" is the requirement (owner, 2026-10-28) | the saved layout changes |
 | Mentor Profile "Message" 40px (`btn`) | 48px (Large) beside Book | Book is Large here (CTA hierarchy); the two sit in one row | never |
 | SendMessage attach glyph ink-300 when off | The IconButton atom's off colour (ink-500) | The atom's recorded rule for every off icon control | never |
 | A sent message's failure: "Not sent." and a retry | Send again with nothing changed retries the same message (same `client_id`); changed text is a new message, and the failed one stays in the chat as "Not sent" | The server stores a repeated `client_id` once, so a lost response never sends twice | never |

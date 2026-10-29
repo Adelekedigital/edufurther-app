@@ -74,6 +74,21 @@
   background: var(--surface-card);
   color: var(--ink-400);
 }
+/* Messages.dc.html filters: 32px, round, ink-300 hairline, semibold 12px;
+   the chosen one is ink-900 with white text. */
+.dark {
+  height: var(--button-compact-h);
+  border-radius: var(--radius-full);
+  border-color: var(--ink-300);
+  color: var(--ink-700);
+  font-weight: var(--weight-semibold);
+}
+.dark.on,
+.dark.on:hover {
+  border-color: var(--ink-900);
+  background: var(--ink-900);
+  color: var(--white);
+}
 @media (max-width: 767px) {
   .chip {
     min-height: var(--touch-target-min);
@@ -90,5 +105,16 @@
     content: '';
     position: absolute;
     inset: -2px 0;
+  }
+  /* Drawn at 32px on phones; an invisible area reaches 44px (CTA rule 5). */
+  .dark {
+    position: relative;
+    min-height: 0;
+    padding: 0 var(--space-3);
+  }
+  .dark::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
   }
 }

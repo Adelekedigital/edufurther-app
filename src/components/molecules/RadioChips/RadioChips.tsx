@@ -16,6 +16,10 @@ type RadioChipsProps = {
   /** `data-ff` key on the tab stop, so a required-field error focuses a choice. */
   focusKey?: string;
   invalid?: boolean;
+  /** The chip look: DS choice chips (default) or the dark filter pills (Messages). */
+  look?: 'choice' | 'dark';
+  /** A choice the form needs (default). A filter isn't one. */
+  required?: boolean;
 };
 
 const NEXT: Record<string, number> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
@@ -33,6 +37,8 @@ export function RadioChips({
   describedBy,
   focusKey,
   invalid,
+  look = 'choice',
+  required = true,
 }: RadioChipsProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const chosen = options.findIndex((o) => o.value === value);
@@ -58,7 +64,7 @@ export function RadioChips({
       aria-label={label}
       aria-describedby={describedBy}
       aria-invalid={invalid || undefined}
-      aria-required="true"
+      aria-required={required || undefined}
       className={styles.row}
     >
       {options.map((o, i) => (
@@ -68,7 +74,7 @@ export function RadioChips({
             refs.current[i] = el;
           }}
           role="radio"
-          look="choice"
+          look={look}
           pressed={o.value === value}
           tabIndex={i === stop ? 0 : -1}
           data-ff={i === stop ? focusKey : undefined}

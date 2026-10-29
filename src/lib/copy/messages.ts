@@ -29,6 +29,17 @@ export const LIST_COPY = {
   loadError: 'We couldn’t load your messages.',
   loadErrorBody: 'Check your connection and try again.',
   tryAgain: 'Try again',
+  /** The busy list, for screen readers. */
+  loading: 'Loading your messages',
+  /** The nav badge's meaning, read after "Messages". */
+  navCount: (n: number) => (n === 1 ? '1 unread message' : `${n} unread messages`),
+} as const;
+
+/** What `/messages` says to a guest (ours: a guest never reaches it from the nav). */
+export const MESSAGES_GATE_COPY = {
+  guestTitle: 'Log in to see your messages',
+  guestDescription:
+    'Chat with the mentors and mentees you’ve booked with, before and after your sessions.',
 } as const;
 
 export const EMPTY_INBOX_COPY = {
@@ -56,6 +67,11 @@ export const NEW_MESSAGE_COPY = {
   searchLabel: 'Search people',
   searchPlaceholder: 'Search by name',
   noMatch: 'No one matches that name.',
+  /** No connections at all (no search typed). */
+  noPeople: (mentee: boolean) =>
+    mentee
+      ? 'You can message a mentor once they confirm your booking.'
+      : 'You can message a mentee once you confirm their booking.',
   bookFirst: 'Want to talk to someone new? Book a session first.',
   findMentor: 'Find a mentor',
 } as const;
@@ -110,6 +126,8 @@ export const COMPOSER_COPY = {
   removeFile: 'Remove file',
   tooBig: 'That file is over 5 MB. Choose a smaller one.',
   wrongType: 'Use a PDF or Word (.docx) file.',
+  /** 409: the unsent-upload cap (10). Removing a file here frees nothing; the server sweeps unsent ones after 24 hours. */
+  tooManyUnsent: 'You’ve attached too many files you haven’t sent. You can attach more tomorrow.',
 } as const;
 
 /** SendMessage (SendMessage.dc.html): the pop-up behind every Message button. */
@@ -168,6 +186,8 @@ export const SETTINGS_COPY = {
   on: 'Unread message emails are on.',
   off: 'Unread message emails are off.',
   saveError: 'We couldn’t save that. Try again.',
+  loadError: 'We couldn’t load your email settings. Check your connection and try again.',
+  tryAgain: 'Try again',
 } as const;
 
 /** Report (v1): a prefilled email to support, in the support-email pattern. */

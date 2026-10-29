@@ -131,6 +131,8 @@
 
   /* Wizard step number (Session Types.dc.html literal 11px; no DS step). */
   --step-dot-text: 11px;
+  /* Messages' small print: a row's unread count, a bubble's time (Messages.dc.html literal 11px; no DS step). */
+  --text-message-meta: 11px;
 
   /* Calendar booked-day fill (MonthPicker.dc.html `AMBER`, a literal with no
      DS token; bookedStyle=soft, the saved default). */

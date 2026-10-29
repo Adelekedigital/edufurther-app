@@ -353,7 +353,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // Book as a mentee sees it: offered (maybe blocked, with why), or drawn but off in preview.
   const showBook = asMentee && !notTaking;
   // "Message" beside Book: a signed-in mentee connected to this mentor only
-  // (the profile read's `can_message`, PENDING BACKEND; absent hides it).
+  // (the profile read's `can_message`).
   const canMessage = MESSAGES_LIVE && !!p?.canMessage && !!member && !member.isMentor && !isOwner;
   const [messaging, setMessaging] = useState<MessageRecipient | null>(null);
   // In preview Book reads as a mentee's, never the owner's own block (review of PR 106).

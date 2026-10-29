@@ -20,7 +20,11 @@ export type Illustration =
   /** Mentor Dashboard: the performance chart with no sessions yet. */
   | 'dashboard'
   /** Settings › Expertise: no scholarships or awards yet (Mentor Settings.dc.html). */
-  | 'favorites';
+  | 'favorites'
+  /** Messages: no chats yet (the empty inbox). */
+  | 'chat'
+  /** Messages: the Unread filter with nothing unread. */
+  | 'inbox';
 
 /** Art: an illustration, or a glyph in a ringed disc (the setup lock's `lock`). */
 type Art = { illustration: Illustration; icon?: never } | { icon: IconName; illustration?: never };

@@ -39,7 +39,7 @@ describe('AppShell navigation', () => {
     expect(hrefs(1)).toEqual(['/home', '/explore', '/bookings']);
   });
 
-  it('Messages is not shown anywhere until it is built (product, 2026-09-30)', async () => {
+  it('Messages is hidden with the flag off (MESSAGES_LIVE)', async () => {
     for (const role of ['mentee', 'mentor'] as const) {
       const { unmount } = render(
         <AppShell active="Home" nav={role} chrome="member" offline={false}>
@@ -47,9 +47,57 @@ describe('AppShell navigation', () => {
         </AppShell>,
       );
       await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
-      expect(screen.queryByRole('link', { name: 'Messages' })).toBeNull();
+      expect(screen.queryByRole('link', { name: /^Messages/ })).toBeNull();
       unmount();
     }
+  });
+
+  it('with the flag on, Messages sits after Bookings on the rail and in the More sheet, with its count', async () => {
+    const counts = { Messages: { count: 3, label: '3 unread messages' } };
+    const rails = {
+      mentee: [['/home', '/explore', '/bookings', '/messages'], ['/settings']],
+      mentor: [
+        ['/dashboard', '/bookings', '/messages', '/calendar'],
+        ['/session-types', '/integrations', '/settings'],
+      ],
+    };
+    for (const role of ['mentee', 'mentor'] as const) {
+      const { unmount } = render(
+        <AppShell
+          active="Home"
+          nav={role}
+          messages
+          chrome="member"
+          account={{ avatar: AV, items: [], counts }}
+          offline={false}
+        >
+          <p>Page</p>
+        </AppShell>,
+      );
+      expect(groups(0)).toEqual(rails[role]);
+      expect(nav(0).getByRole('link', { name: 'Messages, 3 unread messages' })).toHaveAttribute(
+        'href',
+        '/messages',
+      );
+      // Not a phone tab (AppShell.dc.html `pick`): the tabs stay as they were.
+      expect(hrefs(1)).not.toContain('/messages');
+      await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
+      expect(
+        within(document.getElementById('more-sheet')!).getByRole('link', {
+          name: 'Messages, 3 unread messages',
+        }),
+      ).toHaveAttribute('href', '/messages');
+      unmount();
+    }
+  });
+
+  it('the admin nav never has Messages', () => {
+    render(
+      <AppShell active="Mentors" nav="admin" messages chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(hrefs(0)).not.toContain('/messages');
   });
 
   it('members get the brand mark at the top of the rail; guests keep the header logo', () => {

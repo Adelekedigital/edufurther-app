@@ -22,7 +22,6 @@ import { toSessionType } from './booking';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import type { PendingProfileFields } from './pending';
 import { deriveLabel } from './labels';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { nextAvailable } from './mentors';
@@ -169,8 +168,8 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     names: { first, last },
     // Backend #301: approved, listed and bookable now. Missing reads as true.
     takingBookings: r.taking_bookings ?? true,
-    // PENDING BACKEND (pending.ts): absent reads as false, so no Message button.
-    canMessage: (r as PendingProfileFields).can_message === true,
+    // True only for a signed-in mentee connected to this mentor (Messages M0).
+    canMessage: r.can_message,
     headline: r.headline?.trim() || null,
     about: r.about_me?.trim() || null,
     // Still the untouched AI draft (owner-only on the read, backend #8).

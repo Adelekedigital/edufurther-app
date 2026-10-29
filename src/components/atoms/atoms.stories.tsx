@@ -142,6 +142,9 @@ export const TagsAndIcons: Story = {
         <Icon name="star" filled label="Rated" />
         <Icon name="bolt" />
         <IconButton icon="close" aria-label="Clear search" />
+        {/* DS CircleIconButton (Messages list header). */}
+        <IconButton variant="ring" icon="edit_square" aria-label="New message" />
+        <IconButton variant="ring" icon="settings" aria-label="Message settings" disabled />
       </div>
       <div style={row}>
         <Tag tone="success">Completed</Tag>
@@ -221,6 +224,11 @@ export const Badges: Story = {
       <Badge color="warning" type="accent" size="sm">
         Needs attention
       </Badge>
+      {/* Messages rows: the next-session chip and the unread count. */}
+      <Badge type="accent" size="sm" shape="pill" icon="event">
+        Next: Tomorrow, 4:00 pm
+      </Badge>
+      <Badge shape="count">2</Badge>
     </div>
   ),
 };

@@ -36,12 +36,15 @@
     "date_range",
     "delete",
     "description",
+    "done",
+    "done_all",
     "download",
     "drag_indicator",
     "edit",
     "edit_calendar",
     "edit_document",
     "edit_note",
+    "edit_square",
     "error",
     "event",
     "event_available",
@@ -90,6 +93,7 @@
     "menu_book",
     "monitoring",
     "more_horiz",
+    "more_vert",
     "my_location",
     "new_releases",
     "no_photography",
@@ -119,6 +123,7 @@
     "school",
     "search",
     "sell",
+    "send",
     "sentiment_dissatisfied",
     "sentiment_neutral",
     "sentiment_satisfied",
@@ -159,5 +164,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "723e0370ad1f2a5916bfa4cd63059b1209dddabf99a309a5dc8abe1c2aaebc10"
+  "sha256": "58733aae9b649f845deddf1161380746461209c7b7723548b8eab17905c451d0"
 }

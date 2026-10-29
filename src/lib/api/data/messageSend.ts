@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { Message, MessageFile, OutboxItem, Thread } from '@/types/messages';
 import { apiError, ApiError } from './errors';
 import { keys } from './keys';
-import { toMessage } from './messages';
+import { inTimeOrder, toMessage } from './messages';
 import { untyped, type WireMessage } from './pending';
 import { sessionKey, useSession } from './session';
 
@@ -47,7 +47,9 @@ function settle(withId: string, msg: Message) {
   if (!ctx) return;
   const { qc, me } = ctx;
   qc.setQueryData<Thread>(keys.messages.thread(me, withId), (cur) =>
-    !cur || cur.items.some((m) => m.id === msg.id) ? cur : { ...cur, items: [...cur.items, msg] },
+    !cur || cur.items.some((m) => m.id === msg.id)
+      ? cur
+      : { ...cur, items: inTimeOrder([...cur.items, msg]) },
   );
   void qc.invalidateQueries({ queryKey: keys.messages.chats(me) });
 }
@@ -121,11 +123,13 @@ const EMPTY: OutboxItem[] = [];
 
 /** The unsent messages to one person, oldest first. */
 export function useOutbox(to: string | null): OutboxItem[] {
-  return useSyncExternalStore(
+  const all = useSyncExternalStore(
     subscribe,
     () => (to ? items : EMPTY),
     () => EMPTY,
-  ).filter((i) => i.to === to);
+  );
+  // The same array until the outbox changes, so a thread built from it isn't rebuilt per keystroke.
+  return useMemo(() => all.filter((i) => i.to === to), [all, to]);
 }
 
 export type SendInput = {

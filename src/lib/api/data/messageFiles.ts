@@ -12,8 +12,8 @@ import { untyped, type WireUploadedFile } from './pending';
 import { fileBody } from './upload';
 
 /**
- * The two refusals Messages words itself (PRD: "Errors map to the two designed
- * messages"); everything else is the intake upload's wording (rate limit,
+ * The refusals Messages words itself (PRD: "Errors map to the two designed
+ * messages", plus the 409 cap on unsent uploads); everything else is the intake upload's wording (rate limit,
  * signed out, server down), so both uploads say those the same way.
  */
 export function messageFileError(e: unknown): AppError {
@@ -23,6 +23,8 @@ export function messageFileError(e: unknown): AppError {
     return { ...normaliseError(e), message: COMPOSER_COPY.tooBig };
   if (type === '/problems/file-type-not-allowed')
     return { ...normaliseError(e), message: COMPOSER_COPY.wrongType };
+  // The cap on unsent uploads; the intake wording (a booking) would be wrong here.
+  if (s === 409) return { ...normaliseError(e), message: COMPOSER_COPY.tooManyUnsent };
   return uploadError(e);
 }
 
