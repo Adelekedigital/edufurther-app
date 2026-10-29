@@ -406,15 +406,15 @@ export function mockSettings(role: Role, next?: boolean): { unread_emails: boole
   return { unread_emails: settings.get(role) ?? true };
 }
 
-/** Uploaded and not yet sent (PR 2's `/me/message-files`). */
+/** Uploaded and not yet sent (`/me/message-files`). */
 const uploads = new Map<string, WireMessageFile>();
 
 export function mockUpload(name: string, size: number, type: string): WireMessageFile | string {
   if (size > 5 * 1024 * 1024) return '/problems/file-too-large';
-  const docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const docx = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' as const;
   const lower = name.toLowerCase();
   const contentType = lower.endsWith('.pdf')
-    ? 'application/pdf'
+    ? ('application/pdf' as const)
     : lower.endsWith('.docx')
       ? docx
       : null;
