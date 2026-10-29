@@ -1,0 +1,84 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+/* Messages.dc.html `modalNew` list: 2px apart, up to 320px, then it scrolls. */
+.people {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+.person:hover {
+  background: var(--ink-50);
+}
+.person:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.name {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+}
+.line {
+  margin: 0;
+  padding: var(--space-4) var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.skeleton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2);
+}
+.foot {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.link {
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.link:hover {
+  color: var(--blue-700);
+}
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}

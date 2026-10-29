@@ -9,6 +9,7 @@ import {
   toChatPerson,
   toChats,
   toMessage,
+  useChats,
   useMarkRead,
   useThread,
 } from './messages';
@@ -177,6 +178,18 @@ describe('useMarkRead', () => {
     const { result } = renderHook(() => useMarkRead(), { wrapper });
     await act(() => result.current.mutateAsync({ withId: 'u-1', upTo: 'm1' }));
     expect(qc.getQueryData<Thread>(key)?.myLastReadAt).toBe('2026-10-27T10:00:00Z');
+  });
+});
+
+describe('useChats', () => {
+  it('says while a read is in flight, so a chat just connected can be waited for', async () => {
+    let answer!: (v: unknown) => void;
+    GET.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const { result } = renderHook(() => useChats(true), { wrapper });
+    await waitFor(() => expect(result.current.refreshing).toBe(true));
+    answer({ data: { data: [], next_cursor: null, total_unread: 0 }, response: res(200) });
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+    expect(result.current.data).toEqual({ rows: [], totalUnread: 0 });
   });
 });
 
