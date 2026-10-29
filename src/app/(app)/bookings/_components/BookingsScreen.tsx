@@ -32,6 +32,11 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
 import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
+import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
+import { MESSAGES_LIVE } from '@/lib/config/messages';
+import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
+import { bookingRecipient } from '@/lib/utils/messageRecipient';
+import type { MessageRecipient } from '@/types/messages';
 import { useReviewAndRebook } from '@/app/_sessions/useReviewAndRebook';
 import {
   bookingHeading,
@@ -120,6 +125,27 @@ export function BookingsScreen() {
   const answers = useBookingAnswers(open?.id ?? null, userId ?? '', !!open);
   const [expandedFor, setExpandedFor] = useState<string | null>(null);
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
+  // SendMessage's recipient while it is open (PRD Messages, Message buttons).
+  const [messaging, setMessaging] = useState<MessageRecipient | null>(null);
+  /** The Message button's handler, or nothing where there is no one to write to. */
+  const messageFor = (b: Booking) => {
+    const to = MESSAGES_LIVE ? bookingRecipient(b) : null;
+    return to ? () => setMessaging(to) : undefined;
+  };
+  /** A row's "Message" (outlined, small), named for the person in a list of them. */
+  const messageButton = (b: Booking) => {
+    const open = messageFor(b);
+    return open ? (
+      <Button
+        variant="secondary-outlined"
+        size="small"
+        aria-label={MESSAGE_BUTTON_COPY.to(b.other.firstName)}
+        onClick={open}
+      >
+        {MESSAGE_BUTTON_COPY.short}
+      </Button>
+    ) : null;
+  };
   const showPanel = ready && (!!open || !!selected);
   const openId = open?.id ?? null;
   const answersExpanded = !!openId && expandedFor === openId;
@@ -421,6 +447,7 @@ export function BookingsScreen() {
                   timeZone={timeZone}
                   isMentor={isMentor}
                   heading={later.length ? 'Later' : undefined}
+                  actionsFor={messageButton}
                   now={now}
                   total={later.length}
                   onOpenDetails={toggle}
@@ -439,6 +466,7 @@ export function BookingsScreen() {
                       joinHref={joinHref(next.id)}
                       onOpenDetails={() => toggle(next.id)}
                       detailsOpen={selected === next.id}
+                      onMessage={messageFor(next)}
                       now={now}
                     />
                   )}
@@ -508,6 +536,9 @@ export function BookingsScreen() {
                   loadMoreError={history.loadMoreError}
                   isLoadingMore={history.isLoadingMore}
                   actionsFor={(b) => {
+                    // A mentor's past sessions: "Message". A mentee's carry
+                    // Leave a review or Book again instead (PRD Q13).
+                    if (b.side === 'mentor') return messageButton(b);
                     // Only a completed session this viewer booked. While it's
                     // unknown whether it can be reviewed, offer neither (see
                     // `reviewUnknown`).
@@ -601,10 +632,14 @@ export function BookingsScreen() {
                   select(null);
                 }}
                 joinHref={open ? joinHref(open.id) : undefined}
+                // Every side, History included: a mentee's History row has no
+                // Message (Q13), but the panel keeps "Send a message" (PRD Q13).
+                onMessage={open ? messageFor(open) : undefined}
                 now={now}
               />
             )}
           </div>
+          <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />
           {viewing && (
             <FileViewerLauncher
               file={intakeViewedFile(viewing)}

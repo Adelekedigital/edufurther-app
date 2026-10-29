@@ -1,8 +1,9 @@
 import { DetailsButton } from '@/components/molecules/DetailsButton/DetailsButton';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
-import { ButtonLink } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
 import {
   bookingHeading,
@@ -35,6 +36,8 @@ type NextSessionCardProps = {
    * claim to be closed while the panel it opened is on screen.
    */
   detailsOpen?: boolean;
+  /** Opens SendMessage for the other person (Messages live; never for a deleted account). */
+  onMessage?: () => void;
   now?: Date;
 };
 
@@ -51,8 +54,8 @@ function dateLine(isoInstant: string, timeZone: string): string {
 /**
  * The next session, as its own card above the list (Bookings.dc.html hero).
  *
- * Only Join lives here. The design pairs it with "Send a message", which has no
- * endpoint and is left out rather than shown dead (backend reply §5).
+ * Join, and beside it "Send a message" (outlined) when the page passes
+ * `onMessage` (Messages live; never for a deleted account).
  */
 export function NextSessionCard({
   booking: b,
@@ -62,6 +65,7 @@ export function NextSessionCard({
   detailsOpen,
   onOpenAnswers,
   answersControls,
+  onMessage,
   now = new Date(),
 }: NextSessionCardProps) {
   const when = nextSessionWhen(b, now);
@@ -163,11 +167,18 @@ export function NextSessionCard({
 
       {/* Never greyed out (owner, 26 Oct): the session page shows the
           countdown before the door opens. */}
-      {isUpcoming(b, now) && (
+      {(isUpcoming(b, now) || onMessage) && (
         <div className={styles.actions}>
-          <ButtonLink href={joinHref} prefetch={false} variant="primary" size="medium">
-            Join session
-          </ButtonLink>
+          {isUpcoming(b, now) && (
+            <ButtonLink href={joinHref} prefetch={false} variant="primary" size="medium">
+              Join session
+            </ButtonLink>
+          )}
+          {onMessage && (
+            <Button variant="secondary-outlined" size="medium" onClick={onMessage}>
+              {MESSAGE_BUTTON_COPY.send}
+            </Button>
+          )}
         </div>
       )}
     </section>

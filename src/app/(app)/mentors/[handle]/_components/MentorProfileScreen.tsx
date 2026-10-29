@@ -15,6 +15,11 @@ import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSess
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
 import { ProfileStrengthCard } from '@/components/organisms/ProfileStrengthCard/ProfileStrengthCard';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
+import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
+import { MESSAGES_LIVE } from '@/lib/config/messages';
+import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
+import { recipientFromMentor } from '@/lib/utils/messageRecipient';
+import type { MessageRecipient } from '@/types/messages';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
 import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
@@ -347,6 +352,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const canStartBooking = mayBook && hasSessions && !bookBlocked;
   // Book as a mentee sees it: offered (maybe blocked, with why), or drawn but off in preview.
   const showBook = asMentee && !notTaking;
+  // "Message" beside Book: a signed-in mentee connected to this mentor only
+  // (the profile read's `can_message`).
+  const canMessage = MESSAGES_LIVE && !!p?.canMessage && !!member && !member.isMentor && !isOwner;
+  const [messaging, setMessaging] = useState<MessageRecipient | null>(null);
   // In preview Book reads as a mentee's, never the owner's own block (review of PR 106).
   const shownBlock = viewing ? null : bookBlocked;
   // The toggle waits while an inline edit is open, so a draft is never dropped
@@ -522,6 +531,15 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       onClick={owner.openIntro}
                     >
                       Edit profile
+                    </Button>
+                  )}
+                  {canMessage && p && (
+                    <Button
+                      variant="secondary-outlined"
+                      size="large"
+                      onClick={() => setMessaging(recipientFromMentor(p.mentor))}
+                    >
+                      {MESSAGE_BUTTON_COPY.short}
                     </Button>
                   )}
                   {showBook && hasSessions && (
@@ -783,6 +801,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           }
         />
       )}
+
+      <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />
 
       <BookingLauncher
         // A fresh flow per mentor, and after a close the page forced.

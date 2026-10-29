@@ -168,6 +168,8 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
     names: { first, last },
     // Backend #301: approved, listed and bookable now. Missing reads as true.
     takingBookings: r.taking_bookings ?? true,
+    // True only for a signed-in mentee connected to this mentor (Messages M0).
+    canMessage: r.can_message,
     headline: r.headline?.trim() || null,
     about: r.about_me?.trim() || null,
     // Still the untouched AI draft (owner-only on the read, backend #8).
