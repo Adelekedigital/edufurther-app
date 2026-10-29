@@ -9,8 +9,8 @@ export type MenteeStarterData = {
   degree: string;
   field: string;
   term: string | null;
-  /** The first help area's catalog slug, from onboarding. */
-  firstNeed: string | null;
+  /** The first help area from onboarding: its catalog slug and display name. */
+  firstNeed: { code: string; name: string } | null;
 };
 
 /**
@@ -35,7 +35,10 @@ export function startersFor(
     ];
   const m = data.mentee;
   const degree = m?.degree ? STARTERS.degree[m.degree as keyof typeof STARTERS.degree] : undefined;
-  const topic = m?.firstNeed ? STARTERS.topics[m.firstNeed] : undefined;
+  // An area with no phrase yet (the list grows) reads as its catalog name.
+  const topic = m?.firstNeed
+    ? STARTERS.topics[m.firstNeed.code] || m.firstNeed.name.trim().toLowerCase() || undefined
+    : undefined;
   const out: (Starter | null)[] = [
     m && degree && m.field.trim()
       ? {

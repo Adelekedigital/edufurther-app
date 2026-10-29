@@ -5,7 +5,7 @@ const data = (over: Partial<MenteeStarterData> = {}): MenteeStarterData => ({
   degree: 'mba',
   field: 'Finance',
   term: null,
-  firstNeed: 'scholarships-financial-aid',
+  firstNeed: { code: 'scholarships-financial-aid', name: 'Scholarships & financial aid' },
   ...over,
 });
 
@@ -21,14 +21,29 @@ describe('startersFor (PRD "Starters")', () => {
   });
 
   it('the topic is in the mentee’s own words, for every help area', () => {
-    const cover = (firstNeed: string) =>
-      startersFor('mentee', 'Hugh', { mentee: data({ firstNeed }), theirInstitution: null }).find(
-        (x) => x.key === 'cover',
-      )?.text;
+    const cover = (code: string, name = 'Area') =>
+      startersFor('mentee', 'Hugh', {
+        mentee: data({ firstNeed: { code, name } }),
+        theirInstitution: null,
+      }).find((x) => x.key === 'cover')?.text;
     expect(cover('document-preparation')).toBe(
       'Hi Hugh, in our session I’d love to focus on my application documents.',
     );
-    expect(cover('unknown-area')).toBeUndefined();
+    expect(cover('interview-preparation')).toBe(
+      'Hi Hugh, in our session I’d love to focus on preparing for my interviews.',
+    );
+  });
+
+  it('an area with no phrase yet still shows, in its catalog name (owner, 2026-10-28)', () => {
+    const cover = (name: string) =>
+      startersFor('mentee', 'Hugh', {
+        mentee: data({ firstNeed: { code: 'visa-guidance', name } }),
+        theirInstitution: null,
+      }).find((x) => x.key === 'cover')?.text;
+    expect(cover('Visa guidance')).toBe(
+      'Hi Hugh, in our session I’d love to focus on visa guidance.',
+    );
+    expect(cover('  ')).toBeUndefined();
   });
 
   it('a chip whose data is missing is hidden; Ask what to prepare always shows', () => {

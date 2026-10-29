@@ -57,7 +57,9 @@ export function OpenChat({
               degree: degreeValue(goal),
               field: goal?.field_of_study ?? '',
               term: goal?.target_start_term ?? null,
-              firstNeed: goal?.needs[0]?.code ?? null,
+              firstNeed: goal?.needs[0]
+                ? { code: goal.needs[0].code, name: goal.needs[0].display_name }
+                : null,
             }
           : null,
         theirInstitution: person.institution,

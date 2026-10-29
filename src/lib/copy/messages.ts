@@ -112,7 +112,7 @@ export const EMPTY_CHAT_COPY = {
 } as const;
 
 export const STARTERS_COPY = {
-  lead: 'Not sure what to say? Tap one to start.',
+  lead: 'Not sure what to say? Pick one, then make it yours.',
 } as const;
 
 /**
@@ -156,7 +156,9 @@ export const STARTERS = {
   },
   /**
    * "Share what to cover": each onboarding help area (catalog slug) in the
-   * mentee's own voice, as it reads after "focus on".
+   * mentee's own voice, as it reads after "focus on". Generic per area, never
+   * narrower or wider than its name: the mentee adds specifics by editing
+   * (owner, 2026-10-28). An area missing here falls back to its catalog name.
    */
   topics: {
     'program-selection': 'choosing a program',
@@ -164,7 +166,7 @@ export const STARTERS = {
     'document-preparation': 'my application documents',
     'school-selection': 'choosing a school',
     'scholarships-financial-aid': 'finding scholarships',
-    'interview-preparation': 'preparing for interviews and visas',
+    'interview-preparation': 'preparing for my interviews',
   } as Record<string, string>,
   /** The degree goal as it reads after "applying for" (DEGREE_OPTIONS values). */
   degree: { bachelors: 'a bachelor’s', masters: 'a master’s', mba: 'an MBA', doctorate: 'a PhD' },

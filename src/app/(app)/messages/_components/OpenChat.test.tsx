@@ -231,7 +231,7 @@ describe('an empty chat and its starters', () => {
       degree_goal_raw: null,
       field_of_study: 'Public Policy',
       target_start_term: 'Fall 2027',
-      needs: [{ code: 'school-selection' }],
+      needs: [{ code: 'school-selection', display_name: 'School selection' }],
     };
     open({ person: gbenga }, 'u-gbenga');
     render(<MessagesScreen />);
@@ -240,7 +240,7 @@ describe('an empty chat and its starters', () => {
     expect(
       c.getByText(/^Gbenga confirmed your session for .+\. Say hi and share/),
     ).toBeInTheDocument();
-    expect(c.getByText('Not sure what to say? Tap one to start.')).toBeInTheDocument();
+    expect(c.getByText('Not sure what to say? Pick one, then make it yours.')).toBeInTheDocument();
     const chips = c
       .getAllByRole('button')
       .map((b) => b.textContent)
