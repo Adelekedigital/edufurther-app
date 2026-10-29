@@ -5,7 +5,7 @@ import type {
   WireMessage,
   WireMessageFile,
   WireThread,
-} from '@/lib/api/data/pending';
+} from '@/lib/api/data/messages';
 
 /**
  * MOCK of Messages (PRD Messages; contract in docs/handoff/messages-backend-reply.md).
