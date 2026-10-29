@@ -119,6 +119,22 @@
   text-decoration: underline;
 }
 
+/* `ghost`: a text action drawn as a padded control, 44px tall at every
+   width, with a blue-50 ground on hover (Session Join.dc.html lobby
+   `lp.canMsg`, "Message {First}"). Unlike `text`, it is a control, not a link:
+   no underline. Its label size comes from the size (small: 12px). */
+.ghost {
+  gap: var(--space-1);
+  background: transparent;
+  color: var(--blue-500);
+  height: auto;
+  min-height: var(--touch-target-min);
+  padding: 0 var(--space-3);
+}
+.ghost:hover {
+  background: var(--blue-50);
+}
+
 /* DS Button `text-secondary` (_ds_bundle.js TEXTS): a quiet text action
    beside a filled one, like "Keep editing" or "Cancel". slate-500 is 5.16:1
    on white. DIVERGENCE: the DS hover, slate-400, is 4.48:1 (fails WCAG

@@ -27,6 +27,10 @@ import {
 import { FocusPage } from '@/components/templates/FocusPage/FocusPage';
 import { ConfirmActionDialog, type MoveOption } from '@/app/_sessions/ConfirmActionDialog';
 import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
+import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
+import { MESSAGES_LIVE } from '@/lib/config/messages';
+import { bookingRecipient } from '@/lib/utils/messageRecipient';
+import type { MessageRecipient } from '@/types/messages';
 import { useReviewAndRebook } from '@/app/_sessions/useReviewAndRebook';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { lockedPageGate, memberGate, SESSION_GATE } from '@/app/_shell/MentorGate';
@@ -200,6 +204,9 @@ export function SessionJoinScreen({ id }: { id: string }) {
     live: (bookingId) => (data?.booking.id === bookingId ? data.booking : undefined),
   });
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
+  // SendMessage's recipient while it is open (PRD Messages, Message buttons).
+  const [messaging, setMessaging] = useState<MessageRecipient | null>(null);
+  const messageTo = MESSAGES_LIVE && data ? bookingRecipient(data.booking) : null;
   // The phone's sheets (below 768px): the answers, the guide, or the calendar choices.
   const [sheet, setSheet] = useState<PrepSheet | 'calendar' | null>(null);
 
@@ -437,6 +444,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
             zone={{ value: timeZone, onChange: setZone, deviceZone }}
             notice={preparing ? notice : null}
             onCalendarSheet={() => setSheet('calendar')}
+            onMessage={messageTo ? () => setMessaging(messageTo) : undefined}
           />
           {isSettled(live) && (
             <SessionOutcome
@@ -552,6 +560,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
           )}
         </BottomSheet>
       )}
+      <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />
       {viewing && (
         <FileViewerLauncher
           file={intakeViewedFile(viewing)}

@@ -808,3 +808,32 @@ describe('a reason nobody wrote is not put in quotes', () => {
     expect(screen.queryByText('Reason from Amara')).not.toBeInTheDocument();
   });
 });
+
+describe('Send a message (PRD Messages, Message buttons)', () => {
+  it('upcoming: outlined, beside Cancel session, under Join (the one fill)', async () => {
+    const onMessage = vi.fn();
+    panel({ joinHref: '/sessions/b1', onCallOff: vi.fn(), onMessage });
+    const b = screen.getByRole('button', { name: 'Send a message' });
+    expect(b.className).toMatch(/secondary-outlined/);
+    expect(b.parentElement).toContainElement(
+      screen.getByRole('button', { name: 'Cancel session' }),
+    );
+    await userEvent.click(b);
+    expect(onMessage).toHaveBeenCalled();
+  });
+
+  it('a past session: the panel’s own primary, full width', () => {
+    panel({
+      booking: sampleBookingFor({ status: 'completed', startsAt: at(-26), endsAt: at(-25) }),
+      onMessage: vi.fn(),
+    });
+    const b = screen.getByRole('button', { name: 'Send a message' });
+    expect(b.className).toMatch(/primary/);
+    expect(b.className).toMatch(/full/);
+  });
+
+  it('not passed (a request, a deleted account): not there', () => {
+    panel({ joinHref: '/sessions/b1' });
+    expect(screen.queryByRole('button', { name: 'Send a message' })).not.toBeInTheDocument();
+  });
+});

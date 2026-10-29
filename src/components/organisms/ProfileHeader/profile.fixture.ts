@@ -70,6 +70,7 @@ export const fullProfile: MentorProfile = {
     ],
   },
   takingBookings: true,
+  canMessage: false,
   names: { first: 'Gbenga', last: 'Elufisan' },
   headline: 'PhD Sociology · Mississippi State University',
   aboutDrafted: false,

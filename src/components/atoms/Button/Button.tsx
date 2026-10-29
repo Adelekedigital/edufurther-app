@@ -16,6 +16,7 @@ export type ButtonVariant =
   | 'text'
   | 'text-secondary'
   | 'text-destructive'
+  | 'ghost'
   | 'dark'
   | 'destructive'
   | 'destructive-outlined';
