@@ -135,4 +135,24 @@ describe('Message buttons on Bookings (PRD Messages)', () => {
     expect(screen.getByRole('button', { name: 'Message Amara' })).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Message Gbenga' })).not.toBeInTheDocument();
   });
+
+  it('History: a mentee’s details panel still has "Send a message" (PRD Q13)', async () => {
+    h.history = hist({
+      bookings: [
+        booking({
+          id: 'h2',
+          status: 'completed',
+          side: 'mentee',
+          startsAt: at(-50),
+          endsAt: at(-49),
+          other: party('Gbenga Ogundipe'),
+        }),
+      ],
+    });
+    h.tab = 'history';
+    h.selectedBooking = 'h2';
+    render(<BookingsScreen />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Send a message' }));
+    expect(screen.getByRole('dialog', { name: 'SendMessage to Gbenga' })).toBeInTheDocument();
+  });
 });

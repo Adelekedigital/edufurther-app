@@ -632,6 +632,8 @@ export function BookingsScreen() {
                   select(null);
                 }}
                 joinHref={open ? joinHref(open.id) : undefined}
+                // Every side, History included: a mentee's History row has no
+                // Message (Q13), but the panel keeps "Send a message" (PRD Q13).
                 onMessage={open ? messageFor(open) : undefined}
                 now={now}
               />
