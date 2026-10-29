@@ -25,3 +25,27 @@ describe('PresencePerson: “Message {First}” under the other person', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });
+
+describe('PresencePerson: on a tinted ground', () => {
+  const at = (onTint?: boolean) =>
+    render(
+      <PresencePerson
+        person={sampleParty()}
+        name="Amara"
+        presence="Here now"
+        tone="here"
+        message={{ label: 'Message Amara', onClick: vi.fn() }}
+        onTint={onTint}
+      />,
+    );
+
+  it('passes onTint to the Message button', () => {
+    at(true);
+    expect(screen.getByRole('button', { name: 'Message Amara' })).toHaveClass('onTint');
+  });
+
+  it('keeps the ghost blue without it', () => {
+    at();
+    expect(screen.getByRole('button', { name: 'Message Amara' })).not.toHaveClass('onTint');
+  });
+});

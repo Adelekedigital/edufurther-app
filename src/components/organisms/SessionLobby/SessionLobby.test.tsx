@@ -216,3 +216,17 @@ describe('the time zone line', () => {
     expect(wrap()).not.toHaveClass('onTint');
   });
 });
+
+describe('the Message button under the other person', () => {
+  const message = () => screen.getByRole('button', { name: /^Message / });
+
+  it('darkens on a tinted ground', () => {
+    render(<SessionLobby {...base} onMessage={vi.fn()} />);
+    expect(message()).toHaveClass('onTint');
+  });
+
+  it('keeps the ghost blue on the white ground', () => {
+    render(<SessionLobby {...base} ground="white" onMessage={vi.fn()} />);
+    expect(message()).not.toHaveClass('onTint');
+  });
+});

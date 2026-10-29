@@ -40,6 +40,12 @@ type Common = {
   fullWidth?: boolean;
   icon?: IconName;
   iconPosition?: 'leading' | 'trailing';
+  /**
+   * On a tinted ground (the Session Join lobby's blue, green, red or grey):
+   * `ghost`'s blue-500 label is about 4.3:1 there at 12px, under AA, so it
+   * darkens to blue-700. The other variants carry their own ground or ink.
+   */
+  onTint?: boolean;
   children: ReactNode;
 };
 
@@ -48,9 +54,17 @@ function classes({
   // A card's or section's action is the common case (CTA hierarchy default).
   size = 'medium',
   fullWidth,
+  onTint,
   className,
-}: Pick<Common, 'variant' | 'size' | 'fullWidth'> & { className?: string }) {
-  return cx(styles.button, styles[variant], styles[size], fullWidth && styles.full, className);
+}: Pick<Common, 'variant' | 'size' | 'fullWidth' | 'onTint'> & { className?: string }) {
+  return cx(
+    styles.button,
+    styles[variant],
+    styles[size],
+    fullWidth && styles.full,
+    onTint && styles.onTint,
+    className,
+  );
 }
 
 function Content({
@@ -95,6 +109,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     variant,
     size,
     fullWidth,
+    onTint,
     icon,
     iconPosition,
     busy,
@@ -113,7 +128,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     <button
       ref={ref}
       type={type ?? 'button'}
-      className={classes({ variant, size, fullWidth, className })}
+      className={classes({ variant, size, fullWidth, onTint, className })}
       {...rest}
       // Kept after ...rest: a busy button must not submit twice, whatever the caller passes.
       disabled={disabled}
@@ -143,11 +158,11 @@ export type ButtonAnchorProps = Common &
  * prefetch or take over, such as a route with a side effect (ADR 0009).
  */
 export const ButtonAnchor = forwardRef<HTMLAnchorElement, ButtonAnchorProps>(function ButtonAnchor(
-  { variant, size, fullWidth, icon, iconPosition, className, children, ...rest },
+  { variant, size, fullWidth, onTint, icon, iconPosition, className, children, ...rest },
   ref,
 ) {
   return (
-    <a ref={ref} className={classes({ variant, size, fullWidth, className })} {...rest}>
+    <a ref={ref} className={classes({ variant, size, fullWidth, onTint, className })} {...rest}>
       <Content icon={icon} iconPosition={iconPosition} variant={variant}>
         {children}
       </Content>
@@ -157,7 +172,19 @@ export const ButtonAnchor = forwardRef<HTMLAnchorElement, ButtonAnchorProps>(fun
 
 /** A button-styled link: it navigates, so it is an <a>. */
 export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(function ButtonLink(
-  { variant, size, fullWidth, icon, iconPosition, className, children, href, prefetch, ...rest },
+  {
+    variant,
+    size,
+    fullWidth,
+    onTint,
+    icon,
+    iconPosition,
+    className,
+    children,
+    href,
+    prefetch,
+    ...rest
+  },
   ref,
 ) {
   return (
@@ -165,7 +192,7 @@ export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(functio
       ref={ref}
       href={href}
       prefetch={prefetch}
-      className={classes({ variant, size, fullWidth, className })}
+      className={classes({ variant, size, fullWidth, onTint, className })}
       {...rest}
     >
       <Content icon={icon} iconPosition={iconPosition} variant={variant}>
