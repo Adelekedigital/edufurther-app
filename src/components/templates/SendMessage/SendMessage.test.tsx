@@ -24,7 +24,7 @@ const view = (over: Partial<SendMessageProps> = {}) => {
     sessionWindow: false,
     lock: null,
     phase: 'compose',
-    failed: false,
+    failure: null,
     onSend: vi.fn(),
     file: null,
     uploading: null,
@@ -85,7 +85,7 @@ describe('SendMessage: compose', () => {
   });
 
   it('a failure says so', () => {
-    view({ failed: true });
+    view({ failure: 'Not sent. Check your connection and try again.' });
     expect(screen.getByRole('alert')).toHaveTextContent(
       'Not sent. Check your connection and try again.',
     );
@@ -133,11 +133,16 @@ describe('SendMessage: one file', () => {
     const { props } = view({ file: FILE });
     expect(screen.getByText('1 file attached')).toBeVisible();
     expect(screen.getByText('240 KB')).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Attach a file' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Attach a file' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     await userEvent.click(screen.getByRole('button', { name: 'View CV.pdf' }));
     expect(props.onViewFile).toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: 'Remove file' }));
     expect(props.onRemoveFile).toHaveBeenCalled();
+    // The chip leaves with the focused button: focus lands on the paperclip.
+    expect(screen.getByRole('button', { name: 'Attach a file' })).toHaveFocus();
   });
 
   it('a refused file says why', () => {

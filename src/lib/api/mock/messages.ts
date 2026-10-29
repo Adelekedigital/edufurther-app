@@ -457,6 +457,8 @@ export function mockUpload(name: string, size: number, type: string): WireMessag
       ? docx
       : null;
   if (!contentType || (type && type !== contentType)) return '/problems/file-type-not-allowed';
+  // The backend's cap: at most 10 uploaded and not yet sent (a 409).
+  if (uploads.size >= 10) return 'tooManyUnsent';
   seq += 1;
   const f = { id: `f-up-${seq}`, filename: name, size, content_type: contentType };
   uploads.set(f.id, f);

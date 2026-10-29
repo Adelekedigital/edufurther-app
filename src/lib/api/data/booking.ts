@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { UPLOAD_MAX_BYTES } from '@/lib/utils/files';
+import { pickedFileProblem } from '@/lib/utils/files';
 import { DEFAULT_HORIZON_DAYS, slotWindow } from '@/lib/utils/slots';
 import type {
   AppError,
@@ -404,7 +404,9 @@ export function requestError(e: unknown): BookingError {
 export function useUploadIntakeFile() {
   const mutation = useMutation<IntakeFile, AppError, File>({
     mutationFn: async (file) => {
-      if (file.size > UPLOAD_MAX_BYTES) throw uploadError(new ApiError(413));
+      // The shared first look (size, PDF or .docx); the server still decides from the bytes.
+      const problem = pickedFileProblem(file);
+      if (problem) throw uploadError(new ApiError(problem === 'tooBig' ? 413 : 422));
       let result;
       try {
         result = await api.POST('/api/v1/me/intake-files', fileBody(file));

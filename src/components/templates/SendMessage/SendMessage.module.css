@@ -98,6 +98,10 @@
   flex: none;
   color: var(--red-500);
 }
+/* Ours: the design draws only the PDF chip; a Word file's glyph is neutral. */
+.doc {
+  color: var(--ink-600);
+}
 
 .fileName {
   min-width: 0;

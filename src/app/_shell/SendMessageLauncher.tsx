@@ -7,6 +7,7 @@ import { normaliseError } from '@/lib/api/data/errors';
 import { useUploadMessageFile } from '@/lib/api/data/messageFiles';
 import { useChatStatus } from '@/lib/api/data/messages';
 import { useOutbox, useSendMessage } from '@/lib/api/data/messageSend';
+import { SEND_MESSAGE_COPY as C } from '@/lib/copy/messages';
 import type { MessageFile, MessageRecipient } from '@/types/messages';
 
 type SendMessageLauncherProps = {
@@ -52,7 +53,22 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
   const pending = lastTry ? outbox.find((i) => i.clientId === lastTry.id) : undefined;
   // Offline, the outbox holds it and sends it on reconnect (in order, same
   // client_id). Waiting ends when it leaves the outbox: stored, so sent.
-  const shownPhase = phase === 'waiting' && !pending ? 'sent' : phase;
+  // A queued send that the reconnect then refuses comes back to the form,
+  // failed, so Send again retries it (same client_id), never stuck on Sending….
+  let shownPhase = phase;
+  let shownFailed = failed;
+  if (phase === 'waiting') {
+    if (!pending) shownPhase = 'sent';
+    else if (pending.status === 'failed') {
+      shownPhase = 'compose';
+      shownFailed = true;
+    } else if (pending.status === 'sending') shownPhase = 'sending';
+  }
+  const failure = !shownFailed
+    ? null
+    : pending?.problem?.endsWith('/problems/not-connected')
+      ? C.notConnected(to.firstName)
+      : C.failed;
 
   const onSend = async (text: string) => {
     const fileId = file?.id ?? null;
@@ -107,7 +123,7 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
         sessionWindow={thread?.sessionWindow ?? false}
         lock={thread?.lock ?? null}
         phase={shownPhase}
-        failed={failed}
+        failure={failure}
         onSend={(text) => void onSend(text)}
         file={file}
         uploading={uploading}

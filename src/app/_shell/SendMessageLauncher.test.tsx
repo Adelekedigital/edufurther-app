@@ -9,7 +9,7 @@ const retry = vi.fn();
 const upload = vi.fn();
 let status: { data: Partial<Thread> | null; isLoading: boolean; error: null; retry: () => void };
 
-let outboxItems: { clientId: string; status: string }[] = [];
+let outboxItems: { clientId: string; status: string; problem?: string }[] = [];
 vi.mock('@/lib/api/data/messageSend', () => ({
   useOutbox: () => outboxItems,
   useSendMessage: () => ({
@@ -134,14 +134,16 @@ describe('SendMessageLauncher', () => {
   });
 
   it('a refused upload says why, and nothing is attached', async () => {
-    upload.mockRejectedValue({ message: 'Use a PDF or Word (.docx) file.' });
+    upload.mockRejectedValue({ kind: 'validation', message: 'Use a PDF or Word (.docx) file.' });
     const { container } = render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
     await userEvent.upload(
       container.ownerDocument.querySelector('input[type=file]')!,
       new File(['x'], 'a.pdf', { type: 'application/pdf' }),
     );
     expect(await screen.findByRole('alert')).toHaveTextContent('Use a PDF or Word (.docx) file.');
-    expect(screen.getByRole('button', { name: 'Attach a file' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Attach a file' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
   });
 
   it('after a send, focus moves into the Sent dialog (Done)', async () => {
@@ -172,6 +174,57 @@ describe('SendMessageLauncher', () => {
     rerender(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
     expect(await screen.findByRole('dialog', { name: 'Message sent' })).toBeVisible();
     online.mockRestore();
+  });
+
+  it('a queued message the reconnect refuses: back to the form, failed, and Send again retries it', async () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    send.mockImplementation(async ({ clientId }: { clientId: string }) => {
+      outboxItems = [{ clientId, status: 'waiting' }];
+      return false;
+    });
+    retry.mockResolvedValue(true);
+    const { rerender } = render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    await screen.findByText(/We’ll send your messages when you’re back online/);
+    online.mockReturnValue(true);
+    const id = send.mock.calls[0]?.[0].clientId;
+    outboxItems = [{ clientId: id, status: 'failed' }];
+    rerender(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Not sent.');
+    expect(sendBtn()).not.toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(sendBtn());
+    expect(retry).toHaveBeenCalledWith(id);
+    online.mockRestore();
+  });
+
+  it('refused as not connected (403): says so, not "check your connection"', async () => {
+    send.mockImplementation(async ({ clientId }: { clientId: string }) => {
+      outboxItems = [{ clientId, status: 'failed', problem: '/problems/not-connected' }];
+      return false;
+    });
+    render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Not sent. You can’t message Amara right now.',
+    );
+  });
+
+  it('the "wait for your file" line goes once the upload ends', async () => {
+    let done: (f: unknown) => void = () => {};
+    upload.mockReturnValue(new Promise((r) => (done = r)));
+    const { container } = render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.upload(
+      container.ownerDocument.querySelector('input[type=file]')!,
+      new File(['%PDF'], 'CV.pdf', { type: 'application/pdf' }),
+    );
+    await userEvent.type(box(), 'Hello');
+    await userEvent.click(sendBtn());
+    expect(screen.getByRole('alert')).toHaveTextContent('Wait for your file');
+    done({ id: 'f1', name: 'CV.pdf', sizeBytes: 1000, contentType: 'application/pdf' });
+    await screen.findByRole('button', { name: 'View CV.pdf' });
+    expect(screen.queryByText(/Wait for your file/)).not.toBeInTheDocument();
   });
 
   it('Send while the file is still uploading waits, and sends nothing', async () => {

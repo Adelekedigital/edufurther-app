@@ -50,6 +50,15 @@ describe('useUploadIntakeFile (POST /me/intake-files)', () => {
     expect(POST).not.toHaveBeenCalled();
   });
 
+  it('refuses a file that is not PDF or .docx before sending it (the shared pre-check)', async () => {
+    const png = new File(['x'], 'photo.png', { type: 'image/png' });
+    const { result } = renderHook(() => useUploadIntakeFile(), { wrapper });
+    await expect(result.current(png)).rejects.toMatchObject({
+      message: 'Upload a PDF or Word (.docx) file under 5 MB.',
+    });
+    expect(POST).not.toHaveBeenCalled();
+  });
+
   it('a network failure is our copy', async () => {
     POST.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = renderHook(() => useUploadIntakeFile(), { wrapper });

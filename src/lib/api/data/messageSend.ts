@@ -81,7 +81,10 @@ async function post(item: OutboxItem): Promise<boolean> {
       return false;
     }
     if (e instanceof ApiError && e.status === 409) refreshThread(item.to);
-    update(item.clientId, { status: 'failed' });
+    update(item.clientId, {
+      status: 'failed',
+      problem: e instanceof ApiError ? e.type : undefined,
+    });
     return false;
   }
 }

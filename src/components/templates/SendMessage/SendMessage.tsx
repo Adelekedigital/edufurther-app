@@ -29,8 +29,8 @@ export type SendMessageProps = {
   lock: ChatLock;
   /** Compose, sending, waiting (offline: sent on reconnect), or sent. */
   phase: 'compose' | 'sending' | 'waiting' | 'sent';
-  /** The last send failed (a retry sends the same message). */
-  failed: boolean;
+  /** Why the last send failed, already worded (a retry sends the same message); null if it didn't. */
+  failure: string | null;
   onSend: (text: string) => void;
   /** The attached file, once uploaded. */
   file: MessageFile | null;
@@ -57,7 +57,7 @@ export function SendMessage({
   sessionWindow,
   lock,
   phase,
-  failed,
+  failure,
   onSend,
   file,
   uploading,
@@ -72,9 +72,13 @@ export function SendMessage({
   const [text, setText] = useState('');
   const [emptyTried, setEmptyTried] = useState(false);
   // Send pressed while the file is still on its way: it would go without it.
-  const [waitUpload, setWaitUpload] = useState(false);
+  // Which upload it was (by name), so the line ends with that upload and a
+  // later one doesn't open with it.
+  const [waitUpload, setWaitUpload] = useState<string | null>(null);
   const field = useRef<HTMLTextAreaElement>(null);
   const lockLine = useRef<HTMLDivElement>(null);
+  const attach = useRef<HTMLButtonElement>(null);
+  const countId = useId();
   const errId = useId();
   const first = to.firstName;
   const has = text.trim().length > 0 || !!file;
@@ -117,11 +121,9 @@ export function SendMessage({
   const showEmpty = emptyTried && !has;
   const error = showEmpty
     ? C.empty(first)
-    : waitUpload && uploading
+    : uploading && waitUpload === uploading
       ? C.waitUpload
-      : failed
-        ? C.failed
-        : null;
+      : failure;
   const left = MAX - text.length;
   const sub = [LIST_COPY.role(to.role), to.institution].filter(Boolean).join(' · ');
 
@@ -167,24 +169,43 @@ export function SendMessage({
                   placeholder={C.placeholder(first)}
                   aria-label={C.placeholder(first)}
                   aria-invalid={showEmpty || undefined}
-                  aria-describedby={error ? errId : undefined}
+                  aria-describedby={
+                    [error && errId, text.length > COUNT_FROM && countId]
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
                   onChange={(e) => setText(e.target.value)}
                 />
                 {(file || uploading) && (
                   <div className={styles.fileRow}>
                     <span className={styles.chip} aria-busy={!!uploading || undefined}>
-                      <Icon name="picture_as_pdf" size={20} className={styles.pdf} />
+                      {/* The design draws the PDF glyph; a Word file gets the plain document one. */}
+                      <Icon
+                        name={
+                          (file?.contentType ?? 'application/pdf') === 'application/pdf'
+                            ? 'picture_as_pdf'
+                            : 'description'
+                        }
+                        size={20}
+                        className={cx(
+                          styles.pdf,
+                          file && file.contentType !== 'application/pdf' && styles.doc,
+                        )}
+                      />
                       {file ? (
                         <button
                           type="button"
                           className={styles.fileName}
+                          dir="ltr"
                           aria-label={C.viewFile(file.name)}
                           onClick={onViewFile}
                         >
                           {file.name}
                         </button>
                       ) : (
-                        <span className={styles.fileName}>{uploading}</span>
+                        <span className={styles.fileName} dir="ltr">
+                          {uploading}
+                        </span>
                       )}
                       <span className={styles.fileSize}>
                         {file ? fileSize(file.sizeBytes) : C.uploading}
@@ -197,7 +218,11 @@ export function SendMessage({
                           shape="square"
                           aria-label={C.removeFile}
                           className={styles.remove}
-                          onClick={onRemoveFile}
+                          onClick={() => {
+                            onRemoveFile();
+                            // The chip goes with the focused button: focus the paperclip, back on.
+                            attach.current?.focus();
+                          }}
                         />
                       )}
                     </span>
@@ -205,6 +230,7 @@ export function SendMessage({
                 )}
                 <div className={styles.toolbar}>
                   <AttachFileButton
+                    ref={attach}
                     label={C.attach}
                     hint={C.attachHint}
                     disabled={!!file || !!uploading}
@@ -214,7 +240,8 @@ export function SendMessage({
                     {file ? C.attached : phone ? C.attachHintPhone : C.attachHint}
                   </span>
                   {text.length > COUNT_FROM && (
-                    <span className={styles.count} aria-live="polite">
+                    // Read with the box (aria-describedby), not on every keystroke.
+                    <span id={countId} className={styles.count}>
                       {C.left(left)}
                     </span>
                   )}
@@ -267,7 +294,7 @@ export function SendMessage({
                 onClick={() => {
                   if (sending) return;
                   if (uploading) {
-                    setWaitUpload(true);
+                    setWaitUpload(uploading);
                     return;
                   }
                   if (!has) {

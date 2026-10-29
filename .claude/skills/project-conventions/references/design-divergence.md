@@ -1294,5 +1294,7 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | Mentor Profile "Message" 40px (`btn`) | 48px (Large) beside Book | Book is Large here (CTA hierarchy); the two sit in one row | never |
 | SendMessage attach glyph ink-300 when off | The IconButton atom's off colour (ink-500) | The atom's recorded rule for every off icon control | never |
 | A sent message's failure: "Not sent." and a retry | Send again with nothing changed retries the same message (same `client_id`); changed text is a new message, and the failed one stays in the chat as "Not sent" | The server stores a repeated `client_id` once, so a lost response never sends twice | never |
+| The attached file's glyph: `picture_as_pdf` in red, whatever the file | A Word file shows `description` in ink-600 | The design draws only a PDF; a PDF glyph on a .docx misnames it (ours, undesigned) | design draws a Word chip |
+| A send refused as not connected (`403`), not drawn | "Not sent. You can’t message {First} right now." instead of the connection line | Trying again can't help, so the connection advice would mislead | never |
 | The status read failing (not drawn) | The form shows with the ordinary line; a locked chat refuses the send (`409`) and the line then shows | A failed side read must not block writing | never |
 

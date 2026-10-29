@@ -92,7 +92,10 @@
   background: var(--red-500);
 }
 
-/* Session Join.dc.html lobby `lp.canMsg`: a text button under the other person. */
+/* Session Join.dc.html lobby `lp.canMsg`: a text button under the other person.
+   Not the Button atom's `text` variant: that one is a bare link (no padding,
+   underline on hover); the design draws a 44px padded control with a blue-50
+   ground on hover. */
 .message {
   display: flex;
   align-items: center;

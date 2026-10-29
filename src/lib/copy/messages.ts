@@ -150,6 +150,8 @@ export const SEND_MESSAGE_COPY = {
   sending: 'Sending…',
   empty: (first: string) => `Write a message to ${first} first.`,
   failed: 'Not sent. Check your connection and try again.',
+  /** 403: no booked session links the two any more; trying again can't help. */
+  notConnected: (first: string) => `Not sent. You can’t message ${first} right now.`,
   /** Offline: the outbox holds it and sends it on reconnect. */
   waiting: COMPOSER_COPY.offline,
   waitUpload: 'Wait for your file to finish uploading.',

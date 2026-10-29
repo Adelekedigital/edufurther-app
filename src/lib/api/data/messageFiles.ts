@@ -5,11 +5,10 @@ import { COMPOSER_COPY } from '@/lib/copy/messages';
 import { pickedFileProblem } from '@/lib/utils/files';
 import type { MessageFile } from '@/types/messages';
 import type { AppError } from '@/types/mentor';
-import { uploadError } from './upload';
+import { fileBody, uploadError } from './upload';
 import { ApiError, apiError, normaliseError } from './errors';
 import { toMessageFile } from './messages';
 import { untyped, type WireUploadedFile } from './pending';
-import { fileBody } from './upload';
 
 /**
  * The refusals Messages words itself (PRD: "Errors map to the two designed

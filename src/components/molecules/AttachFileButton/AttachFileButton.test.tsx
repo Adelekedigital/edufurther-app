@@ -24,8 +24,17 @@ describe('AttachFileButton', () => {
     expect(onFile).toHaveBeenCalledWith(f);
   });
 
-  it('off once a file is attached', () => {
-    render(<AttachFileButton label="Attach a file" hint={hint} onFile={vi.fn()} disabled />);
-    expect(screen.getByRole('button', { name: 'Attach a file' })).toBeDisabled();
+  it('off once a file is attached, yet keeps focus and opens no picker', async () => {
+    const { container } = render(
+      <AttachFileButton label="Attach a file" hint={hint} onFile={vi.fn()} disabled />,
+    );
+    const b = screen.getByRole('button', { name: 'Attach a file' });
+    expect(b).toHaveAttribute('aria-disabled', 'true');
+    expect(b).not.toBeDisabled();
+    const input = container.querySelector('input[type=file]') as HTMLInputElement;
+    const click = vi.spyOn(input, 'click');
+    await userEvent.click(b);
+    expect(click).not.toHaveBeenCalled();
+    expect(b).toHaveFocus();
   });
 });

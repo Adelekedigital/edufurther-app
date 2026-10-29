@@ -10,6 +10,7 @@ export async function POST(req: Request) {
   const file = form?.get('file');
   if (!(file instanceof File)) return problem(422, { title: 'Validation failed' });
   const res = mockUpload(file.name, file.size, file.type);
+  if (res === 'tooManyUnsent') return problem(409, { title: 'Too many unsent files' });
   if (typeof res === 'string') return problem(422, { title: 'Refused', type: res });
   const { id, ...rest } = res;
   return ok('/api/v1/me/message-files', 'post', { file_id: id, ...rest }, { status: 201 });
