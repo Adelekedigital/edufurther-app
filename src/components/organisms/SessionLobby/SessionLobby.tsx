@@ -148,6 +148,7 @@ export function SessionLobby({
           <PresencePerson
             key={p.person.id}
             {...p}
+            onTint={ground !== 'white'}
             // The second is always the other person; there is no one to write to on your own.
             message={
               i === 1 && onMessage

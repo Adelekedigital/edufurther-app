@@ -19,10 +19,19 @@ type PresencePersonProps = {
   tone: 'here' | 'joined' | 'absent' | 'away';
   /** "Message {First}" under the other person (theirs only), opening SendMessage. */
   message?: { label: string; onClick: () => void };
+  /** On a tinted ground: the Message button darkens to keep 4.5:1 (Button `onTint`). */
+  onTint?: boolean;
 };
 
 /** Session Join.dc.html: one person in the lobby, with whether they're in the call. */
-export function PresencePerson({ person, name, presence, tone, message }: PresencePersonProps) {
+export function PresencePerson({
+  person,
+  name,
+  presence,
+  tone,
+  message,
+  onTint,
+}: PresencePersonProps) {
   return (
     <div
       className={cx(
@@ -48,7 +57,7 @@ export function PresencePerson({ person, name, presence, tone, message }: Presen
         {presence}
       </span>
       {message && (
-        <Button variant="ghost" size="small" icon="chat" onClick={message.onClick}>
+        <Button variant="ghost" size="small" icon="chat" onTint={onTint} onClick={message.onClick}>
           {message.label}
         </Button>
       )}

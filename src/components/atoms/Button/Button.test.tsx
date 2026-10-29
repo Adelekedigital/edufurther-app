@@ -47,3 +47,20 @@ describe('Button: incomplete', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('Button: onTint', () => {
+  it('marks the ghost for a tinted ground only when asked, and never reaches the DOM as an attribute', () => {
+    render(
+      <>
+        <Button variant="ghost">Plain</Button>
+        <Button variant="ghost" onTint>
+          Tinted
+        </Button>
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Plain' })).not.toHaveClass('onTint');
+    const tinted = screen.getByRole('button', { name: 'Tinted' });
+    expect(tinted).toHaveClass('ghost', 'onTint');
+    expect(tinted).not.toHaveAttribute('ontint');
+  });
+});
