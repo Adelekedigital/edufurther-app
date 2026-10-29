@@ -33,6 +33,9 @@ vi.mock('@/lib/api/data/messages', async () =>
 vi.mock('@/lib/api/data/messageSend', async () =>
   (await import('./messagesScreen.harness')).chatMocks.messageSend(),
 );
+vi.mock('@/lib/api/data/messageFiles', async () =>
+  (await import('./messagesScreen.harness')).chatMocks.messageFiles(),
+);
 vi.mock('@/lib/api/data/goals', async () =>
   (await import('./messagesScreen.harness')).chatMocks.goals(),
 );

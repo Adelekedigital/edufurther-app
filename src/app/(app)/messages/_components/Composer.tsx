@@ -1,18 +1,32 @@
 'use client';
 
-import { forwardRef, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import {
+  forwardRef,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { IconButton } from '@/components/atoms/IconButton/IconButton';
+import { AttachFileButton } from '@/components/molecules/AttachFileButton/AttachFileButton';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { PickedFileChip } from '@/components/molecules/PickedFileChip/PickedFileChip';
 import { COMPOSER_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
 import { hasContactDetails } from '@/lib/utils/contactDetails';
+import type { MessageFile } from '@/types/messages';
 import styles from './Composer.module.css';
 
 /** PRD Q10: 2,000 characters, as the server allows; no counter in Messages. */
 export const MAX_MESSAGE = 2000;
 /** The box grows with the text from 44px to 140px, then scrolls (Messages.dc.html). */
 const MAX_BOX = 140;
+
+/** What the chat may move focus to: the text box (a starter), or Attach (a file to attach again). */
+export type ComposerHandle = { focus: () => void; focusAttach: () => void };
 
 type ComposerProps = {
   first: string;
@@ -24,20 +38,54 @@ type ComposerProps = {
   offline: boolean;
   /** The starter chips, above the box (an empty chat only). */
   starters?: ReactNode;
+  /** The attached file, once uploaded (one per message). */
+  file: MessageFile | null;
+  /** A picked file on its way up, by name. */
+  uploading: string | null;
+  /** Why the last pick was refused, already worded. */
+  fileError: string | null;
+  onPickFile: (file: File) => void;
+  onRemoveFile: () => void;
+  onViewFile: () => void;
 };
 
 /**
  * The composer (Messages.dc.html footer, `openComposer`): the offline line,
- * the contact-details notice (never blocks), the box and Send. Files arrive
- * in a later build: the attach button and the picked-file chip go in the
- * marked slots.
+ * the contact-details notice (never blocks), the picked file and its error,
+ * then the box: Attach, the text, Send. Text is optional with a file.
  */
-export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function Composer(
-  { first, value, onChange, onSend, phone, offline, starters },
+export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer(
+  {
+    first,
+    value,
+    onChange,
+    onSend,
+    phone,
+    offline,
+    starters,
+    file,
+    uploading,
+    fileError,
+    onPickFile,
+    onRemoveFile,
+    onViewFile,
+  },
   ref,
 ) {
   const box = useRef<HTMLTextAreaElement | null>(null);
-  const canSend = value.trim().length > 0;
+  const attach = useRef<HTMLButtonElement>(null);
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => box.current?.focus(),
+      focusAttach: () => attach.current?.focus(),
+    }),
+    [],
+  );
+  // Send pressed while the file is still on its way: it would go without it.
+  // Kept by name, so the line ends with that upload and a later one doesn't open with it.
+  const [waitUpload, setWaitUpload] = useState<string | null>(null);
+  const canSend = value.trim().length > 0 || !!file || !!uploading;
   // Grows with the text (field-sizing isn't everywhere yet).
   useLayoutEffect(() => {
     const el = box.current;
@@ -45,6 +93,13 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, MAX_BOX)}px`;
   }, [value]);
+  const trySend = () => {
+    if (uploading) {
+      setWaitUpload(uploading);
+      return;
+    }
+    if (canSend) onSend();
+  };
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Safari ends an IME composition with an Enter that says isComposing false
     // and keyCode 229: neither may send.
@@ -53,9 +108,10 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
     e.preventDefault();
     // A held Enter repeats: one message, however long it's held.
     if (e.repeat) return;
-    if (canSend) onSend();
+    trySend();
   };
   const placeholder = COMPOSER_COPY.placeholder(first);
+  const alert = uploading && waitUpload === uploading ? COMPOSER_COPY.waitUpload : fileError;
   return (
     <div className={styles.composer}>
       {offline && (
@@ -71,15 +127,36 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
         </Notice>
       )}
       {starters}
-      {/* FILES SLOT (files build): the picked-file chip and the attach error go here. */}
+      <PickedFileChip
+        file={file}
+        uploading={uploading}
+        look="outlined"
+        onView={onViewFile}
+        onRemove={() => {
+          onRemoveFile();
+          // The chip goes with the focused button: focus the paperclip.
+          attach.current?.focus();
+        }}
+      />
+      {alert && (
+        <span role="alert" className={styles.fileError}>
+          {alert}
+        </span>
+      )}
       <div className={styles.box}>
-        {/* FILES SLOT (files build): the 44px "Attach a file" button goes here. */}
-        <textarea
-          ref={(el) => {
-            box.current = el;
-            if (typeof ref === 'function') ref(el);
-            else if (ref) ref.current = el;
+        <AttachFileButton
+          ref={attach}
+          label={COMPOSER_COPY.attach}
+          hint={COMPOSER_COPY.attachHint}
+          // Picking another replaces the file (PRD); not mid-upload.
+          disabled={!!uploading}
+          onFile={(f) => {
+            setWaitUpload(null);
+            onPickFile(f);
           }}
+        />
+        <textarea
+          ref={box}
           rows={1}
           value={value}
           maxLength={MAX_MESSAGE}
@@ -95,7 +172,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(function 
           aria-label={COMPOSER_COPY.send}
           className={cx(styles.send, canSend && styles.sendOn)}
           disabled={!canSend}
-          onClick={onSend}
+          onClick={trySend}
         />
       </div>
     </div>

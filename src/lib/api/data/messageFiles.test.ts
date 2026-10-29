@@ -18,7 +18,7 @@ describe('messageFileError: the designed refusals, the rest as intake says them'
   });
   it('10 unsent uploads (409): the message wording, never the booking one', () => {
     expect(messageFileError(new ApiError(409)).message).toBe(
-      'You’ve attached too many files you haven’t sent. You can attach more tomorrow.',
+      'You have 10 unsent files. You can attach more tomorrow.',
     );
   });
   it('rate limited: says when', () => {

@@ -1315,3 +1315,14 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | `/read` whenever the chat is open and visible | Only when their newest message is past my read mark | No write that changes nothing | never |
 | A file in a message: the file card | Until the files build: the file's name as text | Builder C adds the card (FileViewer) | files PR |
 | The textarea grows with `field-sizing: content` | Measured with `scrollHeight` on change (44 to 140px) | `field-sizing` isn't in every browser yet | `field-sizing` ships everywhere |
+
+### Messages: files in chats, 2026-10-29
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| The file card and the composer chip: `picture_as_pdf` in red, whatever the file | A Word file shows `description` in ink-600 (`fileGlyph`, as SendMessage's chip) | One rule for every file glyph; a PDF glyph on a .docx misnames it | design draws a Word card |
+| The file card is a link (`<a href="#">`) with a "Download" glyph label | A button named "View {name}"; the download glyph is decorative | It opens FileViewer (a dialog), whose Download is the one download control | never |
+| The composer chip's name is plain text | The name is a button that opens the file in FileViewer, as in SendMessage | One chip (`PickedFileChip`) for both; a file you attached can be checked before it goes | never |
+| Send pressed while the file uploads, not drawn | "Wait for your file to finish uploading." above the box; nothing is sent | SendMessage's rule: a send then would go without the file | never |
+| A send refused because its upload expired (`422 file-unavailable`), not drawn | The bubble says "Not sent. Your file expired." with "Attach it again" (its text goes back in the box, focus on Attach); SendMessage drops the file and says "Your file expired. Attach it again." | Try again can never succeed; an upload unsent for 24 hours is swept | never |
+| File names shown and saved as sent | Bidi and control characters are dropped from every shown name (`cleanFileName`); Download saves under the name with its extension from the checked type (`downloadName`: `notes.pdf.exe` saves as `notes.pdf.pdf`) | Another person's text: a reversed name could pass a file off as another kind (security pass) | never |

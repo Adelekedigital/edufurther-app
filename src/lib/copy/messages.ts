@@ -93,6 +93,9 @@ export const CHAT_COPY = {
   waiting: 'Waiting to send',
   notSent: 'Not sent.',
   tryAgain: 'Try again',
+  /** A send refused because its upload expired: Try again can't help. */
+  fileExpired: 'Not sent. Your file expired.',
+  attachAgain: 'Attach it again',
   retried: 'Message sent.',
   deletedMine: 'You deleted this message',
   deletedTheirs: 'This message was deleted',
@@ -181,10 +184,15 @@ export const COMPOSER_COPY = {
   placeholder: (first: string) => `Message ${first}`,
   send: 'Send',
   removeFile: 'Remove file',
+  viewFile: (name: string) => `View ${name}`,
+  uploading: 'Uploading…',
+  waitUpload: 'Wait for your file to finish uploading.',
   tooBig: 'That file is over 5 MB. Choose a smaller one.',
   wrongType: 'Use a PDF or Word (.docx) file.',
   /** 409: the unsent-upload cap (10). Removing a file here frees nothing; the server sweeps unsent ones after 24 hours. */
-  tooManyUnsent: 'You’ve attached too many files you haven’t sent. You can attach more tomorrow.',
+  tooManyUnsent: 'You have 10 unsent files. You can attach more tomorrow.',
+  /** 422 file-unavailable on send: the upload was swept (24 hours unsent). */
+  fileExpired: 'Your file expired. Attach it again.',
 } as const;
 
 /** SendMessage (SendMessage.dc.html): the pop-up behind every Message button. */
@@ -195,7 +203,7 @@ export const SEND_MESSAGE_COPY = {
   attachHint: COMPOSER_COPY.attachHint,
   attachHintPhone: 'PDF or Word · 5 MB',
   attached: '1 file attached',
-  viewFile: (name: string) => `View ${name}`,
+  viewFile: COMPOSER_COPY.viewFile,
   removeFile: COMPOSER_COPY.removeFile,
   left: (n: number) => `${n} left`,
   contactNotice: COMPOSER_COPY.contactNotice,
@@ -215,8 +223,8 @@ export const SEND_MESSAGE_COPY = {
   loading: 'Loading your chat',
   /** Offline: the outbox holds it and sends it on reconnect. */
   waiting: COMPOSER_COPY.offline,
-  waitUpload: 'Wait for your file to finish uploading.',
-  uploading: 'Uploading…',
+  waitUpload: COMPOSER_COPY.waitUpload,
+  uploading: COMPOSER_COPY.uploading,
   sentTitle: 'Message sent',
   sentSub: (first: string) => `It’s in your chat with ${first} in Messages.`,
   sentSubSoon: (first: string) =>

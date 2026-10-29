@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { Thread } from '@/types/messages';
-import { resetOutbox, useOutbox, useSendMessage } from './messageSend';
+import { outboxItem, resetOutbox, useOutbox, useSendMessage } from './messageSend';
 import {
   mergeNewer,
   mergeOlder,
@@ -125,6 +125,21 @@ describe('mappers', () => {
       }),
     );
     expect(m).toMatchObject({ deleted: true, body: null, file: null });
+  });
+
+  it('a file maps to its name, size and type (Q9 aside, it is kept)', () => {
+    const m = toMessage(
+      wireMsg('m1', {
+        body: null,
+        file: { id: 'f', filename: 'CV.pdf', size: 2048, content_type: 'application/pdf' },
+      }),
+    );
+    expect(m.file).toEqual({
+      id: 'f',
+      name: 'CV.pdf',
+      sizeBytes: 2048,
+      contentType: 'application/pdf',
+    });
   });
 
   it('the list maps the page envelope and never shows a negative count', () => {
@@ -343,5 +358,55 @@ describe('the outbox', () => {
     });
     expect(POST).not.toHaveBeenCalled();
     expect(result.current.box).toEqual([]);
+  });
+
+  const FILE = { id: 'f-1', name: 'CV.pdf', sizeBytes: 10, contentType: 'application/pdf' };
+
+  it('a file goes as file_id, and a refused send is retried with the same file and client_id', async () => {
+    POST.mockResolvedValueOnce({ data: undefined, error: {}, response: res(500) });
+    const { result } = hooks();
+    await act(async () => {
+      await result.current.send.send({ to: 'u-1', body: '', file: FILE });
+    });
+    const first = POST.mock.calls[0]![1].body;
+    expect(first).toMatchObject({ file_id: 'f-1' });
+    expect(first).not.toHaveProperty('body');
+    expect(result.current.box[0]).toMatchObject({ status: 'failed', file: FILE });
+
+    POST.mockResolvedValueOnce({
+      data: wireMsg('m11', { mine: true, client_id: first.client_id }),
+      response: res(201),
+    });
+    await act(async () => {
+      await result.current.send.retry(result.current.box[0]!.clientId);
+    });
+    expect(POST.mock.calls[1]![1].body).toEqual(first);
+  });
+
+  it('an expired file (422 file-unavailable) is kept with its problem, and discard drops it', async () => {
+    POST.mockResolvedValueOnce({
+      data: undefined,
+      error: { type: 'https://edufurther.com/problems/file-unavailable', status: 422 },
+      response: res(422),
+    });
+    const { result } = hooks();
+    await act(async () => {
+      await result.current.send.send({ to: 'u-1', body: 'Hi', file: FILE });
+    });
+    const id = result.current.box[0]!.clientId;
+    expect(outboxItem(id)?.problem).toMatch(/\/problems\/file-unavailable$/);
+    act(() => result.current.send.discard(id));
+    expect(result.current.box).toEqual([]);
+  });
+
+  it('discard never drops a message on its way', async () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    const { result } = hooks();
+    await act(async () => {
+      await result.current.send.send({ to: 'u-1', body: 'Hi', file: null });
+    });
+    act(() => result.current.send.discard(result.current.box[0]!.clientId));
+    expect(result.current.box).toHaveLength(1);
+    online.mockRestore();
   });
 });

@@ -6,15 +6,18 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
+import { useAttachedFile } from '@/lib/api/data/attachedFile';
+import { messageViewerFile } from '@/lib/utils/files';
 import { useMarkRead, useThread } from '@/lib/api/data/messages';
 import { useOutbox, useSendMessage } from '@/lib/api/data/messageSend';
-import { CHAT_COPY, EMPTY_CHAT_COPY, STARTERS_COPY } from '@/lib/copy/messages';
+import { CHAT_COPY, COMPOSER_COPY, EMPTY_CHAT_COPY, STARTERS_COPY } from '@/lib/copy/messages';
 import { ChatLockLine } from '@/components/molecules/ChatLockLine/ChatLockLine';
 import { formatNextAvailable } from '@/lib/utils/format';
 import { useOnline } from '@/lib/utils/useOnline';
-import type { ChatPerson, NextBooking } from '@/types/messages';
+import type { ChatPerson, MessageFile, NextBooking } from '@/types/messages';
 import { GoneState } from './ChatPane';
-import { Composer } from './Composer';
+import { Composer, type ComposerHandle } from './Composer';
 import { MessageBubble, OutboxBubble } from './MessageBubble';
 import { type Starter } from './starters';
 import { newDivider, newestTheirs, threadItems, type NewDivider } from './threadItems';
@@ -54,12 +57,16 @@ export function ChatView({
 }) {
   const thread = useThread(person.id);
   const outbox = useOutbox(person.id);
-  const { send, retry } = useSendMessage();
+  const { send, retry, discard } = useSendMessage();
+  // The picked file: dropped with the chat (OpenChat is keyed per person, PRD).
+  const attached = useAttachedFile();
+  // The file open in FileViewer, and whose it is.
+  const [viewing, setViewing] = useState<{ file: MessageFile; mine: boolean } | null>(null);
   const markRead = useMarkRead();
   const online = useOnline();
   const visible = usePageVisible();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const boxRef = useRef<HTMLTextAreaElement>(null);
+  const composerRef = useRef<ComposerHandle>(null);
   const t = thread.data;
   const messages = useMemo(() => t?.items ?? [], [t]);
 
@@ -134,13 +141,30 @@ export function ChatView({
   useEffect(() => {
     if (draft === '') sentDraft.current = null;
   }, [draft]);
+  // Upload ids are unique, so a file once sent is never sent again from here.
+  const sentFile = useRef<string | null>(null);
   const doSend = () => {
     const text = draft.trim();
-    if (!text || sentDraft.current === draft) return;
+    const file = attached.file;
+    // A file is its own message; text is optional with one.
+    if (!text && !file) return;
+    // The same file, or text alone already sent, before the clear has rendered.
+    if (file ? sentFile.current === file.id : sentDraft.current === draft) return;
+    if (file) sentFile.current = file.id;
     sentDraft.current = draft;
     atBottom.current = true;
     onDraft('');
-    void send({ to: person.id, body: text, file: null });
+    attached.clear();
+    void send({ to: person.id, body: text, file });
+  };
+  // A send refused because its upload expired: its text back in the box (after
+  // anything written since, never over it), the line saying why unless a new
+  // file is already attached or on its way, focus on Attach.
+  const attachAgain = (clientId: string, body: string | null) => {
+    discard(clientId);
+    if (body) onDraft(draft.trim() ? `${draft.trimEnd()}\n${body}` : body);
+    if (!attached.file && !attached.uploading) attached.fail(COMPOSER_COPY.fileExpired);
+    composerRef.current?.focusAttach();
   };
 
   if (thread.error && !t) {
@@ -240,7 +264,13 @@ export function ChatView({
               {CHAT_COPY.newCount(it.count)}
             </div>
           ) : it.kind === 'message' ? (
-            <MessageBubble key={it.key} message={it.message} read={it.read} timeZone={timeZone} />
+            <MessageBubble
+              key={it.key}
+              message={it.message}
+              read={it.read}
+              timeZone={timeZone}
+              onOpenFile={(file) => setViewing({ file, mine: it.message.mine })}
+            />
           ) : (
             <OutboxBubble
               key={it.key}
@@ -252,6 +282,8 @@ export function ChatView({
                   if (ok) onRetried();
                 })
               }
+              onAttachAgain={() => attachAgain(it.item.clientId, it.item.body)}
+              onOpenFile={(file) => setViewing({ file, mine: true })}
             />
           ),
         )}
@@ -263,13 +295,19 @@ export function ChatView({
       ) : (
         t && (
           <Composer
-            ref={boxRef}
+            ref={composerRef}
             first={first}
             value={draft}
             onChange={onDraft}
             onSend={doSend}
             phone={phone}
             offline={!online}
+            file={attached.file}
+            uploading={attached.uploading}
+            fileError={attached.error}
+            onPickFile={(f) => void attached.pick(f)}
+            onRemoveFile={attached.clear}
+            onViewFile={() => attached.file && setViewing({ file: attached.file, mine: true })}
             starters={
               empty && starters.length > 0 ? (
                 <div className={composerStyles.starters}>
@@ -282,7 +320,7 @@ export function ChatView({
                         className={composerStyles.chip}
                         onClick={() => {
                           onDraft(s.text);
-                          boxRef.current?.focus();
+                          composerRef.current?.focus();
                         }}
                       >
                         {s.label}
@@ -294,6 +332,13 @@ export function ChatView({
             }
           />
         )
+      )}
+      {viewing && (
+        <FileViewerLauncher
+          file={messageViewerFile(viewing.file)}
+          sharedBy={viewing.mine ? { mine: true } : { mine: false, firstName: first }}
+          onClose={() => setViewing(null)}
+        />
       )}
     </>
   );

@@ -1,0 +1,61 @@
+/* Messages.dc.html `it.hasFile`: 12px between parts, 8px 12px inside, at least 220px wide. */
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 220px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+  text-align: left;
+}
+.card:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+/* Theirs: grey on the white bubble. Mine: white on the blue-50 bubble. */
+.theirs {
+  background: var(--ink-50);
+}
+.mine {
+  background: var(--white);
+}
+.card:hover .name {
+  text-decoration: underline;
+}
+
+.glyph {
+  flex: none;
+  color: var(--red-500);
+}
+/* Ours, as SendMessage's chip: the design draws only the PDF glyph; a Word file's is neutral. */
+.doc {
+  color: var(--ink-600);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}
+.size {
+  font-size: var(--text-caption-xs);
+  color: var(--ink-600);
+}
+.download {
+  flex: none;
+  color: var(--ink-600);
+}

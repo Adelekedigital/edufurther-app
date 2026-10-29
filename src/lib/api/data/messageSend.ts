@@ -149,7 +149,8 @@ export type SendInput = {
 
 /**
  * POST /me/messages/{user_id} through the outbox. `send` resolves true once
- * stored; `retry` re-posts a failed message with the same `client_id`.
+ * stored; `retry` re-posts a failed message with the same `client_id`;
+ * `discard` drops a failed one.
  */
 export function useSendMessage() {
   const qc = useQueryClient();
@@ -190,7 +191,20 @@ export function useSendMessage() {
     return enqueue({ ...item, status });
   }, []);
 
-  return { send, retry };
+  /**
+   * Drops a failed message that can never go (its upload expired), so the
+   * writer can attach the file again; only a failed one, never one on its way.
+   */
+  const discard = useCallback((clientId: string) => {
+    if (items.some((i) => i.clientId === clientId && i.status === 'failed')) update(clientId, null);
+  }, []);
+
+  return { send, retry, discard };
+}
+
+/** One unsent message as it stands now (a caller reading why its send failed). */
+export function outboxItem(clientId: string): OutboxItem | undefined {
+  return items.find((i) => i.clientId === clientId);
 }
 
 /** For tests: an empty outbox. */

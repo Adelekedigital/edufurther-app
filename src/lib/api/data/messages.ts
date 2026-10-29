@@ -17,6 +17,7 @@ import type {
 import type { Remote } from '@/types/mentor';
 import { remote } from './bookings';
 import { ApiError, apiError, retryOnce } from './errors';
+import { cleanFileName } from '@/lib/utils/files';
 import { keys } from './keys';
 import {
   untyped,
@@ -72,7 +73,7 @@ function toLast(l: WireLast | null): LastMessage | null {
   return {
     kind: l.kind,
     text: l.deleted ? null : l.text,
-    fileName: l.deleted ? null : l.file_name,
+    fileName: l.deleted || !l.file_name ? null : cleanFileName(l.file_name),
     mine: l.mine,
     at: l.at,
     deleted: l.deleted,
@@ -93,7 +94,12 @@ export function toChats(w: WireChats): Chats {
 }
 
 export function toMessageFile(f: WireMessageFile): MessageFile {
-  return { id: f.id, name: f.filename, sizeBytes: f.size, contentType: f.content_type };
+  return {
+    id: f.id,
+    name: cleanFileName(f.filename),
+    sizeBytes: f.size,
+    contentType: f.content_type,
+  };
 }
 
 export function toMessage(m: WireMessage): Message {

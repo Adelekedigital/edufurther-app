@@ -18,6 +18,11 @@
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
 }
+/* The attach error, above the box (Messages.dc.html `attachErr`). */
+.fileError {
+  font-size: var(--text-caption-xs);
+  color: var(--red-500);
+}
 .box {
   display: flex;
   align-items: flex-end;

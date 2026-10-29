@@ -127,6 +127,8 @@ function seedMentee(): Chat[] {
           false,
           ago(40 * MIN),
           'Read your draft. Strong opening. Let’s spend most of Tuesday on the second half.',
+          // A file with text, from them: the grey card under the words.
+          { file: pdf('SOP_draft_comments.pdf', 186_000) },
         ),
       ],
     },

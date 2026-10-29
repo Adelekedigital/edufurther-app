@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { FILE_VIEWER } from '@/lib/copy/files';
 import { cx } from '@/lib/utils/cx';
-import { canPreview } from '@/lib/utils/files';
+import { canPreview, cleanFileName, downloadName } from '@/lib/utils/files';
 import { fileSize } from '@/lib/utils/format';
 import type { FileSharer } from '@/types/files';
 import type { AppError } from '@/types/mentor';
@@ -60,6 +60,7 @@ export function FileViewer({
   onClose,
 }: FileViewerProps) {
   const previewable = canPreview({ available: true, contentType });
+  const shown = cleanFileName(name);
   const meta = [
     previewable ? FILE_VIEWER.pdf : contentType === DOCX ? FILE_VIEWER.word : FILE_VIEWER.file,
     fileSize(size),
@@ -103,7 +104,7 @@ export function FileViewer({
       size="medium"
       icon="download"
       href={url}
-      download={name}
+      download={downloadName(name, contentType)}
     >
       {FILE_VIEWER.download}
     </ButtonAnchor>
@@ -179,7 +180,7 @@ export function FileViewer({
       // means a later change to VIEWABLE cannot quietly widen what lands here.
       type="application/pdf"
       className={styles.frame}
-      aria-label={name}
+      aria-label={shown}
     >
       {/* A browser with no built-in PDF viewer (Chrome on Android) shows this. */}
       <div className={styles.centre}>{noPreview}</div>
@@ -189,7 +190,7 @@ export function FileViewer({
   );
 
   return (
-    <ModalShell title={name} subtitle={meta} size="xl" onClose={onClose}>
+    <ModalShell title={shown} subtitle={meta} size="xl" onClose={onClose}>
       <div className={styles.viewer}>
         <LiveRegion message={loading ? { text: FILE_VIEWER.loading, id: 1 } : null} />
         {download && <div className={styles.toolbar}>{download}</div>}
