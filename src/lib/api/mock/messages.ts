@@ -81,7 +81,7 @@ function msg(
 const known = new Map<string, WireMessageFile>();
 
 const pdf = (name: string, size: number): WireMessageFile => {
-  const f = { id: `f-${name}`, filename: name, size, content_type: 'application/pdf' };
+  const f: WireMessageFile = { id: `f-${name}`, filename: name, size, content_type: 'application/pdf' };
   known.set(f.id, f);
   return f;
 };
