@@ -193,6 +193,8 @@ export function SendMessage({
                         <IconButton
                           icon="close"
                           size="sm"
+                          // Drawn 32px at every width (design); square keeps a 44px tap area on phones.
+                          shape="square"
                           aria-label={C.removeFile}
                           className={styles.remove}
                           onClick={onRemoveFile}

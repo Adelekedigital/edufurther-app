@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
 import { SendMessage } from '@/components/templates/SendMessage/SendMessage';
+import { normaliseError } from '@/lib/api/data/errors';
 import { useUploadMessageFile } from '@/lib/api/data/messageFiles';
 import { useChatStatus } from '@/lib/api/data/messages';
 import { useOutbox, useSendMessage } from '@/lib/api/data/messageSend';
@@ -91,7 +92,9 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
     try {
       setFile(await upload(picked));
     } catch (e) {
-      setFileError((e as { message?: string }).message ?? null);
+      // The upload throws our own worded AppError; anything else gets the safe generic line.
+      const worded = e && typeof e === 'object' && 'kind' in e && 'message' in e;
+      setFileError(worded ? (e as { message: string }).message : normaliseError(e).message);
     } finally {
       setUploading(null);
     }
