@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
 import { SendMessage } from '@/components/templates/SendMessage/SendMessage';
 import { useAttachedFile } from '@/lib/api/data/attachedFile';
-import { isFileExpired } from '@/lib/utils/files';
+import { isFileExpired, messageViewerFile } from '@/lib/utils/files';
 import { useChatStatus } from '@/lib/api/data/messages';
 import { outboxItem, useOutbox, useSendMessage } from '@/lib/api/data/messageSend';
 import { COMPOSER_COPY, SEND_MESSAGE_COPY as C } from '@/lib/copy/messages';
@@ -31,6 +31,13 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
   const status = useChatStatus(to.id);
   const { send, retry, discard } = useSendMessage();
   const attached = useAttachedFile();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const file = attached.file;
   const [phase, setPhase] = useState<'compose' | 'sending' | 'waiting' | 'sent'>('compose');
   const [failed, setFailed] = useState(false);
@@ -82,19 +89,30 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
     attached.fail(COMPOSER_COPY.fileExpired);
   };
   // The same refusal arriving later (a send queued offline, refused on
-  // reconnect): shown at once as the file line, tidied up on the next Send.
-  const expiredLater = pending?.status === 'failed' && isFileExpired(pending.problem);
+  // reconnect): the expired file is hidden and the file line says why at once;
+  // a file picked since shows and sends as usual. The next Send drops the
+  // refused one from the outbox and sends a new message.
+  const expiredLater = !!pending && pending.status === 'failed' && isFileExpired(pending.problem);
+  const expiredFile = expiredLater ? (pending?.file?.id ?? lastTry?.fileId ?? null) : null;
+  const shownFile = file && file.id === expiredFile ? null : file;
+  const shownFileError =
+    expiredLater && !shownFile && !attached.uploading && !attached.error
+      ? COMPOSER_COPY.fileExpired
+      : attached.error;
 
   // A 403, or a 404 ("not connected", as for the chat itself): said up front.
   const refused = status.error?.kind === 'forbidden' || status.error?.kind === 'notFound';
 
   const onSend = async (text: string) => {
+    let last = lastTry;
     if (expiredLater && pending) {
-      expire(pending.clientId);
-      return;
+      discard(pending.clientId);
+      setLastTry(null);
+      last = null;
     }
-    const fileId = file?.id ?? null;
-    const same = !!lastTry && lastTry.text === text && lastTry.fileId === fileId;
+    const sending = shownFile;
+    const fileId = sending?.id ?? null;
+    const same = !!last && last.text === text && last.fileId === fileId;
     // The same message, no longer in the outbox: it was stored meanwhile.
     if (same && !pending) {
       setPhase('sent');
@@ -104,15 +122,16 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
     setFailed(false);
     try {
       let ok: boolean;
-      const id = same ? lastTry!.id : crypto.randomUUID();
+      const id = same && last ? last.id : crypto.randomUUID();
       if (same) {
         ok = await retry(id);
       } else {
         setLastTry({ id, text, fileId });
-        ok = await send({ to: to.id, body: text, file, clientId: id });
+        ok = await send({ to: to.id, body: text, file: sending, clientId: id });
       }
       if (!ok && isFileExpired(outboxItem(id)?.problem)) {
-        expire(id);
+        // Closed meanwhile: leave it in the chat as Not sent, where it can be seen.
+        if (mounted.current) expire(id);
         return;
       }
       setPhase(ok ? 'sent' : 'waiting');
@@ -135,9 +154,9 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
         phase={shownPhase}
         failure={expiredLater ? null : failure}
         onSend={(text) => void onSend(text)}
-        file={expiredLater ? null : file}
+        file={shownFile}
         uploading={attached.uploading}
-        fileError={expiredLater ? COMPOSER_COPY.fileExpired : attached.error}
+        fileError={shownFileError}
         onPickFile={(f) => void attached.pick(f)}
         onRemoveFile={attached.clear}
         onViewFile={() => setViewing(true)}
@@ -146,14 +165,7 @@ function Open({ to, onClose }: { to: MessageRecipient; onClose: () => void }) {
       />
       {viewing && file && (
         <FileViewerLauncher
-          file={{
-            kind: 'message',
-            id: file.id,
-            name: file.name,
-            contentType: file.contentType,
-            size: file.sizeBytes,
-            available: true,
-          }}
+          file={messageViewerFile(file)}
           sharedBy={{ mine: true }}
           onClose={() => setViewing(false)}
         />

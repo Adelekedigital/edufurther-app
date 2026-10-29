@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
 import { useAttachedFile } from '@/lib/api/data/attachedFile';
+import { messageViewerFile } from '@/lib/utils/files';
 import { useMarkRead, useThread } from '@/lib/api/data/messages';
 import { useOutbox, useSendMessage } from '@/lib/api/data/messageSend';
 import { CHAT_COPY, COMPOSER_COPY, EMPTY_CHAT_COPY, STARTERS_COPY } from '@/lib/copy/messages';
@@ -156,12 +157,13 @@ export function ChatView({
     attached.clear();
     void send({ to: person.id, body: text, file });
   };
-  // A send refused because its upload expired: its text back in the box (unless
-  // something new is there), the line saying why, focus on Attach.
+  // A send refused because its upload expired: its text back in the box (after
+  // anything written since, never over it), the line saying why unless a new
+  // file is already attached or on its way, focus on Attach.
   const attachAgain = (clientId: string, body: string | null) => {
     discard(clientId);
-    if (body && !draft.trim()) onDraft(body);
-    attached.fail(COMPOSER_COPY.fileExpired);
+    if (body) onDraft(draft.trim() ? `${draft.trimEnd()}\n${body}` : body);
+    if (!attached.file && !attached.uploading) attached.fail(COMPOSER_COPY.fileExpired);
     composerRef.current?.focusAttach();
   };
 
@@ -333,14 +335,7 @@ export function ChatView({
       )}
       {viewing && (
         <FileViewerLauncher
-          file={{
-            kind: 'message',
-            id: viewing.file.id,
-            name: viewing.file.name,
-            contentType: viewing.file.contentType,
-            size: viewing.file.sizeBytes,
-            available: true,
-          }}
+          file={messageViewerFile(viewing.file)}
           sharedBy={viewing.mine ? { mine: true } : { mine: false, firstName: first }}
           onClose={() => setViewing(null)}
         />

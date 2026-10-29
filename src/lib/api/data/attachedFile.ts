@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
+import { COMPOSER_COPY } from '@/lib/copy/messages';
+import { pickedFileProblem } from '@/lib/utils/files';
 import type { AppError } from '@/types/mentor';
 import type { MessageFile } from '@/types/messages';
 import { normaliseError } from './errors';
@@ -21,6 +23,13 @@ export function useAttachedFile() {
 
   const pick = useCallback(
     async (picked: File) => {
+      // An obvious refusal (type, size) keeps the file already attached: only
+      // a file that can go replaces it. The server still decides from the bytes.
+      const problem = pickedFileProblem(picked);
+      if (problem) {
+        setError(COMPOSER_COPY[problem]);
+        return;
+      }
       const mine = ++turn.current;
       setFile(null);
       setError(null);

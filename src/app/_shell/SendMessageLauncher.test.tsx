@@ -14,7 +14,12 @@ let status: {
   retry: () => void;
 };
 
-let outboxItems: { clientId: string; status: string; problem?: string }[] = [];
+let outboxItems: {
+  clientId: string;
+  status: string;
+  problem?: string;
+  file?: { id: string } | null;
+}[] = [];
 const discard = vi.fn();
 vi.mock('@/lib/api/data/messageSend', () => ({
   useOutbox: () => outboxItems,
@@ -172,6 +177,7 @@ describe('SendMessageLauncher', () => {
     expect(screen.queryByRole('button', { name: 'View CV.pdf' })).toBeNull();
     expect(box()).toHaveValue('My CV');
     expect(screen.queryByText(/Not sent/)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Attach a file' })).toHaveFocus();
   });
 
   it('a refused upload says why, and nothing is attached', async () => {
@@ -214,6 +220,53 @@ describe('SendMessageLauncher', () => {
     outboxItems = [];
     rerender(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
     expect(await screen.findByRole('dialog', { name: 'Message sent' })).toBeVisible();
+    online.mockRestore();
+  });
+
+  it('queued offline, then refused because the file expired: a new file sends as a new message', async () => {
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    const old = { id: 'f-old', name: 'Old.pdf', sizeBytes: 10, contentType: 'application/pdf' };
+    const fresh = { id: 'f-new', name: 'New.pdf', sizeBytes: 10, contentType: 'application/pdf' };
+    upload.mockResolvedValueOnce(old).mockResolvedValueOnce(fresh);
+    send.mockImplementationOnce(async ({ clientId }: { clientId: string }) => {
+      outboxItems = [{ clientId, status: 'waiting', file: old }];
+      return false;
+    });
+    const { container, rerender } = render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    const input = () =>
+      container.ownerDocument.querySelector('input[type=file]') as HTMLInputElement;
+    await userEvent.upload(input(), new File(['%PDF'], 'Old.pdf', { type: 'application/pdf' }));
+    await screen.findByRole('button', { name: 'View Old.pdf' });
+    await userEvent.type(box(), 'My CV');
+    await userEvent.click(sendBtn());
+    await screen.findByText(/We’ll send your messages when you’re back online/);
+    // Back online, the server refuses it: the upload was swept.
+    online.mockReturnValue(true);
+    const first = send.mock.calls[0]?.[0].clientId;
+    outboxItems = [
+      {
+        clientId: first,
+        status: 'failed',
+        problem: 'https://edufurther.com/problems/file-unavailable',
+        file: old,
+      },
+    ];
+    rerender(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your file expired. Attach it again.',
+    );
+    expect(screen.queryByRole('button', { name: 'View Old.pdf' })).toBeNull();
+    expect(screen.queryByText(/Not sent/)).toBeNull();
+    // A new file: it shows, the line goes, and Send sends it as a new message.
+    await userEvent.upload(input(), new File(['%PDF'], 'New.pdf', { type: 'application/pdf' }));
+    await screen.findByRole('button', { name: 'View New.pdf' });
+    expect(screen.queryByText('Your file expired. Attach it again.')).toBeNull();
+    send.mockResolvedValueOnce(true);
+    await userEvent.click(sendBtn());
+    expect(discard).toHaveBeenCalledWith(first);
+    expect(send).toHaveBeenLastCalledWith(expect.objectContaining({ body: 'My CV', file: fresh }));
+    expect(send.mock.calls[1]?.[0].clientId).not.toBe(first);
+    expect(retry).not.toHaveBeenCalled();
     online.mockRestore();
   });
 

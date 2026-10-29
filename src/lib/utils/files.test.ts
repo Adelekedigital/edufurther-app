@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canPreview, pickedFileProblem } from './files';
+import { canPreview, cleanFileName, downloadName, pickedFileProblem } from './files';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -43,5 +43,21 @@ describe('pickedFileProblem: the obvious refusals, before anything is sent', () 
     expect(pickedFileProblem(file('a.exe', 10, 'application/octet-stream'))).toBe('wrongType');
     expect(pickedFileProblem(file('a.png', 9e9, 'image/png'))).toBe('wrongType');
     expect(pickedFileProblem(file('fake.pdf', 10, 'text/html'))).toBe('wrongType');
+  });
+});
+
+describe('file names from another person', () => {
+  it('cleanFileName drops bidi and control characters', () => {
+    const c = String.fromCharCode;
+    expect(cleanFileName(`CV${c(0x202e)}xcod.exe`)).toBe('CVxcod.exe');
+    expect(cleanFileName(`a${c(0x2066)}b${c(0x200f)}c${c(0)}.pdf`)).toBe('abc.pdf');
+    expect(cleanFileName('Amara Okafor CV.pdf')).toBe('Amara Okafor CV.pdf');
+  });
+  it('downloadName takes its extension from the checked type', () => {
+    expect(downloadName('CV.pdf', 'application/pdf')).toBe('CV.pdf');
+    expect(downloadName('notes.pdf.exe', 'application/pdf')).toBe('notes.pdf.pdf');
+    expect(downloadName('Plan.docx', DOCX)).toBe('Plan.docx');
+    expect(downloadName('page.html', 'text/html')).toBe('page');
+    expect(downloadName('.pdf', 'application/pdf')).toBe('file.pdf');
   });
 });

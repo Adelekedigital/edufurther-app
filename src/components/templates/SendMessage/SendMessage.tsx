@@ -108,6 +108,12 @@ export function SendMessage({
     if (locked) lockLine.current?.focus({ preventScroll: true });
     else field.current?.focus({ preventScroll: true });
   }, [status, locked]);
+  // A file problem with no file left (it expired before the send, say): focus
+  // goes to the paperclip, where it's fixed, as in the Messages composer.
+  const fileGone = !!fileError && !file && !uploading;
+  useEffect(() => {
+    if (fileGone) attach.current?.focus({ preventScroll: true });
+  }, [fileGone]);
 
   if (phase === 'sent') {
     return (
