@@ -6,6 +6,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import { cx } from '@/lib/utils/cx';
+import { unavailableProps } from '@/lib/utils/unavailable';
 import { Icon } from '../Icon/Icon';
 import type { IconName } from '../Icon/iconNames';
 import styles from './Button.module.css';
@@ -117,10 +118,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       // Kept after ...rest: a busy button must not submit twice, whatever the caller passes.
       disabled={disabled}
       aria-busy={busy || undefined}
-      aria-disabled={unavailable || rest['aria-disabled']}
-      data-unavailable={unavailable || undefined}
+      {...unavailableProps({ unavailable, busy, ariaDisabled: rest['aria-disabled'], onClick })}
       data-incomplete={incomplete || undefined}
-      onClick={busy || unavailable ? (e) => e.preventDefault() : onClick}
     >
       <Content icon={icon} iconPosition={iconPosition} variant={variant}>
         {children}

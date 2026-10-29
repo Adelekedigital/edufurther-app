@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ComponentProps } from 'react';
 import { cx } from '@/lib/utils/cx';
+import { unavailableProps } from '@/lib/utils/unavailable';
 import { Icon } from '../Icon/Icon';
 import type { IconName } from '../Icon/iconNames';
 import styles from './IconButton.module.css';
@@ -21,6 +22,12 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   variant?: 'quiet' | 'ring';
   /** The glyph's px when the drawn control isn't one of the sizes (a 24px back arrow). */
   glyph?: ComponentProps<typeof Icon>['size'];
+  /**
+   * Off, but kept in the tab order so it can say why, as Button's `unavailable`:
+   * aria-disabled, drawn as disabled, a click does nothing; `title` is the
+   * reason and its accessible description. Opt-in: `disabled` stays native.
+   */
+  unavailable?: boolean;
 };
 
 const ICON_SIZE = { sm: 18, md: 20, lg: 22 } as const;
@@ -39,8 +46,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     tone = 'default',
     variant = 'quiet',
     glyph,
+    unavailable,
     className,
     type,
+    onClick,
     ...rest
   },
   ref,
@@ -57,6 +66,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
         className,
       )}
       {...rest}
+      {...unavailableProps({ unavailable, ariaDisabled: rest['aria-disabled'], onClick })}
     >
       <Icon name={icon} size={glyph ?? (variant === 'ring' ? RING_GLYPH : ICON_SIZE[size])} />
     </button>

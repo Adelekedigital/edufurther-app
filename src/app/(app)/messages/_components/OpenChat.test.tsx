@@ -300,10 +300,34 @@ describe('the composer', () => {
     render(<MessagesScreen />);
     const box = chat().getByRole('textbox', { name: 'Message Ujunwa' });
     expect(box).toHaveAttribute('maxlength', '2000');
-    expect(chat().getByRole('button', { name: 'Send' })).toBeDisabled();
+    expect(chat().getByRole('button', { name: 'Send' })).toHaveAttribute('aria-disabled', 'true');
     await user.type(box, 'See you then{Enter}');
     expect(sent).toHaveBeenCalledWith({ to: UJ, body: 'See you then', file: null });
     expect(box).toHaveValue('');
+  });
+
+  it('Send stays reachable while empty: focusable, says why, and pressing it sends nothing', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    open({ items: [msg(false, ago(5), 'Hi')] });
+    render(<MessagesScreen />);
+    const send = chat().getByRole('button', { name: 'Send' });
+    expect(send).toBeEnabled();
+    expect(send).toHaveAttribute('aria-disabled', 'true');
+    expect(send).toHaveAccessibleDescription('Write a message or attach a file to send.');
+    await user.click(send);
+    send.focus();
+    expect(send).toHaveFocus();
+    await user.keyboard('{Enter}');
+    await user.keyboard(' ');
+    // Spaces only is still nothing to send.
+    await user.type(chat().getByRole('textbox', { name: 'Message Ujunwa' }), '   ');
+    await user.click(send);
+    expect(sent).not.toHaveBeenCalled();
+    await user.type(chat().getByRole('textbox', { name: 'Message Ujunwa' }), 'Hi');
+    expect(send).not.toHaveAttribute('aria-disabled');
+    expect(send).not.toHaveAccessibleDescription();
+    await user.click(send);
+    expect(sent).toHaveBeenCalledTimes(1);
   });
 
   it('an Enter that ends an IME composition never sends', () => {

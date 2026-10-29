@@ -95,7 +95,9 @@
 }
 /* Off, it keeps its white ground and ring; the glyph dims to --ink-500, as above. */
 .ring:disabled,
-.ring:disabled:hover {
+.ring:disabled:hover,
+.ring[aria-disabled='true'],
+.ring[aria-disabled='true']:hover {
   background: var(--surface-card);
   color: var(--ink-500);
 }

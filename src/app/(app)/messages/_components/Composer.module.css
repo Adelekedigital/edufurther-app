@@ -54,10 +54,11 @@
 .input::placeholder {
   color: var(--ink-500);
 }
-/* Send: 44px, grey and off while empty, blue with text (design `sendBg`). */
+/* Send: 44px, grey and off while empty, blue with text (design `sendBg`).
+   Off is aria-disabled (it stays focusable), so that look outranks the atom's. */
 .box .send,
-.box .send:disabled,
-.box .send:disabled:hover {
+.box .send[aria-disabled='true'],
+.box .send[aria-disabled='true']:hover {
   width: var(--touch-target-min);
   height: var(--touch-target-min);
   border-radius: var(--radius-md);
