@@ -1,0 +1,9 @@
+/* SendMessage.dc.html attach: ink-600 glyph, ink-50 on hover. */
+/* Doubled: the atom's `.lg` sets its own ink, at the same weight. */
+.attach.attach:not([aria-disabled='true']) {
+  color: var(--ink-600);
+}
+.attach.attach:not([aria-disabled='true']):hover {
+  background: var(--ink-50);
+  color: var(--ink-600);
+}

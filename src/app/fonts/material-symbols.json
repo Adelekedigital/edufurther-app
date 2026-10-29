@@ -11,6 +11,7 @@
     "arrow_downward",
     "arrow_forward",
     "arrow_upward",
+    "attach_file",
     "auto_awesome",
     "badge",
     "bar_chart",
@@ -103,6 +104,7 @@
     "person",
     "person_off",
     "photo_camera",
+    "picture_as_pdf",
     "power",
     "progress_activity",
     "psychology",
@@ -162,5 +164,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "050b4143c564175d0366bd6ac60b0c484073b1b54af5896950b3db5e7fa60f2d"
+  "sha256": "a15b31815e21f6d73d8cd2194f7ade3b2e0c5614f4b0aa9c1468b295717d2f7d"
 }

@@ -87,4 +87,12 @@ export type OutboxItem = {
   file: MessageFile | null;
   createdAt: string;
   status: OutboxStatus;
+  /** A refused send's problem type (`/problems/not-connected`), so the writer is told why. */
+  problem?: string;
 };
+
+/** Who a Message button writes to (SendMessage's `to`): a chat person's look, from any screen. */
+export type MessageRecipient = Pick<
+  ChatPerson,
+  'id' | 'name' | 'firstName' | 'initials' | 'avatarUrl' | 'avatarFocus' | 'cover' | 'role'
+> & { institution: string | null };

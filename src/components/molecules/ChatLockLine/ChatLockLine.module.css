@@ -1,0 +1,20 @@
+/* Messages.dc.html `lockedComposer`. */
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--ink-50);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.line > :first-child {
+  color: var(--ink-500);
+}
+.text {
+  flex: 1 1 220px;
+  text-wrap: pretty;
+}

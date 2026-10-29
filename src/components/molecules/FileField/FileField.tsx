@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { cx } from '@/lib/utils/cx';
+import { UPLOAD_ACCEPT } from '@/lib/utils/files';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import styles from './FileField.module.css';
 
@@ -26,7 +27,7 @@ export function FileField({
   fileName,
   onFile,
   // What the backend takes: PDF and Word .docx, decided from the bytes, 5 MB.
-  accept = '.pdf,.docx',
+  accept = UPLOAD_ACCEPT,
   hint = 'PDF or Word (.docx) · max 5 MB',
   status = 'idle',
   pendingName,

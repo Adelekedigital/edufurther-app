@@ -81,7 +81,10 @@ async function post(item: OutboxItem): Promise<boolean> {
       return false;
     }
     if (e instanceof ApiError && e.status === 409) refreshThread(item.to);
-    update(item.clientId, { status: 'failed' });
+    update(item.clientId, {
+      status: 'failed',
+      problem: e instanceof ApiError ? e.type : undefined,
+    });
     return false;
   }
 }
@@ -132,7 +135,17 @@ export function useOutbox(to: string | null): OutboxItem[] {
   return useMemo(() => all.filter((i) => i.to === to), [all, to]);
 }
 
-export type SendInput = { to: string; body: string; file: MessageFile | null };
+export type SendInput = {
+  to: string;
+  body: string;
+  file: MessageFile | null;
+  /**
+   * The caller's own id for this message, so it can `retry(clientId)` the same
+   * one after a failure rather than send a second (SendMessage). Made here
+   * when left out.
+   */
+  clientId?: string;
+};
 
 /**
  * POST /me/messages/{user_id} through the outbox. `send` resolves true once
@@ -150,11 +163,11 @@ export function useSendMessage() {
     listen();
   }, [known, qc, me]);
 
-  const send = useCallback(({ to, body, file }: SendInput): Promise<boolean> => {
+  const send = useCallback(({ to, body, file, clientId }: SendInput): Promise<boolean> => {
     const text = body.trim();
     if (!text && !file) return Promise.resolve(false);
     const item: OutboxItem = {
-      clientId: crypto.randomUUID(),
+      clientId: clientId ?? crypto.randomUUID(),
       to,
       body: text || null,
       file,
@@ -169,7 +182,8 @@ export function useSendMessage() {
 
   const retry = useCallback((clientId: string): Promise<boolean> => {
     const item = items.find((i) => i.clientId === clientId);
-    if (!item) return Promise.resolve(false);
+    // Already on its way (a reconnect flush): a second post would only race it.
+    if (!item || item.status === 'sending') return Promise.resolve(false);
     const status = offline() ? 'waiting' : 'sending';
     update(clientId, { status });
     if (status === 'waiting') return Promise.resolve(false);

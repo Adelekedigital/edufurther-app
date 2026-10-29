@@ -183,6 +183,53 @@ export const COMPOSER_COPY = {
   removeFile: 'Remove file',
   tooBig: 'That file is over 5 MB. Choose a smaller one.',
   wrongType: 'Use a PDF or Word (.docx) file.',
+  /** 409: the unsent-upload cap (10). Removing a file here frees nothing; the server sweeps unsent ones after 24 hours. */
+  tooManyUnsent: 'You’ve attached too many files you haven’t sent. You can attach more tomorrow.',
+} as const;
+
+/** SendMessage (SendMessage.dc.html): the pop-up behind every Message button. */
+export const SEND_MESSAGE_COPY = {
+  title: (first: string) => `Message ${first}`,
+  placeholder: (first: string) => `Write to ${first}`,
+  attach: COMPOSER_COPY.attach,
+  attachHint: COMPOSER_COPY.attachHint,
+  attachHintPhone: 'PDF or Word · 5 MB',
+  attached: '1 file attached',
+  viewFile: (name: string) => `View ${name}`,
+  removeFile: COMPOSER_COPY.removeFile,
+  left: (n: number) => `${n} left`,
+  contactNotice: COMPOSER_COPY.contactNotice,
+  where: (first: string) => `This goes to your chat with ${first} in Messages.`,
+  whereSoon: (first: string) =>
+    `Your session starts soon, so we’ll also email this to ${first} right away.`,
+  cancel: 'Cancel',
+  send: 'Send message',
+  sending: 'Sending…',
+  empty: (first: string) => `Write a message to ${first} first.`,
+  failed: 'Not sent. Check your connection and try again.',
+  /** 403: no booked session links the two any more; trying again can't help. */
+  notConnected: (first: string) => `Not sent. You can’t message ${first} right now.`,
+  /** The chat's status read refused (403) before anything was written. */
+  cantMessage: (first: string) => `You can’t message ${first} right now.`,
+  /** The chat's status still loading: the form waits for it. */
+  loading: 'Loading your chat',
+  /** Offline: the outbox holds it and sends it on reconnect. */
+  waiting: COMPOSER_COPY.offline,
+  waitUpload: 'Wait for your file to finish uploading.',
+  uploading: 'Uploading…',
+  sentTitle: 'Message sent',
+  sentSub: (first: string) => `It’s in your chat with ${first} in Messages.`,
+  sentSubSoon: (first: string) =>
+    `It’s in your chat with ${first}, and we emailed it to them because your session starts soon.`,
+  openChat: 'Open chat',
+  done: 'Done',
+} as const;
+
+/** A Message button (Bookings, Session Join, Mentor Profile; PRD table). */
+export const MESSAGE_BUTTON_COPY = {
+  send: 'Send a message',
+  short: 'Message',
+  to: (first: string) => `Message ${first}`,
 } as const;
 
 export const LOCK_COPY = {
