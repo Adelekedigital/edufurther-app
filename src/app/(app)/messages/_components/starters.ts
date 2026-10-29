@@ -35,9 +35,12 @@ export function startersFor(
     ];
   const m = data.mentee;
   const degree = m?.degree ? STARTERS.degree[m.degree as keyof typeof STARTERS.degree] : undefined;
-  // An area with no phrase yet (the list grows) reads as its catalog name.
+  // An area with no phrase yet (the list grows) reads as its catalog name,
+  // sentence case lowered mid-sentence; an acronym ("GRE prep") keeps its capitals.
   const topic = m?.firstNeed
-    ? STARTERS.topics[m.firstNeed.code] || m.firstNeed.name.trim().toLowerCase() || undefined
+    ? STARTERS.topics[m.firstNeed.code] ||
+      m.firstNeed.name.trim().replace(/^\p{Lu}(?!\p{Lu})/u, (c) => c.toLowerCase()) ||
+      undefined
     : undefined;
   const out: (Starter | null)[] = [
     m && degree && m.field.trim()

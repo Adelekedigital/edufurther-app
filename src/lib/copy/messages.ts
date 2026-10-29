@@ -157,7 +157,7 @@ export const STARTERS = {
   /**
    * "Share what to cover": each onboarding help area (catalog slug) in the
    * mentee's own voice, as it reads after "focus on". Generic per area, never
-   * narrower or wider than its name: the mentee adds specifics by editing
+   * narrower or wider than its catalog name: the mentee adds specifics by editing
    * (owner, 2026-10-28). An area missing here falls back to its catalog name.
    */
   topics: {

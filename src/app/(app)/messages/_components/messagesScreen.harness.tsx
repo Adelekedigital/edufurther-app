@@ -4,6 +4,7 @@
  * (`vi.mock(path, async () => (await import(harness)).mocks.x())`), as the
  * Bookings harness does. `resetHarness` in `beforeEach` puts it all back.
  */
+import type { components } from '@/lib/api/generated/schema';
 import { accessFor } from '@/lib/utils/access';
 import type { ChatPerson, ChatRow, OutboxItem, Thread } from '@/types/messages';
 import type { Remote, Viewer } from '@/types/mentor';
@@ -143,7 +144,7 @@ export const h = {
     degree_goal_raw: string | null;
     field_of_study: string | null;
     target_start_term: string | null;
-    needs: { code: string; display_name: string }[];
+    needs: Pick<components['schemas']['LookupRef'], 'code' | 'display_name'>[];
   },
 };
 

@@ -43,6 +43,7 @@ describe('startersFor (PRD "Starters")', () => {
     expect(cover('Visa guidance')).toBe(
       'Hi Hugh, in our session I’d love to focus on visa guidance.',
     );
+    expect(cover('GRE prep')).toBe('Hi Hugh, in our session I’d love to focus on GRE prep.');
     expect(cover('  ')).toBeUndefined();
   });
 
