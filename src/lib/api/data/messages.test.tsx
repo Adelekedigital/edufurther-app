@@ -13,7 +13,7 @@ import {
   useMarkRead,
   useThread,
 } from './messages';
-import type { WireChatPerson, WireMessage, WireThread } from './pending';
+import type { WireChatPerson, WireMessage, WireThread } from './messages';
 
 const GET = vi.fn();
 const POST = vi.fn();

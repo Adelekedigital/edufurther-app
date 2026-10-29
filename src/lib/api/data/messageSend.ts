@@ -6,7 +6,7 @@ import type { Message, MessageFile, OutboxItem, Thread } from '@/types/messages'
 import { apiError, ApiError } from './errors';
 import { keys } from './keys';
 import { inTimeOrder, toMessage } from './messages';
-import { untyped, type WireMessage } from './pending';
+import { api } from './http';
 import { sessionKey, useSession } from './session';
 
 /**
@@ -62,7 +62,7 @@ function refreshThread(withId: string) {
 
 async function post(item: OutboxItem): Promise<boolean> {
   try {
-    const { data, error, response } = await untyped.POST('/api/v1/me/messages/{user_id}', {
+    const { data, error, response } = await api.POST('/api/v1/me/messages/{user_id}', {
       params: { path: { user_id: item.to } },
       body: {
         client_id: item.clientId,
@@ -72,7 +72,7 @@ async function post(item: OutboxItem): Promise<boolean> {
     });
     if (!response.ok || !data) throw apiError(response.status, error, response);
     update(item.clientId, null);
-    settle(item.to, toMessage(data as WireMessage));
+    settle(item.to, toMessage(data));
     return true;
   } catch (e) {
     // No response at all while offline: wait for the connection, don't fail.

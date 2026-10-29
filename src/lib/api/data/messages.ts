@@ -19,19 +19,24 @@ import { remote } from './bookings';
 import { ApiError, apiError, retryOnce } from './errors';
 import { cleanFileName } from '@/lib/utils/files';
 import { keys } from './keys';
-import {
-  untyped,
-  type WireChatPerson,
-  type WireChatRow,
-  type WireChats,
-  type WireLast,
-  type WireMessage,
-  type WireMessageFile,
-  type WireMessageSettings,
-  type WireNextBooking,
-  type WireThread,
-} from './pending';
+import { api } from './http';
+import type { components } from '@/lib/api/generated/schema';
 import { sessionKey, useSession } from './session';
+
+// ---- Wire shapes (the generated schemas, named for this module) --------------
+
+type S = components['schemas'];
+
+/** `PersonRead`: one person shape, shared with booking parties (backend reply). */
+export type WireChatPerson = S['PersonRead'];
+export type WireNextBooking = S['NextBookingRead'];
+export type WireLast = S['LastRead'];
+export type WireChatRow = S['ChatRead'];
+export type WireChats = S['ChatPage'];
+export type WireMessageFile = S['FileRead'];
+export type WireMessage = S['MessageRead'];
+export type WireThread = S['ThreadRead'];
+export type WireMessageSettings = S['MessageSettingsRead'];
 
 /** How often an open chat asks for new messages (PRD: 5 s). */
 export const THREAD_POLL_MS = 5_000;
@@ -191,9 +196,9 @@ export function useChats(active = true): ChatsRemote {
     queryKey: keys.messages.chats(me ?? 'none'),
     enabled,
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await untyped.GET('/api/v1/me/messages', { signal });
+      const { data, error, response } = await api.GET('/api/v1/me/messages', { signal });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return toChats(data as WireChats);
+      return toChats(data);
     },
     refetchInterval: LIST_POLL_MS,
     retry: retryOnce,
@@ -212,9 +217,9 @@ export function useUnreadTotal(active: boolean): number | null {
     queryKey: keys.messages.unread(me ?? 'none'),
     enabled: active && !!me,
     queryFn: async ({ signal }) => {
-      const { data, response } = await untyped.GET('/api/v1/me/messages/unread', { signal });
+      const { data, response } = await api.GET('/api/v1/me/messages/unread', { signal });
       if (!response.ok || !data) throw new ApiError(response.status);
-      return Math.max(0, (data as { total: number }).total);
+      return Math.max(0, data.total);
     },
     refetchInterval: LIST_POLL_MS,
     retry: retryOnce,
@@ -230,12 +235,12 @@ export function useMessagePeople(q: string, active: boolean): Remote<ChatPerson[
     queryKey: keys.messages.people(me ?? 'none', q),
     enabled,
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await untyped.GET('/api/v1/me/messages/people', {
+      const { data, error, response } = await api.GET('/api/v1/me/messages/people', {
         params: { query: q ? { q } : {} },
         signal,
       });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return (data as { data: WireChatPerson[] }).data.map(toChatPerson);
+      return data.data.map(toChatPerson);
     },
     placeholderData: (prev) => prev,
     retry: retryOnce,
@@ -248,12 +253,12 @@ async function readThread(
   query: { before?: string; after?: string; limit?: number },
   signal?: AbortSignal,
 ): Promise<Thread> {
-  const { data, error, response } = await untyped.GET('/api/v1/me/messages/{user_id}', {
+  const { data, error, response } = await api.GET('/api/v1/me/messages/{user_id}', {
     params: { path: { user_id: withId }, query },
     signal,
   });
   if (!response.ok || !data) throw apiError(response.status, error, response);
-  return toThread(data as WireThread);
+  return toThread(data);
 }
 
 export type ThreadRemote = Remote<Thread> & {
@@ -327,7 +332,7 @@ export function useMarkRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ withId, upTo }: { withId: string; upTo: string }) => {
-      const { error, response } = await untyped.POST('/api/v1/me/messages/{user_id}/read', {
+      const { error, response } = await api.POST('/api/v1/me/messages/{user_id}/read', {
         params: { path: { user_id: withId } },
         body: { up_to: upTo },
       });
@@ -360,11 +365,11 @@ export function useMessageSettings(active: boolean): Remote<MessageSettings> {
     queryKey: keys.messages.settings(me ?? 'none'),
     enabled,
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await untyped.GET('/api/v1/me/messages/settings', {
+      const { data, error, response } = await api.GET('/api/v1/me/messages/settings', {
         signal,
       });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return { unreadEmails: (data as WireMessageSettings).unread_emails };
+      return { unreadEmails: data.unread_emails };
     },
     retry: retryOnce,
   });
@@ -378,11 +383,11 @@ export function useSaveMessageSettings() {
   const key = keys.messages.settings(me ?? 'none');
   return useMutation({
     mutationFn: async (next: MessageSettings) => {
-      const { data, error, response } = await untyped.PATCH('/api/v1/me/messages/settings', {
+      const { data, error, response } = await api.PATCH('/api/v1/me/messages/settings', {
         body: { unread_emails: next.unreadEmails },
       });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return { unreadEmails: (data as WireMessageSettings).unread_emails };
+      return { unreadEmails: data.unread_emails };
     },
     onMutate: async (next) => {
       await qc.cancelQueries({ queryKey: key });

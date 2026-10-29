@@ -8,7 +8,7 @@ import type { AppError } from '@/types/mentor';
 import { fileBody, uploadError } from './upload';
 import { ApiError, apiError, normaliseError } from './errors';
 import { toMessageFile } from './messages';
-import { untyped, type WireUploadedFile } from './pending';
+import { api } from './http';
 
 /**
  * The refusals Messages words itself (PRD: "Errors map to the two designed
@@ -42,18 +42,17 @@ export function useUploadMessageFile() {
         throw messageFileError(new ApiError(422, undefined, '/problems/file-type-not-allowed'));
       let result;
       try {
-        result = await untyped.POST('/api/v1/me/message-files', fileBody(file));
+        result = await api.POST('/api/v1/me/message-files', fileBody(file));
       } catch (e) {
         throw messageFileError(e);
       }
       const { data, error, response } = result;
       if (!response.ok || !data) throw messageFileError(apiError(response.status, error, response));
-      const w = data as WireUploadedFile;
       return toMessageFile({
-        id: w.file_id,
-        filename: w.filename,
-        size: w.size,
-        content_type: w.content_type,
+        id: data.file_id,
+        filename: data.filename,
+        size: data.size,
+        content_type: data.content_type,
       });
     },
   });
