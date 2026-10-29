@@ -15,11 +15,14 @@ let status: {
 };
 
 let outboxItems: { clientId: string; status: string; problem?: string }[] = [];
+const discard = vi.fn();
 vi.mock('@/lib/api/data/messageSend', () => ({
   useOutbox: () => outboxItems,
+  outboxItem: (id: string) => outboxItems.find((i) => i.clientId === id),
   useSendMessage: () => ({
     send: (...a: unknown[]) => send(...a),
     retry: (...a: unknown[]) => retry(...a),
+    discard: (...a: unknown[]) => discard(...a),
   }),
 }));
 vi.mock('@/lib/api/data/messages', () => ({ useChatStatus: () => status }));
@@ -47,6 +50,7 @@ beforeEach(() => {
   outboxItems = [];
   send.mockReset();
   retry.mockReset();
+  discard.mockReset();
   upload.mockReset();
   status = {
     data: { lock: null, sessionWindow: false },
@@ -142,6 +146,32 @@ describe('SendMessageLauncher', () => {
     expect(screen.getByRole('dialog', { name: 'viewer message CV.pdf' })).toBeInTheDocument();
     await userEvent.click(sendBtn());
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ file }));
+  });
+
+  it('a file that expired before the send: the file goes, the text stays, the line says why', async () => {
+    const file = { id: 'f1', name: 'CV.pdf', sizeBytes: 1000, contentType: 'application/pdf' };
+    upload.mockResolvedValue(file);
+    send.mockImplementation(async ({ clientId }: { clientId: string }) => {
+      outboxItems = [
+        { clientId, status: 'failed', problem: 'https://edufurther.com/problems/file-unavailable' },
+      ];
+      return false;
+    });
+    const { container } = render(<SendMessageLauncher to={TO} onClose={vi.fn()} />);
+    await userEvent.upload(
+      container.ownerDocument.querySelector('input[type=file]')!,
+      new File(['%PDF'], 'CV.pdf', { type: 'application/pdf' }),
+    );
+    await screen.findByRole('button', { name: 'View CV.pdf' });
+    await userEvent.type(box(), 'My CV');
+    await userEvent.click(sendBtn());
+    expect(discard).toHaveBeenCalledWith(send.mock.calls[0]?.[0].clientId);
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Your file expired. Attach it again.',
+    );
+    expect(screen.queryByRole('button', { name: 'View CV.pdf' })).toBeNull();
+    expect(box()).toHaveValue('My CV');
+    expect(screen.queryByText(/Not sent/)).toBeNull();
   });
 
   it('a refused upload says why, and nothing is attached', async () => {

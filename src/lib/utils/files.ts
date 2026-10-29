@@ -35,3 +35,16 @@ export function pickedFileProblem(file: File): 'tooBig' | 'wrongType' | null {
   if (file.size > UPLOAD_MAX_BYTES) return 'tooBig';
   return null;
 }
+
+/**
+ * The glyph for a file chip or card. The designs draw only `picture_as_pdf`;
+ * a Word file gets the plain document one, so a .docx never reads as a PDF.
+ */
+export function fileGlyph(contentType: string): 'picture_as_pdf' | 'description' {
+  return contentType === 'application/pdf' ? 'picture_as_pdf' : 'description';
+}
+
+/** A send refused because its upload is gone (swept after 24 hours unsent). */
+export function isFileExpired(problem: string | undefined): boolean {
+  return !!problem?.endsWith('/problems/file-unavailable');
+}

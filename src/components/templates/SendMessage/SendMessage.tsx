@@ -4,16 +4,15 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { AttachFileButton } from '@/components/molecules/AttachFileButton/AttachFileButton';
 import { ChatLockLine } from '@/components/molecules/ChatLockLine/ChatLockLine';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { PickedFileChip } from '@/components/molecules/PickedFileChip/PickedFileChip';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { LIST_COPY, SEND_MESSAGE_COPY as C } from '@/lib/copy/messages';
 import { hasContactDetails } from '@/lib/utils/contactDetails';
 import { cx } from '@/lib/utils/cx';
-import { fileSize } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { ChatLock, MessageFile, MessageRecipient } from '@/types/messages';
 import styles from './SendMessage.module.css';
@@ -208,54 +207,17 @@ export function SendMessage({
                 />
                 {(file || uploading) && (
                   <div className={styles.fileRow}>
-                    <span className={styles.chip} aria-busy={!!uploading || undefined}>
-                      {/* The design draws the PDF glyph; a Word file gets the plain document one. */}
-                      <Icon
-                        name={
-                          (file?.contentType ?? 'application/pdf') === 'application/pdf'
-                            ? 'picture_as_pdf'
-                            : 'description'
-                        }
-                        size={20}
-                        className={cx(
-                          styles.pdf,
-                          file && file.contentType !== 'application/pdf' && styles.doc,
-                        )}
-                      />
-                      {file ? (
-                        <button
-                          type="button"
-                          className={styles.fileName}
-                          dir="ltr"
-                          aria-label={C.viewFile(file.name)}
-                          onClick={onViewFile}
-                        >
-                          {file.name}
-                        </button>
-                      ) : (
-                        <span className={styles.fileName} dir="ltr">
-                          {uploading}
-                        </span>
-                      )}
-                      <span className={styles.fileSize}>
-                        {file ? fileSize(file.sizeBytes) : C.uploading}
-                      </span>
-                      {file && (
-                        <IconButton
-                          icon="close"
-                          size="sm"
-                          // Drawn 32px at every width (design); square keeps a 44px tap area on phones.
-                          shape="square"
-                          aria-label={C.removeFile}
-                          className={styles.remove}
-                          onClick={() => {
-                            onRemoveFile();
-                            // The chip goes with the focused button: focus the paperclip, back on.
-                            attach.current?.focus();
-                          }}
-                        />
-                      )}
-                    </span>
+                    <PickedFileChip
+                      file={file}
+                      uploading={uploading}
+                      look="filled"
+                      onView={onViewFile}
+                      onRemove={() => {
+                        onRemoveFile();
+                        // The chip goes with the focused button: focus the paperclip, back on.
+                        attach.current?.focus();
+                      }}
+                    />
                   </div>
                 )}
                 <div className={styles.toolbar}>

@@ -57,5 +57,6 @@ export function useUploadMessageFile() {
       });
     },
   });
-  return (file: File) => mutation.mutateAsync(file);
+  // Stable across renders (TanStack keeps mutateAsync), so callers can depend on it.
+  return mutation.mutateAsync;
 }

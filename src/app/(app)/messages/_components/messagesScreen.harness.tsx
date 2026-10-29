@@ -150,6 +150,9 @@ export const h = {
 
 export const sent = vi.fn();
 export const retried = vi.fn();
+export const discarded = vi.fn();
+/** The message-file upload (`useUploadMessageFile`'s function). */
+export const uploaded = vi.fn();
 export const markRead = vi.fn();
 export const loadOlder = vi.fn();
 
@@ -188,6 +191,8 @@ export function resetHarness() {
   sent.mockReset();
   retried.mockReset();
   retried.mockResolvedValue(true);
+  discarded.mockReset();
+  uploaded.mockReset();
   markRead.mockReset();
   loadOlder.mockReset();
   replace.mockReset();
@@ -258,7 +263,10 @@ export const mocks = {
 export const chatMocks = {
   messageSend: () => ({
     useOutbox: (to: string | null) => h.outbox.filter((o) => o.to === to),
-    useSendMessage: () => ({ send: sent, retry: retried }),
+    useSendMessage: () => ({ send: sent, retry: retried, discard: discarded }),
+  }),
+  messageFiles: () => ({
+    useUploadMessageFile: () => uploaded,
   }),
   goals: () => ({
     useMenteeGoals: (id: string | null) => ({
