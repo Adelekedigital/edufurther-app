@@ -37,8 +37,6 @@ export type WireMessageFile = S['FileRead'];
 export type WireMessage = S['MessageRead'];
 export type WireThread = S['ThreadRead'];
 export type WireMessageSettings = S['MessageSettingsRead'];
-/** The intake upload shape (`IntakeFileRead`), reused for message files. */
-export type WireUploadedFile = S['IntakeFileRead'];
 
 /** How often an open chat asks for new messages (PRD: 5 s). */
 export const THREAD_POLL_MS = 5_000;
