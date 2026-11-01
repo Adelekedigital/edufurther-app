@@ -89,6 +89,8 @@ async function pickAmara() {
   return row;
 }
 
+afterEach(() => vi.useRealTimers());
+
 describe('AdminCreditsScreen', () => {
   it('opens on Add credits with the recent mentees and the pick hint', async () => {
     renderScreen();
@@ -102,6 +104,11 @@ describe('AdminCreditsScreen', () => {
   });
 
   it('search, pick, add 2 with a reason, confirm: balance, history and toast update; the form resets', async () => {
+    // The mock's reset is the next 1st from today: pin today, or the date in
+    // the copy below goes stale on the 1st of every month.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-15T12:00:00Z'));
+    resetMockCredits();
     renderScreen();
     await pickAmara();
     const panel = await screen.findByRole('region', { name: 'Credits for Amara Okafor' });
