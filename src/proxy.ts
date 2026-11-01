@@ -6,7 +6,7 @@ import {
 } from '@/lib/vendor/supabase/server';
 import { isEnterPath } from '@/lib/utils/sessionEnter';
 import { PROXY_SECRET_HEADER, backendOrigin, proxySecret } from '@/lib/backend';
-import { LANDING_COOKIE, LANDING_PATHS, landingHomeFor } from '@/lib/utils/landingHint';
+import { LANDING_COOKIE, LANDING_PATHS, isLanding, landingHomeFor } from '@/lib/utils/landingHint';
 
 /**
  * The same-origin API proxy (ADR 0003): `/api/v1/…` goes to BACKEND_URL with
@@ -27,14 +27,6 @@ function forwardToBackend(request: NextRequest): NextResponse {
 }
 
 /**
- * A full page load (not Next's in-app navigation or prefetch, which carry
- * `RSC`), so a redirect here is what the person opened, before any HTML.
- */
-function isDocumentLoad(request: NextRequest): boolean {
-  return !request.headers.has('rsc') && !request.headers.has('next-router-prefetch');
-}
-
-/**
  * Next 16 proxy (formerly middleware): forwards the API (above), and keeps the
  * Supabase session cookie fresh on page navigations, so a returning visitor's
  * token is valid before the page calls the API, and tells the render who is
@@ -47,7 +39,7 @@ export function proxy(request: NextRequest) {
   return refreshSessionCookies(request, ({ userId, accessToken }) => {
     // A mentor landing on Explore goes home before any of it is drawn (owner,
     // 2026-11-01; lib/utils/landingHint). Only for the user just verified.
-    if (userId && LANDING_PATHS.has(path) && isDocumentLoad(request)) {
+    if (userId && LANDING_PATHS.has(path) && isLanding(request.headers)) {
       const home = landingHomeFor(request.cookies.get(LANDING_COOKIE)?.value, userId);
       if (home) {
         const res = NextResponse.redirect(new URL(home, request.url));

@@ -18,6 +18,9 @@ vi.mock('@/lib/api/data/viewer', () => ({
 // No PATCH may ever leave a role page a member was redirected from.
 const patch = vi.fn();
 vi.mock('@/lib/api/data/http', () => ({ api: { PATCH: patch, GET: vi.fn() } }));
+// The landing hint goes to this app's server; only what is asked for is checked.
+const saveLandingHint = vi.fn();
+vi.mock('@/lib/api/data/landingHint', () => ({ saveLandingHint }));
 // The real onboarding pages, their screens stubbed: only the wrapper is under test.
 vi.mock('@/app/onboarding/mentor/_components/MentorOnboardingScreen', () => ({
   MentorOnboardingScreen: () => <h1>Mentor steps</h1>,
@@ -168,30 +171,29 @@ describe('the onboarding pages outside the shell', () => {
 });
 
 describe('RoleRedirect: the landing hint the proxy reads (owner, 2026-11-01)', () => {
-  const cookie = () =>
-    document.cookie
-      .split('; ')
-      .find((c) => c.startsWith('ef-landing='))
-      ?.slice('ef-landing='.length);
-  beforeEach(() => {
-    document.cookie = 'ef-landing=; path=/; max-age=0';
-  });
+  beforeEach(() => saveLandingHint.mockClear());
 
-  it('a mentor: their own id and home, for the next time they land on Explore', () => {
+  it('a mentor: their own home, for the next time they land on Explore', () => {
     page('/explore', viewers.mentorApproved);
-    expect(decodeURIComponent(cookie() ?? '')).toBe(`${viewers.mentorApproved.id}:/dashboard`);
+    expect(saveLandingHint).toHaveBeenLastCalledWith('/dashboard');
   });
 
-  it('a mentee: cleared, so an old mentor hint never moves them', () => {
-    document.cookie = 'ef-landing=x%3A%2Fdashboard; path=/';
-    page('/explore', viewers.menteeFinished);
-    expect(cookie()).toBeUndefined();
+  it('a mentee, or an account that can’t be used: cleared, so Explore and its notices reach them', () => {
+    for (const v of [
+      viewers.menteeFinished,
+      { kind: 'unlinked' },
+      { kind: 'accountExists' },
+    ] as Viewer[]) {
+      saveLandingHint.mockClear();
+      page('/explore', v).unmount();
+      expect(saveLandingHint, v.kind).toHaveBeenCalledWith(null);
+    }
   });
 
-  it('while /me loads, or for a guest: left as it is', () => {
-    document.cookie = 'ef-landing=keep; path=/';
-    page('/explore', { kind: 'loading', signedIn: true });
+  it('while /me loads or failed, or for a guest: left as it is', () => {
+    page('/explore', { kind: 'loading', signedIn: true }).unmount();
+    page('/explore', { kind: 'error', retry: () => {}, retrying: false }).unmount();
     page('/explore', { kind: 'guest' });
-    expect(cookie()).toBe('keep');
+    expect(saveLandingHint).not.toHaveBeenCalled();
   });
 });

@@ -187,11 +187,17 @@ describe('proxy: the API goes to the backend with the origin-lock header (backen
 describe('proxy: a mentor landing on Explore goes home before any of it is drawn (owner, 2026-11-01)', () => {
   const hint = (userId: string, home: string) =>
     `ef-landing=${encodeURIComponent(`${userId}:${home}`)}`;
+  // What the browser sends when the person opens the page themselves.
+  const LANDING = {
+    'sec-fetch-dest': 'document',
+    'sec-fetch-mode': 'navigate',
+    'sec-fetch-site': 'none',
+  };
   const open = (path: string, headers: Record<string, string> = {}) =>
-    proxy(new NextRequest(`https://app.test${path}`, { headers }));
+    proxy(new NextRequest(`https://app.test${path}`, { headers: { ...LANDING, ...headers } }));
   beforeEach(() => getClaims.mockResolvedValue({ data: { claims: { sub: 'u1' } }, error: null }));
 
-  it('opening /explore with their own mentor hint: a redirect to their home, uncached, session kept fresh', async () => {
+  it('an app launch, bookmark or typed /explore with their own hint: their home, uncached, session kept fresh', async () => {
     const res = await open('/explore', { cookie: hint('u1', '/dashboard') });
     expect(res.status).toBe(307);
     expect(res.headers.get('location')).toBe('https://app.test/dashboard');
@@ -199,20 +205,29 @@ describe('proxy: a mentor landing on Explore goes home before any of it is drawn
     expect(res.cookies.get('sb-x-auth-token')?.value).toBe('fresh');
   });
 
-  it('a mentor still applying goes to the application', async () => {
-    const res = await open('/explore', { cookie: hint('u1', '/mentor-application') });
-    expect(res.headers.get('location')).toBe('https://app.test/mentor-application');
-  });
-
-  it('moving to Explore inside the app (RSC) or a prefetch: Explore, as chosen', async () => {
-    const extras: Record<string, string>[] = [
-      { rsc: '1' },
-      { rsc: '1', 'next-router-prefetch': '1' },
+  it('moving to Explore inside the app: Explore, as chosen', async () => {
+    const cookie = hint('u1', '/dashboard');
+    const cases: Record<string, string>[] = [
+      // Next's in-app navigation and prefetch: fetches, not documents.
+      { 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin' },
+      // A full load from one of our own pages (a new tab, a hard navigation).
+      { 'sec-fetch-site': 'same-origin' },
+      // A link from another site (a shared Explore link).
+      { 'sec-fetch-site': 'cross-site' },
     ];
-    for (const extra of extras) {
-      const res = await open('/explore', { cookie: hint('u1', '/dashboard'), ...extra });
+    for (const extra of cases) {
+      const res = await open('/explore', { cookie, ...extra });
       expect(res.headers.get('location'), JSON.stringify(extra)).toBeNull();
     }
+  });
+
+  it('a browser that sends no fetch metadata: never redirected', async () => {
+    const res = await proxy(
+      new NextRequest('https://app.test/explore', {
+        headers: { cookie: hint('u1', '/dashboard') },
+      }),
+    );
+    expect(res.headers.get('location')).toBeNull();
   });
 
   it('no hint (a mentee, a first visit), another account’s, or no verified session: Explore', async () => {

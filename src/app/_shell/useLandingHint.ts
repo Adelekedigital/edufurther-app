@@ -1,28 +1,27 @@
 'use client';
 
 import { useEffect } from 'react';
+import { saveLandingHint } from '@/lib/api/data/landingHint';
 import { memberHome, viewerRole } from '@/lib/utils/access';
-import { LANDING_COOKIE, LANDING_MAX_AGE, encodeLanding } from '@/lib/utils/landingHint';
 import type { Viewer } from '@/types/mentor';
 
 /**
- * Keeps the landing hint (lib/utils/landingHint) in step with who is signed
- * in: a mentor-side member's own home, written once /me answers; cleared for
- * a mentee, so a role change never sends them anywhere. Left alone while /me
- * loads or fails, and for guests (the proxy ignores it without a session).
+ * The mentor landing hint (lib/utils/landingHint) for this viewer: a
+ * mentor-side member's own home once /me answers; null (clear) for a mentee
+ * and for an account that can't be used (unlinked, accountExists), so
+ * Explore's notices still reach them; undefined (leave it) while /me loads or
+ * failed, and for guests, whom the proxy never redirects.
  */
+export function landingHintFor(viewer: Viewer): string | null | undefined {
+  if (viewer.kind === 'member') return viewerRole(viewer) === 'mentor' ? memberHome(viewer) : null;
+  if (viewer.kind === 'unlinked' || viewer.kind === 'accountExists') return null;
+  return undefined;
+}
+
+/** Keeps the hint in step with who is signed in (the server sets it). */
 export function useLandingHint(viewer: Viewer): void {
-  const value =
-    viewer.kind === 'member'
-      ? viewerRole(viewer) === 'mentor'
-        ? encodeLanding(viewer.id, memberHome(viewer))
-        : ''
-      : null;
+  const hint = landingHintFor(viewer);
   useEffect(() => {
-    if (value === null) return;
-    const secure = window.location.protocol === 'https:' ? '; secure' : '';
-    document.cookie = value
-      ? `${LANDING_COOKIE}=${encodeURIComponent(value)}; path=/; max-age=${LANDING_MAX_AGE}; samesite=lax${secure}`
-      : `${LANDING_COOKIE}=; path=/; max-age=0; samesite=lax${secure}`;
-  }, [value]);
+    if (hint !== undefined) saveLandingHint(hint);
+  }, [hint]);
 }
