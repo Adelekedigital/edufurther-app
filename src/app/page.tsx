@@ -6,9 +6,11 @@ import { ACCESS_TOKEN_HEADER } from '@/lib/vendor/supabase/server';
 
 /**
  * `/` has no page of its own: each viewer goes to their home (lib/api/data/home).
- * A 307 per request, so no browser or CDN keeps one viewer's answer for another.
- * When the server can't tell who is signed in in time, the browser does
- * (HomeResolver): a member is never sent to Explore for a slow backend.
+ * Usually a 307. When the server can't tell who is signed in in time, it
+ * renders HomeResolver instead and the browser decides: a member is never sent
+ * to Explore for a slow backend. Either way the answer is per request (the
+ * page reads headers, so it is dynamic and uncached) and holds nothing of the
+ * viewer, so no browser or CDN keeps one viewer's answer for another.
  */
 export default async function Home({
   searchParams,

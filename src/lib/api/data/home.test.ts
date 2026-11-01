@@ -104,7 +104,7 @@ describe('fetchHome', () => {
       vi.fn(async () => Promise.reject(new TypeError('fetch failed'))),
     );
     expect(await fetchHome({ accessToken: 'tok' })).toBe(RESOLVE_IN_BROWSER);
-    for (const status of [500, 502, 503]) {
+    for (const status of [408, 429, 500, 502, 503]) {
       vi.stubGlobal(
         'fetch',
         vi.fn(async () => new Response(null, { status })),

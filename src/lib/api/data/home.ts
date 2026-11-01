@@ -82,6 +82,9 @@ const MOCK_ROLES: Record<string, Me | null> = {
  */
 export const RESOLVE_IN_BROWSER = 'resolve' as const;
 
+/** Answers below 500 that still say nothing about who the viewer is. */
+const UNDECIDED = new Set([408, 429]);
+
 /** Past this, `/` stops waiting and resolves the viewer in the browser (RESOLVE_IN_BROWSER). */
 export const HOME_ME_TIMEOUT_MS = 2500;
 
@@ -117,9 +120,10 @@ export async function fetchHome({
       cache: 'no-store',
       signal: AbortSignal.timeout(HOME_ME_TIMEOUT_MS),
     });
-    // The server failing says nothing about who they are. A 401 or 404 does:
-    // signed out, or no account, which Explore explains.
-    if (response.status >= 500) return RESOLVE_IN_BROWSER;
+    // The server failing, timing out upstream (408) or rate-limiting (429)
+    // says nothing about who they are. A 401 or 404 does: signed out, or no
+    // account, which Explore explains.
+    if (UNDECIDED.has(response.status) || response.status >= 500) return RESOLVE_IN_BROWSER;
     return homeFor(data ?? null);
   } catch {
     // Too slow, or unreachable.
