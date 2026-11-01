@@ -76,10 +76,14 @@ and `/api/v1/internal/jobs/*`. The app sends the header on every call it makes t
 - **`EDGE_PROXY_SECRET` is server-only** (never `NEXT_PUBLIC_`). Unset (local dev), no
   header is sent and nothing changes. `src/lib/backend.ts` holds both checks; a malformed
   value (under 32 visible ASCII characters) fails the build, as a bad `BACKEND_URL` does.
-- **Not a route handler.** Forwarding through a handler would hide the backend origin,
-  but it runs as a function, whose 4.5 MB request-body cap on Vercel would break the
-  5 MB uploads. A proxy rewrite streams the body: a 5 MB multipart POST arrived whole through
-  `next start` (2026-11-01); the same check on a Vercel preview is part of the rollout.
+- **Not a route handler, and the body skips the proxy.** Forwarding through a handler
+  would hide the backend origin, but it runs as a function, whose 4.5 MB request-body
+  cap on Vercel would break the 5 MB uploads. The proxy is a function too: measured on
+  production 2026-11-01, a 4.6 MB upload got `413 FUNCTION_PAYLOAD_TOO_LARGE` from
+  Vercel while 4.4 MB reached the backend. So `vercel.json` sets
+  `skipMiddlewareRequestBody: true`: the proxy gets headers only and Vercel sends the
+  body straight to the rewrite target. The proxy must never read a request body
+  (pinned by `src/lib/vercelConfig.test.ts`).
 - **The backend's origin is no longer a secret, and never was.** Self-hosted Next
   answers a proxy rewrite with `x-middleware-rewrite: <destination>`. The repo is
   public and names the dev backend's URL. The lock, not obscurity, is the protection.
