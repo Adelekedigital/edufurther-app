@@ -1,4 +1,4 @@
-import { HOME_ME_TIMEOUT_MS, fetchHome, homeFor } from './home';
+import { HOME_ME_TIMEOUT_MS, RESOLVE_IN_BROWSER, fetchHome, homeFor } from './home';
 
 type Me = Parameters<typeof homeFor>[0];
 const mentorProfile = {} as NonNullable<NonNullable<Me>['mentor_profile']>;
@@ -88,20 +88,32 @@ describe('fetchHome', () => {
     expect(f.mock.calls[1]![0].headers.has('x-edufurther-proxy-secret')).toBe(false);
   });
 
-  it('a failed /me (401, network): Explore, which shows the account notices', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => new Response(null, { status: 401 })),
-    );
-    expect(await fetchHome({ accessToken: 'tok' })).toBe('/explore');
+  it('a 401 or 404 from /me says who they are (signed out, no account): Explore, which shows the account notices', async () => {
+    for (const status of [401, 404]) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(null, { status })),
+      );
+      expect(await fetchHome({ accessToken: 'tok' }), String(status)).toBe('/explore');
+    }
+  });
+
+  it('an unreachable or failing backend says nothing about who they are: the browser resolves it, never Explore (owner, 2026-11-01)', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => Promise.reject(new TypeError('fetch failed'))),
     );
-    expect(await fetchHome({ accessToken: 'tok' })).toBe('/explore');
+    expect(await fetchHome({ accessToken: 'tok' })).toBe(RESOLVE_IN_BROWSER);
+    for (const status of [408, 429, 500, 502, 503]) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => new Response(null, { status })),
+      );
+      expect(await fetchHome({ accessToken: 'tok' }), String(status)).toBe(RESOLVE_IN_BROWSER);
+    }
   });
 
-  it(`a /me slower than ${HOME_ME_TIMEOUT_MS} ms: stops waiting and goes to Explore`, async () => {
+  it(`a /me slower than ${HOME_ME_TIMEOUT_MS} ms: stops waiting and leaves it to the browser`, async () => {
     vi.useFakeTimers();
     vi.stubGlobal(
       'fetch',
@@ -114,7 +126,7 @@ describe('fetchHome', () => {
     );
     const home = fetchHome({ accessToken: 'tok' });
     await vi.advanceTimersByTimeAsync(HOME_ME_TIMEOUT_MS + 1);
-    expect(await home).toBe('/explore');
+    expect(await home).toBe(RESOLVE_IN_BROWSER);
   });
 
   it('mock mode: the env viewer, or ?mockViewer (own keys only)', async () => {
