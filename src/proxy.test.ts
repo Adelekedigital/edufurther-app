@@ -183,3 +183,56 @@ describe('proxy: the API goes to the backend with the origin-lock header (backen
     }
   });
 });
+
+describe('proxy: a mentor landing on Explore goes home before any of it is drawn (owner, 2026-11-01)', () => {
+  const hint = (userId: string, home: string) =>
+    `ef-landing=${encodeURIComponent(`${userId}:${home}`)}`;
+  const open = (path: string, headers: Record<string, string> = {}) =>
+    proxy(new NextRequest(`https://app.test${path}`, { headers }));
+  beforeEach(() => getClaims.mockResolvedValue({ data: { claims: { sub: 'u1' } }, error: null }));
+
+  it('opening /explore with their own mentor hint: a redirect to their home, uncached, session kept fresh', async () => {
+    const res = await open('/explore', { cookie: hint('u1', '/dashboard') });
+    expect(res.status).toBe(307);
+    expect(res.headers.get('location')).toBe('https://app.test/dashboard');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(res.cookies.get('sb-x-auth-token')?.value).toBe('fresh');
+  });
+
+  it('a mentor still applying goes to the application', async () => {
+    const res = await open('/explore', { cookie: hint('u1', '/mentor-application') });
+    expect(res.headers.get('location')).toBe('https://app.test/mentor-application');
+  });
+
+  it('moving to Explore inside the app (RSC) or a prefetch: Explore, as chosen', async () => {
+    const extras: Record<string, string>[] = [
+      { rsc: '1' },
+      { rsc: '1', 'next-router-prefetch': '1' },
+    ];
+    for (const extra of extras) {
+      const res = await open('/explore', { cookie: hint('u1', '/dashboard'), ...extra });
+      expect(res.headers.get('location'), JSON.stringify(extra)).toBeNull();
+    }
+  });
+
+  it('no hint (a mentee, a first visit), another account’s, or no verified session: Explore', async () => {
+    expect((await open('/explore')).headers.get('location')).toBeNull();
+    const other = await open('/explore', { cookie: hint('u2', '/dashboard') });
+    expect(other.headers.get('location')).toBeNull();
+    getClaims.mockResolvedValue({ data: null, error: null });
+    const guest = await open('/explore', { cookie: hint('u1', '/dashboard') });
+    expect(guest.headers.get('location')).toBeNull();
+    getClaims.mockResolvedValue({ data: null, error: new Error('fetch failed') });
+    const unknown = await open('/explore', { cookie: hint('u1', '/dashboard') });
+    expect(unknown.headers.get('location')).toBeNull();
+  });
+
+  it('only Explore, and only toward a mentor home', async () => {
+    for (const path of ['/bookings', '/mentors/ada', '/explore/x']) {
+      const res = await open(path, { cookie: hint('u1', '/dashboard') });
+      expect(res.headers.get('location'), path).toBeNull();
+    }
+    const evil = await open('/explore', { cookie: hint('u1', '//evil.test') });
+    expect(evil.headers.get('location')).toBeNull();
+  });
+});

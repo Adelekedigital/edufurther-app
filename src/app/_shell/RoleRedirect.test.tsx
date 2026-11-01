@@ -166,3 +166,32 @@ describe('the onboarding pages outside the shell', () => {
     expect(screen.queryByRole('heading', { name: 'Mentee steps' })).toBeNull();
   });
 });
+
+describe('RoleRedirect: the landing hint the proxy reads (owner, 2026-11-01)', () => {
+  const cookie = () =>
+    document.cookie
+      .split('; ')
+      .find((c) => c.startsWith('ef-landing='))
+      ?.slice('ef-landing='.length);
+  beforeEach(() => {
+    document.cookie = 'ef-landing=; path=/; max-age=0';
+  });
+
+  it('a mentor: their own id and home, for the next time they land on Explore', () => {
+    page('/explore', viewers.mentorApproved);
+    expect(decodeURIComponent(cookie() ?? '')).toBe(`${viewers.mentorApproved.id}:/dashboard`);
+  });
+
+  it('a mentee: cleared, so an old mentor hint never moves them', () => {
+    document.cookie = 'ef-landing=x%3A%2Fdashboard; path=/';
+    page('/explore', viewers.menteeFinished);
+    expect(cookie()).toBeUndefined();
+  });
+
+  it('while /me loads, or for a guest: left as it is', () => {
+    document.cookie = 'ef-landing=keep; path=/';
+    page('/explore', { kind: 'loading', signedIn: true });
+    page('/explore', { kind: 'guest' });
+    expect(cookie()).toBe('keep');
+  });
+});
