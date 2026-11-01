@@ -1,6 +1,6 @@
 import createClient from 'openapi-fetch';
 import type { components, paths } from '@/lib/api/generated/schema';
-import { proxySecretHeaders } from '@/lib/backend';
+import { backendOrigin, proxySecretHeaders } from '@/lib/backend';
 import { memberHome, mentorStageOf } from '@/lib/utils/access';
 import { menteeByChoice } from './roles';
 
@@ -95,7 +95,8 @@ export async function fetchHome({
     const key = mockViewer && Object.hasOwn(MOCK_ROLES, mockViewer) ? mockViewer : mock;
     return homeFor(Object.hasOwn(MOCK_ROLES, key) ? MOCK_ROLES[key]! : null);
   }
-  const base = process.env.BACKEND_URL?.trim();
+  // The same backend the proxy forwards to: the one the secret may go to.
+  const base = backendOrigin();
   if (!accessToken || !base) return '/explore';
   // The server's own instance: http.ts's client is for the browser (same-origin
   // base, the SDK's token). This one calls the backend directly, per request.

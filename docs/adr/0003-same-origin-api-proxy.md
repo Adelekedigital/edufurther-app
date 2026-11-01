@@ -58,22 +58,28 @@ Bad:
 ## Amendment, 2026-11-01: the origin lock (backend #426, decision 304)
 
 The backend now refuses any `/api/` call without a matching `X-EduFurther-Proxy-Secret`
-header while its `EDGE_PROXY_SECRET` is set, so the only way in is through this app. The
-app sends the header on every call it makes to `BACKEND_URL`:
+header while its `EDGE_PROXY_SECRET` is set, so the only way in is through this app. Never
+locked: `/health`, `/ready`, and the machine callers under `/api/v1/callbacks/*` (the
+Google Calendar OAuth redirect, which Google sends to the backend's own origin, ADR 0001)
+and `/api/v1/internal/jobs/*`. The app sends the header on every call it makes to
+`BACKEND_URL`:
 
 - **The rewrite moved from `next.config.ts` to `src/proxy.ts`.** A config rewrite cannot
   add a request header; a proxy rewrite can (`NextResponse.rewrite(url, { request: { headers } })`).
-  The matcher now includes `/api/v1/:path*`, which goes straight to the rewrite with no
-  session check, so ADR 0004's cost note still holds. A client's own value under that name
-  is removed first.
+  The matcher now includes `/api/v1/:path*` (pinned by `src/proxy.matcher.test.ts`); those
+  go straight to the rewrite with no session check. A client's own value under that name
+  is removed first. The cost: every API call now invokes the proxy function before it is
+  forwarded, where the config rewrite was resolved by Vercel's router alone.
 - **The server-side calls add it too:** `/me` in `home.ts`, and `/join` and `/door` in
-  `sessionEnter.ts`. Never to the in-app mock.
+  `sessionEnter.ts`, both now based on the same validated origin as the proxy
+  (`backendOrigin()`). Never to the in-app mock.
 - **`EDGE_PROXY_SECRET` is server-only** (never `NEXT_PUBLIC_`). Unset (local dev), no
   header is sent and nothing changes. `src/lib/backend.ts` holds both checks; a malformed
   value (under 32 visible ASCII characters) fails the build, as a bad `BACKEND_URL` does.
 - **Not a route handler.** Forwarding through a handler would hide the backend origin,
   but it runs as a function, whose 4.5 MB request-body cap on Vercel would break the
-  5 MB uploads. A proxy rewrite streams the body (checked with a 5 MB multipart POST).
+  5 MB uploads. A proxy rewrite streams the body: a 5 MB multipart POST arrived whole through
+  `next start` (2026-11-01); the same check on a Vercel preview is part of the rollout.
 - **The backend's origin is no longer a secret, and never was.** Self-hosted Next
   answers a proxy rewrite with `x-middleware-rewrite: <destination>`. The repo is
   public and names the dev backend's URL. The lock, not obscurity, is the protection.

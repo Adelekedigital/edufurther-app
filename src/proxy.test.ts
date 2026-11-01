@@ -161,6 +161,13 @@ describe('proxy: the API goes to the backend with the origin-lock header (backen
     );
   });
 
+  it('bare /api/v1 is forwarded too, as the old `:path*` rewrite did, without a session check', async () => {
+    const res = await proxy(new NextRequest('https://app.test/api/v1?x=1'));
+    expect(rewrite(res)).toBe('https://be.test/api/v1?x=1');
+    expect(forwarded(res, 'x-edufurther-proxy-secret')).toBe(SECRET);
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+
   it('no backend (local dev on the mock): not rewritten anywhere', async () => {
     vi.stubEnv('BACKEND_URL', '');
     const res = await proxy(new NextRequest('https://app.test/api/v1/me'));
