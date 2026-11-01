@@ -6,7 +6,13 @@ import {
 } from '@/lib/vendor/supabase/server';
 import { isEnterPath } from '@/lib/utils/sessionEnter';
 import { PROXY_SECRET_HEADER, backendOrigin, proxySecret } from '@/lib/backend';
-import { LANDING_COOKIE, LANDING_PATHS, isLanding, landingHomeFor } from '@/lib/utils/landingHint';
+import {
+  CHOSE_EXPLORE_COOKIE,
+  LANDING_COOKIE,
+  LANDING_PATHS,
+  isLanding,
+  landingHomeFor,
+} from '@/lib/utils/landingHint';
 
 /**
  * The same-origin API proxy (ADR 0003): `/api/v1/…` goes to BACKEND_URL with
@@ -39,7 +45,12 @@ export function proxy(request: NextRequest) {
   return refreshSessionCookies(request, ({ userId, accessToken }) => {
     // A mentor landing on Explore goes home before any of it is drawn (owner,
     // 2026-11-01; lib/utils/landingHint). Only for the user just verified.
-    if (userId && LANDING_PATHS.has(path) && isLanding(request.headers)) {
+    if (
+      userId &&
+      LANDING_PATHS.has(path) &&
+      isLanding(request.headers) &&
+      !request.cookies.has(CHOSE_EXPLORE_COOKIE)
+    ) {
       const home = landingHomeFor(request.cookies.get(LANDING_COOKIE)?.value, userId);
       if (home) {
         const res = NextResponse.redirect(new URL(home, request.url));

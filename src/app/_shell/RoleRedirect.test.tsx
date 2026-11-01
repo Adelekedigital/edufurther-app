@@ -21,6 +21,11 @@ vi.mock('@/lib/api/data/http', () => ({ api: { PATCH: patch, GET: vi.fn() } }));
 // The landing hint goes to this app's server; only what is asked for is checked.
 const saveLandingHint = vi.fn();
 vi.mock('@/lib/api/data/landingHint', () => ({ saveLandingHint }));
+// The Supabase session the hint is bound to.
+vi.mock('@/lib/api/data/session', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/data/session')>()),
+  useSession: () => ({ status: 'present', userId: 'sub-1' }),
+}));
 // The real onboarding pages, their screens stubbed: only the wrapper is under test.
 vi.mock('@/app/onboarding/mentor/_components/MentorOnboardingScreen', () => ({
   MentorOnboardingScreen: () => <h1>Mentor steps</h1>,
@@ -171,11 +176,15 @@ describe('the onboarding pages outside the shell', () => {
 });
 
 describe('RoleRedirect: the landing hint the proxy reads (owner, 2026-11-01)', () => {
-  beforeEach(() => saveLandingHint.mockClear());
+  const chose = () => document.cookie.includes('ef-chose-explore=1');
+  beforeEach(() => {
+    saveLandingHint.mockClear();
+    document.cookie = 'ef-chose-explore=; path=/; max-age=0';
+  });
 
-  it('a mentor: their own home, for the next time they land on Explore', () => {
-    page('/explore', viewers.mentorApproved);
-    expect(saveLandingHint).toHaveBeenLastCalledWith('/dashboard');
+  it('a mentor: their own home, for the Supabase user signed in', () => {
+    page('/calendar', viewers.mentorApproved);
+    expect(saveLandingHint).toHaveBeenLastCalledWith('sub-1', '/dashboard');
   });
 
   it('a mentee, or an account that can’t be used: cleared, so Explore and its notices reach them', () => {
@@ -186,7 +195,7 @@ describe('RoleRedirect: the landing hint the proxy reads (owner, 2026-11-01)', (
     ] as Viewer[]) {
       saveLandingHint.mockClear();
       page('/explore', v).unmount();
-      expect(saveLandingHint, v.kind).toHaveBeenCalledWith(null);
+      expect(saveLandingHint, v.kind).toHaveBeenCalledWith('sub-1', null);
     }
   });
 
@@ -195,5 +204,16 @@ describe('RoleRedirect: the landing hint the proxy reads (owner, 2026-11-01)', (
     page('/explore', { kind: 'error', retry: () => {}, retrying: false }).unmount();
     page('/explore', { kind: 'guest' });
     expect(saveLandingHint).not.toHaveBeenCalled();
+  });
+
+  it('a mentor with Explore on screen chose it: marked for this browser session, so a reload keeps it', () => {
+    page('/explore', viewers.mentorApproved);
+    expect(chose()).toBe(true);
+  });
+
+  it('never marked for a mentee, or for a mentor elsewhere', () => {
+    page('/explore', viewers.menteeFinished).unmount();
+    page('/calendar', viewers.mentorApproved);
+    expect(chose()).toBe(false);
   });
 });

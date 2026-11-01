@@ -30,9 +30,9 @@ export function useRoleRedirect(viewer: Viewer): string | null {
  */
 export function RoleRedirect({ children }: { children: ReactNode }) {
   const viewer = useViewer();
-  // Where a mentor's next landing on Explore goes (the proxy's redirect).
-  useLandingHint(viewer);
   const pathname = usePathname();
+  // Where a mentor's next landing on Explore goes (the proxy's redirect).
+  useLandingHint(viewer, pathname);
   const to = useRoleRedirect(viewer);
   if (to) return null;
   if (viewer.kind === 'loading' && pathname && routeRole(pathname)) return <RoleLoading />;

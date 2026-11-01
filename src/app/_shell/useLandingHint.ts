@@ -2,7 +2,9 @@
 
 import { useEffect } from 'react';
 import { saveLandingHint } from '@/lib/api/data/landingHint';
+import { useSession } from '@/lib/api/data/session';
 import { memberHome, viewerRole } from '@/lib/utils/access';
+import { CHOSE_EXPLORE_COOKIE, LANDING_PATHS } from '@/lib/utils/landingHint';
 import type { Viewer } from '@/types/mentor';
 
 /**
@@ -18,10 +20,23 @@ export function landingHintFor(viewer: Viewer): string | null | undefined {
   return undefined;
 }
 
-/** Keeps the hint in step with who is signed in (the server sets it). */
-export function useLandingHint(viewer: Viewer): void {
+/**
+ * Keeps the hint in step with who is signed in (the server sets it), and
+ * marks Explore as chosen once a mentor has it on screen (CHOSE_EXPLORE_COOKIE).
+ * Nothing in mock mode, which has no session to bind a hint to.
+ */
+export function useLandingHint(viewer: Viewer, pathname: string | null): void {
+  const session = useSession();
+  const userId = session.status === 'present' ? session.userId : null;
   const hint = landingHintFor(viewer);
+  const mentorOnLanding =
+    viewer.kind === 'member' && !!hint && !!pathname && LANDING_PATHS.has(pathname);
   useEffect(() => {
-    if (hint !== undefined) saveLandingHint(hint);
-  }, [hint]);
+    if (process.env.NEXT_PUBLIC_MOCK_VIEWER || !userId || hint === undefined) return;
+    saveLandingHint(userId, hint);
+  }, [userId, hint]);
+  useEffect(() => {
+    // A browser-session cookie: no Max-Age, gone when the browser session ends.
+    if (mentorOnLanding) document.cookie = `${CHOSE_EXPLORE_COOKIE}=1; path=/; samesite=lax`;
+  }, [mentorOnLanding]);
 }

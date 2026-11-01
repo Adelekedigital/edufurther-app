@@ -14,6 +14,14 @@ import { MENTOR_ONBOARDING_LIVE } from '@/lib/config/auth';
  */
 export const LANDING_COOKIE = 'ef-landing';
 
+/**
+ * Set (for the browser session only) once a mentor has Explore on screen:
+ * they chose it, since a landing never draws it. While it is there the proxy
+ * leaves Explore alone, so a reload, Back, or pull-to-refresh keeps it, even
+ * where the browser reports those as `none` (isLanding).
+ */
+export const CHOSE_EXPLORE_COOKIE = 'ef-chose-explore';
+
 /** The pages that redirect a landing mentor. */
 export const LANDING_PATHS: ReadonlySet<string> = new Set(['/explore']);
 

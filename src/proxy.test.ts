@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { encodeLanding } from '@/lib/utils/landingHint';
 
 const getClaims = vi.fn();
 vi.mock('@supabase/ssr', () => ({
@@ -185,8 +186,9 @@ describe('proxy: the API goes to the backend with the origin-lock header (backen
 });
 
 describe('proxy: a mentor landing on Explore goes home before any of it is drawn (owner, 2026-11-01)', () => {
+  // Built as the route writes it (encodeLanding), URI-encoded as a cookie.
   const hint = (userId: string, home: string) =>
-    `ef-landing=${encodeURIComponent(`${userId}:${home}`)}`;
+    `ef-landing=${encodeURIComponent(encodeLanding(userId, home))}`;
   // What the browser sends when the person opens the page themselves.
   const LANDING = {
     'sec-fetch-dest': 'document',
@@ -219,6 +221,13 @@ describe('proxy: a mentor landing on Explore goes home before any of it is drawn
       const res = await open('/explore', { cookie, ...extra });
       expect(res.headers.get('location'), JSON.stringify(extra)).toBeNull();
     }
+  });
+
+  it('a mentor who already chose Explore this browser session: a reload or Back keeps it', async () => {
+    const res = await open('/explore', {
+      cookie: `${hint('u1', '/dashboard')}; ef-chose-explore=1`,
+    });
+    expect(res.headers.get('location')).toBeNull();
   });
 
   it('a browser that sends no fetch metadata: never redirected', async () => {
