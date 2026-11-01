@@ -29,14 +29,15 @@ export function useLandingHint(viewer: Viewer, pathname: string | null): void {
   const session = useSession();
   const userId = session.status === 'present' ? session.userId : null;
   const hint = landingHintFor(viewer);
-  const mentorOnLanding =
-    viewer.kind === 'member' && !!hint && !!pathname && LANDING_PATHS.has(pathname);
+  const choseAs =
+    viewer.kind === 'member' && !!hint && !!pathname && LANDING_PATHS.has(pathname) ? userId : null;
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_MOCK_VIEWER || !userId || hint === undefined) return;
     saveLandingHint(userId, hint);
   }, [userId, hint]);
   useEffect(() => {
-    // A browser-session cookie: no Max-Age, gone when the browser session ends.
-    if (mentorOnLanding) document.cookie = `${CHOSE_EXPLORE_COOKIE}=1; path=/; samesite=lax`;
-  }, [mentorOnLanding]);
+    // A browser-session cookie (no Max-Age), bound to this Supabase user.
+    if (choseAs)
+      document.cookie = `${CHOSE_EXPLORE_COOKIE}=${encodeURIComponent(choseAs)}; path=/; samesite=lax`;
+  }, [choseAs]);
 }

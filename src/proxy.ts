@@ -8,6 +8,7 @@ import { isEnterPath } from '@/lib/utils/sessionEnter';
 import { PROXY_SECRET_HEADER, backendOrigin, proxySecret } from '@/lib/backend';
 import {
   CHOSE_EXPLORE_COOKIE,
+  choseExplore,
   LANDING_COOKIE,
   LANDING_PATHS,
   isLanding,
@@ -49,7 +50,7 @@ export function proxy(request: NextRequest) {
       userId &&
       LANDING_PATHS.has(path) &&
       isLanding(request.headers) &&
-      !request.cookies.has(CHOSE_EXPLORE_COOKIE)
+      !choseExplore(request.cookies.get(CHOSE_EXPLORE_COOKIE)?.value, userId)
     ) {
       const home = landingHomeFor(request.cookies.get(LANDING_COOKIE)?.value, userId);
       if (home) {

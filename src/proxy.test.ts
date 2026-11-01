@@ -225,9 +225,18 @@ describe('proxy: a mentor landing on Explore goes home before any of it is drawn
 
   it('a mentor who already chose Explore this browser session: a reload or Back keeps it', async () => {
     const res = await open('/explore', {
-      cookie: `${hint('u1', '/dashboard')}; ef-chose-explore=1`,
+      cookie: `${hint('u1', '/dashboard')}; ef-chose-explore=u1`,
     });
     expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('another account’s “chose Explore” (a shared device, signed out and in): still redirected', async () => {
+    for (const marker of ['u2', '1', '']) {
+      const res = await open('/explore', {
+        cookie: `${hint('u1', '/dashboard')}; ef-chose-explore=${marker}`,
+      });
+      expect(res.headers.get('location'), marker).toBe('https://app.test/dashboard');
+    }
   });
 
   it('a browser that sends no fetch metadata: never redirected', async () => {

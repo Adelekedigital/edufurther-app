@@ -71,3 +71,14 @@ describe('isLanding: a page the person opened themselves', () => {
     expect(isLanding(h({}))).toBe(false);
   });
 });
+
+describe('choseExplore: only the verified user’s own marker counts', () => {
+  it('matches the user, encoded or not; anything else does not', async () => {
+    const { choseExplore } = await import('./landingHint');
+    expect(choseExplore('sub-1', 'sub-1')).toBe(true);
+    expect(choseExplore(encodeURIComponent('sub-1'), 'sub-1')).toBe(true);
+    for (const raw of [undefined, '', '1', 'sub-2', '%E0%A4%A']) {
+      expect(choseExplore(raw, 'sub-1'), String(raw)).toBe(false);
+    }
+  });
+});

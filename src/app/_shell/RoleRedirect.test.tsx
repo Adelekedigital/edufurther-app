@@ -176,7 +176,7 @@ describe('the onboarding pages outside the shell', () => {
 });
 
 describe('RoleRedirect: the landing hint the proxy reads (owner, 2026-11-01)', () => {
-  const chose = () => document.cookie.includes('ef-chose-explore=1');
+  const chose = () => document.cookie.includes('ef-chose-explore=sub-1');
   beforeEach(() => {
     saveLandingHint.mockClear();
     document.cookie = 'ef-chose-explore=; path=/; max-age=0';
@@ -206,7 +206,7 @@ describe('RoleRedirect: the landing hint the proxy reads (owner, 2026-11-01)', (
     expect(saveLandingHint).not.toHaveBeenCalled();
   });
 
-  it('a mentor with Explore on screen chose it: marked for this browser session, so a reload keeps it', () => {
+  it('a mentor with Explore on screen chose it: marked with their own user, for this browser session', () => {
     page('/explore', viewers.mentorApproved);
     expect(chose()).toBe(true);
   });

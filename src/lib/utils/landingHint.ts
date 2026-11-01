@@ -16,9 +16,11 @@ export const LANDING_COOKIE = 'ef-landing';
 
 /**
  * Set (for the browser session only) once a mentor has Explore on screen:
- * they chose it, since a landing never draws it. While it is there the proxy
- * leaves Explore alone, so a reload, Back, or pull-to-refresh keeps it, even
- * where the browser reports those as `none` (isLanding).
+ * they chose it, since a landing never draws it. Holds their Supabase user id;
+ * while it matches the verified user the proxy leaves Explore alone, so a
+ * reload, Back, or pull-to-refresh keeps it, even where the browser reports
+ * those as `none` (isLanding). Another account's (a shared device, a sign-out
+ * and in as someone else) counts for nothing.
  */
 export const CHOSE_EXPLORE_COOKIE = 'ef-chose-explore';
 
@@ -37,6 +39,16 @@ export function isMentorHome(home: string): boolean {
   return (
     MENTOR_ONBOARDING_LIVE && (home === '/mentor-application' || home === '/onboarding/mentor')
   );
+}
+
+/** Whether `raw` (the CHOSE_EXPLORE_COOKIE value) is this verified user's own. */
+export function choseExplore(raw: string | undefined, userId: string): boolean {
+  if (!raw) return false;
+  try {
+    return decodeURIComponent(raw) === userId;
+  } catch {
+    return false;
+  }
 }
 
 export function encodeLanding(userId: string, home: string): string {
