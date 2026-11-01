@@ -1,5 +1,6 @@
 import createClient from 'openapi-fetch';
 import type { components, paths } from '@/lib/api/generated/schema';
+import { proxySecretHeaders } from '@/lib/backend';
 import { memberHome, mentorStageOf } from '@/lib/utils/access';
 import { menteeByChoice } from './roles';
 
@@ -101,7 +102,8 @@ export async function fetchHome({
   const api = createClient<paths>({ baseUrl: base });
   try {
     const { data } = await api.GET('/api/v1/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
+      // The origin-lock header (backend #426): this call skips the proxy.
+      headers: { ...proxySecretHeaders(), Authorization: `Bearer ${accessToken}` },
       cache: 'no-store',
       signal: AbortSignal.timeout(HOME_ME_TIMEOUT_MS),
     });

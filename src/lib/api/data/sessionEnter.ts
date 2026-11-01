@@ -1,5 +1,6 @@
 import createClient from 'openapi-fetch';
 import type { paths } from '@/lib/api/generated/schema';
+import { proxySecretHeaders } from '@/lib/backend';
 import { safeMeetingUrl } from '@/lib/utils/bookings';
 import type { EnterProblem } from '@/lib/utils/sessionEnter';
 
@@ -61,9 +62,12 @@ export async function enterSession({
 
   // The server's own instance, per request, as in home.ts.
   const api = createClient<paths>({ baseUrl: target.base });
-  const headers: Record<string, string> = accessToken
-    ? { Authorization: `Bearer ${accessToken}` }
-    : {};
+  // The origin-lock header (backend #426) on the real backend: this call skips
+  // the proxy. Never to the mock, which is this app's own origin.
+  const headers: Record<string, string> = {
+    ...(target.mock ? {} : proxySecretHeaders()),
+    ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+  };
   const deadline = AbortSignal.timeout(ENTER_TIMEOUT_MS);
   const call = async (step: 'join' | 'door'): Promise<Answer> => {
     const path =

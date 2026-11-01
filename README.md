@@ -44,8 +44,9 @@ icon font is a Material Symbols subset of `ICON_NAMES`: after adding an icon to
 ## Deploying (Vercel)
 
 `vercel.json` sets the build command: `pnpm spec:pull && pnpm gen:api && pnpm build`.
-The browser calls `/api/v1/…` on the app's own domain and `next.config.ts` proxies it to
-`BACKEND_URL`, so preview URLs need no CORS entry on the backend.
+The browser calls `/api/v1/…` on the app's own domain and `src/proxy.ts` forwards it to
+`BACKEND_URL`, so preview URLs need no CORS entry on the backend. Every call the app makes
+to the backend carries `X-EduFurther-Proxy-Secret` when `EDGE_PROXY_SECRET` is set (ADR 0003).
 
 Sign-in also needs, in the Supabase dashboard (Authentication → URL Configuration), the
 site URL and redirect URLs: `http://localhost:3000/**`, the production domain `/**`, and the
@@ -55,6 +56,7 @@ Vercel preview pattern `https://*-<team>.vercel.app/**`. The magic link lands on
 | Env var | Production | Preview | Notes |
 |---|---|---|---|
 | `BACKEND_URL` | prod backend | `https://edufurtherbe-dev.up.railway.app` | server-only; the build fails without it on Vercel. Previews never use prod |
+| `EDGE_PROXY_SECRET` | its own value | its own value | server-only, **never** `NEXT_PUBLIC_`. Must equal the backend's `EDGE_PROXY_SECRET` for that environment (`openssl rand -hex 32`; 32+ visible ASCII, no spaces, or the build fails). Unset sends nothing. Set it here **before** on the backend, or every app request is refused |
 | `NEXT_PUBLIC_MATCH_CALL_URL` | Cal link | Cal link | empty hides "Find my mentor matches" |
 | `NEXT_PUBLIC_SUPPORT_EMAIL` | support address | support address | where every "Contact support" goes; empty or not a plain address uses support@edufurther.org. A change needs a redeploy |
 | `NEXT_PUBLIC_SUPABASE_URL` | prod project URL | dev project URL | public; empty turns sign-in off |
@@ -86,5 +88,5 @@ This repo is public. `openapi/`, `src/lib/api/generated/` and `docs/handoff/` ar
 git-ignored and must never be committed; `pnpm check:private` (also run in CI)
 fails if one is tracked. The spec is downloaded, never stored: `pnpm spec:pull` fetches
 the backend's published `openapi.json` (release `openapi-latest` on `edufurtherbe`).
-Nothing else is needed to build: no secret, no token, no extra Vercel variable
-beyond `BACKEND_URL`.
+Nothing else is needed to build: no token, no extra Vercel variable beyond `BACKEND_URL`
+(and `EDGE_PROXY_SECRET` once the backend's origin lock is on).

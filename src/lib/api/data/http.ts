@@ -10,7 +10,7 @@ import { createAuthMiddleware } from './authMiddleware';
  *
  * NEXT_PUBLIC_API_BASE_URL:
  *   - unset (deployed): same origin, `/api/v1/…`, proxied to BACKEND_URL by the
- *     rewrite in next.config.ts. Locally, set BACKEND_URL=http://localhost:8000.
+ *     rewrite in src/proxy.ts. Locally, set BACKEND_URL=http://localhost:8000.
  *   - phase A mock: /api/mock  → served by app/api/mock/… route handlers,
  *     which only answer when ENABLE_MOCK_API=1.
  */

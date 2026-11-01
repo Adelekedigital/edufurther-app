@@ -77,6 +77,17 @@ describe('fetchHome', () => {
     expect(req.cache).toBe('no-store');
   });
 
+  it('carries the origin-lock header when EDGE_PROXY_SECRET is set, and none when it isn’t (backend #426)', async () => {
+    const f = vi.fn(async (_req: Request) => json({ is_admin: false, mentor_profile: null }));
+    vi.stubGlobal('fetch', f);
+    vi.stubEnv('EDGE_PROXY_SECRET', 's'.repeat(64));
+    await fetchHome({ accessToken: 'tok' });
+    expect(f.mock.calls[0]![0].headers.get('x-edufurther-proxy-secret')).toBe('s'.repeat(64));
+    vi.stubEnv('EDGE_PROXY_SECRET', '');
+    await fetchHome({ accessToken: 'tok' });
+    expect(f.mock.calls[1]![0].headers.has('x-edufurther-proxy-secret')).toBe(false);
+  });
+
   it('a failed /me (401, network): Explore, which shows the account notices', async () => {
     vi.stubGlobal(
       'fetch',
