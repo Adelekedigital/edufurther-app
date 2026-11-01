@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm spec:pull && pnpm gen:api && pnpm build",
+  "skipMiddlewareRequestBody": true,
   "git": {
     "deploymentEnabled": {
       "**": false,
