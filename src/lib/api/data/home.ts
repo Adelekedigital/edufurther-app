@@ -33,8 +33,8 @@ type Me = Pick<components['schemas']['UserRead'], 'is_admin'> &
  * → the dashboard, or the application while it isn't approved (or approved
  * and not yet seen); everyone else → the mentee home, goal or not (product,
  * 2026-10-15), or onboarding while it isn't finished. Each detour only while
- * its page is switched on. A guest and any failed or unlinked /me fall back
- * to Explore.
+ * its page is switched on. A guest, a refused token and an unlinked account
+ * fall back to Explore.
  */
 export function homeFor(me: Me | null): Home {
   if (!me) return '/explore';
@@ -74,13 +74,22 @@ const MOCK_ROLES: Record<string, Me | null> = {
   },
 };
 
-/** Past this, `/` stops waiting and sends the viewer to Explore, which loads them itself. */
+/**
+ * `/` couldn't tell who a signed-in viewer is in time (/me slow, unreachable,
+ * or a 5xx): the page resolves it in the browser instead (HomeResolver),
+ * showing nothing of either role meanwhile. Never Explore for a member
+ * (owner, 2026-11-01: a mentor opening the app must land on the dashboard).
+ */
+export const RESOLVE_IN_BROWSER = 'resolve' as const;
+
+/** Past this, `/` stops waiting and resolves the viewer in the browser (RESOLVE_IN_BROWSER). */
 export const HOME_ME_TIMEOUT_MS = 2500;
 
 /**
  * The viewer's home. `accessToken` is the one the proxy just verified (null:
- * signed out, or the check failed), so this never touches Supabase. A failed
- * or slow /me falls back to Explore, which shows the account notices.
+ * signed out, or the check failed), so this never touches Supabase. A 401 or
+ * 404 goes to Explore, which shows the account notices; a slow, unreachable or
+ * 5xx /me leaves it to the browser (RESOLVE_IN_BROWSER).
  */
 export async function fetchHome({
   accessToken,
@@ -88,7 +97,7 @@ export async function fetchHome({
 }: {
   accessToken: string | null;
   mockViewer?: string | null;
-}): Promise<Home> {
+}): Promise<Home | typeof RESOLVE_IN_BROWSER> {
   const mock = process.env.NEXT_PUBLIC_MOCK_VIEWER;
   if (mock) {
     // Own keys only, as in viewer.ts: `?mockViewer=constructor` stays out.
@@ -102,14 +111,18 @@ export async function fetchHome({
   // base, the SDK's token). This one calls the backend directly, per request.
   const api = createClient<paths>({ baseUrl: base });
   try {
-    const { data } = await api.GET('/api/v1/me', {
+    const { data, response } = await api.GET('/api/v1/me', {
       // The origin-lock header (backend #426): this call skips the proxy.
       headers: { ...proxySecretHeaders(), Authorization: `Bearer ${accessToken}` },
       cache: 'no-store',
       signal: AbortSignal.timeout(HOME_ME_TIMEOUT_MS),
     });
+    // The server failing says nothing about who they are. A 401 or 404 does:
+    // signed out, or no account, which Explore explains.
+    if (response.status >= 500) return RESOLVE_IN_BROWSER;
     return homeFor(data ?? null);
   } catch {
-    return '/explore';
+    // Too slow, or unreachable.
+    return RESOLVE_IN_BROWSER;
   }
 }

@@ -88,3 +88,13 @@ export const PROFILE_SHEET = {
 } as const;
 
 export const MENTORS_FOR_GOAL = 'Mentors for your goal';
+
+/**
+ * `/` when the server couldn't tell who is signed in and the browser's own
+ * /me failed too (HomeResolver). Same words as the other load failures.
+ */
+export const HOME_RESOLVE_COPY = {
+  errorTitle: 'We couldn’t open your home',
+  errorBody: 'Check your connection and try again.',
+  retry: 'Try again',
+} as const;
