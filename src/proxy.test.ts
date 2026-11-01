@@ -113,3 +113,73 @@ describe('proxy: the session hint for the render', () => {
     expect(forwarded(res, 'x-ef-access-token')).toBe('tok-fresh');
   });
 });
+
+describe('proxy: the API goes to the backend with the origin-lock header (backend #426)', () => {
+  const SECRET = 'f'.repeat(64);
+  const rewrite = (res: Response) => res.headers.get('x-middleware-rewrite');
+  beforeEach(() => {
+    getClaims.mockReset();
+    vi.stubEnv('BACKEND_URL', 'https://be.test');
+    vi.stubEnv('EDGE_PROXY_SECRET', SECRET);
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('forwards path and query to BACKEND_URL, adding the secret, without touching the session', async () => {
+    const res = await proxy(
+      new NextRequest('https://app.test/api/v1/mentors?offering=a&offering=b', {
+        method: 'POST',
+        headers: { authorization: 'Bearer tok' },
+      }),
+    );
+    expect(rewrite(res)).toBe('https://be.test/api/v1/mentors?offering=a&offering=b');
+    expect(forwarded(res, 'x-edufurther-proxy-secret')).toBe(SECRET);
+    // The caller's own headers still reach the backend.
+    expect(forwarded(res, 'authorization')).toBe('Bearer tok');
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+
+  it('a value a client sent under that name is replaced by ours', async () => {
+    const res = await proxy(
+      new NextRequest('https://app.test/api/v1/me', {
+        headers: { 'x-edufurther-proxy-secret': 'guess' },
+      }),
+    );
+    expect(forwarded(res, 'x-edufurther-proxy-secret')).toBe(SECRET);
+  });
+
+  it('no secret set (local dev): no header, and a client’s value is still dropped', async () => {
+    vi.stubEnv('EDGE_PROXY_SECRET', '');
+    const res = await proxy(
+      new NextRequest('https://app.test/api/v1/me', {
+        headers: { 'x-edufurther-proxy-secret': 'guess' },
+      }),
+    );
+    expect(rewrite(res)).toBe('https://be.test/api/v1/me');
+    expect(forwarded(res, 'x-edufurther-proxy-secret')).toBeNull();
+    expect(res.headers.get('x-middleware-override-headers')).not.toContain(
+      'x-edufurther-proxy-secret',
+    );
+  });
+
+  it('bare /api/v1 is forwarded too, as the old `:path*` rewrite did, without a session check', async () => {
+    const res = await proxy(new NextRequest('https://app.test/api/v1?x=1'));
+    expect(rewrite(res)).toBe('https://be.test/api/v1?x=1');
+    expect(forwarded(res, 'x-edufurther-proxy-secret')).toBe(SECRET);
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+
+  it('no backend (local dev on the mock): not rewritten anywhere', async () => {
+    vi.stubEnv('BACKEND_URL', '');
+    const res = await proxy(new NextRequest('https://app.test/api/v1/me'));
+    expect(rewrite(res)).toBeNull();
+  });
+
+  it('pages never get the secret, and the mock API is not forwarded', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    for (const path of ['/', '/explore', '/api/mock/api/v1/me', '/api/v1x']) {
+      const res = await proxy(new NextRequest(`https://app.test${path}`));
+      expect(rewrite(res), path).toBeNull();
+      expect(forwarded(res, 'x-edufurther-proxy-secret'), path).toBeNull();
+    }
+  });
+});

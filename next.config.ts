@@ -1,37 +1,17 @@
 import type { NextConfig } from 'next';
+import { backendOrigin, proxySecret } from './src/lib/backend';
 import { SECURITY_HEADERS } from './src/lib/securityHeaders';
 
 /**
- * Same-origin API proxy (product, 2026-09-27). The browser calls `/api/v1/…` on
- * this app and Vercel forwards it to BACKEND_URL, so preview deployments (a new
- * URL each time) never need a CORS entry on the backend, whose allow-list is exact
- * origins only. BACKEND_URL is server-only: it is never sent to the browser.
- *   Vercel production → the prod backend; Vercel preview → edufurtherbe-dev.
- * Local dev and CI page review use the in-app mock (NEXT_PUBLIC_API_BASE_URL).
+ * Same-origin API proxy (product, 2026-09-27; ADR 0003). The browser calls
+ * `/api/v1/…` on this app and src/proxy.ts forwards it to BACKEND_URL, adding
+ * the origin-lock header (backend #426). The rewrite lives there, not in
+ * `rewrites()`, because a config rewrite cannot add a request header. Checked
+ * here so a missing or malformed BACKEND_URL or EDGE_PROXY_SECRET fails the
+ * build. Both are server-only: neither is ever sent to the browser.
  */
-function backendUrl(): string | null {
-  const raw = process.env.BACKEND_URL?.trim();
-  if (!raw) {
-    if (process.env.VERCEL === '1') {
-      throw new Error(
-        'BACKEND_URL is not set for this Vercel environment (see README, Deploying).',
-      );
-    }
-    return null;
-  }
-  let url: URL;
-  try {
-    url = new URL(raw);
-  } catch {
-    throw new Error(`BACKEND_URL is not a URL: ${raw}`);
-  }
-  if (url.protocol !== 'https:' && url.hostname !== 'localhost' && url.hostname !== '127.0.0.1') {
-    throw new Error('BACKEND_URL must be https (http only for localhost).');
-  }
-  return url.origin;
-}
-
-const backend = backendUrl();
+backendOrigin();
+proxySecret();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -44,9 +24,6 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return SECURITY_HEADERS;
-  },
-  async rewrites() {
-    return backend ? [{ source: '/api/v1/:path*', destination: `${backend}/api/v1/:path*` }] : [];
   },
 };
 

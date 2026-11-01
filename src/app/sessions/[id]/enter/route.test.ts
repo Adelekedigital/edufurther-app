@@ -7,6 +7,8 @@ type Reply = { status: number; body?: unknown } | Error | DOMException;
 /** What the backend answers, per step, in order of the calls. */
 let replies: Partial<Record<'join' | 'door', Reply>>;
 const seen: { url: string; auth: string | null; method: string }[] = [];
+/** The origin-lock header on each call, in order (backend #426). */
+const secrets: (string | null)[] = [];
 
 function json(r: { status: number; body?: unknown }) {
   return new Response(r.body === undefined ? null : JSON.stringify(r.body), {
@@ -17,6 +19,7 @@ function json(r: { status: number; body?: unknown }) {
 
 beforeEach(() => {
   seen.length = 0;
+  secrets.length = 0;
   replies = {};
   vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', '');
   vi.stubEnv('BACKEND_URL', 'https://be.test');
@@ -25,6 +28,7 @@ beforeEach(() => {
     vi.fn(async (input: Request | string) => {
       const req = typeof input === 'string' ? new Request(input) : input;
       seen.push({ url: req.url, auth: req.headers.get('authorization'), method: req.method });
+      secrets.push(req.headers.get('x-edufurther-proxy-secret'));
       const step = req.url.endsWith('/door') ? 'door' : 'join';
       const r = replies[step];
       if (!r) throw new Error(`unexpected ${step}`);
@@ -220,6 +224,25 @@ describe('/sessions/{id}/enter: recording the arrival', () => {
     expect(res.headers.get('cache-control')).toBe('no-store');
     const csrf = await enter('b1', { site: 'cross-site' });
     expect(csrf.res.headers.get('cache-control')).toBe('no-store');
+  });
+});
+
+describe('/sessions/{id}/enter: the origin lock (backend #426)', () => {
+  it('/join and /door carry EDGE_PROXY_SECRET when it is set', async () => {
+    vi.stubEnv('EDGE_PROXY_SECRET', 'k'.repeat(64));
+    replies.join = { status: 409, body: {} };
+    replies.door = { status: 200, body: { meeting_url: 'https://room.test/x' } };
+    expect((await enter()).to).toBe('https://room.test/x');
+    expect(secrets).toEqual(['k'.repeat(64), 'k'.repeat(64)]);
+  });
+
+  it('no header when it is unset, and never to the in-app mock', async () => {
+    replies.join = { status: 200, body: { joined: true, meeting_url: 'https://room.test/x' } };
+    await enter();
+    vi.stubEnv('EDGE_PROXY_SECRET', 'k'.repeat(64));
+    vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', 'mentee');
+    await enter();
+    expect(secrets).toEqual([null, null]);
   });
 });
 
