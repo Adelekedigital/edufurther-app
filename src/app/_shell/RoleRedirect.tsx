@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { useViewer } from '@/lib/api/data/viewer';
 import { routeRole, wrongRoleHome } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
+import { useLandingHint } from './useLandingHint';
 import { useReplaceTo } from './useReplaceTo';
 import styles from './RoleRedirect.module.css';
 
@@ -30,6 +31,8 @@ export function useRoleRedirect(viewer: Viewer): string | null {
 export function RoleRedirect({ children }: { children: ReactNode }) {
   const viewer = useViewer();
   const pathname = usePathname();
+  // Where a mentor's next landing on Explore goes (the proxy's redirect).
+  useLandingHint(viewer, pathname);
   const to = useRoleRedirect(viewer);
   if (to) return null;
   if (viewer.kind === 'loading' && pathname && routeRole(pathname)) return <RoleLoading />;

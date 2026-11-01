@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { encodeLanding } from '@/lib/utils/landingHint';
 
 const getClaims = vi.fn();
 vi.mock('@supabase/ssr', () => ({
@@ -181,5 +182,90 @@ describe('proxy: the API goes to the backend with the origin-lock header (backen
       expect(rewrite(res), path).toBeNull();
       expect(forwarded(res, 'x-edufurther-proxy-secret'), path).toBeNull();
     }
+  });
+});
+
+describe('proxy: a mentor landing on Explore goes home before any of it is drawn (owner, 2026-11-01)', () => {
+  // Built as the route writes it (encodeLanding), URI-encoded as a cookie.
+  const hint = (userId: string, home: string) =>
+    `ef-landing=${encodeURIComponent(encodeLanding(userId, home))}`;
+  // What the browser sends when the person opens the page themselves.
+  const LANDING = {
+    'sec-fetch-dest': 'document',
+    'sec-fetch-mode': 'navigate',
+    'sec-fetch-site': 'none',
+  };
+  const open = (path: string, headers: Record<string, string> = {}) =>
+    proxy(new NextRequest(`https://app.test${path}`, { headers: { ...LANDING, ...headers } }));
+  beforeEach(() => getClaims.mockResolvedValue({ data: { claims: { sub: 'u1' } }, error: null }));
+
+  it('an app launch, bookmark or typed /explore with their own hint: their home, uncached, session kept fresh', async () => {
+    const res = await open('/explore', { cookie: hint('u1', '/dashboard') });
+    expect(res.status).toBe(307);
+    expect(res.headers.get('location')).toBe('https://app.test/dashboard');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(res.cookies.get('sb-x-auth-token')?.value).toBe('fresh');
+  });
+
+  it('moving to Explore inside the app: Explore, as chosen', async () => {
+    const cookie = hint('u1', '/dashboard');
+    const cases: Record<string, string>[] = [
+      // Next's in-app navigation and prefetch: fetches, not documents.
+      { 'sec-fetch-dest': 'empty', 'sec-fetch-mode': 'cors', 'sec-fetch-site': 'same-origin' },
+      // A full load from one of our own pages (a new tab, a hard navigation).
+      { 'sec-fetch-site': 'same-origin' },
+      // A link from another site (a shared Explore link).
+      { 'sec-fetch-site': 'cross-site' },
+    ];
+    for (const extra of cases) {
+      const res = await open('/explore', { cookie, ...extra });
+      expect(res.headers.get('location'), JSON.stringify(extra)).toBeNull();
+    }
+  });
+
+  it('a mentor who already chose Explore this browser session: a reload or Back keeps it', async () => {
+    const res = await open('/explore', {
+      cookie: `${hint('u1', '/dashboard')}; ef-chose-explore=u1`,
+    });
+    expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('another account’s “chose Explore” (a shared device, signed out and in): still redirected', async () => {
+    for (const marker of ['u2', '1', '']) {
+      const res = await open('/explore', {
+        cookie: `${hint('u1', '/dashboard')}; ef-chose-explore=${marker}`,
+      });
+      expect(res.headers.get('location'), marker).toBe('https://app.test/dashboard');
+    }
+  });
+
+  it('a browser that sends no fetch metadata: never redirected', async () => {
+    const res = await proxy(
+      new NextRequest('https://app.test/explore', {
+        headers: { cookie: hint('u1', '/dashboard') },
+      }),
+    );
+    expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('no hint (a mentee, a first visit), another account’s, or no verified session: Explore', async () => {
+    expect((await open('/explore')).headers.get('location')).toBeNull();
+    const other = await open('/explore', { cookie: hint('u2', '/dashboard') });
+    expect(other.headers.get('location')).toBeNull();
+    getClaims.mockResolvedValue({ data: null, error: null });
+    const guest = await open('/explore', { cookie: hint('u1', '/dashboard') });
+    expect(guest.headers.get('location')).toBeNull();
+    getClaims.mockResolvedValue({ data: null, error: new Error('fetch failed') });
+    const unknown = await open('/explore', { cookie: hint('u1', '/dashboard') });
+    expect(unknown.headers.get('location')).toBeNull();
+  });
+
+  it('only Explore, and only toward a mentor home', async () => {
+    for (const path of ['/bookings', '/mentors/ada', '/explore/x']) {
+      const res = await open(path, { cookie: hint('u1', '/dashboard') });
+      expect(res.headers.get('location'), path).toBeNull();
+    }
+    const evil = await open('/explore', { cookie: hint('u1', '//evil.test') });
+    expect(evil.headers.get('location')).toBeNull();
   });
 });

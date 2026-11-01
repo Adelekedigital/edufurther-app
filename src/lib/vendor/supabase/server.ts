@@ -25,6 +25,26 @@ export async function exchangeCodeForSession(code: string): Promise<boolean> {
 }
 
 /**
+ * The signed-in Supabase user (the JWT `sub`) for a route handler, verified;
+ * null when signed out, auth is off, or the check failed. A refreshed token
+ * is saved to the response cookies.
+ */
+export async function verifiedUserId(): Promise<string | null> {
+  if (!authConfigured) return null;
+  const jar = await cookies();
+  const sb = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    cookieOptions: COOKIE_OPTIONS,
+    cookies: {
+      getAll: () => jar.getAll(),
+      setAll: (list) => list.forEach(({ name, value, options }) => jar.set(name, value, options)),
+    },
+  });
+  const { data, error } = await sb.auth.getClaims();
+  const sub = data?.claims?.sub;
+  return !error && typeof sub === 'string' && sub !== '' ? sub : null;
+}
+
+/**
  * Request header the proxy sets for the page render: the signed-in user's id,
  * or "none". A hint for which chrome to draw first (no wordmark-then-sidebar
  * swap on refresh), never an authorization claim: data calls carry their own

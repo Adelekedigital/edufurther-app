@@ -6,6 +6,14 @@ import {
 } from '@/lib/vendor/supabase/server';
 import { isEnterPath } from '@/lib/utils/sessionEnter';
 import { PROXY_SECRET_HEADER, backendOrigin, proxySecret } from '@/lib/backend';
+import {
+  CHOSE_EXPLORE_COOKIE,
+  choseExplore,
+  LANDING_COOKIE,
+  LANDING_PATHS,
+  isLanding,
+  landingHomeFor,
+} from '@/lib/utils/landingHint';
 
 /**
  * The same-origin API proxy (ADR 0003): `/api/v1/…` goes to BACKEND_URL with
@@ -36,6 +44,21 @@ export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (path === '/api/v1' || path.startsWith('/api/v1/')) return forwardToBackend(request);
   return refreshSessionCookies(request, ({ userId, accessToken }) => {
+    // A mentor landing on Explore goes home before any of it is drawn (owner,
+    // 2026-11-01; lib/utils/landingHint). Only for the user just verified.
+    if (
+      userId &&
+      LANDING_PATHS.has(path) &&
+      isLanding(request.headers) &&
+      !choseExplore(request.cookies.get(CHOSE_EXPLORE_COOKIE)?.value, userId)
+    ) {
+      const home = landingHomeFor(request.cookies.get(LANDING_COOKIE)?.value, userId);
+      if (home) {
+        const res = NextResponse.redirect(new URL(home, request.url));
+        res.headers.set('cache-control', 'no-store');
+        return res;
+      }
+    }
     const headers = new Headers(request.headers);
     // Always ours: a value a client sent under this name is replaced, or
     // removed when the check failed (no hint: the browser decides, as before).
