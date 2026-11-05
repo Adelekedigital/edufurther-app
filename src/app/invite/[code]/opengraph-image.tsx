@@ -50,17 +50,19 @@ async function photoData(url: string | null): Promise<string | null> {
  * 1200×630 on blue-50, the logo top left, the inviter's photo or initial in a
  * white-ringed circle, "{First} invited you" and the perk. A code that can't
  * be joined (or any failure) draws the fallback: the swoosh mark and the
- * generic lines. Colours are tokens (imageColors), the type DM Sans (static
- * cuts, scripts/fonts/og_fonts.py).
+ * generic lines. Colours are tokens (imageColors), the type DM Sans with
+ * Inter's gap file behind it (static cuts, scripts/fonts/og_fonts.py).
  */
 export default async function Image({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
   const origin = requestOrigin(await headers());
-  const [inviter, regular, bold, logo, mark] = await Promise.all([
+  const [inviter, regular, bold, gapsRegular, gapsBold, logo, mark] = await Promise.all([
     lookupInviterOnServer(code, origin),
     // Literal paths: a computed one makes the build trace the whole project.
     readFile(join(process.cwd(), 'src/app/fonts/og/dm-sans-regular.ttf')),
     readFile(join(process.cwd(), 'src/app/fonts/og/dm-sans-bold.ttf')),
+    readFile(join(process.cwd(), 'src/app/fonts/og/inter-gaps-regular.ttf')),
+    readFile(join(process.cwd(), 'src/app/fonts/og/inter-gaps-bold.ttf')),
     readFile(join(process.cwd(), 'public/brand/edufurther-logo-full.png')),
     readFile(join(process.cwd(), 'public/brand/edufurther-mark-swoosh.png')),
   ]);
@@ -78,7 +80,9 @@ export default async function Image({ params }: { params: Promise<{ code: string
         justifyContent: 'center',
         background: tokenHex('blue-50'),
         color: tokenHex('ink-900'),
-        fontFamily: 'DM Sans',
+        // Inter's gap file carries what DM Sans lacks (Ṣ, ọ, ₦…), per
+        // character, as on the site: a name like "Ṣadé" never breaks the image.
+        fontFamily: 'DM Sans, Inter Gaps',
       }}
     >
       {/* 4096×547 source, 32px tall. */}
@@ -129,6 +133,8 @@ export default async function Image({ params }: { params: Promise<{ code: string
       fonts: [
         { name: 'DM Sans', data: regular, weight: 400, style: 'normal' },
         { name: 'DM Sans', data: bold, weight: 700, style: 'normal' },
+        { name: 'Inter Gaps', data: gapsRegular, weight: 400, style: 'normal' },
+        { name: 'Inter Gaps', data: gapsBold, weight: 700, style: 'normal' },
       ],
     },
   );
