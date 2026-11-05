@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { pendingOk, problem } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 const SCHOOLS = [
   'University of Oxford',
@@ -13,9 +13,8 @@ const SCHOOLS = [
 ];
 
 /**
- * MOCK of GET /api/v1/mentor-schools (PENDING BACKEND, PRD Invite Landing PR
- * 1): the top schools of bookable mentors, most mentors first, in the Page
- * envelope. `limit` 1 to 20 (default 5), 422 outside. ENABLE_MOCK_API=1 only.
+ * MOCK of GET /api/v1/mentor-schools (edufurtherbe #572): the top schools of
+ * bookable mentors, most mentors first, in the Page envelope. `limit` 1 to 20 (default 5), 422 outside. ENABLE_MOCK_API=1 only.
  */
 export async function GET(req: Request) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
@@ -24,7 +23,7 @@ export async function GET(req: Request) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 20)
     return problem(422, { detail: 'limit must be 1 to 20' });
   await new Promise((r) => setTimeout(r, 120));
-  return pendingOk('GET /api/v1/mentor-schools', {
+  return ok('/api/v1/mentor-schools', 'get', {
     data: SCHOOLS.slice(0, limit).map((name) => ({ name })),
     next_cursor: null,
   });
