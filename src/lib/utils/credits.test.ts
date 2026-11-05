@@ -255,8 +255,11 @@ describe('the account menu line and "How credits work"', () => {
     expect(creditsView(c, undefined, null, 2)?.hadSession).toBe(true);
     expect(creditsView(c)?.hadSession).toBe(false);
   });
-  it('three rules, as designed: no em dashes', () => {
-    expect(HOW_CREDITS_WORK).toHaveLength(3);
-    for (const t of HOW_CREDITS_WORK) expect(t).not.toMatch(/—/);
+  it('the credit-level rules (decision 307): no em dashes, nothing that never expires', () => {
+    expect(HOW_CREDITS_WORK).toHaveLength(7);
+    for (const t of HOW_CREDITS_WORK) {
+      expect(t).not.toMatch(/—/);
+      expect(t).not.toMatch(/never expires/i);
+    }
   });
 });

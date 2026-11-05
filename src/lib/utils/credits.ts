@@ -205,15 +205,22 @@ export function summarySub(v: CreditsView): string | null {
 }
 
 /**
- * "How credits work" in the explainer (design howList, owner 2026-10-18).
- * Matches the backend's ladder: a never-expiring starter on finishing the
- * profile, +2 once an invitee finishes theirs, 3 a month once the viewer has
- * also attended a first session, monthly credits dying at the 1st (UTC).
+ * "How credits work" in the explainer (design howList). The credit levels,
+ * backend decision 307 (edufurtherbe #571, #573; owner 2026-11-05): a month
+ * pays the mentee's level (1 for a finished profile, 2 once their first
+ * invited friend finishes theirs, 3 once they have also attended a session),
+ * the 1st resets every balance to it and nothing carries over, and a level
+ * reached mid-month tops up the difference. Refunds and support credits can
+ * sit above the level until the 1st. No credit "never expires".
  */
 export const HOW_CREDITS_WORK = [
-  'Start with 1 free credit when you finish your profile. It never expires.',
-  'Invite a friend: when they finish their profile, you get 2 more. Once you’ve also attended your first session, you get 3 every month.',
-  'Monthly credits reset on the 1st. No rollover.',
+  'One credit books one session.',
+  'Finish your profile and you get 1 credit a month.',
+  'When a friend you invite finishes their profile, that goes up to 2 a month. Only your first friend counts.',
+  'Attend your first session as well, and you get 3 a month.',
+  'Credits reset to your monthly amount on the 1st. Unused credits don’t carry over.',
+  'Move up during the month and we add the difference right away.',
+  'Refunds and credits from our team can take you over your monthly amount until the 1st.',
 ] as const;
 
 /** Design, under the rows. True to the backend: soonest-expiring first. */
