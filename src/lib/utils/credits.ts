@@ -206,7 +206,7 @@ export function summarySub(v: CreditsView): string | null {
 
 /**
  * "How credits work" in the explainer (design howList). The credit levels,
- * backend decision 307 (edufurtherbe #571, #573; owner 2026-11-05): a month
+ * backend decision 308 (edufurtherbe #571, #574, #575; owner 2026-11-05): a month
  * pays the mentee's level (1 for a finished profile, 2 once their first
  * invited friend finishes theirs, 3 once they have also attended a session),
  * the 1st resets every balance to it and nothing carries over, and a level
