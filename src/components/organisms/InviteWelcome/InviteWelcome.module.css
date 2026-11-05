@@ -67,8 +67,7 @@
   flex-direction: column;
   gap: var(--space-3);
 }
-/* The design's text button: centred, 44px tall at every width. */
+/* The design's text button is Button `ghost` (padded, 44px tall); centred. */
 .browse {
   align-self: center;
-  min-height: var(--touch-target-min);
 }

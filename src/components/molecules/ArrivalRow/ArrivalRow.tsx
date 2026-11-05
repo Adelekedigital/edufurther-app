@@ -38,7 +38,14 @@ export function ArrivalRow({ initial, tone, photoUrl, kicker, you, perk }: Arriv
         />
         <span className={styles.line} />
         <span className={styles.you}>{you}</span>
-        <Badge type="accent" color="green" shape="pill" icon="redeem" className={styles.perk}>
+        <Badge
+          type="accent"
+          color="green"
+          shape="pill"
+          icon="redeem"
+          iconSize={18}
+          className={styles.perk}
+        >
           {perk}
         </Badge>
       </div>

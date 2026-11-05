@@ -48,6 +48,12 @@ type EmptyStateProps = Art & {
    * account card: "Go to Home" full width). Default: centred in a row.
    */
   fullWidthActions?: boolean;
+  /**
+   * card: the state as a drawn notice card's body (Invite Landing.dc.html's
+   * existing-account card): an H5 title, a 14px ink-700 line. Default: the DS
+   * EmptyState's H6 and 16px tertiary line.
+   */
+  variant?: 'page' | 'card';
 };
 
 /** DS EmptyState: vertical, centred, illustration + copy + actions. Art is decorative. */
@@ -61,10 +67,11 @@ export function EmptyState({
   size = 140,
   onTint = false,
   fullWidthActions = false,
+  variant = 'page',
 }: EmptyStateProps) {
   const H = `h${headingLevel}` as const;
   return (
-    <div className={styles.state}>
+    <div className={cx(styles.state, variant === 'card' && styles.card)}>
       {icon ? (
         <span className={styles.icon}>
           <Icon name={icon} size={28} />

@@ -38,11 +38,11 @@
 }
 
 /* The invite bar runs the content column's full width, above the page: it
-   bleeds through AppShell's main padding (24px 28px; 16px on phones) and
-   keeps that padding as its own sides. */
+   bleeds through AppShell's main padding (24px 28px; 16px on phones). Its
+   own sides are the design's padX: 48px, 16px on phones. */
 .inviteBanner {
   margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-7)) var(--space-6);
-  padding-inline: var(--space-7);
+  padding-inline: var(--space-12);
 }
 @media (max-width: 767px) {
   .inviteBanner {

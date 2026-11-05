@@ -77,7 +77,7 @@ export function InviteWelcome({ inviter, schools, signUpHref, browseHref }: Invi
         <ButtonLink
           href={browseHref}
           prefetch={false}
-          variant="text"
+          variant="ghost"
           size="medium"
           icon="arrow_forward"
           iconPosition="trailing"
