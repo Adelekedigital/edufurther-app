@@ -45,6 +45,7 @@ describe('entryWording', () => {
     ['profile_completed', 'Starter credit'],
     ['referral_unlock', 'Monthly credits unlocked'],
     ['opening_balance', 'Opening balance'],
+    ['level_top_up', 'Monthly top-up'],
   ] as const)('%s is "%s" under Monthly and starter', (kind, what) => {
     expect(entryWording(facts({ kind }))).toEqual({ what, by: 'System', type: 'monthly' });
   });
