@@ -76,7 +76,10 @@ describe('AuthScreen — booking context', () => {
 });
 
 describe('AuthScreen — a deleted account', () => {
-  beforeEach(() => sessionStorage.clear());
+  beforeEach(() => {
+    sessionStorage.clear();
+    localStorage.clear();
+  });
 
   it('a shared ?deleted=1 link, with no flag from this tab, says nothing', () => {
     render(<AuthScreen mode="login" role="mentee" next={null} deleted />);
@@ -116,6 +119,7 @@ describe('AuthScreen — a deleted account', () => {
 describe('AuthScreen — arriving through an invite (issue 281)', () => {
   beforeEach(() => {
     sessionStorage.clear();
+    localStorage.clear();
     h.booking = null;
     h.inviter = null;
     h.looked = [];
@@ -165,6 +169,7 @@ describe('AuthScreen — arriving through an invite (issue 281)', () => {
     h.inviter = { firstName: 'Damilola', photoUrl: null };
     const view = render(<AuthScreen mode="signup" role="mentee" next={null} />);
     sessionStorage.clear();
+    localStorage.clear();
     view.rerender(<AuthScreen mode="signup" role="mentee" next={null} />);
     expect(screen.getByTestId('form')).toHaveTextContent('Damilola invited you.');
   });

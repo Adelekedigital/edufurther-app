@@ -12,6 +12,7 @@ beforeEach(() => {
   replace.mockReset();
   session = { status: 'none' };
   sessionStorage.clear();
+  localStorage.clear();
 });
 
 describe('/invite/{code}', () => {

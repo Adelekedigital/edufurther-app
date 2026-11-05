@@ -7,7 +7,7 @@ import {
 } from './inviteCode';
 
 beforeEach(() => {
-  sessionStorage.clear();
+  localStorage.clear();
   vi.restoreAllMocks();
 });
 
@@ -38,11 +38,26 @@ describe('isInviteCode', () => {
 });
 
 describe('the stored invite', () => {
-  it('remembers a valid code for the visit, then clears it', () => {
+  it('remembers a valid code, then clears it', () => {
     expect(rememberInviteCode('damilola-7k2x')).toBe(true);
     expect(storedInviteCode()).toBe('damilola-7k2x');
     clearInviteCode();
     expect(storedInviteCode()).toBeNull();
+  });
+
+  it('keeps a code through day 10: a friend who comes back later still arrives through it', () => {
+    const now = Date.now();
+    vi.spyOn(Date, 'now').mockReturnValue(now);
+    rememberInviteCode('damilola-7k2x');
+    vi.spyOn(Date, 'now').mockReturnValue(now + 10 * 24 * 60 * 60_000);
+    expect(storedInviteCode()).toBe('damilola-7k2x');
+    expect(INVITE_CODE_TTL_MS).toBe(30 * 24 * 60 * 60_000);
+  });
+
+  it('the latest valid link wins', () => {
+    rememberInviteCode('damilola-7k2x');
+    rememberInviteCode('tunde-9q4z');
+    expect(storedInviteCode()).toBe('tunde-9q4z');
   });
 
   it('stores nothing for an invalid code', () => {
@@ -51,12 +66,12 @@ describe('the stored invite', () => {
   });
 
   it('drops a stored value that fails the test (edited by hand)', () => {
-    sessionStorage.setItem('ef-invite-code', 'x"><b>');
+    localStorage.setItem('ef-invite-code', 'x"><b>');
     expect(storedInviteCode()).toBeNull();
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(localStorage.getItem('ef-invite-code')).toBeNull();
   });
 
-  it('forgets it after an hour: a shared tab doesn’t pass one visitor’s invite on', () => {
+  it('keeps it 30 days, then forgets it', () => {
     const now = Date.now();
     vi.spyOn(Date, 'now').mockReturnValue(now);
     rememberInviteCode('damilola-7k2x');
@@ -64,13 +79,13 @@ describe('the stored invite', () => {
     expect(storedInviteCode()).toBe('damilola-7k2x');
     vi.spyOn(Date, 'now').mockReturnValue(now + INVITE_CODE_TTL_MS);
     expect(storedInviteCode()).toBeNull();
-    expect(sessionStorage.getItem('ef-invite-code')).toBeNull();
+    expect(localStorage.getItem('ef-invite-code')).toBeNull();
   });
 
   it('drops a stored code with no time, or an invalid one in the right shape', () => {
-    sessionStorage.setItem('ef-invite-code', JSON.stringify({ code: 'damilola-7k2x' }));
+    localStorage.setItem('ef-invite-code', JSON.stringify({ code: 'damilola-7k2x' }));
     expect(storedInviteCode()).toBeNull();
-    sessionStorage.setItem('ef-invite-code', JSON.stringify({ code: 'a/b', at: Date.now() }));
+    localStorage.setItem('ef-invite-code', JSON.stringify({ code: 'a/b', at: Date.now() }));
     expect(storedInviteCode()).toBeNull();
   });
 

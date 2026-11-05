@@ -86,6 +86,7 @@ beforeEach(() => {
   claim.mockResolvedValue(undefined);
   sessionStorage.clear();
   localStorage.clear();
+  localStorage.clear();
   rememberInviteCode('damilola-7k2x');
 });
 afterEach(() => vi.useRealTimers());
@@ -165,6 +166,7 @@ describe('useSignInFlow — the invite a new account arrived with (issue 281)', 
 
   it('no invite this visit: nothing is claimed', async () => {
     sessionStorage.clear();
+    localStorage.clear();
     const { result } = await signIn(member());
     expect(claim).not.toHaveBeenCalled();
     expect(result.current.toast?.body).toBe('Next, let’s find your first mentor…');
