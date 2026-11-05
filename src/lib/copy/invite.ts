@@ -49,6 +49,14 @@ export const INVITE_LANDING_COPY = {
     lead: (first: string) => `Invited by ${first}.`,
     rest: 'Your first session is free.',
   },
+  /** The link preview chat apps show (Invite Preview.dc.html), and the page's og: lines. */
+  preview: {
+    title: (first: string) => `${first} invited you`,
+    body: 'Your first session on EduFurther is free',
+    fallbackTitle: 'Talk 1:1 with someone who’s done it',
+    fallbackBody: 'Your first session is free',
+    alt: 'An invite to EduFurther',
+  },
   /** While the page works out who is visiting (screen readers only). */
   opening: 'Opening your invite…',
 };

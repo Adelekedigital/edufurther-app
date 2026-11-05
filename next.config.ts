@@ -22,6 +22,11 @@ const nextConfig: NextConfig = {
     // to the project host once the backend confirms it.
     remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co' }],
   },
+  // The invite link preview reads its fonts and logos from disk at request
+  // time (opengraph-image.tsx); trace them into that function.
+  outputFileTracingIncludes: {
+    '/invite/**': ['./src/app/fonts/og/*.ttf', './public/brand/*.png'],
+  },
   async headers() {
     return SECURITY_HEADERS;
   },
