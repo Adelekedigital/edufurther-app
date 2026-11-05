@@ -20,6 +20,8 @@ type TagProps = {
    *            "Application", a booking's "Upcoming").
    * area     — a grey, read-only chip: a mentor's help areas (Admin.dc.html drawer).
    * fact     — 24px grey chip: a session type's length, notice, topics.
+   * outline  — a round, hairline-bordered name on white: the invite landing's
+   *            "Our mentors studied at" schools (Invite Landing.dc.html).
    */
   tone:
     | 'on-photo'
@@ -36,7 +38,8 @@ type TagProps = {
     | 'pending'
     | 'progress'
     | 'area'
-    | 'fact';
+    | 'fact'
+    | 'outline';
   /**
    * rect — the status chip as a rounded rectangle, semibold
    * (CollapsibleSection.dc.html chip): neutral / success / warning / danger.

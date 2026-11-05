@@ -138,6 +138,17 @@
   line-height: inherit;
 }
 
+/* Invite Landing.dc.html schools strip: space-1 space-3, ink-200 hairline,
+   radius-full, ink-700, the paragraph line height. A long name wraps. */
+.outline {
+  white-space: normal;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-full);
+  color: var(--ink-700);
+  line-height: var(--lh-p);
+}
+
 /* CollapsibleSection.dc.html chip: the status tones' colours, as a rounded
    rectangle. The markup sets no line-height. */
 .rect {

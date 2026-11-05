@@ -37,3 +37,30 @@
   font-size: var(--text-p-xs);
   color: var(--text-tertiary);
 }
+
+/* Invite Landing.dc.html benefits: a round blue-50 tile with a blue-700
+   glyph, a 16px semibold title and a 14px ink-600 line, top-aligned. */
+.feature {
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 0;
+}
+.feature .tile {
+  border-radius: var(--radius-full);
+}
+.feature .blue {
+  color: var(--blue-700);
+}
+.feature .text {
+  align-self: center;
+}
+.feature .title {
+  font-size: var(--text-p-md);
+  line-height: var(--lh-p);
+}
+.feature .meta {
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+  text-wrap: pretty;
+}

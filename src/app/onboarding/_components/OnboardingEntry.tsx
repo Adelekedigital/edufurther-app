@@ -7,7 +7,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { FLOW_COPY, MATCH_COPY } from '@/lib/copy/onboarding';
 import { MENTOR_ONBOARDING_LIVE, NEW_MENTOR_HOME } from '@/lib/config/auth';
-import { OnboardingFrame } from './OnboardingFrame';
+import { LogoFrame } from '@/components/templates/LogoFrame/LogoFrame';
 import { Waiting } from './Waiting';
 import styles from './OnboardingScreen.module.css';
 
@@ -56,7 +56,7 @@ export function OnboardingEntry() {
     if (to) router.replace(to);
   }, [to, router]);
   return (
-    <OnboardingFrame>
+    <LogoFrame>
       {viewer.kind === 'error' ? (
         // Error before empty: a failed /me never leaves a spinner with no way out.
         <main className={styles.state}>
@@ -75,6 +75,6 @@ export function OnboardingEntry() {
       ) : (
         <Waiting text={FLOW_COPY.loading} hidden />
       )}
-    </OnboardingFrame>
+    </LogoFrame>
   );
 }

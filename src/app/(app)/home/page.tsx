@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { MenteeHomeGate } from './_components/MenteeHomeGate';
 
 export const metadata: Metadata = {
@@ -7,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
-  return <MenteeHomeGate />;
+  // Home reads ?invite=open (useSearchParams), which needs a Suspense boundary.
+  return (
+    <Suspense>
+      <MenteeHomeGate />
+    </Suspense>
+  );
 }

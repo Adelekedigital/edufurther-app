@@ -7,8 +7,10 @@ import type { MetMentor } from '@/lib/api/data/metMentors';
 import { MenteeHomeScreen } from './MenteeHomeScreen';
 
 const replace = vi.fn();
+let search = '';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
+  useSearchParams: () => new URLSearchParams(search),
 }));
 
 let viewer: Viewer;
@@ -279,6 +281,7 @@ const err = {} as unknown as AppError;
 
 beforeEach(() => {
   replace.mockClear();
+  search = '';
   viewer = MEMBER;
   stats = remote(STATS);
   upcoming = remote([booking()]);
@@ -758,6 +761,21 @@ describe('MenteeHomeScreen', () => {
     expect(screen.queryByText('Sessions held')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
     expect(stats.retry).toHaveBeenCalled();
+  });
+
+  it('?invite=open (a mentee’s own invite link) opens InviteModal, then drops the parameter', () => {
+    viewer = { ...MEMBER, completedSessions: 3 };
+    search = 'invite=open&tab=x';
+    render(<MenteeHomeScreen />);
+    expect(screen.getByRole('dialog', { name: 'Invite a friend' })).toBeInTheDocument();
+    expect(replace).toHaveBeenCalledWith('/home?tab=x', { scroll: false });
+  });
+
+  it('opens no InviteModal without the parameter', () => {
+    viewer = { ...MEMBER, completedSessions: 3 };
+    render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('dialog', { name: 'Invite a friend' })).not.toBeInTheDocument();
+    expect(replace).not.toHaveBeenCalledWith(expect.stringMatching(/^\/home/), expect.anything());
   });
 
   it('the returning view always says "Welcome back"', () => {
