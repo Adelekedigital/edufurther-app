@@ -115,7 +115,7 @@ export type CreditKind =
   | 'admin_grant'
   | 'referral_unlock'
   | 'opening_balance'
-  /** Decision 307: a level reached mid-month tops the balance up to it. */
+  /** Decision 308: a level reached mid-month tops the balance up to it. */
   | 'level_top_up';
 
 export type RefundReason =
