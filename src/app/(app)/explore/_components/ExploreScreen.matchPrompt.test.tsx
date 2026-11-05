@@ -18,6 +18,10 @@ vi.mock('@/app/_shell/useAppShell', async (actual) => ({
   }),
 }));
 
+vi.mock('@/lib/api/data/invite', () => ({
+  useInviteLookup: () => ({ data: null, isLoading: false, error: null, retry: vi.fn() }),
+}));
+
 const mentor: Mentor = {
   id: 'm1',
   profileHref: '/mentors/m1',
