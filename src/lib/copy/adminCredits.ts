@@ -114,7 +114,9 @@ export type CreditKind =
   | 'profile_completed'
   | 'admin_grant'
   | 'referral_unlock'
-  | 'opening_balance';
+  | 'opening_balance'
+  /** Decision 308: a level reached mid-month tops the balance up to it. */
+  | 'level_top_up';
 
 export type RefundReason =
   'mentor_canceled' | 'mentee_canceled' | 'canceled' | 'mentor_no_show' | 'request_unfulfilled';
@@ -169,6 +171,8 @@ export function entryWording(e: EntryFacts): EntryWording {
       return { what: 'Monthly credits unlocked', by: SYSTEM, type: 'monthly' };
     case 'opening_balance':
       return { what: 'Opening balance', by: SYSTEM, type: 'monthly' };
+    case 'level_top_up':
+      return { what: 'Monthly top-up', by: SYSTEM, type: 'monthly' };
     case 'expired':
       return { what: 'Credits expired', by: SYSTEM, type: null };
   }
