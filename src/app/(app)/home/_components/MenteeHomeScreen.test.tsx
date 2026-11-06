@@ -538,7 +538,7 @@ describe('MenteeHomeScreen', () => {
   it('the idle card shows free sessions left, pluralised, and drops the line at 0', () => {
     const monthly = (balance: number) =>
       ({
-        monthly: { balance, ceiling: 3, expiresAt: null, unlocked: true },
+        monthly: { balance, ceiling: 3, level: 3, expiresAt: null, unlocked: true },
       }) as unknown as (typeof MEMBER)['credits'];
     upcoming = remote([]);
     viewer = { ...MEMBER, credits: monthly(2) };

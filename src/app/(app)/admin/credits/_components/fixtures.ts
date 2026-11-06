@@ -10,7 +10,7 @@ export const AMARA: AdminMentee = {
   initials: 'AO',
   cover: 'lilac',
   avatarUrl: null,
-  balance: { left: 1, total: 3, level: 3, resetsOn: 'Nov 1' },
+  balance: { left: 1, total: 3, level: 3, perMonth: 3, resetsOn: 'Nov 1' },
 };
 
 export const CHIAMAKA: AdminMentee = {
@@ -21,7 +21,7 @@ export const CHIAMAKA: AdminMentee = {
   firstName: 'Chiamaka',
   email: 'chiamaka.eze@example.com',
   initials: 'CE',
-  balance: { left: 0, total: 1, level: 1, resetsOn: 'Nov 1' },
+  balance: { left: 0, total: 1, level: 1, perMonth: 1, resetsOn: 'Nov 1' },
 };
 
 export const LONG_NAME: AdminMentee = {

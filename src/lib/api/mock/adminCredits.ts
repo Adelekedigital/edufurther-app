@@ -117,6 +117,8 @@ const initial = (): Mentee[] => [
     [-2, 'expired', 1],
     [+2, 'referral_unlock', 0],
   ]),
+  // Signed up, onboarding not finished: level 0, "Not onboarded yet" (#576).
+  seed('a0b1c2d3-2099-4999-8e0f-1a2b3c4d2099', 'Ngozi Eze', 'ngozi.eze@example.com', false, 0, []),
 ];
 
 const store = { mentees: initial(), grants: new Map<string, Schemas['AdminCreditGrantRead']>() };
@@ -138,26 +140,40 @@ function grantedThisMonth(m: Mentee) {
     .reduce((n, e) => n + e.change, 0);
 }
 
+/**
+ * Decision 308: 3 with the unlock, 1 once the profile was finished (a
+ * `profile_completed` entry), else 0 (not onboarded yet).
+ */
+function levelOf(m: Mentee): number {
+  if (m.unlocked) return 3;
+  return m.history.some((e) => e.kind === 'profile_completed') ? 1 : 0;
+}
+
 function creditsOf(m: Mentee): Schemas['CreditsRead'] {
   const balance = Math.max(0, m.history[0]?.balance_after ?? 0);
   const reset = nextFirst();
-  const bonus = m.unlocked ? Math.min(balance, grantedThisMonth(m)) : balance;
+  const level = levelOf(m);
+  // What the month pays: level 1 the starter's size, 3 the full amount.
+  const ceiling = level === 3 ? MONTHLY : level === 2 ? 2 : STARTER;
+  // Bonus is support grants only; everything else is the level's part.
+  const bonus = Math.min(balance, grantedThisMonth(m));
   const monthly = balance - bonus;
   return {
     balance,
-    allowance: Math.max(m.unlocked ? MONTHLY : STARTER, balance),
+    allowance: Math.max(level, balance),
     state:
-      balance === 0 ? 'exhausted' : balance === 1 ? 'low' : balance === 2 ? 'moderate' : 'on_track',
+      balance === 0 ? 'exhausted' : balance === 1 ? 'low' : balance < level ? 'moderate' : 'on_track',
     next_reset_at: reset,
     monthly: {
       balance: monthly,
-      ceiling: MONTHLY,
+      ceiling,
+      level,
       expires_at: monthly ? reset : null,
       unlocked: m.unlocked,
     },
     bonus: {
       balance: bonus,
-      groups: bonus ? [{ count: bonus, expires_at: m.unlocked ? reset : null }] : [],
+      groups: bonus ? [{ count: bonus, expires_at: reset }] : [],
     },
   };
 }

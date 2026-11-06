@@ -294,3 +294,24 @@ describe('"Your monthly credits" (decision 308 steps)', () => {
     expect([v(0), v(1), v(2), v(3), v(5)]).toEqual([0, 1, 2, 3, 3]);
   });
 });
+
+describe('the level comes from monthly.level (#576), not the ceiling', () => {
+  const view = (ceiling: number, level: number | null) =>
+    creditsView({
+      balance: 0,
+      monthly: { balance: 0, ceiling, level, expiresAt: null, unlocked: level === 3 },
+      bonus: { balance: 0, groups: [] },
+    })!;
+  it('ticks by the level even when the month pays a different amount', () => {
+    // A ladder where level 1 pays 2: one tick, and the bar is "of 2".
+    const v = view(2, 1);
+    expect(creditSteps(v).map((s) => s.done)).toEqual([true, false, false]);
+    expect(v.monthlyTotal).toBe(2);
+  });
+  it('level 0 (not onboarded) has no monthly part, though the ceiling reads 1', () => {
+    expect(view(1, 0)).toMatchObject({ level: 0, showMonthly: false, resetsOn: null });
+  });
+  it('an older API without level falls back to the ceiling', () => {
+    expect(view(2, null).level).toBe(2);
+  });
+});

@@ -31,9 +31,9 @@ export type CreditsView = {
   bonus: BonusGroup[];
   /**
    * Whether the monthly part shows (the Monthly row, the green and grey
-   * segments, the reset): for every mentee with a level, spent or not. Not in
-   * setup (level 0, `setupCredits` sets the ceiling to 0, which the API never
-   * sends): "0 of 1" would describe a credit they don't get until onboarding.
+   * segments, the reset): for every mentee with a level, spent or not. Not at
+   * level 0 (not onboarded): "0 of 1" would describe a credit they don't get
+   * until onboarding.
    */
   showMonthly: boolean;
   /**
@@ -43,8 +43,10 @@ export type CreditsView = {
    */
   resetsOn: string | null;
   /**
-   * The step reached (decision 308): 0 in setup, else `monthly.ceiling`
-   * (1 profile, 2 + first friend, 3 + a session). Ticks the card's ladder.
+   * The step reached (decision 308, `monthly.level`, edufurtherbe #576): 0
+   * not onboarded, 1 profile, 2 + first friend, 3 + a session. Ticks the
+   * card's ladder. Not `ceiling`: that is what the month pays, which only
+   * matches the step on the default 1/2/3 ladder.
    */
   level: number;
 };
@@ -55,7 +57,14 @@ export type BonusGroup = { count: number; expires: boolean; expiresOn: string | 
 type Credits = {
   balance: number;
   nextResetAt?: string | null;
-  monthly: { balance: number; ceiling: number; expiresAt: string | null; unlocked: boolean };
+  monthly: {
+    balance: number;
+    ceiling: number;
+    /** 0 to 3; null (an older API) falls back to the ceiling. */
+    level?: number | null;
+    expiresAt: string | null;
+    unlocked: boolean;
+  };
   bonus: { balance: number; groups: { count: number; expiresAt: string | null }[] };
 };
 
@@ -66,8 +75,9 @@ export function creditsView(
 ): CreditsView | null {
   if (!c) return null;
   const monthlyLeft = Math.max(0, c.monthly.balance);
-  // Every level pays a month now; only setup's ceiling of 0 hides it.
-  const showMonthly = c.monthly.ceiling > 0 || monthlyLeft > 0;
+  const level = Math.min(3, Math.max(0, c.monthly.level ?? c.monthly.ceiling));
+  // Every level pays a month; only level 0 (not onboarded) has none.
+  const showMonthly = level > 0 || monthlyLeft > 0;
   const bonus: BonusGroup[] = [];
   for (const g of c.bonus.groups) {
     if (g.count <= 0) continue;
@@ -86,7 +96,7 @@ export function creditsView(
     bonus,
     showMonthly,
     resetsOn: showMonthly ? resetsOnFor(c.nextResetAt, now) : null,
-    level: c.monthly.ceiling > 0 ? Math.min(3, c.monthly.ceiling) : 0,
+    level,
   };
 }
 

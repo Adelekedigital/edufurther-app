@@ -257,12 +257,19 @@ export type Viewer =
         /** `expiresAt` null: none held, or none of those held expire. */
         monthly: {
           balance: number;
+          /** What the month pays (decision 308): the level's amount, at least level 1's. */
           ceiling: number;
+          /**
+           * The level itself, 0 to 3 (edufurtherbe #576): 0 not onboarded (or
+           * no mentee goal), 1 profile finished, 2 + first invited friend
+           * qualified, 3 + a session attended. Null only from an older API.
+           */
+          level: number | null;
           expiresAt: string | null;
           /** Whether the account gets the monthly grant (a goal + an invite unlock). */
           unlocked: boolean;
         };
-        /** Starter, invite and support grants; groups soonest expiry first. */
+        /** Support grants and their refunds (decision 308); groups soonest expiry first. */
         bonus: { balance: number; groups: { count: number; expiresAt: string | null }[] };
       } | null;
       // The sidebar's avatar and badge. Optional so hand-built test viewers

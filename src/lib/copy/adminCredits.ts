@@ -25,7 +25,8 @@ export const FIND_COPY = {
   loading: 'Loading mentees',
   pick: 'Pick a mentee to see their balance and history.',
   /** A result row's balance, "1 of 3 left". */
-  left: (left: number, total: number) => `${left} of ${total} left`,
+  /** No monthly amount yet (level 0, nothing held): "0 left", never "0 of 0". */
+  left: (left: number, total: number) => (total > 0 ? `${left} of ${total} left` : `${left} left`),
 } as const;
 
 export const PANEL_COPY = {
@@ -35,8 +36,9 @@ export const PANEL_COPY = {
   meta: (email: string, shortId: string) => `${email} · ${shortId}`,
   balanceLabel: 'Left this month',
   of: (total: number) => `of ${total}`,
-  /** Their level, as what their month pays (decision 308): "2 credits a month". */
-  level: (n: number) => `${credits(n)} a month`,
+  /** Their level (decision 308): what their month pays, or not onboarded yet (level 0). */
+  level: (level: number, perMonth: number) =>
+    level === 0 ? 'Not onboarded yet' : `${credits(perMonth)} a month`,
   resets: (day: string) => `Resets ${day}`,
   amountLabel: 'Credits to add',
   fewer: 'One fewer',

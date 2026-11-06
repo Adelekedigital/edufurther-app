@@ -105,6 +105,13 @@ describe('mappers', () => {
     expect(toMenteeBalance(zero).level).toBe(1);
   });
 
+  it('the level is monthly.level (#576); what a month pays is the ceiling', () => {
+    const notOnboarded = creditsRead({
+      monthly: { balance: 0, ceiling: 1, level: 0, expires_at: null, unlocked: false },
+    });
+    expect(toMenteeBalance(notOnboarded)).toMatchObject({ level: 0, perMonth: 1 });
+  });
+
   it('with no reset date it is the next 1st, named in UTC', () => {
     const c = creditsRead({ next_reset_at: 'nonsense' });
     expect(toMenteeBalance(c, new Date('2026-10-27T12:00:00Z')).resetsOn).toBe('Nov 1');

@@ -33,7 +33,7 @@ const member = (over: object): Viewer =>
       balance: 3,
       state: 'on_track',
       nextResetAt: '2026-11-01T00:00:00Z',
-      monthly: { balance: 3, ceiling: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
+      monthly: { balance: 3, ceiling: 3, level: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
       bonus: { balance: 0, groups: [] },
     },
     ...over,

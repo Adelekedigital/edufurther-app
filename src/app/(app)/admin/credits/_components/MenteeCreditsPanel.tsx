@@ -82,11 +82,12 @@ export function PanelBody(p: PanelBodyProps) {
         <div className={styles.balanceMain}>
           <span className={styles.small}>{PANEL_COPY.balanceLabel}</span>
           <span className={styles.left}>
-            {balance.left} <span className={styles.of}>{PANEL_COPY.of(balance.total)}</span>
+            {balance.left} {/* Level 0 with nothing held has no amount: "0", never "0 of 0". */}
+            {balance.total > 0 && <span className={styles.of}>{PANEL_COPY.of(balance.total)}</span>}
           </span>
         </div>
         <div className={styles.balanceSide}>
-          <span className={styles.stage}>{PANEL_COPY.level(balance.level)}</span>
+          <span className={styles.stage}>{PANEL_COPY.level(balance.level, balance.perMonth)}</span>
           <span className={styles.small}>{PANEL_COPY.resets(balance.resetsOn)}</span>
         </div>
       </div>
