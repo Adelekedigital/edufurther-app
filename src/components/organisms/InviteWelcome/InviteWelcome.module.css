@@ -1,0 +1,73 @@
+/* Invite Landing.dc.html welcome: one 480px column, 24px between groups,
+   12px inside the top group. */
+.welcome {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.eyebrow,
+.caption {
+  margin: 0;
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+}
+.eyebrow {
+  color: var(--blue-700);
+}
+.caption {
+  color: var(--ink-600);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-h3);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: var(--weight-semibold);
+  text-wrap: balance;
+}
+.sub {
+  margin: 0;
+  font-size: var(--text-p-md);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+  text-wrap: pretty;
+}
+.benefits,
+.pills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.benefits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.schools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+/* The design's text button is Button `ghost` (padded, 44px tall); centred. */
+.browse {
+  align-self: center;
+}

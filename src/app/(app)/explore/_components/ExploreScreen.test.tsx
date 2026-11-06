@@ -20,6 +20,15 @@ vi.mock('@/app/_shell/useAppShell', () => ({
   }),
 }));
 
+let inviter: { firstName: string; photoUrl: string | null } | null = null;
+const lookupFor = vi.fn();
+vi.mock('@/lib/api/data/invite', () => ({
+  useInviteLookup: (code: string | null) => {
+    lookupFor(code);
+    return { data: code ? inviter : null, isLoading: false, error: null, retry: vi.fn() };
+  },
+}));
+
 const mentor: Mentor = {
   id: 'm1',
   profileHref: '/mentors/m1',
@@ -121,6 +130,9 @@ beforeAll(() => {
 });
 beforeEach(() => {
   canBook = true;
+  inviter = null;
+  lookupFor.mockReset();
+  localStorage.clear();
 });
 
 describe('ExploreScreen — mentors can’t book (product, 2026-09-29)', () => {
@@ -135,5 +147,31 @@ describe('ExploreScreen — mentors can’t book (product, 2026-09-29)', () => {
     rerender(<ExploreScreen />);
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('link', { name: 'View profile: Olajuwon Samuel' })).toBeInTheDocument();
+  });
+});
+
+describe('ExploreScreen — "Invited by" for an invited guest (PRD Invite Landing)', () => {
+  it('a guest holding a live invite sees who invited them, as a note', async () => {
+    const { rememberInviteCode } = await import('@/lib/utils/inviteCode');
+    rememberInviteCode('damilola-7k2x');
+    inviter = { firstName: 'Damilola', photoUrl: null };
+    render(<ExploreScreen />);
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent('Invited by Damilola. Your first session is free.');
+    expect(note.querySelector('a, button')).toBeNull();
+    expect(lookupFor).toHaveBeenLastCalledWith('damilola-7k2x');
+  });
+
+  it('no remembered invite: no bar, and nothing is looked up', () => {
+    render(<ExploreScreen />);
+    expect(screen.queryByRole('note')).toBeNull();
+    expect(lookupFor).toHaveBeenLastCalledWith(null);
+  });
+
+  it('a code that can’t be joined: no bar', async () => {
+    const { rememberInviteCode } = await import('@/lib/utils/inviteCode');
+    rememberInviteCode('gone-0000');
+    render(<ExploreScreen />);
+    expect(screen.queryByRole('note')).toBeNull();
   });
 });

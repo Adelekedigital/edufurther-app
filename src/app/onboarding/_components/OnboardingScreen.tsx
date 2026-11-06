@@ -28,7 +28,7 @@ import { useOnline } from '@/lib/utils/useOnline';
 import { cx } from '@/lib/utils/cx';
 import type { Mentor } from '@/types/mentor';
 import { GuestBanner } from './GuestBanner';
-import { OnboardingFrame } from './OnboardingFrame';
+import { LogoFrame } from '@/components/templates/LogoFrame/LogoFrame';
 import { StepCounterRow } from './StepCounterRow';
 import { TopicsSheet } from './TopicsSheet';
 import { Waiting } from './Waiting';
@@ -294,7 +294,7 @@ export function OnboardingScreen() {
   }
 
   return (
-    <OnboardingFrame>
+    <LogoFrame>
       {body}
       <BookingLauncher
         mentor={bookMentor}
@@ -321,6 +321,6 @@ export function OnboardingScreen() {
           onClose={() => setSheetMentor(null)}
         />
       )}
-    </OnboardingFrame>
+    </LogoFrame>
   );
 }

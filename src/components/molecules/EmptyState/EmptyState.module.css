@@ -51,3 +51,20 @@
   flex-wrap: wrap;
   justify-content: center;
 }
+/* Stacked, full width: a card's one action (Invite Landing.dc.html `cardBtn`). */
+.fullWidth {
+  align-self: stretch;
+  flex-direction: column;
+}
+
+/* variant card (Invite Landing.dc.html existing-account card): H5 title,
+   14px ink-700 line, the card's sans. */
+.card .title {
+  font-size: var(--text-h5);
+  line-height: var(--lh-h5);
+  letter-spacing: normal;
+}
+.card .description {
+  font-size: var(--text-p-sm);
+  color: var(--ink-700);
+}

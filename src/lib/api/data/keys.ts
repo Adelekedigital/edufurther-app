@@ -50,6 +50,8 @@ export const keys = {
   mentors: {
     all: ['mentors'] as const,
     featured: (who: string) => ['mentors', 'featured', who] as const,
+    /** GET /mentor-schools: public, the same for every viewer. */
+    schools: (limit: number) => ['mentors', 'schools', limit] as const,
     // Offerings are sorted so ['a','b'] and ['b','a'] share one cache entry.
     // `who`: the owner gets their own page in any state, with owner-only fields.
     profile: (handle: string, who: string) => ['mentors', 'profile', handle, who] as const,

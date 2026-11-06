@@ -27,3 +27,30 @@ export const ProfileListRows: Story = {
     </div>
   ),
 };
+
+/** Invite Landing.dc.html benefits: `variant="feature"` as list items. */
+export const Features: Story = {
+  render: () => (
+    <ul
+      aria-label="Why EduFurther"
+      style={{ maxWidth: 480, listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 16 }}
+    >
+      <IconListItem
+        as="li"
+        variant="feature"
+        icon="school"
+        tone="blue"
+        title="Mentors who’ve been through it"
+        meta="Every mentor got into grad school and knows the applications you’re facing now."
+      />
+      <IconListItem
+        as="li"
+        variant="feature"
+        icon="redeem"
+        tone="blue"
+        title="Your first session is free"
+        meta="Pick a mentor and a time that suits you."
+      />
+    </ul>
+  ),
+};

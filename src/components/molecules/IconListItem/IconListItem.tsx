@@ -12,12 +12,28 @@ type IconListItemProps = {
   meta?: string | null;
   /** After the text: a badge, the owner's Edit (Mentor Profile.dc.html rows). */
   trailing?: ReactNode;
+  /**
+   * row: a profile list row (Mentor Profile.dc.html), a square tile, padded.
+   * feature: a selling point (Invite Landing.dc.html benefits), a round tile,
+   * a 16px title and a 14px line, unpadded: the list sets the gaps.
+   */
+  variant?: 'row' | 'feature';
+  /** li when the item is one of a list's items. */
+  as?: 'div' | 'li';
 };
 
-/** One row of a profile list: a 40px icon tile, a title and a meta line. */
-export function IconListItem({ icon, tone, title, meta, trailing }: IconListItemProps) {
+/** One row of an icon list: a 40px icon tile, a title and a meta line. */
+export function IconListItem({
+  icon,
+  tone,
+  title,
+  meta,
+  trailing,
+  variant = 'row',
+  as: El = 'div',
+}: IconListItemProps) {
   return (
-    <div className={styles.row}>
+    <El className={cx(styles.row, variant === 'feature' && styles.feature)}>
       <span className={cx(styles.tile, styles[tone])}>
         <Icon name={icon} size={20} />
       </span>
@@ -26,6 +42,6 @@ export function IconListItem({ icon, tone, title, meta, trailing }: IconListItem
         {meta && <span className={styles.meta}>{meta}</span>}
       </span>
       {trailing}
-    </div>
+    </El>
   );
 }

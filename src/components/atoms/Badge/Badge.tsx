@@ -36,6 +36,8 @@ type BadgeProps = (
   shape?: 'tag' | 'pill' | 'count';
   /** A leading glyph, decorative (InviteModal.dc.html's `check_circle` badge: 14px on md). */
   icon?: IconName;
+  /** The glyph's px when the design draws it larger (Invite Landing.dc.html's perk pill: 18). */
+  iconSize?: 14 | 16 | 18;
   children: ReactNode;
   className?: string;
 };
@@ -47,6 +49,7 @@ export function Badge({
   size = 'md',
   shape = 'tag',
   icon,
+  iconSize,
   children,
   className,
 }: BadgeProps) {
@@ -60,7 +63,9 @@ export function Badge({
         className,
       )}
     >
-      {icon && <Icon name={icon} size={size === 'md' || shape === 'pill' ? 14 : 12} />}
+      {icon && (
+        <Icon name={icon} size={iconSize ?? (size === 'md' || shape === 'pill' ? 14 : 12)} />
+      )}
       {children}
     </span>
   );

@@ -1,0 +1,112 @@
+/* Invite Landing.dc.html `arrivalEl`. Circles 48px, 44px on phones. */
+.arrival {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.row .inviter,
+.you {
+  width: var(--space-12);
+  height: var(--space-12);
+  animation: in-left 420ms var(--ease-standard) both;
+}
+.row .inviter {
+  font-size: var(--text-p-md);
+}
+.line {
+  width: 28px;
+  border-top: 2px dashed var(--blue-300);
+  transform-origin: left;
+  animation: grow 260ms var(--ease-standard) 320ms both;
+}
+.you {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--blue-50);
+  box-shadow: inset 0 0 0 2px var(--blue-500);
+  color: var(--blue-700);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  animation-name: in-right;
+  animation-delay: 120ms;
+}
+.row .perk {
+  margin-left: var(--space-2);
+  gap: 6px;
+  padding: 6px var(--space-3);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  animation: pop 380ms var(--ease-standard) 620ms both;
+}
+.kicker {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+  animation: fade-up 300ms var(--ease-standard) 450ms both;
+}
+@media (max-width: 767px) {
+  .row .inviter,
+  .you {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .arrival * {
+    animation: none;
+  }
+}
+
+@keyframes in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+@keyframes in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+/* Hidden until it plays, then a scale pop at full opacity: a semi-opaque
+   label mid-fade fails a contrast scan that lands on it (the pill is the last
+   piece to finish, at 1s). */
+@keyframes pop {
+  0% {
+    visibility: hidden;
+    transform: scale(0.6);
+  }
+  1% {
+    visibility: visible;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    visibility: visible;
+    transform: scale(1);
+  }
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

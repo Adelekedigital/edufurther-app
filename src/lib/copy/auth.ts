@@ -7,8 +7,6 @@ export const GOOGLE_SIGN_IN_FAILED = 'Google sign-in didn’t finish. Try again,
  * before where it goes next. Run past the UX writer 2026-10-25.
  */
 export const INVITE_COPY = {
-  /** `/invite/{code}` for the moment before sign-up opens (screen readers only). */
-  opening: 'Opening sign-up…',
   signupLine: (first: string) => `${first} invited you. Sign up and your invite is saved.`,
   loginLine: (first: string) => `${first} invited you. Invites count for new accounts.`,
   /** Leads the new account's toast body: "Damilola’s invite is saved. Next, let’s find…". */

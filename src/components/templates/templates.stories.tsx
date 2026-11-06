@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import { AppShell } from './AppShell/AppShell';
 import { FocusPage } from './FocusPage/FocusPage';
+import { LogoFrame } from './LogoFrame/LogoFrame';
 import { ModalShell } from './ModalShell/ModalShell';
 
 const meta: Meta = { title: 'Templates', parameters: { layout: 'fullscreen' } };
@@ -248,5 +249,23 @@ export const FocusPageOffline: Story = {
     <FocusPage back={{ href: '/bookings', label: 'Go to Bookings' }} offline>
       <p>The session card goes here.</p>
     </FocusPage>
+  ),
+};
+
+/** Mentee Onboarding v5.dc.html frame: the logo alone over white. */
+export const LogoFrameOnboarding: Story = {
+  render: () => (
+    <LogoFrame>
+      <p style={{ padding: 20 }}>The onboarding step goes here.</p>
+    </LogoFrame>
+  ),
+};
+
+/** Invite Landing.dc.html frame: 72px header (56 on phones), no way out. */
+export const LogoFrameLanding: Story = {
+  render: () => (
+    <LogoFrame variant="landing">
+      <p style={{ padding: 20 }}>The invite welcome goes here.</p>
+    </LogoFrame>
   ),
 };

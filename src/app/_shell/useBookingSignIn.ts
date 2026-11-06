@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { GuestPick, GuestSignIn, GuestStage } from '@/components/organisms/BookingFlow/types';
 import { loadAccount, toAccount } from '@/app/_auth/account';
 import { useEmailCodeAuth } from '@/app/_auth/useEmailCodeAuth';
+import { claimInvite } from '@/lib/api/data/invite';
 import { useSaveName, zoneToSave } from '@/lib/api/data/signIn';
 import { ONBOARDING_LIVE, newAccountDestination } from '@/lib/config/auth';
+import { clearInviteCode, storedInviteCode } from '@/lib/utils/inviteCode';
 import { rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { useOnline } from '@/lib/utils/useOnline';
 import { profileHandle } from '@/lib/utils/guestBooking';
@@ -30,9 +33,13 @@ const handleOf = (profileHref: string): string => profileHandle(profileHref) ?? 
  * is named here, then goes to onboarding with the booking when onboarding is
  * on (`guestSetup=full`), or carries on in the modal when it is off. Google
  * leaves the page and comes back to the profile with the modal reopened.
+ * A new account named here claims the invite this device arrived with, as
+ * /signup does (PRD Invite Landing); Google's return already goes through
+ * /signup, which claims there.
  */
 export function useBookingSignIn({ profileHref }: { profileHref: string }): GuestSignIn {
   const router = useRouter();
+  const qc = useQueryClient();
   const online = useOnline();
   const saveName = useSaveName();
   const [stage, setStage] = useState<GuestStage>('email');
@@ -70,6 +77,8 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
           userId.current = acct.id;
           accountZone.current = acct.timezone;
           if (toAccount(acct).isNew) return setStage('name');
+          // Named already: an existing account, which never claims an invite.
+          clearInviteCode();
         }
         // A /me that keeps failing: carry on rather than drop the booking. An
         // account left unnamed is asked for its name at the next sign-in.
@@ -131,7 +140,8 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
       setNameError(undefined);
       void saveName
         .mutateAsync({ userId: id, name: { fullName }, timezone: zoneToSave(accountZone.current) })
-        .then(() => {
+        .then(async () => {
+          await claimStoredInvite(qc);
           if (!ONBOARDING_LIVE) {
             setFinishing(false);
             return setStage('done');
@@ -153,4 +163,21 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
     signedInAs,
     offline: !online,
   };
+}
+
+/**
+ * The invite this device arrived with, claimed by the account just named
+ * (issue 281, as useSignInFlow). Quiet: any refusal or failure is ignored and
+ * the booking goes on; one attempt, the code is cleared whatever the answer.
+ */
+async function claimStoredInvite(qc: QueryClient): Promise<void> {
+  const code = storedInviteCode();
+  if (!code) return;
+  try {
+    await claimInvite(qc, code);
+  } catch {
+    // Unknown, claimed, retired, too old, or offline: the booking goes on.
+  } finally {
+    clearInviteCode();
+  }
 }

@@ -1,0 +1,26 @@
+/* Invite Landing.dc.html `showBanner`: blue-50, 12px tall padding, gap 12px,
+   centred on desktop, left on phones. The side padding is the caller's (the
+   page's own). */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding-block: var(--space-3);
+  background: var(--blue-50);
+}
+.text {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.lead {
+  color: var(--ink-900);
+  font-weight: var(--weight-semibold);
+}
+@media (max-width: 767px) {
+  .banner {
+    justify-content: flex-start;
+  }
+}

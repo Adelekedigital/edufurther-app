@@ -8,7 +8,7 @@ import { Notice } from '@/components/molecules/Notice/Notice';
 import { FLOW_COPY, STEP_ORDER, stepLabel } from '@/lib/copy/mentorOnboarding';
 import { personCover } from '@/lib/utils/person';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
-import { OnboardingFrame } from '../../_components/OnboardingFrame';
+import { LogoFrame } from '@/components/templates/LogoFrame/LogoFrame';
 import { StepCounterRow } from '../../_components/StepCounterRow';
 import { Waiting } from '../../_components/Waiting';
 import { AboutStep } from './AboutStep';
@@ -211,5 +211,5 @@ export function MentorOnboardingScreen() {
       </span>
     ) : undefined;
 
-  return <OnboardingFrame status={status}>{body}</OnboardingFrame>;
+  return <LogoFrame status={status}>{body}</LogoFrame>;
 }

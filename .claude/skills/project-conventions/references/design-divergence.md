@@ -982,7 +982,7 @@ PRD: Mentee Onboarding v5 (deviation table, H8). Rows the PRD settles are produc
 | Prototype keeps answers in localStorage (`ef-mo5`) and resumes from the device | Resumes from the server: `GET /me` (goal, origin, onboarding gaps); each Continue saves | The account exists before step 1, so a device copy adds nothing (PRD rev 93) | — |
 | Already onboarded: a server redirect (handoff) | "You’re already set up. Taking you to your Home…" with the spinner, then `/home` after 1.2 s | PRD F1 rev 93 chose the design's screen | — |
 | One route, `/onboarding` | `/onboarding` is an entry that redirects by role keeping the query; the flow is `/onboarding/mentee`; mentors go to their home until `/onboarding/mentor` exists | PRD rev 95 | mentor onboarding ships |
-| Header from the design, not FocusPage | Route-local `OnboardingFrame`: logo only, white page, ink-200 rule, 20px sides | FocusPage differs in four values (grey page, ink-100 rule, 24px sides, a way back) | — |
+| Header from the design, not FocusPage | `LogoFrame` (templates; was route-local `OnboardingFrame`, shared with the invite landing since PRD Invite Landing): logo only, white page, ink-200 rule, 20px sides | FocusPage differs in four values (grey page, ink-100 rule, 24px sides, a way back) | — |
 | Answers loading / failed to load / Continue failed to save (`stepState` loading, loadError, saveError) | Built from the drawn states: the spinner appears only after 300 ms (quick loads don’t flash), with a screen-reader line; the failed load centred in 60vh with Try again the only filled button; the save error a red alert line above Continue, answers kept, Continue enabled | Design answered 2026-10-17 (Design decisions.md) | — |
 | Book on a match opens BookingModal | Same (BookingLauncher); closing it after a sent request goes to `/home` ("Waiting for {First} to confirm") | PRD US-5 | — |
 | Steps are local state (the prototype has no URLs) | Same: the step isn't in the URL, so the browser's Back leaves onboarding; answers saved on each Continue resume on return, and unsaved edits get the leave prompt | Deep links to step 2 with no state are the wizard pattern's known failure; resume-from-server covers coming back | — |
@@ -1327,3 +1327,39 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | Send pressed while the file uploads, not drawn | "Wait for your file to finish uploading." above the box; nothing is sent | SendMessage's rule: a send then would go without the file | never |
 | A send refused because its upload expired (`422 file-unavailable`), not drawn | The bubble says "Not sent. Your file expired." with "Attach it again" (its text goes back in the box, focus on Attach); SendMessage drops the file and says "Your file expired. Attach it again." | Try again can never succeed; an upload unsent for 24 hours is swept | never |
 | File names shown and saved as sent | Bidi and control characters are dropped from every shown name (`cleanFileName`); Download saves under the name with its extension from the checked type (`downloadName`: `notes.pdf.exe` saves as `notes.pdf.pdf`) | Another person's text: a reversed name could pass a file off as another kind (security pass) | never |
+
+### Invite landing — `/invite/{code}` (`Invite Landing.dc.html` saved defaults, PRD Invite Landing PR 3), 2026-11-05
+
+Built from shared parts: `LogoFrame` (the onboarding frame, moved to templates, `variant="landing"`), `ArrivalRow` (new molecule), `IconListItem` `variant="feature"`, `Tag` `tone="outline"`, the DS `Badge` (`iconSize`) and `EmptyState` (`variant="card"`, `fullWidthActions`) in a `Card`, Button `ghost`. Fidelity measured by probe (computed styles against the design's inline styles, tokens resolved in the page) at 390, 600, 768, 1024 and 1280: **996 of 1010 checks (98.6%)**; welcome 98.5%, broken 98.0%, existing card 100%, Explore bar 100%. The 14 misses are the last two rows below (shared Button rules).
+
+| Design | Build | Why | Revisit if |
+| --- | --- | --- | --- |
+| `flow=twoStep`: "Browse mentors first" opens screen 2 ("Find your mentor") | Opens `/explore` as a guest; screen 2 isn't built | Founder, 2 Nov: Explore already serves guests (cards, search, guest booking) | design marks screen 2 as wanted |
+| The schools strip shows 8 | At most 5 from GET /mentor-schools; hidden under 4 or on a failed read | Founder, 2 Nov ("max of 5"); a short list reads as a small platform | — |
+| The inviter's avatar tone from their profile | `personCover(code)`: the invite exposes only first name and photo (backend decision 256), so the tone is hashed from the code | No user id or cover reaches a signed-out page | the lookup exposes the cover |
+| "First session free" pill drawn inline | The DS `Badge` (green accent, pill, `redeem`) with `iconSize={18}`, the drawn 6px 12px padding | One badge component for every screen (owner, 2026-10-20) | — |
+| The pill pops with opacity 0 → 1 over the first 70% | Hidden until its delay, then a scale pop (0.6 → 1.08 → 1) at full opacity | A semi-opaque label mid-fade failed `review-page`'s contrast scan intermittently (it finishes last, at 1s) | — |
+| "Our mentors studied at" as a caption `<span>` | The same caption style on an `<h2>` | It names the list that follows | — |
+| Existing-account card drawn inline | The DS `EmptyState` `variant="card"` (H5 title, 14px ink-700 line) and `fullWidthActions` in the drawn card | One empty/notice state component (owner, 2026-10-20, DRY) | — |
+| "Browse mentors first" drawn inline, blue-600 | Button `ghost` (the padded 44px text control: 0 12px, 4px gap, 18px arrow), blue-500 | One button component; the ghost variant's colour is shared (Session Join) | the DS sets ghost to blue-600 |
+| Create my account: 24px side padding on phones | 16px | `Button` large on phones follows CTA Hierarchy.dc.html for every screen (as InviteModal) | CTA hierarchy changes |
+| (not drawn) the moment before the page knows the visitor | The header only, no skeleton; a screen-reader line "Opening your invite…" | PRD open question 4 (default) | design draws it |
+| (no design state) a lookup that failed | The broken version; the code is kept so the claim decides | PRD "Which page a link shows" | — |
+
+### Explore — "Invited by" bar (`Invite Landing.dc.html` `showBanner`, PRD Invite Landing PR 4), 2026-11-05
+
+| Design | Build | Why | Revisit if |
+| --- | --- | --- | --- |
+| The bar sits on the landing's own mentors screen (screen 2) | On Explore, for a signed-out visitor holding a live invite, until sign-up, a claim, a clear or 30 days | Founder, 2 Nov: Browse mentors first opens Explore, and "we shouldn't lose this" | screen 2 is built |
+| Full width of the page under the header | Full width of AppShell's content column: it bleeds through `main`'s padding (24px 28px, 16px on phones); its sides are the design's 48px (16px on phones) | Explore renders inside AppShell; the rail stays beside it | AppShell gains a banner slot |
+| The 32px avatar's initial on a fixed colour | `personCover(code)`, as on the landing | The invite exposes no user id or cover (decision 256) | the lookup exposes the cover |
+
+### Invite link preview — `opengraph-image` (`Invite Preview.dc.html`, PRD Invite Landing PR 5), 2026-11-05
+
+| Design | Build | Why | Revisit if |
+| --- | --- | --- | --- |
+| The initial on a fixed colour (`avatarBg`) | `personCover(code)`'s deep tone, as on the landing and the Explore bar | One look per person; the invite exposes no user id or cover (decision 256) | the lookup exposes the cover |
+| Type in the DS sans | DM Sans static cuts (400, 700 at the display optical size) from the committed variable subset, `scripts/fonts/og_fonts.py` | next/og reads TTF/OTF/WOFF only, never WOFF2 or a variable font (ADR 0002: one typeface) | next/og reads WOFF2 |
+| Colours as tokens | Hex resolved from the token declarations (`lib/utils/imageColors.ts`, pinned to the token files by its test) | ImageResponse can't read CSS variables or oklch() | — |
+| (no design state) a photo that won't load | The initial | satori fails the whole image on a broken photo, so the photo is fetched first (2.5s) | — |
+| og:title "You're invited" for every link | og:title / og:description are the image's two lines (or the fallback's); the tab title stays "You're invited"; noindex | PRD Link preview: the card's text reads like the picture | — |
