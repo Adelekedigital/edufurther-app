@@ -33,17 +33,18 @@ describe('MenteeHeader', () => {
 });
 
 describe('PanelBody', () => {
-  it('shows the balance, stage and reset', () => {
+  it('shows the balance, the level and the reset', () => {
     render(<PanelBody {...base} />);
     expect(screen.getByText('Left this month')).toBeInTheDocument();
     expect(screen.getByText('of 3')).toBeInTheDocument();
-    expect(screen.getByText('Monthly credits')).toBeInTheDocument();
+    expect(screen.getByText('3 credits a month')).toBeInTheDocument();
     expect(screen.getByText('Resets Nov 1')).toBeInTheDocument();
   });
 
-  it('a starter mentee reads "Starter credit"', () => {
+  it('a level-1 mentee reads "1 credit a month", never "Starter credit"', () => {
     render(<PanelBody {...base} mentee={CHIAMAKA} />);
-    expect(screen.getByText('Starter credit')).toBeInTheDocument();
+    expect(screen.getByText('1 credit a month')).toBeInTheDocument();
+    expect(screen.queryByText('Starter credit')).toBeNull();
   });
 
   it('the stepper runs from 1 to 3 and the button follows it', async () => {

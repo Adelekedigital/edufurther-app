@@ -22,8 +22,14 @@ export function CreditRules({ rules, status, onRetry }: CreditRulesProps) {
       </div>
     );
   }
+  // The level-2 row is held while loading (its skeleton), so the card doesn't
+  // grow when the rules land; it drops only if the loaded rules lack it
+  // (`invited` is optional in the contract).
   const rows = [
     { ...RULES_COPY.starter, value: rules?.starter },
+    ...(rules === null || rules.invited != null
+      ? [{ ...RULES_COPY.invited, value: rules?.invited ?? undefined }]
+      : []),
     { ...RULES_COPY.monthly, value: rules?.monthly },
   ];
   return (

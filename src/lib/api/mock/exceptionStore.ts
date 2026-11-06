@@ -35,8 +35,7 @@ export function addException(body: Record<string, unknown>): MockResult<Exceptio
     end_date <= start_date ||
     (start_time === null) !== (end_time === null) ||
     typeof timezone !== 'string';
-  if (bad)
-    return { ok: false, status: 422, problem: { title: 'Unprocessable Content' } };
+  if (bad) return { ok: false, status: 422, problem: { title: 'Unprocessable Content' } };
   const row: ExceptionRead = {
     id: `ex-${seq++}`,
     type,

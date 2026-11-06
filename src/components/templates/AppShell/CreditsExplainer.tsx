@@ -4,14 +4,16 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { CreditsBar } from '@/components/molecules/CreditsSummary/CreditsSummary';
+import { StepChecklist } from '@/components/molecules/StepChecklist/StepChecklist';
 import { cx } from '@/lib/utils/cx';
 import {
+  CREDIT_STEPS_LABEL,
   creditRows,
+  creditSteps,
   creditsTitle,
   HOW_CREDITS_WORK,
   isLow,
   refundPolicy,
-  SPEND_ORDER,
   type CreditsView,
 } from '@/lib/utils/credits';
 import styles from './CreditsExplainer.module.css';
@@ -21,9 +23,10 @@ import styles from './CreditsExplainer.module.css';
  * desktop, a bottom sheet with "Got it" on phones. Takes focus, keeps Tab
  * inside, closes on Escape or outside; the caller returns focus.
  *
- * Design creditSplit on: the total, a bar, Monthly/Bonus rows, the spend
- * order, then "How credits work" and "Refund policy", both closed by default.
- * The refund text is ours (see refundPolicy).
+ * Design creditSplit on: the total, a bar, Monthly/Bonus rows, then (ours,
+ * owner 2026-11-06, decision 308) "Your monthly credits": the three steps,
+ * ticked up to the mentee's level, always shown; then "How credits work" and
+ * "Refund policy", both closed by default. The refund text is ours.
  */
 export function CreditsExplainer({
   id,
@@ -108,10 +111,16 @@ export function CreditsExplainer({
                 </li>
               ))}
             </ul>
-            {/* Nothing held, nothing to order. */}
-            <span className={styles.spend}>{SPEND_ORDER}</span>
+            {/* No "Expiring credits are used first": every credit ends on the
+                1st (decision 308), so the order tells a mentee nothing. */}
           </div>
         )}
+        <div className={cx(styles.section, styles.steps)}>
+          <span className={styles.stepsTitle} aria-hidden>
+            {CREDIT_STEPS_LABEL}
+          </span>
+          <StepChecklist steps={creditSteps(credits)} label={CREDIT_STEPS_LABEL} doneLabel="done" />
+        </div>
         <div className={styles.section}>
           <button
             type="button"

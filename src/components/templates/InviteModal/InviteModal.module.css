@@ -8,44 +8,6 @@
 .badge {
   align-self: flex-start;
 }
-.steps {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.step {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  font-size: var(--text-p-sm);
-  line-height: var(--lh-p);
-}
-.ring {
-  width: 24px;
-  height: 24px;
-  flex: none;
-  box-sizing: border-box;
-  border-radius: var(--radius-full);
-  border: 1.5px solid var(--ink-300);
-  background: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--white);
-}
-.done .ring {
-  border: none;
-  background: var(--green-600);
-}
-.stepLabel {
-  color: var(--ink-900);
-}
-.done .stepLabel {
-  color: var(--ink-600);
-}
 .note {
   margin: 0;
   font-size: var(--text-p-xs);

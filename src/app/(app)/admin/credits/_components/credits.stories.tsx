@@ -118,7 +118,7 @@ export const Log: Story = {
 export const Rules: Story = {
   render: () => (
     <div style={col}>
-      <CreditRules rules={{ starter: 1, monthly: 3 }} status="ready" onRetry={fn()} />
+      <CreditRules rules={{ starter: 1, invited: 2, monthly: 3 }} status="ready" onRetry={fn()} />
       <CreditRules rules={null} status="loading" onRetry={fn()} />
       <CreditRules rules={null} status="error" onRetry={fn()} />
     </div>

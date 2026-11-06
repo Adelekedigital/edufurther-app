@@ -99,12 +99,6 @@
   min-width: 0;
   color: var(--ink-600);
 }
-.spend {
-  font-family: var(--font-ui);
-  font-size: var(--text-p-xs);
-  line-height: var(--lh-p);
-  color: var(--ink-600);
-}
 /* "How credits work" and "Refund policy" (design howToggle, refundToggle):
    each a divider above and a quiet toggle. */
 .section {
@@ -248,4 +242,15 @@
     font-weight: var(--weight-bold);
     color: var(--text-primary);
   }
+}
+
+/* "Your monthly credits" (ours, owner 2026-11-06): the ladder under the rows.
+   Its title is the caption style the rows' labels sit beside. */
+.steps {
+  gap: var(--space-3);
+}
+.stepsTitle {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
 }

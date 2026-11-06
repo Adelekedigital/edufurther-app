@@ -23,12 +23,13 @@ import { keys } from './keys';
 
 type Schemas = components['schemas'];
 
-/** A mentee's balance as the Credits page shows it: "1 of 3", the stage, the reset. */
+/** A mentee's balance as the Credits page shows it: "1 of 3", their level, the reset. */
 export type MenteeBalance = {
   left: number;
   /** Rises with the balance ("3 of 3" plus 2 reads "5 of 5"): the API's allowance. */
   total: number;
-  stage: 'monthly' | 'starter';
+  /** What their month pays (decision 308): `monthly.ceiling`, at least 1. */
+  level: number;
   /** "Nov 1": the next reset, named in UTC as the shell names it. */
   resetsOn: string;
 };
@@ -69,7 +70,7 @@ export function toMenteeBalance(c: Schemas['CreditsRead'], now = new Date()): Me
   return {
     left,
     total: Math.max(c.allowance, left),
-    stage: credits.monthly.unlocked ? 'monthly' : 'starter',
+    level: Math.max(1, credits.monthly.ceiling),
     resetsOn: resetsOnFor(credits.nextResetAt, now),
   };
 }
@@ -235,7 +236,8 @@ function more(query: {
   };
 }
 
-export type CreditRules = { starter: number; monthly: number };
+/** What each level pays a month (decision 308); `invited` is null until the backend sends it. */
+export type CreditRules = { starter: number; invited: number | null; monthly: number };
 
 /** A12 `GET /admin/credit-rules`: the server's settings, read-only. */
 export function useCreditRules(adminId: string | null) {
@@ -245,7 +247,7 @@ export function useCreditRules(adminId: string | null) {
     queryFn: async ({ signal }): Promise<CreditRules> => {
       const { data, error, response } = await api.GET('/api/v1/admin/credit-rules', { signal });
       if (!data) throw apiError(response.status, error, response);
-      return { starter: data.starter, monthly: data.monthly };
+      return { starter: data.starter, invited: data.invited ?? null, monthly: data.monthly };
     },
     enabled,
     retry: retryOnce,

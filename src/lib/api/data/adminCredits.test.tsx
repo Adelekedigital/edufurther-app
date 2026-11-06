@@ -87,17 +87,22 @@ describe('mappers', () => {
       name: 'Amara Okafor',
       firstName: 'Amara',
       initials: 'AO',
-      balance: { left: 1, total: 3, stage: 'monthly', resetsOn: 'Nov 1' },
+      balance: { left: 1, total: 3, level: 3, resetsOn: 'Nov 1' },
     });
   });
 
-  it('starter until the monthly grant unlocks; the total rises with the balance', () => {
-    const starter = creditsRead({
+  it('the level is the monthly ceiling (decision 308); the total rises with the balance', () => {
+    const levelTwo = creditsRead({
       balance: 5,
       allowance: 5,
-      monthly: { balance: 0, ceiling: 3, expires_at: null, unlocked: false },
+      monthly: { balance: 0, ceiling: 2, expires_at: null, unlocked: false },
     });
-    expect(toMenteeBalance(starter)).toMatchObject({ left: 5, total: 5, stage: 'starter' });
+    expect(toMenteeBalance(levelTwo)).toMatchObject({ left: 5, total: 5, level: 2 });
+    // Never below 1, as the API promises; a stray 0 still reads "1 credit a month".
+    const zero = creditsRead({
+      monthly: { balance: 0, ceiling: 0, expires_at: null, unlocked: false },
+    });
+    expect(toMenteeBalance(zero).level).toBe(1);
   });
 
   it('with no reset date it is the next 1st, named in UTC', () => {
@@ -236,23 +241,27 @@ describe('useCreditLog', () => {
 
 describe('useCreditRules', () => {
   it('a failed refetch keeps the rules, with no error state', async () => {
-    GET.mockResolvedValueOnce(okRes({ starter: 1, monthly: 3 }));
+    GET.mockResolvedValueOnce(okRes({ starter: 1, invited: 2, monthly: 3 }));
     GET.mockResolvedValue(failRes(422));
     const { result } = renderHook(() => useCreditRules('admin-1'), { wrapper });
-    await waitFor(() => expect(result.current.rules).toEqual({ starter: 1, monthly: 3 }));
+    await waitFor(() =>
+      expect(result.current.rules).toEqual({ starter: 1, invited: 2, monthly: 3 }),
+    );
     act(() => result.current.retry());
     await waitFor(() => expect(GET).toHaveBeenCalledTimes(2));
     await waitFor(() =>
       expect(qc.getQueryState(['admin', 'admin-1', 'credit-rules'])?.status).toBe('error'),
     );
     expect(result.current.isError).toBe(false);
-    expect(result.current.rules).toEqual({ starter: 1, monthly: 3 });
+    expect(result.current.rules).toEqual({ starter: 1, invited: 2, monthly: 3 });
   });
 
-  it('reads the server values', async () => {
+  it('reads the server values; a missing level-2 size (optional) is null', async () => {
     GET.mockResolvedValue(okRes({ starter: 1, monthly: 3 }));
     const { result } = renderHook(() => useCreditRules('admin-1'), { wrapper });
-    await waitFor(() => expect(result.current.rules).toEqual({ starter: 1, monthly: 3 }));
+    await waitFor(() =>
+      expect(result.current.rules).toEqual({ starter: 1, invited: null, monthly: 3 }),
+    );
   });
 });
 

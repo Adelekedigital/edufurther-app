@@ -1,10 +1,9 @@
 'use client';
 
 import { Badge } from '@/components/atoms/Badge/Badge';
-import { Icon } from '@/components/atoms/Icon/Icon';
+import { StepChecklist } from '@/components/molecules/StepChecklist/StepChecklist';
 import { InviteLinkPanel } from '@/components/molecules/InviteLinkPanel/InviteLinkPanel';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import { cx } from '@/lib/utils/cx';
 import styles from './InviteModal.module.css';
 
 const SUBTITLE_LOCKED = 'Get 3 free sessions every month.';
@@ -84,17 +83,8 @@ export function InviteModal({
             You get 3 free sessions a month
           </Badge>
         ) : (
-          <ul className={styles.steps} aria-label="How to get 3 free sessions every month">
-            {steps.map((s) => (
-              <li key={s.key} className={cx(styles.step, s.done && styles.done)}>
-                <span className={styles.ring} aria-hidden>
-                  {s.done && <Icon name="check" size={16} />}
-                </span>
-                {/* The tense says done or not, so the ring can stay decorative. */}
-                <span className={styles.stepLabel}>{s.label}</span>
-              </li>
-            ))}
-          </ul>
+          // The tense says done or not, so no extra label (StepChecklist).
+          <StepChecklist steps={steps} label="How to get 3 free sessions every month" />
         )}
 
         <InviteLinkPanel

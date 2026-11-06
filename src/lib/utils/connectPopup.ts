@@ -13,12 +13,7 @@
  */
 
 export type ConnectOutcome =
-  | 'connected'
-  | 'cancelled'
-  | 'timeout'
-  | 'blocked'
-  | 'refused'
-  | 'abandoned';
+  'connected' | 'cancelled' | 'timeout' | 'blocked' | 'refused' | 'abandoned';
 
 export type ConnectPopupOptions = {
   /** Resolves true once the server shows the connection. Must not throw. */

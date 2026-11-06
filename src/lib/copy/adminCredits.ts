@@ -35,7 +35,8 @@ export const PANEL_COPY = {
   meta: (email: string, shortId: string) => `${email} · ${shortId}`,
   balanceLabel: 'Left this month',
   of: (total: number) => `of ${total}`,
-  stage: { monthly: 'Monthly credits', starter: 'Starter credit' },
+  /** Their level, as what their month pays (decision 308): "2 credits a month". */
+  level: (n: number) => `${credits(n)} a month`,
   resets: (day: string) => `Resets ${day}`,
   amountLabel: 'Credits to add',
   fewer: 'One fewer',
@@ -72,26 +73,34 @@ export const LOG_COPY = {
     admin: 'Added by admin',
     bookings: 'Bookings',
     refunds: 'Refunds',
-    monthly: 'Monthly and starter',
+    monthly: 'Monthly',
   },
   columns: { when: 'When', mentee: 'Mentee', change: 'Change', what: 'What happened', by: 'By' },
   more: 'Show older changes',
   loading: 'Loading credit changes',
 } as const;
 
+/**
+ * The rules card (decision 308): what each level pays a month. The API keeps
+ * the old field names: `starter` is level 1, `invited` level 2, `monthly`
+ * level 3. Labels are ours, provisional (no design for the levels yet).
+ */
 export const RULES_COPY = {
   starter: {
-    label: 'Starter credits',
-    // Q7: the starter comes when the profile is finished, not at sign-up.
-    help: 'What every new mentee gets once, when they finish their profile.',
+    label: 'Profile finished',
+    help: 'Credits a month once a mentee finishes their profile.',
+  },
+  invited: {
+    label: 'Friend joined',
+    help: 'Credits a month once a friend they invited also finishes their profile.',
   },
   monthly: {
-    label: 'Monthly credits',
-    help: 'What unlocked mentees get on the 1st of each month.',
+    label: 'Friend joined and session attended',
+    help: 'Credits a month once they have both, in either order. A session on its own adds nothing.',
   },
-  unlockTitle: 'How monthly credits unlock',
+  unlockTitle: 'How monthly credits work',
   unlock:
-    'Monthly credits start once both happen, in either order: a friend they invited finishes their profile, and they attend their first session. Credits don’t roll over. This rule isn’t editable here; ask engineering to change it.',
+    'On the 1st, each mentee’s credits reset to what their step pays. Unused credits don’t carry over. Reaching a new step during the month tops them up to it right away. These rules aren’t editable here; ask engineering to change them.',
   loading: 'Loading credit rules',
 } as const;
 

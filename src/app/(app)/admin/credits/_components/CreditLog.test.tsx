@@ -31,7 +31,7 @@ describe('CreditLog', () => {
       'Added by admin',
       'Bookings',
       'Refunds',
-      'Monthly and starter',
+      'Monthly',
     ]);
     expect(chips[0]).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(chips[3]!);
@@ -80,15 +80,40 @@ describe('CreditLog', () => {
 });
 
 describe('CreditRules', () => {
-  it('shows the server values, read-only, and the unlock rule', () => {
-    render(<CreditRules rules={{ starter: 1, monthly: 3 }} status="ready" onRetry={vi.fn()} />);
-    expect(screen.getByText('Starter credits').closest('div')).toHaveTextContent('1');
-    expect(
-      screen.getByText('What every new mentee gets once, when they finish their profile.'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Monthly credits').closest('div')).toHaveTextContent('3');
-    expect(screen.getByText('How monthly credits unlock')).toBeInTheDocument();
+  it('shows what each level pays a month (decision 308), read-only', () => {
+    render(
+      <CreditRules
+        rules={{ starter: 1, invited: 2, monthly: 3 }}
+        status="ready"
+        onRetry={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Profile finished').closest('div')).toHaveTextContent('1');
+    expect(screen.getByText('Friend joined').closest('div')).toHaveTextContent('2');
+    expect(screen.getByText('Friend joined and session attended').closest('div')).toHaveTextContent(
+      '3',
+    );
+    expect(screen.getByText('How monthly credits work')).toBeInTheDocument();
+    expect(screen.queryByText(/Starter credit/)).toBeNull();
     expect(screen.queryByRole('button')).toBeNull();
+  });
+
+  it('while loading, all three rows hold their place (no growth when the rules land)', () => {
+    render(<CreditRules rules={null} status="loading" onRetry={vi.fn()} />);
+    for (const label of ['Profile finished', 'Friend joined', 'Friend joined and session attended'])
+      expect(screen.getByText(label)).toBeInTheDocument();
+  });
+
+  it('no level-2 row when the loaded rules lack its size', () => {
+    render(
+      <CreditRules
+        rules={{ starter: 1, invited: null, monthly: 3 }}
+        status="ready"
+        onRetry={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText('Friend joined')).toBeNull();
+    expect(screen.getByText('Profile finished')).toBeInTheDocument();
   });
 
   it('loading and error', async () => {

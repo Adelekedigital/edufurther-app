@@ -1,12 +1,17 @@
 /**
  * A mentee's credits as the shell shows them (AppShell.dc.html "Credits
- * (mentee)", creditStyle=green, with backend #344's monthly/bonus split).
+ * (mentee)", creditStyle=green), on the credit levels (backend decision 308,
+ * edufurtherbe #571, #574, #575): a month pays the mentee's level (1 for a
+ * finished profile, 2 once their first invited friend finishes theirs, 3 once
+ * they have also attended a session), and the 1st resets the balance to it.
  * Pure: no data fetching here.
  *
  * The pill, titles and low/out states read the total (`left`): it's what can
  * be spent. The bar has one segment per credit: bonus, then monthly left,
  * then monthly spent. "Your credits" breaks the total into a Monthly row
- * (of the monthly ceiling) and Bonus rows (starter, invites, support grants).
+ * (the level's part, `monthly.balance` of `monthly.ceiling`) and Bonus rows
+ * (support grants and their refunds only: starter and invite credits are now
+ * the level, not bonus).
  */
 export type CreditsView = {
   left: number;
@@ -26,8 +31,9 @@ export type CreditsView = {
   bonus: BonusGroup[];
   /**
    * Whether the monthly part shows (the Monthly row, the green and grey
-   * segments, the reset). Not for a mentee who doesn't get the monthly grant
-   * yet and holds none: "0 of 3" would describe credits they don't receive.
+   * segments, the reset): for every mentee with a level, spent or not. Not in
+   * setup (level 0, `setupCredits` sets the ceiling to 0, which the API never
+   * sends): "0 of 1" would describe a credit they don't get until onboarding.
    */
   showMonthly: boolean;
   /**
@@ -36,8 +42,11 @@ export type CreditsView = {
    * backend's rule, so the reset line never goes missing or reads "null".
    */
   resetsOn: string | null;
-  /** Has had a session already (`/me` mentee_completed_sessions > 0): no "first session" line. */
-  hadSession?: boolean;
+  /**
+   * The step reached (decision 308): 0 in setup, else `monthly.ceiling`
+   * (1 profile, 2 + first friend, 3 + a session). Ticks the card's ladder.
+   */
+  level: number;
 };
 
 /** `expires` with no `expiresOn`: a date that couldn't be read. Never "never". */
@@ -54,11 +63,11 @@ export function creditsView(
   c: Credits | null | undefined,
   now: Date = new Date(),
   refundHours: number | null = null,
-  completedSessions = 0,
 ): CreditsView | null {
   if (!c) return null;
   const monthlyLeft = Math.max(0, c.monthly.balance);
-  const showMonthly = c.monthly.unlocked || monthlyLeft > 0;
+  // Every level pays a month now; only setup's ceiling of 0 hides it.
+  const showMonthly = c.monthly.ceiling > 0 || monthlyLeft > 0;
   const bonus: BonusGroup[] = [];
   for (const g of c.bonus.groups) {
     if (g.count <= 0) continue;
@@ -71,13 +80,13 @@ export function creditsView(
     left: Math.max(0, c.balance),
     refundHours,
     monthlyLeft,
-    // Clamped: a late refund can briefly lift the balance past the ceiling,
+    // Clamped: a refund can lift the balance past the level until the 1st,
     // and the bar never reads "4 of 3".
     monthlyTotal: Math.max(1, c.monthly.ceiling, monthlyLeft),
     bonus,
     showMonthly,
-    hadSession: completedSessions > 0,
     resetsOn: showMonthly ? resetsOnFor(c.nextResetAt, now) : null,
+    level: c.monthly.ceiling > 0 ? Math.min(3, c.monthly.ceiling) : 0,
   };
 }
 
@@ -194,14 +203,12 @@ export function creditRows(v: CreditsView): CreditRow[] {
 }
 
 /**
- * The account menu's line under the bar (design creditSub): "Resets Nov 1",
- * or "For your first session" before the monthly grant. Null otherwise: no
- * monthly part and nothing left to spend, or a session already had (a later
- * support credit is not for a "first" session).
+ * The account menu's line under the bar (design creditSub): "Resets Nov 1".
+ * Null in setup (no monthly part). The old "For your first session" line
+ * described the never-expiring starter credit, which decision 308 retired.
  */
 export function summarySub(v: CreditsView): string | null {
-  if (v.resetsOn) return `Resets ${v.resetsOn}`;
-  return v.showMonthly || isOut(v) || v.hadSession ? null : 'For your first session';
+  return v.resetsOn ? `Resets ${v.resetsOn}` : null;
 }
 
 /**
@@ -210,21 +217,33 @@ export function summarySub(v: CreditsView): string | null {
  * pays the mentee's level (1 for a finished profile, 2 once their first
  * invited friend finishes theirs, 3 once they have also attended a session),
  * the 1st resets every balance to it and nothing carries over, and a level
- * reached mid-month tops up the difference. Refunds and support credits can
- * sit above the level until the 1st. No credit "never expires".
+ * reached mid-month tops up the difference. The terms are the card's own row
+ * names, Monthly and Bonus (support grants only), so a mentee can match the
+ * rules to what they see. No credit "never expires".
  */
 export const HOW_CREDITS_WORK = [
   'One credit books one session.',
-  'Finish your profile and you get 1 credit a month.',
-  'When a friend you invite finishes their profile, that goes up to 2 a month. Only your first friend counts.',
-  'Attend your first session as well, and you get 3 a month.',
-  'Credits reset to your monthly amount on the 1st. Unused credits don’t carry over.',
-  'Move up during the month and we add the difference right away.',
-  'Refunds and credits from our team can take you over your monthly amount until the 1st.',
+  'Only your first friend counts, and the friend and the session can come in either order.',
+  'Monthly credits reset on the 1st. Unused credits don’t carry over.',
+  'Finish a step during the month and we add the extra credits right away.',
+  'Bonus credits are ones our team adds. They also end on the 1st.',
 ] as const;
 
-/** Design, under the rows. True to the backend: soonest-expiring first. */
-export const SPEND_ORDER = 'Expiring credits are used first.';
+/**
+ * "Your monthly credits" in the card (owner, 2026-11-06: one pattern for
+ * every mentee, whatever their step): the three steps of decision 308, each
+ * with what it pays, ticked up to the mentee's level. Same list in setup
+ * (nothing ticked) and at 3 (all ticked), so it always says why.
+ */
+export const CREDIT_STEPS_LABEL = 'Your monthly credits';
+export type CreditStep = { key: string; label: string; value: string; done: boolean };
+export function creditSteps(v: CreditsView): CreditStep[] {
+  return [
+    { key: 'profile', label: 'Finish your profile', value: '1 a month' },
+    { key: 'friend', label: 'A friend you invited finishes their profile', value: '2 a month' },
+    { key: 'session', label: 'Attend a session too', value: '3 a month' },
+  ].map((s, i) => ({ ...s, done: v.level >= i + 1 }));
+}
 
 /**
  * The pill's name. It starts with the words the pill shows ("4 credits"), so a

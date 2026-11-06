@@ -283,10 +283,10 @@ describe('AdminCreditsScreen', () => {
   it('the rules tab shows the server values, read-only', async () => {
     renderScreen();
     await userEvent.click(screen.getByRole('tab', { name: 'Credit rules' }));
-    expect(await screen.findByText('Starter credits')).toBeInTheDocument();
+    expect(await screen.findByText('Profile finished')).toBeInTheDocument();
+    expect(screen.getByText('Friend joined')).toBeInTheDocument();
     expect(
-      screen.getByText('What every new mentee gets once, when they finish their profile.'),
+      screen.getByText(/each mentee’s credits reset to what their step pays/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Monthly credits start once both happen/)).toBeInTheDocument();
   });
 });

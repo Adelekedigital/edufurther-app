@@ -50,9 +50,13 @@ describe('problem', () => {
   });
 
   it('keeps extra headers, and the problem content-type wins', () => {
-    const res = problem(409, {}, {
-      headers: { 'Retry-After': '30', 'content-type': 'application/json' },
-    });
+    const res = problem(
+      409,
+      {},
+      {
+        headers: { 'Retry-After': '30', 'content-type': 'application/json' },
+      },
+    );
     expect(res.headers.get('retry-after')).toBe('30');
     expect(res.headers.get('content-type')).toBe('application/problem+json');
   });

@@ -19,7 +19,11 @@ describe('openConsentWindow', () => {
   it('opens a blank window so the user gesture is not lost to an await', () => {
     const open = vi.fn().mockReturnValue({} as Window);
     openConsentWindow(open);
-    expect(open).toHaveBeenCalledWith('', 'ef-google-calendar', expect.stringContaining('popup=yes'));
+    expect(open).toHaveBeenCalledWith(
+      '',
+      'ef-google-calendar',
+      expect.stringContaining('popup=yes'),
+    );
   });
 
   it('reports a blocked popup as null rather than throwing', () => {

@@ -1363,3 +1363,12 @@ Built from shared parts: `LogoFrame` (the onboarding frame, moved to templates, 
 | Colours as tokens | Hex resolved from the token declarations (`lib/utils/imageColors.ts`, pinned to the token files by its test) | ImageResponse can't read CSS variables or oklch() | — |
 | (no design state) a photo that won't load | The initial | satori fails the whole image on a broken photo, so the photo is fetched first (2.5s) | — |
 | og:title "You're invited" for every link | og:title / og:description are the image's two lines (or the fallback's); the tab title stays "You're invited"; noindex | PRD Link preview: the card's text reads like the picture | — |
+
+### Your credits — the credit levels (decision 308, edufurtherbe #571/#574/#575), 2026-11-06
+
+| Design | Build | Why | Revisit if |
+| --- | --- | --- | --- |
+| (not drawn) how a mentee's monthly amount is earned | "Your monthly credits": always shown under the rows, the three steps (Finish your profile · 1 a month; A friend you invited finishes their profile · 2 a month; Attend a session too · 3 a month), ticked up to the level, via the shared `StepChecklist` (InviteModal's steps, extracted) | Owner, 2026-11-06: one pattern for every mentee whatever their step (a "next step" line was rejected: it changes shape and vanishes at 3); BFM review (Lovable credits, reactive onboarding) | design draws the levels |
+| "Expiring credits are used first." under the rows | Removed | Every credit ends on the 1st (backend: spend order is soonest expiry, then oldest), so the line tells a mentee nothing | credits gain different expiries |
+| "How credits work": the starter/invite/unlock list | Five rules in the card's own words (Monthly, Bonus), confirmed against the backend with code references | Decision 308 | — |
+| Menu line "For your first session" before the monthly grant | Removed: "Resets {date}", nothing in setup | The never-expiring starter credit is retired | — |
