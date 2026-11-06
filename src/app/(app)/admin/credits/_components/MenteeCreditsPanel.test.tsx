@@ -41,6 +41,21 @@ describe('PanelBody', () => {
     expect(screen.getByText('Resets Nov 1')).toBeInTheDocument();
   });
 
+  it('a mentee who hasn’t onboarded reads "Not onboarded yet" (level 0, #576)', () => {
+    render(
+      <PanelBody
+        {...base}
+        mentee={{
+          ...CHIAMAKA,
+          balance: { ...CHIAMAKA.balance, left: 0, total: 0, level: 0, perMonth: 1 },
+        }}
+      />,
+    );
+    expect(screen.getByText('Not onboarded yet')).toBeInTheDocument();
+    expect(screen.queryByText('1 credit a month')).toBeNull();
+    expect(screen.queryByText('of 0')).toBeNull();
+  });
+
   it('a level-1 mentee reads "1 credit a month", never "Starter credit"', () => {
     render(<PanelBody {...base} mentee={CHIAMAKA} />);
     expect(screen.getByText('1 credit a month')).toBeInTheDocument();

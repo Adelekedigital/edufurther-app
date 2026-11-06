@@ -16,6 +16,7 @@ export function toCredits(c: components['schemas']['CreditsRead']): Credits {
     monthly: {
       balance: c.monthly.balance,
       ceiling: c.monthly.ceiling,
+      level: c.monthly.level ?? null,
       expiresAt: c.monthly.expires_at,
       unlocked: c.monthly.unlocked,
     },

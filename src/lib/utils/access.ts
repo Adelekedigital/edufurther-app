@@ -301,16 +301,16 @@ export function inSetup(a: Access | AccessState): boolean {
 export function setupCredits<
   C extends {
     balance: number;
-    monthly: { balance: number; ceiling: number };
+    monthly: { balance: number; level?: number | null };
     bonus: { balance: number; groups: unknown[] };
   },
 >(c: C): C {
   return {
     ...c,
     balance: 0,
-    // No level yet (level 0): a ceiling of 0, which the API never sends
-    // (it reads at least 1), so setup draws no "0 of 1" monthly part.
-    monthly: { ...c.monthly, balance: 0, ceiling: 0, unlocked: false },
+    // Level 0, as the API says of a mentee who hasn't finished onboarding
+    // (#576); set here too so the shell never draws a "0 of 1" part in setup.
+    monthly: { ...c.monthly, balance: 0, level: 0, unlocked: false },
     bonus: { ...c.bonus, balance: 0, groups: [] },
   };
 }

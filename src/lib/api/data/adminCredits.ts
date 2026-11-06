@@ -28,8 +28,10 @@ export type MenteeBalance = {
   left: number;
   /** Rises with the balance ("3 of 3" plus 2 reads "5 of 5"): the API's allowance. */
   total: number;
-  /** What their month pays (decision 308): `monthly.ceiling`, at least 1. */
+  /** Their credit level, 0 to 3 (`monthly.level`, #576); 0 = not onboarded yet. */
   level: number;
+  /** What their month pays: `monthly.ceiling`, at least 1. */
+  perMonth: number;
   /** "Nov 1": the next reset, named in UTC as the shell names it. */
   resetsOn: string;
 };
@@ -70,7 +72,8 @@ export function toMenteeBalance(c: Schemas['CreditsRead'], now = new Date()): Me
   return {
     left,
     total: Math.max(c.allowance, left),
-    level: Math.max(1, credits.monthly.ceiling),
+    level: credits.monthly.level ?? Math.max(1, credits.monthly.ceiling),
+    perMonth: Math.max(1, credits.monthly.ceiling),
     resetsOn: resetsOnFor(credits.nextResetAt, now),
   };
 }

@@ -289,7 +289,7 @@ describe('mentorStageOf (toMentorApplication’s rule)', () => {
 });
 
 describe('setupCredits', () => {
-  it('holds nothing and has no level: every balance 0, ceiling 0, no bonus groups', async () => {
+  it('holds nothing at level 0: every balance 0, no bonus groups, the ceiling kept', async () => {
     const { setupCredits } = await load();
     const c = {
       balance: 4,
@@ -300,8 +300,9 @@ describe('setupCredits', () => {
     expect(setupCredits(c)).toEqual({
       balance: 0,
       nextResetAt: '2026-11-01T00:00:00Z',
-      // Level 0: a ceiling of 0 (the API never sends one), so no "0 of 1" part.
-      monthly: { balance: 0, ceiling: 0, expiresAt: null, unlocked: false },
+      // Level 0, as the API says of a mentee in onboarding (#576): no "0 of 1"
+      // part. The ceiling (what a month would pay) is left as sent.
+      monthly: { balance: 0, ceiling: 3, level: 0, expiresAt: null, unlocked: false },
       bonus: { balance: 0, groups: [] },
     });
   });

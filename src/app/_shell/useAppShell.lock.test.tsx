@@ -26,7 +26,7 @@ const mentee = (over: Partial<Member>): Member => ({
     balance: 4,
     state: 'on_track',
     nextResetAt: '2026-11-01T00:00:00Z',
-    monthly: { balance: 3, ceiling: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
+    monthly: { balance: 3, ceiling: 3, level: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
     bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
   },
   ...over,

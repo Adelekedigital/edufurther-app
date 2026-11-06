@@ -80,3 +80,11 @@ describe('FindMenteeCard', () => {
     expect(props.onRetry).toHaveBeenCalled();
   });
 });
+
+describe('FIND_COPY.left', () => {
+  it('drops "of 0" when there is no monthly amount (level 0, nothing held)', async () => {
+    const { FIND_COPY } = await import('@/lib/copy/adminCredits');
+    expect(FIND_COPY.left(1, 3)).toBe('1 of 3 left');
+    expect(FIND_COPY.left(0, 0)).toBe('0 left');
+  });
+});
