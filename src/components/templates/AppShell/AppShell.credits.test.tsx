@@ -92,22 +92,28 @@ describe('AppShell: a mentee’s credits', () => {
     expect(toggle.compareDocumentPosition(refund) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).not.toHaveAttribute('aria-controls');
-    expect(dialog).not.toHaveTextContent('No rollover');
+    expect(dialog).not.toHaveTextContent('carry over');
     await user.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
     const list = document.getElementById(toggle.getAttribute('aria-controls')!)!;
     const items = within(list).getAllByRole('listitem');
     expect(items.map((li) => li.textContent)).toEqual([
-      'Start with 1 free credit when you finish your profile. It never expires.',
-      'Invite a friend: when they finish their profile, you get 2 more. Once you’ve also attended your first session, you get 3 every month.',
-      'Monthly credits reset on the 1st. No rollover.',
+      'One credit books one session.',
+      'Finish your profile and you get 1 credit a month.',
+      'When a friend you invite finishes their profile, that goes up to 2 a month. Only your first friend counts.',
+      'Attend your first session as well, and you get 3 a month.',
+      'Credits reset to your monthly amount on the 1st. Unused credits don’t carry over.',
+      'Move up during the month and we add the difference right away.',
+      'Refunds and credits from our team can take you over your monthly amount until the 1st.',
     ]);
+    // Decision 308: no credit is promised to last forever.
+    expect(list).not.toHaveTextContent(/never expires/i);
     // Independent of the refund toggle.
     expect(refund).toHaveAttribute('aria-expanded', 'false');
     await user.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     expect(toggle).not.toHaveAttribute('aria-controls');
-    expect(dialog).not.toHaveTextContent('No rollover');
+    expect(dialog).not.toHaveTextContent('carry over');
   });
 
   it('account menu: the credits group comes first; the keyboard reaches "How credits work", and focus returns to the avatar', async () => {
