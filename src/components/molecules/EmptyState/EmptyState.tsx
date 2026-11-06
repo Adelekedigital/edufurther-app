@@ -43,6 +43,11 @@ type EmptyStateProps = Art & {
    * darkens to ink-700, because the DS ink-500 there is 4.38:1, under AA.
    */
   onTint?: boolean;
+  /**
+   * The actions fill the width, stacked (Invite Landing.dc.html's existing-
+   * account card: "Go to Home" full width). Default: centred in a row.
+   */
+  fullWidthActions?: boolean;
 };
 
 /** DS EmptyState: vertical, centred, illustration + copy + actions. Art is decorative. */
@@ -55,6 +60,7 @@ export function EmptyState({
   headingLevel = 2,
   size = 140,
   onTint = false,
+  fullWidthActions = false,
 }: EmptyStateProps) {
   const H = `h${headingLevel}` as const;
   return (
@@ -78,7 +84,9 @@ export function EmptyState({
           <p className={cx(styles.description, onTint && styles.onTint)}>{description}</p>
         )}
       </div>
-      {actions && <div className={styles.actions}>{actions}</div>}
+      {actions && (
+        <div className={cx(styles.actions, fullWidthActions && styles.fullWidth)}>{actions}</div>
+      )}
     </div>
   );
 }

@@ -51,3 +51,8 @@
   flex-wrap: wrap;
   justify-content: center;
 }
+/* Stacked, full width: a card's one action (Invite Landing.dc.html `cardBtn`). */
+.fullWidth {
+  align-self: stretch;
+  flex-direction: column;
+}

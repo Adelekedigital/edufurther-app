@@ -1,4 +1,4 @@
-/* Mentee Onboarding v5.dc.html root and <header>. */
+/* Mentee Onboarding v5.dc.html root and <header> (variant onboarding). */
 .page {
   min-height: 100vh;
   background: var(--white);
@@ -18,4 +18,23 @@
 /* 24px tall from the image's own size attributes (as FocusPage). */
 .header img {
   display: block;
+}
+
+/* Invite Landing.dc.html root and <header>: headH 72 / 56, padX 48 / 16,
+   an ink-100 rule. */
+.landing {
+  display: flex;
+  flex-direction: column;
+}
+.landing .header {
+  flex: none;
+  height: 72px;
+  padding: 0 var(--space-12);
+  border-bottom-color: var(--ink-100);
+}
+@media (max-width: 767px) {
+  .landing .header {
+    height: 56px;
+    padding: 0 var(--space-4);
+  }
 }

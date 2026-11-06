@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -106,6 +106,23 @@ export function MenteeHomeScreen() {
   const online = useOnline();
 
   const [inviteOpen, setInviteOpen] = useState(false);
+  // `/home?invite=open`: a mentee who opened their own invite link (PRD Invite
+  // Landing) lands here to share it. InviteModal opens once per arrival, and
+  // the parameter is dropped so a reload or Back doesn't open it again.
+  const params = useSearchParams();
+  const inviteAsked = menteeSide && params.get('invite') === 'open';
+  const [inviteTaken, setInviteTaken] = useState(false);
+  if (inviteAsked && !inviteTaken) {
+    setInviteTaken(true);
+    setInviteOpen(true);
+  }
+  useEffect(() => {
+    if (!inviteAsked) return;
+    const rest = new URLSearchParams(params.toString());
+    rest.delete('invite');
+    const q = rest.toString();
+    router.replace(q ? `/home?${q}` : '/home', { scroll: false });
+  }, [inviteAsked, params, router]);
   const [profileOpen, setProfileOpen] = useState(false);
   // Education opens over nothing; closing it brings the profile sheet back.
   const [eduOpen, setEduOpen] = useState(false);
