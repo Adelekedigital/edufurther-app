@@ -1351,3 +1351,13 @@ Built from shared parts: `LogoFrame` (the onboarding frame, moved to templates, 
 | The bar sits on the landing's own mentors screen (screen 2) | On Explore, for a signed-out visitor holding a live invite, until sign-up, a claim, a clear or 30 days | Founder, 2 Nov: Browse mentors first opens Explore, and "we shouldn't lose this" | screen 2 is built |
 | Full width of the page under the header | Full width of AppShell's content column: it bleeds through `main`'s padding (24px 28px, 16px on phones) and keeps it as its sides | Explore renders inside AppShell; the rail stays beside it | AppShell gains a banner slot |
 | The 32px avatar's initial on a fixed colour | `personCover(code)`, as on the landing | The invite exposes no user id or cover (decision 256) | the lookup exposes the cover |
+
+### Invite link preview — `opengraph-image` (`Invite Preview.dc.html`, PRD Invite Landing PR 5), 2026-11-05
+
+| Design | Build | Why | Revisit if |
+| --- | --- | --- | --- |
+| The initial on a fixed colour (`avatarBg`) | `personCover(code)`'s deep tone, as on the landing and the Explore bar | One look per person; the invite exposes no user id or cover (decision 256) | the lookup exposes the cover |
+| Type in the DS sans | DM Sans static cuts (400, 700 at the display optical size) from the committed variable subset, `scripts/fonts/og_fonts.py` | next/og reads TTF/OTF/WOFF only, never WOFF2 or a variable font (ADR 0002: one typeface) | next/og reads WOFF2 |
+| Colours as tokens | Hex resolved from the token declarations (`lib/utils/imageColors.ts`, pinned to the token files by its test) | ImageResponse can't read CSS variables or oklch() | — |
+| (no design state) a photo that won't load | The initial | satori fails the whole image on a broken photo, so the photo is fetched first (2.5s) | — |
+| og:title "You're invited" for every link | og:title / og:description are the image's two lines (or the fallback's); the tab title stays "You're invited"; noindex | PRD Link preview: the card's text reads like the picture | — |

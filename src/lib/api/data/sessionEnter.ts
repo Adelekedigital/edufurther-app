@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch';
 import type { paths } from '@/lib/api/generated/schema';
-import { backendOrigin, proxySecretHeaders } from '@/lib/backend';
+import { proxySecretHeaders } from '@/lib/backend';
+import { serverBackend as backend } from './serverBackend';
 import { safeMeetingUrl } from '@/lib/utils/bookings';
 import type { EnterProblem } from '@/lib/utils/sessionEnter';
 
@@ -28,18 +29,6 @@ export const ENTER_TIMEOUT_MS = 8000;
 const NOT_YOURS = new Set([403, 404, 422]);
 
 type Answer = { status: number; url: string | null; type?: string };
-
-/**
- * The backend to call, or null when there is none. Mock mode follows home.ts:
- * NEXT_PUBLIC_MOCK_VIEWER set (local dev, CI) means the in-app mock, on this
- * app's own origin, which itself answers only when ENABLE_MOCK_API=1.
- */
-function backend(origin: string): { base: string; mock: boolean } | null {
-  if (process.env.NEXT_PUBLIC_MOCK_VIEWER) return { base: `${origin}/api/mock`, mock: true };
-  // The same backend the proxy forwards to: the one the secret may go to.
-  const base = backendOrigin();
-  return base ? { base, mock: false } : null;
-}
 
 export async function enterSession({
   sessionId,
