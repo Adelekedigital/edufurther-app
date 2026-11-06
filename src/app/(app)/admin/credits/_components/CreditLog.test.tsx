@@ -98,7 +98,13 @@ describe('CreditRules', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('no level-2 row until the backend sends its size', () => {
+  it('while loading, all three rows hold their place (no growth when the rules land)', () => {
+    render(<CreditRules rules={null} status="loading" onRetry={vi.fn()} />);
+    for (const label of ['Profile finished', 'Friend joined', 'Friend joined and session attended'])
+      expect(screen.getByText(label)).toBeInTheDocument();
+  });
+
+  it('no level-2 row when the loaded rules lack its size', () => {
     render(
       <CreditRules
         rules={{ starter: 1, invited: null, monthly: 3 }}
