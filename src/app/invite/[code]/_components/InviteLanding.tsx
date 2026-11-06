@@ -85,6 +85,7 @@ export function InviteLanding({ code }: { code: string }) {
               size={96}
               headingLevel={1}
               fullWidthActions
+              variant="card"
               title={COPY.existing.title}
               description={COPY.existing.body}
               actions={
