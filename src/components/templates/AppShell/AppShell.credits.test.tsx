@@ -106,7 +106,7 @@ describe('AppShell: a mentee’s credits', () => {
       'Move up during the month and we add the difference right away.',
       'Refunds and credits from our team can take you over your monthly amount until the 1st.',
     ]);
-    // Decision 307: no credit is promised to last forever.
+    // Decision 308: no credit is promised to last forever.
     expect(list).not.toHaveTextContent(/never expires/i);
     // Independent of the refund toggle.
     expect(refund).toHaveAttribute('aria-expanded', 'false');
