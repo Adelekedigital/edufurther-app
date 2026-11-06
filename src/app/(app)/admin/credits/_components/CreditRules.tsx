@@ -22,8 +22,10 @@ export function CreditRules({ rules, status, onRetry }: CreditRulesProps) {
       </div>
     );
   }
+  // The level-2 row only once the backend sends its size (`invited` is optional).
   const rows = [
     { ...RULES_COPY.starter, value: rules?.starter },
+    ...(rules?.invited != null ? [{ ...RULES_COPY.invited, value: rules.invited }] : []),
     { ...RULES_COPY.monthly, value: rules?.monthly },
   ];
   return (

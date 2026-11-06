@@ -86,7 +86,7 @@ export function PanelBody(p: PanelBodyProps) {
           </span>
         </div>
         <div className={styles.balanceSide}>
-          <span className={styles.stage}>{PANEL_COPY.stage[balance.stage]}</span>
+          <span className={styles.stage}>{PANEL_COPY.level(balance.level)}</span>
           <span className={styles.small}>{PANEL_COPY.resets(balance.resetsOn)}</span>
         </div>
       </div>

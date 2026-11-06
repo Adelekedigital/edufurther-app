@@ -235,8 +235,10 @@ export function creditLog(
   return page(all, cursor);
 }
 
+/** Decision 308: level 1 (`starter`), 2 (`invited`), 3 (`monthly`) a month. */
 export const creditRules = (): Schemas['CreditRulesRead'] => ({
   starter: STARTER,
+  invited: 2,
   monthly: MONTHLY,
 });
 

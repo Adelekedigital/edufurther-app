@@ -24,6 +24,7 @@ const three: CreditsView = {
   monthlyTotal: 3,
   bonus: [{ count: 1, expires: false, expiresOn: null }],
   showMonthly: true,
+  level: 3,
   resetsOn: 'Nov 1',
 };
 // Two pills render (the desktop bar's and the phone header's); CSS shows one.
@@ -53,7 +54,8 @@ describe('AppShell: a mentee’s credits', () => {
     expect(dialog).toHaveTextContent('4 credits left');
     expectRow(dialog, 0, 'Monthly', 'Resets Nov 1', '3 of 3 credits');
     expectRow(dialog, 1, 'Bonus', 'Never expires', '1 credit');
-    expect(dialog).toHaveTextContent('Expiring credits are used first.');
+    // Every credit ends on the 1st (decision 308): no spend-order line.
+    expect(dialog).not.toHaveTextContent('Expiring credits are used first.');
     // No promise of 3 every month: the grant needs an invite first.
     expect(dialog).not.toHaveTextContent(/3 credits (on|every)/);
     expect(within(dialog).getByRole('link', { name: 'See my bookings' })).toHaveAttribute(
@@ -99,12 +101,10 @@ describe('AppShell: a mentee’s credits', () => {
     const items = within(list).getAllByRole('listitem');
     expect(items.map((li) => li.textContent)).toEqual([
       'One credit books one session.',
-      'Finish your profile and you get 1 credit a month.',
-      'When a friend you invite finishes their profile, that goes up to 2 a month. Only your first friend counts.',
-      'Attend your first session as well, and you get 3 a month.',
-      'Credits reset to your monthly amount on the 1st. Unused credits don’t carry over.',
-      'Move up during the month and we add the difference right away.',
-      'Refunds and credits from our team can take you over your monthly amount until the 1st.',
+      'Only your first friend counts, and the friend and the session can come in either order.',
+      'Monthly credits reset on the 1st. Unused credits don’t carry over.',
+      'Finish a step during the month and we add the extra credits right away.',
+      'Bonus credits are ones our team adds. They also end on the 1st.',
     ]);
     // Decision 308: no credit is promised to last forever.
     expect(list).not.toHaveTextContent(/never expires/i);
@@ -186,34 +186,39 @@ describe('AppShell: a mentee’s credits', () => {
     expect(screen.getByRole('dialog', { name: 'Your credits' })).not.toHaveTextContent(/Bonus/);
   });
 
-  it('account menu before the monthly grant: "For your first session", never "Resets null"', async () => {
-    shell({ ...three, left: 1, monthlyLeft: 0, showMonthly: false, resetsOn: null });
+  it('account menu in setup (no monthly part): no reset line, never "Resets null"', async () => {
+    shell({ ...three, left: 0, monthlyLeft: 0, bonus: [], showMonthly: false, resetsOn: null });
     const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: 'Account menu' }));
     const group = within(screen.getByRole('menu', { name: 'Account' })).getByRole('group', {
       name: 'Credits',
     });
-    expect(group).toHaveTextContent('For your first session');
-    expect(group).not.toHaveTextContent(/Resets|null/);
+    // Decision 308 retired the starter credit and its "For your first session" line.
+    expect(group).not.toHaveTextContent(/Resets|null|For your first session/);
     expect(
       within(group).getByRole('menuitem', { name: 'How credits work' }),
-    ).toHaveAccessibleDescription('1 credit left For your first session');
+    ).toHaveAccessibleDescription('No credits left');
   });
 
-  it('monthly grant not unlocked (starter only): no Monthly row or reset', async () => {
+  it('no monthly part (only a support credit, as setup or a stale /me): no Monthly row or reset', async () => {
     const starter: CreditsView = {
       ...three,
       left: 1,
       monthlyLeft: 0,
       showMonthly: false,
       resetsOn: null,
+      level: 0,
     };
     shell(starter);
     const user = userEvent.setup();
     await user.click(firstPill());
     const dialog = screen.getByRole('dialog', { name: 'Your credits' });
     expect(dialog).toHaveTextContent('1 credit left');
-    expect(dialog).not.toHaveTextContent(/monthly/i);
+    // No Monthly row and no reset; the ladder's own title still shows.
+    expect(within(dialog).getByRole('list', { name: 'Credits by type' })).not.toHaveTextContent(
+      /Monthly/,
+    );
+    expect(dialog).not.toHaveTextContent(/Resets/);
     expectRow(dialog, 0, 'Bonus', 'Never expires', '1 credit');
     await user.keyboard('{Escape}');
     cleanup();
@@ -221,9 +226,42 @@ describe('AppShell: a mentee’s credits', () => {
     await user.click(screen.getAllByRole('button', { name: /No credits left/ })[0]!);
     const out = screen.getByRole('dialog', { name: 'Your credits' });
     expect(out).toHaveTextContent('No credits left');
-    expect(out).not.toHaveTextContent(/monthly/i);
+    expect(out).not.toHaveTextContent(/Resets/);
     // Nothing held: no rows, and no spend order to explain.
     expect(within(out).queryByRole('list', { name: 'Credits by type' })).toBeNull();
     expect(out).not.toHaveTextContent('Expiring credits are used first.');
+  });
+
+  it('"Your monthly credits": the same three steps for everyone, ticked up to the level', async () => {
+    const user = userEvent.setup();
+    shell({ ...three, level: 2 });
+    await user.click(firstPill());
+    const dialog = screen.getByRole('dialog', { name: 'Your credits' });
+    const ladder = within(dialog).getByRole('list', { name: 'Your monthly credits' });
+    const steps = within(ladder).getAllByRole('listitem');
+    expect(steps.map((li) => li.textContent)).toEqual([
+      // "check" is the tick's glyph name (the ring is aria-hidden).
+      'checkFinish your profile, done1 a month',
+      'checkA friend you invited finishes their profile, done2 a month',
+      'Attend a session too3 a month',
+    ]);
+    await user.keyboard('{Escape}');
+    cleanup();
+    // Setup (level 0): the same list, nothing ticked, so it says how to start.
+    shell({
+      ...three,
+      left: 0,
+      monthlyLeft: 0,
+      bonus: [],
+      showMonthly: false,
+      resetsOn: null,
+      level: 0,
+    });
+    await user.click(screen.getAllByRole('button', { name: /No credits left/ })[0]!);
+    const setup = within(screen.getByRole('dialog', { name: 'Your credits' })).getByRole('list', {
+      name: 'Your monthly credits',
+    });
+    expect(within(setup).getAllByRole('listitem')).toHaveLength(3);
+    expect(setup).not.toHaveTextContent('done');
   });
 });

@@ -128,7 +128,8 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
       state: 'on_track',
       nextResetAt: '2026-11-01T00:00:00Z',
       monthly: { balance: 3, ceiling: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
-      bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
+      // Decision 308: a support grant, ending at the month end like every credit.
+      bonus: { balance: 1, groups: [{ count: 1, expiresAt: '2026-11-01T00:00:00Z' }] },
     },
     avatarUrl: '/api/mock/avatars/mentor-01.webp',
     avatarFocus: { x: 0.5, y: 0.35 },
@@ -195,8 +196,10 @@ MOCK_VIEWERS['mentee-new'] = {
     balance: 1,
     state: 'on_track',
     nextResetAt: '2026-11-01T00:00:00Z',
-    monthly: { balance: 0, ceiling: 0, expiresAt: null, unlocked: false },
-    bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
+    // Decision 308: a new mentee at level 1 (profile finished), one credit a
+    // month; the starter is no longer a never-expiring bonus.
+    monthly: { balance: 1, ceiling: 1, expiresAt: '2026-11-01T00:00:00Z', unlocked: false },
+    bonus: { balance: 0, groups: [] },
   },
 };
 MOCK_VIEWERS['mentee-returning'] = {

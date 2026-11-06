@@ -9,9 +9,9 @@ import {
   isOut,
   lastDay,
   resetDay,
-  SPEND_ORDER,
   summarySub,
   HOW_CREDITS_WORK,
+  creditSteps,
   type CreditsView,
 } from './credits';
 
@@ -40,7 +40,7 @@ const api = (o: {
   };
 };
 
-describe('creditsView (backend #344: monthly and bonus)', () => {
+describe('creditsView (decision 308: the level, and support credits as bonus)', () => {
   it('splits the total: the bar is monthly of the ceiling; bonus groups are their own lines', () => {
     expect(creditsView(api({ groups: [{ count: 1, expiresAt: null }] }))).toEqual({
       refundHours: null,
@@ -49,7 +49,7 @@ describe('creditsView (backend #344: monthly and bonus)', () => {
       monthlyTotal: 3,
       bonus: [{ count: 1, expires: false, expiresOn: null }],
       showMonthly: true,
-      hadSession: false,
+      level: 3,
       resetsOn: 'Nov 1',
     });
     expect(creditsView(null)).toBeNull();
@@ -97,13 +97,28 @@ describe('creditsView (backend #344: monthly and bonus)', () => {
     expect(creditRows(v!).find((r) => r.kind === 'bonus')?.sub).toBe('');
   });
 
-  it('not unlocked and none held: no monthly part, no reset date', () => {
-    const v = creditsView(
-      api({ monthly: 0, unlocked: false, groups: [{ count: 1, expiresAt: null }] }),
-    );
-    expect(v).toMatchObject({ left: 1, showMonthly: false, resetsOn: null });
-    // Not unlocked but holding some (migrated): the monthly part still shows.
-    expect(creditsView(api({ monthly: 2, unlocked: false }))?.showMonthly).toBe(true);
+  it('every level shows its monthly part, spent or not: level 1 with nothing left reads "0 of 1"', () => {
+    const v = creditsView(api({ monthly: 0, ceiling: 1, unlocked: false }));
+    expect(v).toMatchObject({
+      left: 0,
+      monthlyLeft: 0,
+      monthlyTotal: 1,
+      showMonthly: true,
+      resetsOn: 'Nov 1',
+    });
+    expect(creditSegments(v!)).toEqual(['empty']);
+    // Level 2, one left: "1 of 2".
+    expect(creditsView(api({ monthly: 1, ceiling: 2, unlocked: false }))).toMatchObject({
+      monthlyLeft: 1,
+      monthlyTotal: 2,
+      showMonthly: true,
+    });
+  });
+
+  it('setup (level 0: setupCredits sets a ceiling of 0): no monthly part, no reset date', () => {
+    const v = creditsView(api({ monthly: 0, ceiling: 0, unlocked: false }));
+    expect(v).toMatchObject({ left: 0, showMonthly: false, resetsOn: null });
+    expect(creditRows(v!)).toEqual([]);
   });
 
   it('no readable reset date: the next 1st in UTC, the backend’s rule', () => {
@@ -143,6 +158,7 @@ describe('copy (design creditSplit on)', () => {
     monthlyTotal: 3,
     bonus,
     showMonthly: true,
+    level: 3,
     resetsOn: 'Nov 1',
   });
   const starter: CreditsView['bonus'] = [{ count: 1, expires: false, expiresOn: null }];
@@ -196,7 +212,6 @@ describe('copy (design creditSplit on)', () => {
       'bonus',
     ]);
     expect(creditRows(v(3)).map((r) => r.kind)).toEqual(['monthly']);
-    expect(SPEND_ORDER).toBe('Expiring credits are used first.');
   });
 
   it('low and out follow the total, not the monthly count', () => {
@@ -235,31 +250,47 @@ describe('the account menu line and "How credits work"', () => {
     monthlyTotal: 3,
     bonus: [{ count: 1, expires: false, expiresOn: null }],
     showMonthly: false,
+    level: 0,
     resetsOn: null,
   };
-  it('the reset when there is a monthly part; the first session before it; never "null"', () => {
+  it('the reset when there is a monthly part; nothing in setup; never "null"', () => {
     expect(summarySub({ ...base, showMonthly: true, resetsOn: 'Nov 1' })).toBe('Resets Nov 1');
-    expect(summarySub(base)).toBe('For your first session');
-    // Nothing left to spend on a first session.
-    expect(summarySub({ ...base, left: 0, bonus: [] })).toBeNull();
-    // Already had a session (e.g. a later support credit): not "first" (#312 review).
-    expect(summarySub({ ...base, hadSession: true })).toBeNull();
-  });
-
-  it('creditsView carries whether the mentee has had a session', () => {
-    const c = {
-      balance: 1,
-      monthly: { balance: 0, ceiling: 3, expiresAt: null, unlocked: false },
-      bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
-    };
-    expect(creditsView(c, undefined, null, 2)?.hadSession).toBe(true);
-    expect(creditsView(c)?.hadSession).toBe(false);
+    expect(summarySub(base)).toBeNull();
+    // Decision 308 retired the starter credit: no "For your first session" line.
+    expect(summarySub({ ...base, left: 1 })).not.toBe('For your first session');
   });
   it('the credit-level rules (decision 308): no em dashes, nothing that never expires', () => {
-    expect(HOW_CREDITS_WORK).toHaveLength(7);
+    expect(HOW_CREDITS_WORK).toHaveLength(5);
     for (const t of HOW_CREDITS_WORK) {
       expect(t).not.toMatch(/—/);
       expect(t).not.toMatch(/never expires/i);
     }
+  });
+});
+
+describe('"Your monthly credits" (decision 308 steps)', () => {
+  const at = (level: number) =>
+    creditSteps({
+      ...creditsView({
+        balance: 0,
+        monthly: { balance: 0, ceiling: level, expiresAt: null, unlocked: level === 3 },
+        bonus: { balance: 0, groups: [] },
+      })!,
+    });
+  it('always three steps with what each pays; ticked up to the level', () => {
+    expect(at(0).map((s) => s.done)).toEqual([false, false, false]);
+    expect(at(1).map((s) => s.done)).toEqual([true, false, false]);
+    expect(at(2).map((s) => s.done)).toEqual([true, true, false]);
+    expect(at(3).map((s) => s.done)).toEqual([true, true, true]);
+    expect(at(3).map((s) => s.value)).toEqual(['1 a month', '2 a month', '3 a month']);
+  });
+  it('the level is the ceiling, 0 only in setup, never above 3', () => {
+    const v = (ceiling: number) =>
+      creditsView({
+        balance: 0,
+        monthly: { balance: 0, ceiling, expiresAt: null, unlocked: false },
+        bonus: { balance: 0, groups: [] },
+      })!.level;
+    expect([v(0), v(1), v(2), v(3), v(5)]).toEqual([0, 1, 2, 3, 3]);
   });
 });

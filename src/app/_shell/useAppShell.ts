@@ -175,7 +175,6 @@ export function useAppShell() {
                       : member.credits,
                     undefined,
                     member.menteeCancelRefundHours,
-                    member.completedSessions,
                   ) ?? undefined)
                 : undefined,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */

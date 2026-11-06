@@ -296,20 +296,21 @@ export function inSetup(a: Access | AccessState): boolean {
 
 /**
  * The credits a mentee in setup holds as far as the shell says: none. The
- * starter credit is paid when onboarding completes.
+ * first month (level 1) is paid when onboarding completes.
  */
 export function setupCredits<
   C extends {
     balance: number;
-    monthly: { balance: number };
+    monthly: { balance: number; ceiling: number };
     bonus: { balance: number; groups: unknown[] };
   },
 >(c: C): C {
   return {
     ...c,
     balance: 0,
-    // Not unlocked either: setup draws no "0 of N" spent segments.
-    monthly: { ...c.monthly, balance: 0, unlocked: false },
+    // No level yet (level 0): a ceiling of 0, which the API never sends
+    // (it reads at least 1), so setup draws no "0 of 1" monthly part.
+    monthly: { ...c.monthly, balance: 0, ceiling: 0, unlocked: false },
     bonus: { ...c.bonus, balance: 0, groups: [] },
   };
 }
