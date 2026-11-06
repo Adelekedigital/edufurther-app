@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { InviteBanner } from '@/components/molecules/InviteBanner/InviteBanner';
 import { MatchPill } from '@/components/molecules/MatchPill/MatchPill';
 import { MatchPrompt } from '@/components/molecules/MatchPrompt/MatchPrompt';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -18,8 +19,13 @@ import {
   useSlots,
   useUploadIntakeFile,
 } from '@/lib/api/data/booking';
+import { useInviteLookup } from '@/lib/api/data/invite';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
+import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
 import { deviceTimeZone } from '@/lib/utils/format';
+import { storedInviteCode } from '@/lib/utils/inviteCode';
+import { personCover } from '@/lib/utils/person';
+import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
@@ -57,6 +63,13 @@ export function ExploreScreen() {
   const guest = viewer.kind === 'guest';
   // Booking waits until the account is known; the Book buttons say why (bookBlocked.ts).
   const bookBlocked = bookBlockedFor(viewer);
+  // "Invited by {First}" (PRD Invite Landing, founder 2 Nov): a guest holding
+  // a live invite sees who invited them until they sign up. Read each render,
+  // after hydration (the device's storage): a claim or a clear removes it.
+  // The lookup is the one the landing and sign-up share, cached by code.
+  const hydrated = useHydrated();
+  const heldCode = hydrated && guest ? storedInviteCode() : null;
+  const inviter = useInviteLookup(heldCode).data;
 
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
@@ -125,6 +138,16 @@ export function ExploreScreen() {
 
   return (
     <>
+      {heldCode && inviter && (
+        <InviteBanner
+          className={styles.inviteBanner}
+          initial={inviter.firstName.charAt(0).toUpperCase()}
+          tone={personCover(heldCode)}
+          photoUrl={inviter.photoUrl}
+          lead={INVITE_LANDING_COPY.banner.lead(inviter.firstName)}
+          rest={INVITE_LANDING_COPY.banner.rest}
+        />
+      )}
       <div className={styles.page}>
         {viewer.kind === 'error' && (
           // PROVISIONAL copy: /me failed. The page still works as a public list.

@@ -1343,3 +1343,11 @@ Built from shared parts: `LogoFrame` (the onboarding frame, moved to templates, 
 | Existing-account card: H5 title, 14px ink-700 body | The DS `EmptyState` inside the drawn card: H6 title, 16px tertiary body | One empty/notice state component (owner, 2026-10-20, DRY) | design wants the card's own type |
 | (not drawn) the moment before the page knows the visitor | The header only, no skeleton; a screen-reader line "Opening your invite…" | PRD open question 4 (default) | design draws it |
 | (no design state) a lookup that failed | The broken version; the code is kept so the claim decides | PRD "Which page a link shows" | — |
+
+### Explore — "Invited by" bar (`Invite Landing.dc.html` `showBanner`, PRD Invite Landing PR 4), 2026-11-05
+
+| Design | Build | Why | Revisit if |
+| --- | --- | --- | --- |
+| The bar sits on the landing's own mentors screen (screen 2) | On Explore, for a signed-out visitor holding a live invite, until sign-up, a claim, a clear or 30 days | Founder, 2 Nov: Browse mentors first opens Explore, and "we shouldn't lose this" | screen 2 is built |
+| Full width of the page under the header | Full width of AppShell's content column: it bleeds through `main`'s padding (24px 28px, 16px on phones) and keeps it as its sides | Explore renders inside AppShell; the rail stays beside it | AppShell gains a banner slot |
+| The 32px avatar's initial on a fixed colour | `personCover(code)`, as on the landing | The invite exposes no user id or cover (decision 256) | the lookup exposes the cover |

@@ -44,6 +44,11 @@ export const INVITE_LANDING_COPY = {
     body: 'Invites are for new members, so this one doesn’t add a credit.',
     action: 'Go to Home',
   },
+  /** Explore's bar for a guest holding a live invite, until they sign up. */
+  banner: {
+    lead: (first: string) => `Invited by ${first}.`,
+    rest: 'Your first session is free.',
+  },
   /** While the page works out who is visiting (screen readers only). */
   opening: 'Opening your invite…',
 };
