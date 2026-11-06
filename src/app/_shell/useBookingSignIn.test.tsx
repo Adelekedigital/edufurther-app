@@ -22,6 +22,15 @@ vi.mock('@/lib/api/data/signIn', () => ({
   zoneToSave: (z: unknown) => zoneFor(z),
 }));
 
+const claim = vi.fn();
+vi.mock('@/lib/api/data/invite', () => ({
+  claimInvite: (...a: unknown[]) => claim(...a),
+}));
+vi.mock('@tanstack/react-query', async (orig) => ({
+  ...(await orig<typeof import('@tanstack/react-query')>()),
+  useQueryClient: () => ({}),
+}));
+
 const pick = { sessionTypeId: 'st1', time: '2026-10-20T09:00:00Z' };
 const member = (over: object = {}) => ({
   kind: 'member',
@@ -47,10 +56,13 @@ async function toCode(onboarding = false) {
 }
 
 beforeEach(() => {
-  [push, replace, send, verify, google, account, save, zoneFor].forEach((f) => f.mockReset());
+  [push, replace, send, verify, google, account, save, zoneFor, claim].forEach((f) =>
+    f.mockReset(),
+  );
+  claim.mockResolvedValue(undefined);
+  window.localStorage.clear();
   send.mockResolvedValue({ ok: true });
   save.mockResolvedValue(undefined);
-  window.sessionStorage.clear();
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -110,6 +122,59 @@ describe('useBookingSignIn', () => {
     expect(push).toHaveBeenCalledWith(
       '/onboarding?for=gbenga&sid=st1&time=2026-10-20T09%3A00%3A00Z',
     );
+  });
+
+  it('claims the remembered invite once the new account is named, then clears it', async () => {
+    const { rememberInviteCode, storedInviteCode } = await import('@/lib/utils/inviteCode');
+    rememberInviteCode('damilola-7k2x');
+    const { result } = await toCode(true);
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member());
+    await act(async () => result.current.onVerify('482913'));
+    act(() => result.current.onFullNameChange('Amara Okafor'));
+    await act(async () => result.current.onFinish(pick));
+    expect(claim).toHaveBeenCalledWith(expect.anything(), 'damilola-7k2x');
+    expect(claim.mock.invocationCallOrder[0]).toBeGreaterThan(save.mock.invocationCallOrder[0]!);
+    expect(storedInviteCode()).toBeNull();
+    expect(push).toHaveBeenCalled();
+  });
+
+  it('carries on quietly when the claim is refused', async () => {
+    const { rememberInviteCode, storedInviteCode } = await import('@/lib/utils/inviteCode');
+    rememberInviteCode('damilola-7k2x');
+    claim.mockRejectedValueOnce(new Error('409'));
+    const { result } = await toCode(false);
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member());
+    await act(async () => result.current.onVerify('482913'));
+    act(() => result.current.onFullNameChange('Amara Okafor'));
+    await act(async () => result.current.onFinish(pick));
+    expect(result.current.stage).toBe('done');
+    expect(result.current.nameError).toBeUndefined();
+    expect(storedInviteCode()).toBeNull();
+  });
+
+  it('never claims for an existing account, and drops the remembered invite', async () => {
+    const { rememberInviteCode, storedInviteCode } = await import('@/lib/utils/inviteCode');
+    rememberInviteCode('damilola-7k2x');
+    const { result } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member({ firstName: 'Amara' }));
+    await act(async () => result.current.onVerify('482913'));
+    expect(result.current.stage).toBe('done');
+    expect(claim).not.toHaveBeenCalled();
+    expect(storedInviteCode()).toBeNull();
+  });
+
+  it('makes no claim when no invite is remembered', async () => {
+    const { result } = await toCode(false);
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member());
+    await act(async () => result.current.onVerify('482913'));
+    act(() => result.current.onFullNameChange('Amara Okafor'));
+    await act(async () => result.current.onFinish(pick));
+    expect(claim).not.toHaveBeenCalled();
+    expect(result.current.stage).toBe('done');
   });
 
   it('keeps the account on the name step when the name won’t save', async () => {

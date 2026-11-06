@@ -1,18 +1,20 @@
 /**
- * The invite a visitor arrived with (`/invite/{code}`, issue 281), held for
- * the visit until the sign-up flow claims it. sessionStorage: one tab, gone
- * when it closes, and it survives the round trip to Google. Every read and
- * write is guarded: with storage off, the invite is simply not remembered.
+ * The invite a visitor arrived with (`/invite/{code}`, issue 281), held on
+ * this device until a new account claims it (the sign-up page, or the guest
+ * booking sign-in). localStorage (PRD Invite Landing): it outlives the tab, so
+ * a friend who closes the link and signs up days later still arrives through
+ * it; the latest valid link wins. Every read and write is guarded: with
+ * storage off, the invite is simply not remembered.
  */
 
 const KEY = 'ef-invite-code';
 
 /**
- * A remembered invite lasts an hour: long enough to sign up (Google's round
- * trip included), short enough that a tab left open on a shared computer
- * doesn't hand one visitor's invite to the next.
+ * A remembered invite lasts 30 days (PRD Invite Landing, attribution): long
+ * enough to come back and sign up later, and cleared after any claim attempt,
+ * so only a brand-new account on this device can ever use it.
  */
-export const INVITE_CODE_TTL_MS = 60 * 60_000;
+export const INVITE_CODE_TTL_MS = 30 * 24 * 60 * 60_000;
 
 /** The backend's longest code (`MAX_CODE_LENGTH`), for a lookup or a claim. */
 export const MAX_INVITE_CODE_LENGTH = 128;
@@ -35,11 +37,11 @@ export function isInviteCode(code: unknown): code is string {
   );
 }
 
-/** Remember a valid code for this visit; false when it isn't one (nothing is stored). */
+/** Remember a valid code, replacing any older one; false when it isn't one (nothing is stored). */
 export function rememberInviteCode(code: string): boolean {
   if (!isInviteCode(code)) return false;
   try {
-    sessionStorage.setItem(KEY, JSON.stringify({ code, at: Date.now() }));
+    localStorage.setItem(KEY, JSON.stringify({ code, at: Date.now() }));
   } catch {
     // Storage off: the visitor signs up without the invite.
   }
@@ -47,12 +49,12 @@ export function rememberInviteCode(code: string): boolean {
 }
 
 /**
- * The code this visit arrived with in the last hour, or null. A stored value
+ * The code this device last arrived with, within INVITE_CODE_TTL_MS, or null. A stored value
  * that is malformed, fails the test or is too old is dropped.
  */
 export function storedInviteCode(): string | null {
   try {
-    const raw = sessionStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY);
     if (raw === null) return null;
     let saved: { code?: unknown; at?: unknown } | null = null;
     try {
@@ -62,7 +64,7 @@ export function storedInviteCode(): string | null {
     }
     const age = typeof saved?.at === 'number' ? Date.now() - saved.at : NaN;
     if (isInviteCode(saved?.code) && age >= 0 && age < INVITE_CODE_TTL_MS) return saved.code;
-    sessionStorage.removeItem(KEY);
+    localStorage.removeItem(KEY);
   } catch {
     // Storage off: no invite.
   }
@@ -71,7 +73,7 @@ export function storedInviteCode(): string | null {
 
 export function clearInviteCode() {
   try {
-    sessionStorage.removeItem(KEY);
+    localStorage.removeItem(KEY);
   } catch {
     // Nothing to clear.
   }
