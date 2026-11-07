@@ -17,10 +17,17 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // next dev otherwise appends its own block to the project CLAUDE.md, which is user-owned.
   agentRules: false,
+  // Every source × width × quality the optimizer makes is a billed Vercel
+  // transformation (owner's cost rules, 2026-11-07). Photos are plain <img>
+  // straight from Supabase Storage and the logo is pre-sized (BrandLogo), so
+  // nothing remote is allowed through: a remote next/image, if ever needed,
+  // takes its host from NEXT_PUBLIC_SUPABASE_URL, never a wildcard. Few
+  // widths, cached a month: storage URLs are content-addressed (backend ADR 0019).
   images: {
-    // Mentor avatars come from Supabase Storage (backend ADR 0019). Narrow this
-    // to the project host once the backend confirms it.
-    remotePatterns: [{ protocol: 'https', hostname: '**.supabase.co' }],
+    remotePatterns: [],
+    deviceSizes: [640, 1080, 1920],
+    imageSizes: [48, 96, 256],
+    minimumCacheTTL: 2678400,
   },
   // The invite link preview reads its fonts and logos from disk at request
   // time (opengraph-image.tsx); trace them into that function.

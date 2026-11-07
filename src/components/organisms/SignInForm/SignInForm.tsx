@@ -8,7 +8,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from 'react';
-import Image from 'next/image';
+import { BrandLogo } from '@/components/atoms/BrandLogo/BrandLogo';
 import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -166,14 +166,7 @@ export function SignInForm(p: SignInFormProps) {
       inert={redirecting}
       aria-busy={redirecting || undefined}
     >
-      <Image
-        src="/brand/edufurther-logo-full.png"
-        alt="EduFurther"
-        width={210}
-        height={28}
-        priority
-        className={styles.logo}
-      />
+      <BrandLogo alt="EduFurther" width={210} height={28} priority className={styles.logo} />
       {offline && (
         <div className={styles.offline}>
           <Icon name="wifi_off" size={18} />
