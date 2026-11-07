@@ -73,7 +73,8 @@ export const PREVIEW_COPY = {
   reveal: {
     title: 'Reveal hidden details',
     body: (first: string) =>
-      `You’ll see ${first}’s messages and payment details for the rest of this preview. Your name and reason are logged.`,
+      // No "and payment details": the app has none yet (PRD open question 5, Copy standard).
+      `You’ll see ${first}’s messages for the rest of this preview. Your name and reason are logged.`,
     reason: 'Reason',
     placeholder: 'For example: support ticket #4821, mentee can’t see a reply',
     empty: 'Add a reason to reveal.',

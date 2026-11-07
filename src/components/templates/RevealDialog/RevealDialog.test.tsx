@@ -21,7 +21,7 @@ describe('RevealDialog', () => {
     open();
     const dialog = screen.getByRole('dialog', { name: 'Reveal hidden details' });
     expect(dialog).toHaveAccessibleDescription(
-      'You’ll see Amara’s messages and payment details for the rest of this preview. Your name and reason are logged.',
+      'You’ll see Amara’s messages for the rest of this preview. Your name and reason are logged.',
     );
     const reason = screen.getByRole('textbox', { name: 'Reason' });
     // The copy's own string: a ticket number written here reads as a raw colour.
