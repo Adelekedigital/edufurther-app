@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
-import Image from 'next/image';
+import { BrandLogo } from '@/components/atoms/BrandLogo/BrandLogo';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ButtonLink } from '@/components/atoms/Button/Button';
@@ -294,7 +294,7 @@ export function AppShell({
           (design logoIn=sidebar); guests, the pending state and phones keep this. */}
       <header className={cx(styles.header, member && styles.headerMember)}>
         <Link href="/" prefetch={PREFETCH} className={styles.logo} aria-label="EduFurther home">
-          <Image src="/brand/edufurther-logo-full.png" alt="" width={180} height={24} priority />
+          <BrandLogo width={180} height={24} priority />
         </Link>
         {member && credits && <div className={styles.headerCredits}>{pill()}</div>}
         {guest && (
@@ -318,7 +318,7 @@ export function AppShell({
               className={styles.railLogo}
               aria-label="EduFurther home"
             >
-              <Image src="/brand/edufurther-mark-swoosh.png" alt="" width={48} height={20} />
+              <BrandLogo variant="mark" width={48} height={20} />
             </Link>
             <div className={styles.railScroll}>
               <RailList items={daily} active={active} onLock={openLock} />

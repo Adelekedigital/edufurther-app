@@ -63,7 +63,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
     readFile(join(process.cwd(), 'src/app/fonts/og/dm-sans-bold.ttf')),
     readFile(join(process.cwd(), 'src/app/fonts/og/inter-gaps-regular.ttf')),
     readFile(join(process.cwd(), 'src/app/fonts/og/inter-gaps-bold.ttf')),
-    readFile(join(process.cwd(), 'public/brand/edufurther-logo-full.png')),
+    readFile(join(process.cwd(), 'public/brand/edufurther-logo-630.png')),
     readFile(join(process.cwd(), 'public/brand/edufurther-mark-swoosh.png')),
   ]);
   const photo = await photoData(inviter?.photoUrl ?? null);
@@ -85,7 +85,7 @@ export default async function Image({ params }: { params: Promise<{ code: string
         fontFamily: 'DM Sans, Inter Gaps',
       }}
     >
-      {/* 4096×547 source, 32px tall. */}
+      {/* 630×84 source, 32px tall. */}
       <img
         src={dataUrl(logo, 'image/png')}
         alt=""

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Image from 'next/image';
+import { BrandLogo } from '@/components/atoms/BrandLogo/BrandLogo';
 import { cx } from '@/lib/utils/cx';
 import styles from './LogoFrame.module.css';
 
@@ -26,13 +26,7 @@ export function LogoFrame({
   return (
     <div className={cx(styles.page, variant === 'landing' && styles.landing)}>
       <header className={styles.header}>
-        <Image
-          src="/brand/edufurther-logo-full.png"
-          alt="EduFurther"
-          width={180}
-          height={24}
-          priority
-        />
+        <BrandLogo alt="EduFurther" width={180} height={24} priority />
         {status}
       </header>
       {children}

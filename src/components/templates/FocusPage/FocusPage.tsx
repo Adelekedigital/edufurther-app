@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Image from 'next/image';
+import { BrandLogo } from '@/components/atoms/BrandLogo/BrandLogo';
 import Link from 'next/link';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -33,7 +33,7 @@ export function FocusPage({ back, home, offline, wide, children }: FocusPageProp
           className={styles.logo}
           aria-label={home ? 'EduFurther: Home' : `EduFurther: ${back.label}`}
         >
-          <Image src="/brand/edufurther-logo-full.png" alt="" width={180} height={24} priority />
+          <BrandLogo width={180} height={24} priority />
         </Link>
         <Link href={back.href} prefetch={false} className={styles.back}>
           {back.label}
