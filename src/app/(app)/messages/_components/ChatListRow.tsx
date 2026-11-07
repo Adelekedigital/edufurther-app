@@ -3,6 +3,7 @@
 import { useId } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Badge } from '@/components/atoms/Badge/Badge';
+import { HiddenInPreview } from '@/components/molecules/HiddenInPreview/HiddenInPreview';
 import { cx } from '@/lib/utils/cx';
 import type { RowView } from './chatRows';
 import styles from './ChatList.module.css';
@@ -62,7 +63,8 @@ export function ChatListRow({
         </span>
         <span className={styles.rowLine}>
           <span id={`${id}-preview`} className={styles.rowPreview}>
-            {row.preview}
+            {/* No Reveal here: the row is a button. It's in the open chat. */}
+            {row.hidden ? <HiddenInPreview className={styles.rowHidden} /> : row.preview}
           </span>
           {unread && (
             <span aria-hidden>

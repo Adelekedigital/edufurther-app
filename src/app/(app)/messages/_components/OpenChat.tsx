@@ -29,6 +29,8 @@ export function OpenChat({
   onDraft,
   onBack,
   onToast,
+  onReveal,
+  revealed,
 }: {
   row: ChatRow;
   member: Member;
@@ -40,6 +42,10 @@ export function OpenChat({
   onDraft: (v: string) => void;
   onBack: () => void;
   onToast: (text: string) => void;
+  /** Preview as user: opens the screen's Reveal modal; absent when the admin can't reveal. */
+  onReveal?: () => void;
+  /** Preview as user: this user's messages were revealed in this session. */
+  revealed: boolean;
 }) {
   const { person, nextBooking } = row;
   // My side in this chat comes from theirs, not from my account: someone who
@@ -102,6 +108,8 @@ export function OpenChat({
         onDraft={onDraft}
         starters={starters}
         onRetried={() => onToast(CHAT_COPY.retried)}
+        onReveal={onReveal}
+        revealed={revealed}
       />
     </ChatPane>
   );

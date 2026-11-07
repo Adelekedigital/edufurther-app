@@ -25,8 +25,12 @@ export type ConfirmActionsProps = {
    * destructive and both labels are long enough to need the room. Keep it
    * that way: stacked, the action is also the FIRST tab stop, so pairing
    * `stack` with `tone="danger"` would put the destructive button there.
+   * `end` - an edit modal's footer (Modal.dc.html `kind="edit"`, e.g. View
+   * As.dc.html Reveal): Keep as a text button, then the action, both at
+   * their own width, right-aligned; on a narrow screen the action wraps
+   * above. It opens on the form's first field, not on Keep.
    */
-  layout?: 'split' | 'stack';
+  layout?: 'split' | 'stack' | 'end';
 };
 
 /**
@@ -47,14 +51,16 @@ export function ConfirmActions({
   confirmDisabled = false,
   layout = 'split',
 }: ConfirmActionsProps) {
+  const end = layout === 'end';
   const keep = (
     <Button
       size="large"
-      variant="secondary-outlined"
-      fullWidth
+      variant={end ? 'text' : 'secondary-outlined'}
+      fullWidth={!end}
+      className={end ? styles.endButton : undefined}
       onClick={onKeep}
       disabled={pending}
-      data-autofocus
+      data-autofocus={end ? undefined : true}
     >
       {keepLabel}
     </Button>
@@ -63,7 +69,8 @@ export function ConfirmActions({
     <Button
       size="large"
       variant={tone === 'danger' ? 'destructive' : 'primary'}
-      fullWidth
+      fullWidth={!end}
+      className={end ? styles.endButton : undefined}
       onClick={onConfirm}
       disabled={confirmDisabled && !pending}
       busy={pending}
@@ -86,7 +93,7 @@ export function ConfirmActions({
       {/* Tab order follows what is drawn, in both layouts: reading order and
           focus order must not disagree (WCAG 1.3.2, 2.4.3). Initial focus is
           on Keep either way, so the dialog still opens on the safe answer. */}
-      <div className={layout === 'stack' ? styles.stack : styles.buttons}>
+      <div className={styles[layout === 'split' ? 'buttons' : layout]}>
         {layout === 'stack' ? (
           <>
             {confirm}

@@ -1,7 +1,13 @@
 'use client';
 
 import { useCallback } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type Query,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { coverKey } from '@/lib/utils/cover';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import type {
@@ -76,13 +82,16 @@ function toNextBooking(b: WireNextBooking | null): NextBooking | null {
 
 function toLast(l: WireLast | null): LastMessage | null {
   if (!l) return null;
+  // Masked in a preview: nothing of the content passes, whatever the wire holds.
+  const gone = l.deleted || l.hidden_in_preview;
   return {
     kind: l.kind,
-    text: l.deleted ? null : l.text,
-    fileName: l.deleted || !l.file_name ? null : cleanFileName(l.file_name),
+    text: gone ? null : l.text,
+    fileName: gone || !l.file_name ? null : cleanFileName(l.file_name),
     mine: l.mine,
     at: l.at,
     deleted: l.deleted,
+    hiddenInPreview: l.hidden_in_preview,
   };
 }
 
@@ -109,15 +118,17 @@ export function toMessageFile(f: WireMessageFile): MessageFile {
 }
 
 export function toMessage(m: WireMessage): Message {
+  const gone = m.deleted || m.hidden_in_preview;
   return {
     id: m.id,
     clientId: m.client_id,
     mine: m.mine,
-    body: m.deleted ? null : m.body,
-    file: m.deleted || !m.file ? null : toMessageFile(m.file),
+    body: gone ? null : m.body,
+    file: gone || !m.file ? null : toMessageFile(m.file),
     sentAt: m.sent_at,
     editedAt: m.edited_at,
     deleted: m.deleted,
+    hiddenInPreview: m.hidden_in_preview,
   };
 }
 
@@ -319,6 +330,20 @@ export function useChatStatus(withId: string | null): Remote<Thread> {
     retry: retryOnce,
   });
   return remote(query, () => void query.refetch(), enabled);
+}
+
+/**
+ * Every Messages read, again, after a preview reveal: the list re-reads, and
+ * each cached thread drops its cursor first, so its next read is a whole fresh
+ * page (with bodies) rather than an `after=` read that would keep the masked
+ * ones already in the cache.
+ */
+export function reloadMessages(qc: QueryClient) {
+  const isThread = (q: Query) => q.queryKey[0] === 'messages' && q.queryKey[2] === 'thread';
+  qc.setQueriesData<Thread>({ predicate: isThread }, (cur) =>
+    cur ? { ...cur, cursor: null } : cur,
+  );
+  return qc.invalidateQueries({ predicate: (q) => q.queryKey[0] === 'messages' });
 }
 
 // ---- Writes -----------------------------------------------------------------

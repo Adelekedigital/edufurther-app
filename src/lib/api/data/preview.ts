@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
-import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { personInitials } from '@/lib/utils/person';
 import { ApiError, apiError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { loadMoreOf } from './loadMore';
+import { reloadMessages } from './messages';
 import {
   previewStore,
   type PreviewRole,
@@ -246,4 +247,33 @@ export function useRestorePreview() {
     })();
     return () => ctrl.abort();
   }, [sessionId, user]);
+}
+
+/** The longest reason the reveal takes (backend `PreviewReveal.reason`). */
+export const REVEAL_REASON_MAX = 500;
+
+/**
+ * POST /{id}/reveals: the admin gives a reason and sees this user's messages
+ * and payment details for the rest of the session (View As.dc.html Reveal).
+ * An admin call, so it goes without the preview header. On success the store
+ * says revealed, then every Messages read runs again so the bodies load.
+ */
+export function useRevealPreview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (reason: string) => {
+      const id = previewStore.get().sessionId;
+      if (!id) throw new Error('No preview to reveal');
+      const { data, error, response } = await api.POST(
+        '/api/v1/admin/preview-sessions/{session_id}/reveals',
+        { params: { path: { session_id: id } }, body: { reason } },
+      );
+      if (!data) throw apiError(response.status, error, response);
+      return data;
+    },
+    onSuccess: () => {
+      previewStore.revealed();
+      void reloadMessages(qc);
+    },
+  });
 }

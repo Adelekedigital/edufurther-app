@@ -55,6 +55,7 @@ const wireMsg = (id: string, over: Partial<WireMessage> = {}): WireMessage => ({
   sent_at: '2026-10-27T09:00:00Z',
   edited_at: null,
   deleted: false,
+  hidden_in_preview: false,
   ...over,
 });
 
@@ -126,6 +127,17 @@ describe('mappers', () => {
       }),
     );
     expect(m).toMatchObject({ deleted: true, body: null, file: null });
+  });
+
+  it('a message hidden in a preview carries no body or file, whatever the wire says', () => {
+    const m = toMessage(
+      wireMsg('m1', {
+        hidden_in_preview: true,
+        body: 'secret',
+        file: { id: 'f', filename: 'a.pdf', size: 1, content_type: 'application/pdf' },
+      }),
+    );
+    expect(m).toMatchObject({ hiddenInPreview: true, deleted: false, body: null, file: null });
   });
 
   it('a file maps to its name, size and type (Q9 aside, it is kept)', () => {
