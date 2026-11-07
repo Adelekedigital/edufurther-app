@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MenteeStats } from '@/lib/api/data/menteeHome';
 import type { Booking, BookingParty } from '@/types/booking';
@@ -295,9 +295,11 @@ describe('MenteeHomeScreen', () => {
   it('a returning mentee sees the greeting, the progress figures and the next session', () => {
     render(<MenteeHomeScreen />);
     expect(screen.getByRole('heading', { name: /Welcome back, Damilola/ })).toBeInTheDocument();
-    expect(screen.getByText('Sessions held')).toBeInTheDocument();
-    expect(screen.getByText('12')).toBeInTheDocument();
-    expect(screen.getByText('2 in the last 30 days')).toBeInTheDocument();
+    // Within the card: the next session (120h out) can fall on the 12th, and
+    // its date badge would read "12" too.
+    const sessionsCard = screen.getByText('2 in the last 30 days').parentElement!;
+    expect(within(sessionsCard).getByText('Sessions held')).toBeInTheDocument();
+    expect(within(sessionsCard).getByText('12')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Next session' })).toBeInTheDocument();
     expect(screen.getByText('Scholarship strategy call')).toBeInTheDocument();
     // Far off (120h): Join still opens the session page (owner, 26 Oct).
