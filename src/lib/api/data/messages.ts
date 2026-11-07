@@ -83,7 +83,7 @@ function toNextBooking(b: WireNextBooking | null): NextBooking | null {
 function toLast(l: WireLast | null): LastMessage | null {
   if (!l) return null;
   // Masked in a preview: nothing of the content passes, whatever the wire holds.
-  const gone = l.deleted || l.hidden_in_preview;
+  const gone = l.deleted || l.hidden_in_preview === true;
   return {
     kind: l.kind,
     text: gone ? null : l.text,
@@ -91,7 +91,7 @@ function toLast(l: WireLast | null): LastMessage | null {
     mine: l.mine,
     at: l.at,
     deleted: l.deleted,
-    hiddenInPreview: l.hidden_in_preview,
+    hiddenInPreview: l.hidden_in_preview === true,
   };
 }
 
@@ -118,7 +118,7 @@ export function toMessageFile(f: WireMessageFile): MessageFile {
 }
 
 export function toMessage(m: WireMessage): Message {
-  const gone = m.deleted || m.hidden_in_preview;
+  const gone = m.deleted || m.hidden_in_preview === true;
   return {
     id: m.id,
     clientId: m.client_id,
@@ -128,7 +128,7 @@ export function toMessage(m: WireMessage): Message {
     sentAt: m.sent_at,
     editedAt: m.edited_at,
     deleted: m.deleted,
-    hiddenInPreview: m.hidden_in_preview,
+    hiddenInPreview: m.hidden_in_preview === true,
   };
 }
 
