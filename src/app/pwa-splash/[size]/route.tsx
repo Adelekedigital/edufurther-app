@@ -1,13 +1,17 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
+import { BRAND_SLOGAN } from '@/lib/copy/brand';
+import { tokenHex } from '@/lib/utils/imageColors';
 import { BRAND_WHITE } from '@/styles/brand';
 import { SPLASH_SIZES, splashKey } from '../sizes';
 
 /**
- * The iPhone launch screen: the wordmark centred on white, the manifest's
- * background colour. Built once at build time for every size (static), so it
- * costs no render per launch (owner's Vercel cost rules).
+ * The iPhone launch screen: the wordmark centred on white (the manifest's
+ * background colour), the slogan under it in secondary text (owner,
+ * 2026-11-08). DM Sans with Inter's gap file behind it, as the invite preview
+ * draws text. Built once at build time for every size (static), so it costs
+ * no render per launch (owner's Vercel cost rules).
  */
 export const dynamic = 'force-static';
 export const dynamicParams = false;
@@ -25,7 +29,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ size: s
   if (!match) return new Response(null, { status: 404 });
   const width = match.width * match.scale;
   const height = match.height * match.scale;
-  const png = await readFile(join(process.cwd(), 'public/brand/edufurther-logo-full.png'));
+  const [png, regular, gapsRegular] = await Promise.all([
+    // Literal paths: a computed one makes the build trace the whole project.
+    readFile(join(process.cwd(), 'public/brand/edufurther-logo-full.png')),
+    readFile(join(process.cwd(), 'src/app/fonts/og/dm-sans-regular.ttf')),
+    readFile(join(process.cwd(), 'src/app/fonts/og/inter-gaps-regular.ttf')),
+  ]);
   // Half the screen's width, as the app draws it at the top of a page.
   const logoWidth = Math.round(width * 0.5);
   const logoHeight = Math.round((logoWidth * LOGO.height) / LOGO.width);
@@ -35,6 +44,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ size: s
         width: '100%',
         height: '100%',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         background: BRAND_WHITE,
@@ -47,7 +57,29 @@ export async function GET(_req: Request, { params }: { params: Promise<{ size: s
         height={logoHeight}
         alt=""
       />
+      <div
+        style={{
+          display: 'flex',
+          marginTop: Math.round(width * 0.045),
+          maxWidth: Math.round(width * 0.76),
+          textAlign: 'center',
+          justifyContent: 'center',
+          fontFamily: 'DM Sans, Inter Gaps',
+          fontSize: Math.round(width * 0.04),
+          lineHeight: 1.4,
+          color: tokenHex('ink-700'),
+        }}
+      >
+        {BRAND_SLOGAN}
+      </div>
     </div>,
-    { width, height },
+    {
+      width,
+      height,
+      fonts: [
+        { name: 'DM Sans', data: regular, weight: 400, style: 'normal' },
+        { name: 'Inter Gaps', data: gapsRegular, weight: 400, style: 'normal' },
+      ],
+    },
   );
 }

@@ -10,10 +10,11 @@ import { ServiceWorkerRegistration } from './_shell/ServiceWorkerRegistration';
 import { APPLE_STARTUP_IMAGES } from './pwa-splash/sizes';
 import '@/styles/globals.css';
 import { BRAND_BLUE } from '@/styles/brand';
+import { BRAND_SLOGAN } from '@/lib/copy/brand';
 
 export const metadata: Metadata = {
   title: { default: 'EduFurther', template: '%s · EduFurther' },
-  description: 'Experience-led mentorship for your study-abroad journey.',
+  description: BRAND_SLOGAN,
   // startupImage: the iPhone's launch screen (logo on white) instead of black.
   appleWebApp: { capable: true, title: 'EduFurther', startupImage: APPLE_STARTUP_IMAGES },
   // Next 16 writes only the unprefixed `mobile-web-app-capable`; iOS reads the
