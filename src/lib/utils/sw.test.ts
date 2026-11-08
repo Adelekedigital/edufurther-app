@@ -57,20 +57,36 @@ const network = vi.fn(async (r: Request | { url: string }) => {
 
 type Listener = (e: unknown) => void;
 let listeners: Record<string, Listener>;
+type Fn = ReturnType<typeof vi.fn>;
 let scope: {
-  skipWaiting: ReturnType<typeof vi.fn>;
-  clients: { claim: ReturnType<typeof vi.fn> };
-  registration: { navigationPreload: { enable: ReturnType<typeof vi.fn> } };
+  skipWaiting: Fn;
+  clients: { claim: Fn; matchAll: Fn; openWindow: Fn };
+  registration: { navigationPreload: { enable: Fn }; showNotification: Fn };
+  navigator: { setAppBadge: Fn; clearAppBadge: Fn };
 };
+/** The app's open windows, as clients.matchAll answers. */
+let windows: { url: string; focus: Fn }[];
 
 function boot() {
   cacheMap = new Map();
   listeners = {};
   network.mockClear();
+  windows = [];
   scope = {
     skipWaiting: vi.fn(),
-    clients: { claim: vi.fn() },
-    registration: { navigationPreload: { enable: vi.fn() } },
+    clients: {
+      claim: vi.fn(),
+      matchAll: vi.fn(async () => windows),
+      openWindow: vi.fn().mockResolvedValue(undefined),
+    },
+    registration: {
+      navigationPreload: { enable: vi.fn() },
+      showNotification: vi.fn().mockResolvedValue(undefined),
+    },
+    navigator: {
+      setAppBadge: vi.fn().mockResolvedValue(undefined),
+      clearAppBadge: vi.fn().mockResolvedValue(undefined),
+    },
   };
   const self = {
     ...scope,
@@ -240,5 +256,97 @@ describe('sw.js: lifecycle', () => {
     expect(names).toContain('someone-elses-cache');
     expect(scope.registration.navigationPreload.enable).toHaveBeenCalled();
     expect(scope.clients.claim).toHaveBeenCalled();
+  });
+});
+
+/** Dispatches a push or a notification tap; resolves once the worker's work is done. */
+async function fire(type: 'push' | 'notificationclick', event: Record<string, unknown>) {
+  let work: Promise<unknown> = Promise.resolve();
+  listeners[type]!({ ...event, waitUntil: (p: Promise<unknown>) => (work = p) });
+  await work;
+}
+const push = (payload: unknown) =>
+  fire('push', {
+    data: {
+      json: () => {
+        if (typeof payload === 'string') throw new SyntaxError('not JSON');
+        return payload;
+      },
+    },
+  });
+const tap = (url: unknown) =>
+  fire('notificationclick', { notification: { close: vi.fn(), data: { url } } });
+const shown = () => scope.registration.showNotification;
+const badge = () => scope.navigator;
+
+describe('sw.js: push (decision 312)', () => {
+  it('shows the title and body as sent, tagged, and sets the badge', async () => {
+    await push({
+      type: 'message',
+      title: 'New message',
+      body: 'From Ada',
+      url: '/messages?with=u2',
+      tag: 'message:u2',
+      badge: 3,
+    });
+    expect(shown()).toHaveBeenCalledWith('New message', {
+      body: 'From Ada',
+      icon: '/pwa-icon/192',
+      tag: 'message:u2',
+      renotify: true,
+      data: { url: '/messages?with=u2' },
+    });
+    expect(badge().setAppBadge).toHaveBeenCalledWith(3);
+  });
+
+  it('clears the badge at 0', async () => {
+    await push({ title: 'x', body: 'y', badge: 0 });
+    expect(badge().clearAppBadge).toHaveBeenCalled();
+  });
+
+  it('leaves the badge alone without a count', async () => {
+    await push({ title: 'x', body: 'y' });
+    expect(badge().setAppBadge).not.toHaveBeenCalled();
+    expect(badge().clearAppBadge).not.toHaveBeenCalled();
+  });
+
+  it('a payload it cannot read still shows a notification (never a silent push)', async () => {
+    await push('garbage');
+    expect(shown()).toHaveBeenCalledWith('EduFurther', {
+      body: 'You have a new update.',
+      icon: '/pwa-icon/192',
+      data: { url: '/' },
+    });
+  });
+
+  it.each([
+    ['https://evil.example/phish', '/'],
+    ['//evil.example/phish', '/'],
+    ['javascript:alert(1)', '/'],
+    [42, '/'],
+    ['/sessions/s1#top', '/sessions/s1#top'],
+  ])('keeps a url inside the app: %s → %s', async (url, kept) => {
+    await push({ title: 't', body: 'b', url });
+    expect(shown().mock.calls[0]![1].data.url).toBe(kept);
+  });
+});
+
+describe('sw.js: a tap on a notification', () => {
+  it('opens the app at the url when no window is open', async () => {
+    await tap('/sessions/s1');
+    expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/sessions/s1`);
+  });
+
+  it('brings an open window forward and moves it to the url', async () => {
+    const navigate = vi.fn().mockResolvedValue(undefined);
+    windows.push({ url: `${ORIGIN}/home`, focus: vi.fn().mockResolvedValue({ navigate }) });
+    await tap('/bookings?tab=pending&booking=b1');
+    expect(navigate).toHaveBeenCalledWith(`${ORIGIN}/bookings?tab=pending&booking=b1`);
+    expect(scope.clients.openWindow).not.toHaveBeenCalled();
+  });
+
+  it('never opens another site, whatever the notification carries', async () => {
+    await tap('https://evil.example/');
+    expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/`);
   });
 });

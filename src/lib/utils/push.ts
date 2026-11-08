@@ -5,6 +5,7 @@
  * lib/api/data/push.ts. The worker that shows a push is src/lib/pwa/worker.js.
  */
 import { serviceWorkerEnabled } from './serviceWorker';
+import { within } from './within';
 
 /**
  * This device can take a push: a service worker, the Push API and
@@ -33,11 +34,6 @@ export function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i += 1) out[i] = raw.charCodeAt(i);
   return out;
-}
-
-/** Never longer than `ms`: a worker that never answers mustn't hold anything up. */
-function within<T>(ms: number, work: Promise<T>): Promise<T | null> {
-  return Promise.race([work, new Promise<null>((r) => setTimeout(() => r(null), ms))]);
 }
 
 /**

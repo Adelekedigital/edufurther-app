@@ -5,7 +5,7 @@ import { useId, useState, type FormEvent } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
-import { Switch } from '@/components/atoms/Switch/Switch';
+import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
 import { DURATIONS } from '@/lib/utils/sessionTypeDraft';
 import styles from './SessionTypeQuickEdit.module.css';
 
@@ -70,22 +70,18 @@ export function SessionTypeQuickEdit({
           options={lengths.map((n) => ({ value: String(n), label: `${n} min` }))}
         />
       </div>
-      <div className={styles.toggle}>
-        <span className={styles.toggleText}>
-          <span id={`${id}-vis`} className={styles.toggleLabel}>
-            Visible to mentees
-          </span>
-          <span id={`${id}-vis-d`} className={styles.toggleDesc}>
-            Hidden sessions stay in Sessions. Bookings already made go ahead.
-          </span>
-        </span>
-        <Switch
-          checked={visible}
-          onChange={setVisible}
-          aria-labelledby={`${id}-vis`}
-          aria-describedby={`${id}-vis-d`}
-        />
-      </div>
+      <SwitchRow
+        label="Visible to mentees"
+        hint="Hidden sessions stay in Sessions. Bookings already made go ahead."
+        checked={visible}
+        onChange={setVisible}
+        classes={{
+          row: styles.toggle,
+          text: styles.toggleText,
+          label: styles.toggleLabel,
+          hint: styles.toggleDesc,
+        }}
+      />
       <div className={styles.info}>
         <span className={styles.infoText}>
           Name, description, questions and booking rules are in the full editor.

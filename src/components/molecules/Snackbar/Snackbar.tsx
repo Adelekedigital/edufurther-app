@@ -24,6 +24,14 @@ const setOwner = (id: string | null) => {
 };
 
 /**
+ * Someone is on a toast's action (keyboard, screen reader). A toast that
+ * times out waits while this is true, so focus never falls to the page.
+ */
+export function toastHasFocus(): boolean {
+  return !!document.activeElement?.closest('[role="status"]');
+}
+
+/**
  * A short outcome at the bottom of the screen (Mentee Settings.dc.html
  * `hasToast`): "Profile saved". The status region is always in the page and
  * the message is put inside it, so it is read out. It renders into <body>:

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { Snackbar, toastHasFocus } from '@/components/molecules/Snackbar/Snackbar';
 import { usePushNotifications } from '@/lib/api/data/push';
 import { PUSH_COPY } from '@/lib/copy/push';
 import { markPushAsked, onPushMoment, pushAsked, type PushMoment } from '@/lib/utils/push';
@@ -91,7 +91,7 @@ export function PushPrompt({
       // Someone is on the toast's button (keyboard, screen reader): it stays
       // until they leave it, as the Home Undo toast does, so focus never
       // falls to the page.
-      if (document.activeElement?.closest('[role="status"]')) {
+      if (toastHasFocus()) {
         t = setTimeout(dismiss, ms);
         return;
       }

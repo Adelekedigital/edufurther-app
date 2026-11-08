@@ -8,9 +8,9 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Input } from '@/components/atoms/Input/Input';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
-import { Switch } from '@/components/atoms/Switch/Switch';
 import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
 import { SECURITY_COPY as C } from '@/lib/copy/settings';
 import { supportHref } from '@/lib/utils/mailto';
 import type { LoginProvider } from '@/types/settings';
@@ -163,9 +163,7 @@ export function SecuritySettings(p: SecuritySettingsProps) {
  * settings can undo it, and the line says so.
  */
 function NotificationsCard(n: DeviceNotifications) {
-  const labelId = useId();
-  const hintId = useId();
-  const headingRef = useRef<HTMLHeadingElement>(null);
+  const headingRef = useRef<HTMLElement>(null);
   const blocked = n.state === 'blocked' || n.failure === 'blocked';
   // Blocked from the switch itself: it goes, so focus moves to the card's
   // heading rather than falling to the page; the line below says why.
@@ -178,37 +176,29 @@ function NotificationsCard(n: DeviceNotifications) {
     wasBlocked.current = blocked;
   }, [blocked]);
   return (
-    <section className={styles.card} aria-labelledby={labelId}>
-      <div className={styles.row}>
-        <Tile icon="notifications" />
-        <div className={styles.text}>
-          <h2 id={labelId} ref={headingRef} tabIndex={-1} className={styles.rowTitle}>
-            {C.notificationsTitle}
-          </h2>
-          <span id={hintId} className={styles.meta} aria-live="polite">
-            {blocked ? C.notificationsBlocked : C.notificationsHint}
-          </span>
-          {n.failure === 'failed' && (
+    <section className={styles.card} aria-label={C.notificationsTitle}>
+      <SwitchRow
+        label={C.notificationsTitle}
+        labelAs="h2"
+        labelRef={headingRef}
+        labelFocusable
+        hint={blocked ? C.notificationsBlocked : C.notificationsHint}
+        hintLive
+        checked={n.state === 'on'}
+        onChange={n.onChange}
+        busy={n.busy}
+        loading={n.state === 'loading'}
+        noSwitch={blocked}
+        leading={<Tile icon="notifications" />}
+        after={
+          n.failure === 'failed' && (
             <span className={styles.failed} role="alert">
               {C.notificationsFailed}
             </span>
-          )}
-        </div>
-        {n.state === 'loading' ? (
-          <Skeleton width="39px" height="24px" radius="full" />
-        ) : (
-          !blocked && (
-            <Switch
-              checked={n.state === 'on'}
-              aria-labelledby={labelId}
-              aria-describedby={hintId}
-              aria-busy={n.busy || undefined}
-              disabled={n.busy}
-              onChange={n.onChange}
-            />
           )
-        )}
-      </div>
+        }
+        classes={{ row: styles.row, text: styles.text, label: styles.rowTitle, hint: styles.meta }}
+      />
     </section>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useId } from 'react';
 import { Select } from '@/components/atoms/Select/Select';
-import { Switch } from '@/components/atoms/Switch/Switch';
+import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
 import { BOOKING_COPY, approvalLine } from '@/lib/copy/mentorSettings';
 import { noticeLabel } from '@/lib/utils/calendar';
 import {
@@ -97,23 +97,19 @@ export function BookingRulesRows({
   return (
     <>
       {approval && (
-        <div className={classes.approvalRow ?? classes.row}>
-          <span className={classes.approvalText ?? classes.text}>
-            <span id={`${id}-approval-label`} className={classes.label}>
-              {BOOKING_COPY.approveTitle}
-            </span>
-            <span id={`${id}-approval`} className={classes.approvalHint ?? classes.hint}>
-              {approvalLine(approval.on, approval.responseWindowHours)}
-            </span>
-          </span>
-          <Switch
-            checked={approval.on}
-            disabled={disabled}
-            aria-labelledby={`${id}-approval-label`}
-            aria-describedby={`${id}-approval`}
-            onChange={approval.onChange}
-          />
-        </div>
+        <SwitchRow
+          label={BOOKING_COPY.approveTitle}
+          hint={approvalLine(approval.on, approval.responseWindowHours)}
+          checked={approval.on}
+          disabled={disabled}
+          onChange={approval.onChange}
+          classes={{
+            row: classes.approvalRow ?? classes.row,
+            text: classes.approvalText ?? classes.text,
+            label: classes.label,
+            hint: classes.approvalHint ?? classes.hint,
+          }}
+        />
       )}
       {ORDER.map((k) => (
         <div key={k} className={classes.row}>

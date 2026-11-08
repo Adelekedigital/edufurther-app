@@ -9,6 +9,7 @@ import {
   setAppBadge,
   subscribeDevice,
 } from '@/lib/utils/push';
+import { within } from '@/lib/utils/within';
 import { apiError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
@@ -239,5 +240,5 @@ export async function forgetPushForSignOut(): Promise<void> {
       sub.unsubscribe().catch(() => false),
     ]);
   })().catch(() => undefined);
-  await Promise.race([work, new Promise((r) => setTimeout(r, 2000))]);
+  await within(2000, work);
 }
