@@ -239,11 +239,31 @@ export function useRestorePreview() {
 }
 
 /**
+ * "Read only" opened: read the session once, so a preview that already ended
+ * on the server (idle, the cap) says "Preview ended" instead. A blocked write
+ * never reaches the server, so its 401 can't tell us (code review, PR 506).
+ */
+export function useConfirmLiveOnBlock() {
+  const { sessionId, blocked } = usePreview();
+  useEffect(() => {
+    if (!blocked || !sessionId) return;
+    const ctrl = new AbortController();
+    // Live: leave the store be (filling it again would close the notice).
+    void readPreviewSession(sessionId, ctrl.signal, { fillLive: false });
+    return () => ctrl.abort();
+  }, [blocked, sessionId]);
+}
+
+/**
  * GET /{id} and settle the store from it: ended_at ends it ("Preview ended"
  * for idle or the cap), a live one fills it in, and a 404 (not ours, or gone)
  * ends it quietly. Offline or aborted leaves it be: the next call tells.
  */
-async function readPreviewSession(sessionId: string, signal?: AbortSignal) {
+async function readPreviewSession(
+  sessionId: string,
+  signal?: AbortSignal,
+  { fillLive = true }: { fillLive?: boolean } = {},
+) {
   try {
     const { data, response } = await api.GET('/api/v1/admin/preview-sessions/{preview_id}', {
       params: { path: { preview_id: sessionId } },
@@ -252,6 +272,7 @@ async function readPreviewSession(sessionId: string, signal?: AbortSignal) {
     if (data?.ended_at) {
       previewStore.serverEnded(data.end_reason, toPreviewUser(data.user).name);
     } else if (data) {
+      if (!fillLive) return;
       const v = fromSession(data);
       previewStore.started(v.id, v.user, v.access);
     } else if (response.status === 404) {
