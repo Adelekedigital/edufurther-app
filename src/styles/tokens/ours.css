@@ -36,6 +36,16 @@
   /* Top-of-photo gradient start (Design decisions §8: 45% ink-900 → 0 over the top 45%). */
   --photo-scrim: rgba(16, 25, 40, 0.45);
 
+  /* Preview as user bar (AppShell.dc.html "View as user (admin)"): white
+     at low alpha on --ink-900, read off the design's literals. */
+  --on-dark-border: rgba(255, 255, 255, 0.28);
+  --on-dark-fill: rgba(255, 255, 255, 0.06);
+  --on-dark-fill-hover: rgba(255, 255, 255, 0.14);
+  --on-dark-hover: rgba(255, 255, 255, 0.12);
+  /* The bar's height while it shows (40px desktop, 48px phones); 0 otherwise.
+     Set on <html> by the bar, read by every sticky top edge under it. */
+  --ef-va-h: 0px;
+
   /* Cover colour swatch edge, so pale swatches read on white (Mentor Profile.dc.html). */
   --swatch-edge: rgba(16, 25, 40, 0.08);
 

@@ -1,0 +1,127 @@
+/* AppShell.dc.html "View as user (admin)" bar. */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  flex: none;
+  box-sizing: border-box;
+  height: var(--ef-va-h);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-2) 0 var(--space-4);
+  background: var(--ink-900);
+  color: var(--white);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+}
+.lead {
+  flex: none;
+  font-weight: var(--weight-semibold);
+}
+.pickWrap {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+}
+.pick {
+  height: var(--button-compact-h);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-1) 0 var(--space-2);
+  border: 1px solid var(--on-dark-border);
+  border-radius: var(--radius-md);
+  background: var(--on-dark-fill);
+  color: var(--white);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+}
+.pick:hover {
+  background: var(--on-dark-fill-hover);
+}
+.pickLabel {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pick > :last-child {
+  flex: none;
+}
+.who {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-300);
+}
+.spacer {
+  flex: 1;
+}
+.chip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--orange-50);
+  color: var(--orange-800);
+  font-weight: var(--weight-semibold);
+}
+.exit {
+  flex: none;
+  height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  border: none;
+  background: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--white);
+}
+.exit:hover {
+  background: var(--on-dark-hover);
+}
+/* White on ink-900: the ring is white so it shows on the bar. */
+.pick:focus-visible,
+.exit:focus-visible {
+  outline: var(--focus-ring-width) solid var(--white);
+  outline-offset: var(--focus-ring-offset);
+}
+.short {
+  display: none;
+}
+
+/* Phones: 48px, no "Preview as" or name line, the short labels (PRD, Phone). */
+@media (max-width: 767px) {
+  .lead,
+  .who,
+  .long {
+    display: none;
+  }
+  .short {
+    display: inline;
+  }
+  /* The picker button reaches 44px without being drawn taller. */
+  .pick {
+    position: relative;
+  }
+  .pick::after {
+    content: '';
+    position: absolute;
+    inset: -6px 0;
+  }
+}

@@ -112,6 +112,7 @@ export const ICON_NAMES = [
   'photo_camera',
   'picture_as_pdf',
   'power',
+  'preview',
   'progress_activity',
   'psychology',
   'public',
