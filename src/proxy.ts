@@ -76,9 +76,10 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Pages (not the mock API, Next assets, or static files), and the proxied API.
+  // Pages (not the mock API, Next assets, app icons and splash screens, or static
+  // files), and the proxied API.
   matcher: [
-    '/((?!api/|_next/|brand/|pwa-icon/|favicon.ico|manifest.webmanifest|.*\\..*).*)',
+    '/((?!api/|_next/|brand/|pwa-icon/|pwa-splash/|favicon.ico|manifest.webmanifest|.*\\..*).*)',
     '/api/v1/:path*',
   ],
 };

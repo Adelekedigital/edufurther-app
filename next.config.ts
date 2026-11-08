@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 import { backendOrigin, proxySecret } from './src/lib/backend';
-import { SECURITY_HEADERS } from './src/lib/securityHeaders';
+import { PWA_HEADERS, SECURITY_HEADERS } from './src/lib/securityHeaders';
 
 /**
  * Same-origin API proxy (product, 2026-09-27; ADR 0003). The browser calls
@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
     '/invite/**': ['./src/app/fonts/og/*.ttf', './public/brand/*.png'],
   },
   async headers() {
-    return SECURITY_HEADERS;
+    return [...SECURITY_HEADERS, ...PWA_HEADERS];
   },
 };
 
