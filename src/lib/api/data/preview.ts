@@ -265,8 +265,8 @@ export function useRevealPreview() {
       const id = previewStore.get().sessionId;
       if (!id) throw new Error('No preview to reveal');
       const { data, error, response } = await api.POST(
-        '/api/v1/admin/preview-sessions/{session_id}/reveals',
-        { params: { path: { session_id: id } }, body: { reason } },
+        '/api/v1/admin/preview-sessions/{preview_id}/reveals',
+        { params: { path: { preview_id: id } }, body: { reason } },
       );
       if (!data) throw apiError(response.status, error, response);
       return data;

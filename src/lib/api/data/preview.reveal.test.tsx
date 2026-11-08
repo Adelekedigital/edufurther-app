@@ -61,8 +61,8 @@ describe('useRevealPreview', () => {
     act(() => result.current.mutate('Ticket 4821'));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(POST).toHaveBeenCalledWith('/api/v1/admin/preview-sessions/{session_id}/reveals', {
-      params: { path: { session_id: 'ps-1' } },
+    expect(POST).toHaveBeenCalledWith('/api/v1/admin/preview-sessions/{preview_id}/reveals', {
+      params: { path: { preview_id: 'ps-1' } },
       body: { reason: 'Ticket 4821' },
     });
     expect(previewStore.get().revealed).toBe(true);
