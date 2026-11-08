@@ -52,10 +52,10 @@ export const PreviewBar = forwardRef<HTMLButtonElement, PreviewBarProps>(functio
       </span>
       {user && <span className={styles.who}>{PREVIEW_COPY.who(user.name, user.role)}</span>}
       <span className={styles.spacer} />
-      {/* The DS orange accent Badge, the one orange allowed in product UI (project-conventions). */}
+      {/* The DS amber accent Badge ("Needs attention"): orange is banned in product UI, so the design's orange chip is this caution look (project-conventions; design updated). */}
       <Badge
         type="accent"
-        color="orange"
+        color="warning"
         shape="pill"
         size="md"
         icon="lock"
