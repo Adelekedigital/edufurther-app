@@ -16,4 +16,17 @@ describe('manifest', () => {
   it('still installs as a standalone app', () => {
     expect(manifest().display).toBe('standalone');
   });
+
+  it('the brand icon (owner, 2026-11-07): 192 and 512, the 512 also maskable', () => {
+    const icons = manifest().icons ?? [];
+    expect(icons).toContainEqual(
+      expect.objectContaining({ src: '/pwa-icon/192', sizes: '192x192', purpose: 'any' }),
+    );
+    expect(icons).toContainEqual(
+      expect.objectContaining({ src: '/pwa-icon/512', sizes: '512x512', purpose: 'any' }),
+    );
+    expect(icons).toContainEqual(
+      expect.objectContaining({ src: '/pwa-icon/512', sizes: '512x512', purpose: 'maskable' }),
+    );
+  });
 });

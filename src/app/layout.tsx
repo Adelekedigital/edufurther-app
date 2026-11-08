@@ -19,7 +19,8 @@ export const metadata: Metadata = {
   // Next 16 writes only the unprefixed `mobile-web-app-capable`; iOS reads the
   // launch screens of a home-screen app that declares the Apple one.
   other: { 'apple-mobile-web-app-capable': 'yes' },
-  icons: { apple: '/pwa-icon/192' },
+  // 180px: the size iOS draws home-screen icons at.
+  icons: { apple: { url: '/pwa-icon/180', sizes: '180x180' } },
 };
 
 export const viewport: Viewport = {
