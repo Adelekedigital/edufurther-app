@@ -4,11 +4,12 @@ import { ImageResponse } from 'next/og';
 import { BRAND_SLOGAN } from '@/lib/copy/brand';
 import { tokenHex } from '@/lib/utils/imageColors';
 import { BRAND_WHITE } from '@/styles/brand';
-import { SPLASH_SIZES, splashKey } from '../sizes';
+import { SLOGAN_TYPE, SPLASH_SIZES, splashKey, splashSloganShown } from '../sizes';
 
 /**
  * The iPhone launch screen: the wordmark centred on white (the manifest's
- * background colour), the slogan under it in secondary text (owner,
+ * background colour) and, when PWA_SPLASH_SLOGAN=true, the slogan under it
+ * in secondary text at the design system's 12px paragraph size (owner,
  * 2026-11-08). DM Sans with Inter's gap file behind it, as the invite preview
  * draws text. Built once at build time for every size (static), so it costs
  * no render per launch (owner's Vercel cost rules).
@@ -57,21 +58,25 @@ export async function GET(_req: Request, { params }: { params: Promise<{ size: s
         height={logoHeight}
         alt=""
       />
-      <div
-        style={{
-          display: 'flex',
-          marginTop: Math.round(width * 0.045),
-          maxWidth: Math.round(width * 0.76),
-          textAlign: 'center',
-          justifyContent: 'center',
-          fontFamily: 'DM Sans, Inter Gaps',
-          fontSize: Math.round(width * 0.04),
-          lineHeight: 1.4,
-          color: tokenHex('ink-700'),
-        }}
-      >
-        {BRAND_SLOGAN}
-      </div>
+      {splashSloganShown() && (
+        <div
+          style={{
+            display: 'flex',
+            marginTop: SLOGAN_TYPE.points * match.scale,
+            // 240pt (at most 80% of the screen): two even lines on every iPhone,
+            // never one word left alone.
+            maxWidth: Math.min(SLOGAN_TYPE.maxWidthPoints * match.scale, Math.round(width * 0.8)),
+            textAlign: 'center',
+            justifyContent: 'center',
+            fontFamily: 'DM Sans, Inter Gaps',
+            fontSize: SLOGAN_TYPE.points * match.scale,
+            lineHeight: SLOGAN_TYPE.lineHeight,
+            color: tokenHex('ink-700'),
+          }}
+        >
+          {BRAND_SLOGAN}
+        </div>
+      )}
     </div>,
     {
       width,

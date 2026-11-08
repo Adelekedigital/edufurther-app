@@ -30,3 +30,19 @@ export const APPLE_STARTUP_IMAGES = SPLASH_SIZES.map((s) => ({
   url: `/pwa-splash/${splashKey(s)}`,
   media: `(device-width: ${s.width}px) and (device-height: ${s.height}px) and (-webkit-device-pixel-ratio: ${s.scale}) and (orientation: portrait)`,
 }));
+
+/**
+ * The slogan under the logo (owner, 2026-11-08): off unless
+ * PWA_SPLASH_SLOGAN=true. Read at build time (the screens are static), so a
+ * change needs a redeploy.
+ */
+export function splashSloganShown(): boolean {
+  return process.env.PWA_SPLASH_SLOGAN === 'true';
+}
+
+/**
+ * Its type: --text-p-xs (12px, the smallest paragraph size in the design
+ * system) and --lh-p, in points, so it is the same size on every iPhone.
+ * Caption sizes are tracked for short labels, not a sentence.
+ */
+export const SLOGAN_TYPE = { points: 12, lineHeight: 1.45, maxWidthPoints: 240 } as const;

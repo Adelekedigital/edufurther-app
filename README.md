@@ -67,6 +67,7 @@ Vercel preview pattern `https://*-<team>.vercel.app/**`. The magic link lands on
 | `NEXT_PUBLIC_ONBOARDING_ENABLED` | `true` | `true` | mentee onboarding; read as `=== 'true'`, so unset is off and `/onboarding` is not found (`src/lib/config/auth.ts`) |
 | `NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED` | `true` | `true` | mentor onboarding and `/mentor-application`; read as `=== 'true'`, so unset is off (`src/lib/config/auth.ts`) |
 | `NEXT_PUBLIC_MESSAGES_ENABLED` | `true` | `true` | Messages, its nav item and every Message button; read as `=== 'true'`, so unset is off and `/messages` is not found (`src/lib/config/messages.ts`) |
+| `PWA_SPLASH_SLOGAN` | *unset* | *unset* | `true` shows the slogan under the logo on the iPhone launch screen (12px, `--text-p-xs`); unset hides it. Read at build time, so a change needs a redeploy |
 | `SITE_INDEXABLE` | `true`, once the site is meant to be indexed | *unset* | server-only; read as `=== 'true'` by `src/app/robots.ts`. Anything else keeps crawlers out |
 
 ## Where things are
