@@ -72,6 +72,7 @@ const msg = (mine: boolean, at: string, body: string | null, over: Partial<Messa
   sentAt: at,
   editedAt: null,
   deleted: false,
+  hiddenInPreview: false,
   ...over,
 });
 const open = (t: Partial<Thread> = {}) => {

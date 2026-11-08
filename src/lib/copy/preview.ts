@@ -63,5 +63,26 @@ export const PREVIEW_COPY = {
         : `Your preview of ${name} ended after 30 minutes without activity. Start a new one from the preview icon.`,
     ok: 'Got it',
   },
+  /** View As.dc.html "Latest message": a masked item, and the line after a reveal. */
+  hidden: {
+    text: 'Message hidden in preview',
+    reveal: 'Reveal',
+    revealed: 'Revealed by you. Your reason was logged.',
+  },
+  /** View As.dc.html Reveal modal. */
+  reveal: {
+    title: 'Reveal hidden details',
+    body: (first: string) =>
+      // No "and payment details": the app has none yet (PRD open question 5, Copy standard).
+      `You’ll see ${first}’s messages for the rest of this preview. Your name and reason are logged.`,
+    reason: 'Reason',
+    placeholder: 'For example: support ticket #4821, mentee can’t see a reply',
+    empty: 'Add a reason to reveal.',
+    cancel: 'Cancel',
+    confirm: 'Reveal',
+    pending: 'Revealing…',
+    // Provisional (no design): the reveal request failed.
+    failed: 'We couldn’t reveal this. Try again.',
+  },
   envName: (env: AppEnv) => ENV_NAME[env],
 } as const;

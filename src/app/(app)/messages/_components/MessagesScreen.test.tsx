@@ -90,6 +90,7 @@ describe('Messages: the list', () => {
           mine: false,
           at: NOW.toISOString(),
           deleted: true,
+          hiddenInPreview: false,
         },
       }),
       chatRow({
@@ -101,6 +102,7 @@ describe('Messages: the list', () => {
           mine: true,
           at: NOW.toISOString(),
           deleted: true,
+          hiddenInPreview: false,
         },
       }),
     ]);

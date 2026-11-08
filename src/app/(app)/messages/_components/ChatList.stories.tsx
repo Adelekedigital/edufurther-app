@@ -32,6 +32,7 @@ const ROWS: ChatRow[] = [
       mine: false,
       at: ago(40),
       deleted: false,
+      hiddenInPreview: false,
     },
     unread: 2,
     nextBooking: {
@@ -49,6 +50,7 @@ const ROWS: ChatRow[] = [
       mine: true,
       at: ago(60 * 26),
       deleted: false,
+      hiddenInPreview: false,
     },
     unread: 0,
     nextBooking: null,
@@ -100,3 +102,16 @@ export const NothingUnread: Story = {
 };
 export const NoSearchMatch: Story = { args: { rows: [], q: 'zzz', noRows: 'search' } };
 export const Loading: Story = { render: () => <ChatListSkeleton /> };
+
+/** Preview as user: a masked last message says so, in the row's own type (no Reveal in a row). */
+export const HiddenInPreview: Story = {
+  args: {
+    rows: ROWS.map((r, i) =>
+      rowView(
+        i === 0 && r.last ? { ...r, last: { ...r.last, text: null, hiddenInPreview: true } } : r,
+        'Africa/Lagos',
+        NOW,
+      ),
+    ),
+  },
+};

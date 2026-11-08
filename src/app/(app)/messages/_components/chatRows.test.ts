@@ -8,6 +8,7 @@ const last = (over: object) => ({
   mine: false,
   at: NOW.toISOString(),
   deleted: false,
+  hiddenInPreview: false,
   ...over,
 });
 
@@ -28,6 +29,17 @@ describe('previewOf (PRD "Preview", Q9)', () => {
     ['text with a file', last({ kind: 'text', text: 'Here', fileName: 'SOP.pdf' }), 'Here'],
     ['their deleted one', last({ text: null, deleted: true }), 'This message was deleted'],
     ['my deleted one', last({ text: null, deleted: true, mine: true }), 'You deleted this message'],
+    [
+      'one hidden in a preview',
+      last({ text: null, mine: true, hiddenInPreview: true }),
+      'Message hidden in preview',
+    ],
+    [
+      // The backend masks every message in a preview, deleted ones included: deleted still reads as deleted.
+      'a deleted one, masked in a preview',
+      last({ text: null, deleted: true, hiddenInPreview: true }),
+      'This message was deleted',
+    ],
   ])('%s', (_, l, want) => {
     expect(previewOf(chatRow({ last: l }))).toBe(want);
   });

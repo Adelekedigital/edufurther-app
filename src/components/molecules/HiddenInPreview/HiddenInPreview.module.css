@@ -1,0 +1,30 @@
+/* View As.dc.html "Latest message" `masked`: icon 16, p-sm, ink-600, gap 8, wraps. */
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  font-weight: var(--weight-regular);
+  color: var(--ink-600);
+}
+/* `revealed`: icon 14, p-xs, gap 4. Focused only by script (after a reveal). */
+.revealed {
+  gap: var(--space-1);
+  font-size: var(--text-p-xs);
+}
+.revealed:focus {
+  outline: none;
+}
+/* Reveal: a text button, p-sm semibold blue-500 (Button text, medium), 32px
+   tall as drawn; 44px on phones (touch target). Two classes: the height beats
+   Button's `.text`, whatever the order. */
+.root .reveal {
+  min-height: var(--button-h-small);
+}
+@media (max-width: 767px) {
+  .root .reveal {
+    min-height: var(--touch-target-min);
+  }
+}

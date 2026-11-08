@@ -33,3 +33,17 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+/* Modal.dc.html `kind="edit"` footer (View As.dc.html Reveal): right-aligned,
+   gap 12, the action wrapping above Keep when the row runs out. */
+.end {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap-reverse;
+}
+/* Both as drawn: 48px and 16/24 padding, the text one included. */
+.end > .endButton {
+  height: var(--button-h-large);
+  padding: var(--space-4) var(--space-6);
+}

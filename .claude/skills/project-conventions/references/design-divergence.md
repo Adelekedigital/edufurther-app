@@ -1392,3 +1392,17 @@ Measured: 99.59% of 1,473 style checks at 1440/1024/768 and 99.58% of 942 at 390
 | (not drawn) a pick the server can't open | "We couldn’t open that preview. Try again." in the red note slot | Provisional copy, no design | design draws it |
 | (not drawn) loading or failing the next page | One skeleton row; "We couldn’t load more users." + Try again | More on scroll needs both | — |
 | Focus ring on the dark bar | White ring (`--white`) on the picker button and Exit | The blue ring doesn't show on `--ink-900` | — |
+
+### Preview as user — hidden messages and Reveal (`View As.dc.html` masked/revealed, Reveal modal; PRD PR 6), 2026-11-07
+
+Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch target below). `View As.dc.html` version 10 moved to the shared pieces (label weight, error line, DS Avatar) and dropped "payment details".
+
+| Design | Build | Why | Revisit if |
+| --- | --- | --- | --- |
+| Reveal text button 32px tall | 32px on desktop, 44px on phones | PRD Phone: 44px targets | — |
+| Reason label semibold; error `--red-700`, no icon | The shared `FormField` (medium) and `FieldError` (`--red-600` with the error icon); design updated to match | One field and one error line app-wide; the icon keeps the error from resting on colour alone | — |
+| "You'll see {First}'s messages and payment details…" | "…messages for the rest of this preview." | PRD open question 5 default: the app has no payment details, so the line would claim what it can't back (Copy standard); design updated | payments ship (mask them, then restore the words) |
+| "Revealed by you" under the one message drawn | Once per chat, under the privacy note | After a reveal every message comes back unmasked, so which ones were hidden isn't known; once avoids repeating it on every bubble | — |
+| (not drawn) the chat list's last-message preview | "Message hidden in preview" in the row's own type, no Reveal (the row is itself a button) | Reveal sits in the open chat | — |
+| (not drawn) a failed reveal | "We couldn’t reveal this. Try again." beside the buttons; "Revealing…" while it runs | Provisional, no design | design draws it |
+| Reveal shown to every admin | Only with the session's `can_reveal` | Backend: reveal is its own permission on the admin role levels | — |

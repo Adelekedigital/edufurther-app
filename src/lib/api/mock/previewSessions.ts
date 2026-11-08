@@ -110,3 +110,36 @@ export function endPreview(id: string, reason: 'exit' | 'sign_out'): boolean {
   sessions.set(id, { ...s, ended_at: new Date().toISOString(), end_reason: reason });
   return true;
 }
+
+/** The live session this request previews (its X-EF-Preview header), if any. */
+export function previewOf(req: Request): Session | undefined {
+  const id = req.headers.get('x-ef-preview');
+  const s = id ? sessions.get(id) : undefined;
+  return s && !s.ended_at ? s : undefined;
+}
+
+/** POST /{id}/reveals: the current user's messages show for the rest of the session. */
+export function revealPreview(id: string): Session | undefined {
+  const s = sessions.get(id);
+  if (!s || s.ended_at || !s.can_reveal) return undefined;
+  const next = { ...s, revealed: true };
+  sessions.set(id, next);
+  return next;
+}
+
+type Masked = { hidden_in_preview?: boolean };
+type WireMessage = Masked & { body?: string | null; file?: unknown };
+type WireLast = Masked & { text?: string | null; file_name?: string | null };
+
+/** Backend PR 5's masking, for the mock: bodies and files out until a reveal. */
+export function maskMessages<T extends WireMessage>(req: Request, items: T[]): T[] {
+  const s = previewOf(req);
+  if (!s || s.revealed) return items;
+  return items.map((m) => ({ ...m, body: null, file: null, hidden_in_preview: true }));
+}
+
+export function maskLast<T extends WireLast>(req: Request, last: T | null | undefined) {
+  const s = previewOf(req);
+  if (!last || !s || s.revealed) return last;
+  return { ...last, text: null, file_name: null, hidden_in_preview: true };
+}

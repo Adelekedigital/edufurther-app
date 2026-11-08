@@ -12,6 +12,7 @@ const m = (id: string, mine: boolean, h: number, over: Partial<Message> = {}): M
   sentAt: at(h),
   editedAt: null,
   deleted: false,
+  hiddenInPreview: false,
   ...over,
 });
 const opts = { timeZone: 'UTC', theirLastReadAt: null, now: NOW };

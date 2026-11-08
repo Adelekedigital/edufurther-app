@@ -45,6 +45,7 @@ export const chatRow = (over: Partial<ChatRow> = {}): ChatRow => ({
     mine: false,
     at: ago(40),
     deleted: false,
+    hiddenInPreview: false,
   },
   unread: 0,
   nextBooking: null,
@@ -73,6 +74,7 @@ export const menteeRows = (): ChatRow[] => [
       mine: true,
       at: ago(60 * 26),
       deleted: false,
+      hiddenInPreview: false,
     },
   }),
   chatRow({

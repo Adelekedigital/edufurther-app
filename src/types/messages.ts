@@ -32,6 +32,11 @@ export type LastMessage = {
   mine: boolean;
   at: string;
   deleted: boolean;
+  /**
+   * Preview as user: masked for the admin until they reveal (text and file
+   * name null). Sender, time and counts still show.
+   */
+  hiddenInPreview: boolean;
 };
 
 export type ChatRow = {
@@ -54,6 +59,8 @@ export type Message = {
   sentAt: string;
   editedAt: string | null;
   deleted: boolean;
+  /** Preview as user: body and file are masked (null) until the admin reveals. */
+  hiddenInPreview: boolean;
 };
 
 /** Why the composer is replaced by a status line. */
