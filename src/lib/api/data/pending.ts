@@ -4,7 +4,9 @@
  * shipped here and `tsc` lists every call site to move onto the typed client.
  * The phase A mock answers these shapes (respond.ts `pendingOk`).
  *
- * Now: the onboarding completion's `409` body (the spec types it as empty).
+ * Now: only the onboarding completion's `409` body. The spec describes its
+ * `missing` member in prose but still types the `409` content as empty; the
+ * codes themselves are `components['schemas']['OnboardingRequirement']`.
  * Messages moved onto the typed client (its shapes live in `messages.ts`).
  */
 
