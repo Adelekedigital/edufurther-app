@@ -1372,3 +1372,23 @@ Built from shared parts: `LogoFrame` (the onboarding frame, moved to templates, 
 | "Expiring credits are used first." under the rows | Removed | Every credit ends on the 1st (backend: spend order is soonest expiry, then oldest), so the line tells a mentee nothing | credits gain different expiries |
 | "How credits work": the starter/invite/unlock list | Five rules in the card's own words (Monthly, Bonus), confirmed against the backend with code references | Decision 308 | — |
 | Menu line "For your first session" before the monthly grant | Removed: "Resets {date}", nothing in setup | The never-expiring starter credit is retired | — |
+
+### Preview as user — bar, picker, notices (`AppShell.dc.html` "View as user (admin)", `View As.dc.html`, PRD "Admin Preview as user"), 2026-11-07
+
+Measured: 99.59% of 1,473 style checks at 1440/1024/768 and 99.58% of 942 at 390/600 against the design's own inline styles. The one miss (the row avatar's ink) was the design's inconsistency, fixed in `AppShell.dc.html` (version 9: the DS `Avatar type="initials"`, as Admin and Messages draw it).
+
+| Design | Build | Why | Revisit if |
+| --- | --- | --- | --- |
+| Picker row avatar: hand-drawn span, `--blue-50` ground and `--blue-700` initials | The shared `Avatar tone="plain" size="sm"` (DS initials avatar, ink-900 brand font) | One avatar everywhere (DRY); Admin's 32px rows and Messages draw the DS Avatar. Design updated to match | — |
+| `role="listbox"` on the whole panel, which also holds the search field and the chips | The search field is a `combobox` (`aria-controls`, `aria-activedescendant`, arrows, Enter); only the rows' `<ul>` is the `listbox` | A listbox may contain only options (axe `aria-required-children`); the combobox is the WAI-ARIA pattern for search-and-pick | — |
+| Role filter: three `aria-pressed` buttons | The shared `RadioChips look="dark"` (a radiogroup: one choice of three, arrows move it) | One dark filter pill row (project-conventions DRY list), and a single choice is a radio | — |
+| Search field 40px | 40px on desktop, 44px on phones | PRD Phone: 44px targets | — |
+| `--ef-va-h` set by script on `body`, bar inside the shell frame | `html[data-previewing]` sets `--ef-va-h` (40px, 48px on phones, globals.css); the bar is mounted once at the root (`PreviewRoot` in Providers) | Shows on every app screen, the onboarding flows outside the shell included; every sticky top edge reads the variable | — |
+| White at .28/.06/.14/.12 on the bar's controls | Tokens `--on-dark-border`, `--on-dark-fill`, `--on-dark-fill-hover`, `--on-dark-hover` (ours.css) | No raw colour in components | the DS adds on-dark tokens |
+| Chip `--orange-50` ground, `--orange-800` ink | The DS amber accent Badge (`Badge type="accent" color="warning"`, the "Needs attention" look); `AppShell.dc.html` updated to match | The orange ramp is banned in product UI, with one named exception (Featured); amber is the sanctioned caution look (GitHub review, PR 489) | — |
+| Chip "Production · Read only" | The deployment's name from `NEXT_PUBLIC_APP_ENV` ("Staging · Read only"; unset reads Production). The Read only notice names it too | PRD open question 2 default | — |
+| "Preview ended": the 30-minute line only | Also "…ended after 2 hours, the longest a preview can run." for the cap | PRD open question 4 default | design draws it |
+| Read only stand-in: a button-text match (W) and typing blocked | No client guard: the server refuses every write (403 read_only_view_as) and the notice opens on that answer; typing is allowed | PRD: W is a prototype stand-in and doesn't ship; the server is the boundary | — |
+| (not drawn) a pick the server can't open | "We couldn’t open that preview. Try again." in the red note slot | Provisional copy, no design | design draws it |
+| (not drawn) loading or failing the next page | One skeleton row; "We couldn’t load more users." + Try again | More on scroll needs both | — |
+| Focus ring on the dark bar | White ring (`--white`) on the picker button and Exit | The blue ring doesn't show on `--ink-900` | — |

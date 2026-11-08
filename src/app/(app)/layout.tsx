@@ -53,7 +53,7 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { chrome, account, nav, adminEntry, access, messages } = useAppShell();
+  const { chrome, account, nav, adminEntry, access, messages, onPreview } = useAppShell();
   const online = useOnline();
 
   return (
@@ -65,6 +65,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       chrome={chrome}
       account={account}
       access={access}
+      onPreview={onPreview}
       offline={!online}
     >
       <RoleRedirect>{children}</RoleRedirect>
