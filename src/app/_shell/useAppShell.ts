@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useAdminSummary } from '@/lib/api/data/admin';
+import { usePreview } from '@/lib/api/data/preview';
+import { previewStore } from '@/lib/api/data/previewStore';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useUnreadTotal } from '@/lib/api/data/messages';
 import { MESSAGES_LIVE } from '@/lib/config/messages';
@@ -114,6 +116,7 @@ export function useAppShell() {
   // Inside /admin an admin gets the admin nav; its Mentors badge counts the
   // applications waiting (Admin PRD, Access).
   const pathname = usePathname();
+  const previewing = usePreview().sessionId !== null;
   const inAdmin = !!admin && isUnder(pathname ?? '', '/admin');
   // Only inside /admin: the badge shows nowhere else.
   const summary = useAdminSummary(inAdmin ? admin.id : null);
@@ -147,6 +150,9 @@ export function useAppShell() {
           ? ('mentor' as const)
           : ('mentee' as const),
     adminEntry: !!admin,
+    // Preview as user (AppShell.dc.html `vaEntry`): admins it's switched on for,
+    // never mid-preview (the previewed /me says false then anyway).
+    onPreview: member?.canPreviewAsUser && !previewing ? previewStore.open : undefined,
     /** Messages is on: the nav shows its item (AppShell `messages`). */
     messages: MESSAGES_LIVE,
     /** Mentors can't book (product, 2026-09-29): "View profile" instead of Book. */

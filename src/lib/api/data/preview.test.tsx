@@ -214,6 +214,29 @@ describe('usePreviewActions: preview', () => {
     expect(result.current.pending).toBe(false);
   });
 
+  it('one pick at a time: a second pick while the first is in flight sends nothing', async () => {
+    let answer: (v: unknown) => void = () => {};
+    POST.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const { result } = renderHook(() => usePreviewActions(), { wrapper });
+    let first!: Promise<boolean>;
+    let second = true;
+    await act(async () => {
+      first = result.current.preview({ userId: 'u-1' }, '/admin');
+      second = await result.current.preview({ userId: 'u-2' }, '/admin');
+    });
+    expect(second).toBe(false);
+    expect(POST).toHaveBeenCalledOnce();
+    await act(async () => {
+      answer(ok(session(), 201));
+      await first;
+    });
+    expect(previewStore.get().user?.name).toBe('Amara Okafor');
+    // Once it lands, the next pick goes through.
+    PATCH.mockResolvedValueOnce(ok(session({ user: row({ user_id: 'u-2' }) })));
+    await act(() => result.current.preview({ userId: 'u-2' }, '/home'));
+    expect(PATCH).toHaveBeenCalledOnce();
+  });
+
   it('by email (?viewAs=): the POST names the email', async () => {
     POST.mockResolvedValueOnce(ok(session({ user: row({ role: 'mentor' }) }), 201));
     const { result } = renderHook(() => usePreviewActions(), { wrapper });

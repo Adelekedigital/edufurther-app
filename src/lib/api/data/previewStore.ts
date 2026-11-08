@@ -214,6 +214,10 @@ export const previewStore = {
   deny(path: string) {
     set({ denied: path });
   },
+  /** The not-found visit is over (the address moved on). */
+  undeny() {
+    if (state.denied !== null) set({ denied: null });
+  },
   dismissEnded() {
     set({ ended: null });
   },

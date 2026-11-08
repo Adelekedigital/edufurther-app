@@ -93,10 +93,12 @@ export function getPreview(id: string): Session | undefined {
 }
 
 /** PATCH /{id}: a new user, reveals reset. */
-export function switchPreview(id: string, userId: string): Session | undefined {
+/** PATCH /{id}: 'ended' is the backend's 409 (the session ended meanwhile); undefined a 404. */
+export function switchPreview(id: string, userId: string): Session | 'ended' | undefined {
   const s = sessions.get(id);
   const user = find({ user_id: userId });
-  if (!s || !user || s.ended_at) return undefined;
+  if (s?.ended_at) return 'ended';
+  if (!s || !user) return undefined;
   const next = { ...s, user, revealed: false };
   sessions.set(id, next);
   return next;
