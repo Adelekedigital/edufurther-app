@@ -20,6 +20,7 @@ import { toCredits } from './credits';
 import { ApiError, apiError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { loadMoreOf } from './loadMore';
 
 type Schemas = components['schemas'];
 
@@ -186,7 +187,7 @@ export function useMenteeCredits(adminId: string | null, menteeId: string | null
     isLoading: enabled && query.isPending,
     isError: query.isError && !query.data,
     retry: () => void query.refetch(),
-    ...more(query),
+    ...loadMoreOf(query),
   };
 }
 
@@ -220,22 +221,7 @@ export function useCreditLog(adminId: string | null, type: CreditLogType) {
     isLoading: enabled && query.isPending,
     isError: query.isError && !query.data,
     retry: () => void query.refetch(),
-    ...more(query),
-  };
-}
-
-/** The "show older" half of an infinite list: only offered when a cursor came back. */
-function more(query: {
-  hasNextPage: boolean;
-  isFetchingNextPage: boolean;
-  isFetchNextPageError: boolean;
-  fetchNextPage: () => Promise<unknown>;
-}) {
-  return {
-    hasMore: query.hasNextPage,
-    loadingMore: query.isFetchingNextPage,
-    loadMoreFailed: query.isFetchNextPageError,
-    loadMore: () => void query.fetchNextPage(),
+    ...loadMoreOf(query),
   };
 }
 

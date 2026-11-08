@@ -2,6 +2,7 @@ import createClient from 'openapi-fetch';
 import type { paths } from '@/lib/api/generated/schema';
 import { getAccessToken, refreshAccessToken, signOut } from '@/lib/vendor/supabase/browser';
 import { createAuthMiddleware } from './authMiddleware';
+import { createPreviewMiddleware, isPreviewEnded } from './previewMiddleware';
 
 /**
  * The browser's generated client. The server-side calls build their own:
@@ -20,6 +21,10 @@ export const api = createClient<paths>({
   querySerializer: { array: { style: 'form', explode: true } },
 });
 
+// Preview as user: first, so the auth middleware's retry clone carries the
+// preview header, and its 401 (preview ended) is never refreshed and retried
+// as the admin.
+api.use(createPreviewMiddleware());
 // Signed in → every call carries the bearer token (backend auth reply #3):
 // /mentors then orders by the mentee's goals and leaves the caller out.
 api.use(
@@ -27,5 +32,6 @@ api.use(
     getToken: getAccessToken,
     refresh: refreshAccessToken,
     onExpired: signOut,
+    isFinal: isPreviewEnded,
   }),
 );

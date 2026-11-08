@@ -16,6 +16,7 @@ import {
 } from '@/lib/vendor/supabase/browser';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import { beginSignOut } from './session';
+import { endPreviewForSignOut } from './preview';
 import { clearAllBookingDrafts } from '@/lib/utils/bookingDraft';
 
 export { authConfigured, signedInUser };
@@ -79,6 +80,8 @@ export function useSignOut(to: `/login${string}` = '/login', beforeLeave?: () =>
     focusManager.setEventListener(() => () => {});
     onlineManager.setEventListener(() => () => {});
     void qc.cancelQueries();
+    // A preview ends with the admin's session (PRD, Session end), logged as sign_out.
+    await endPreviewForSignOut();
     try {
       await signOut();
     } catch {

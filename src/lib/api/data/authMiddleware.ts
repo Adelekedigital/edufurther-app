@@ -5,6 +5,11 @@ type Deps = {
   refresh: () => Promise<string | null>;
   /** The session can't be renewed: end it so the UI falls back to guest. */
   onExpired: () => Promise<void>;
+  /**
+   * A 401 that a new token can't fix, e.g. a preview the server ended
+   * (previewMiddleware): returned as it is, with no refresh, retry or sign-out.
+   */
+  isFinal?: (response: Response) => Promise<boolean>;
   fetch?: typeof fetch;
 };
 
@@ -14,7 +19,13 @@ type Deps = {
  * The retry resends a clone taken before the first send (a body can be read once).
  * POST /sessions carries its Idempotency-Key in the clone, so a retry can't book twice.
  */
-export function createAuthMiddleware({ getToken, refresh, onExpired, fetch: f }: Deps): Middleware {
+export function createAuthMiddleware({
+  getToken,
+  refresh,
+  onExpired,
+  isFinal,
+  fetch: f,
+}: Deps): Middleware {
   const pending = new WeakMap<Request, Request>();
   return {
     async onRequest({ request }) {
@@ -28,6 +39,7 @@ export function createAuthMiddleware({ getToken, refresh, onExpired, fetch: f }:
       const retry = pending.get(request);
       pending.delete(request);
       if (response.status !== 401 || !retry) return response;
+      if (isFinal && (await isFinal(response))) return response;
       const token = await refresh();
       if (!token) {
         await onExpired();

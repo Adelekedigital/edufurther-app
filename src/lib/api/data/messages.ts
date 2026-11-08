@@ -20,6 +20,7 @@ import { ApiError, apiError, retryOnce } from './errors';
 import { cleanFileName } from '@/lib/utils/files';
 import { keys } from './keys';
 import { api } from './http';
+import { isPreviewing } from './previewStore';
 import type { components } from '@/lib/api/generated/schema';
 import { sessionKey, useSession } from './session';
 
@@ -332,6 +333,8 @@ export function useMarkRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ withId, upTo }: { withId: string; upTo: string }) => {
+      // Preview as user: opening a chat marks nothing read for them (PRD, Read only).
+      if (isPreviewing()) return;
       const { error, response } = await api.POST('/api/v1/me/messages/{user_id}/read', {
         params: { path: { user_id: withId } },
         body: { up_to: upTo },
@@ -339,7 +342,7 @@ export function useMarkRead() {
       if (!response.ok) throw apiError(response.status, error, response);
     },
     onSuccess: (_d, { withId, upTo }) => {
-      if (!me) return;
+      if (!me || isPreviewing()) return;
       // The chat's own read mark moves too, so reopening it shows nothing as new.
       qc.setQueryData<Thread>(keys.messages.thread(me, withId), (cur) => {
         const at = cur?.items.find((m) => m.id === upTo)?.sentAt;

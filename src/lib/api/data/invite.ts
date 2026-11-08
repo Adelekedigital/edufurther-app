@@ -6,6 +6,7 @@ import type { Remote } from '@/types/mentor';
 import { isInviteCode } from '@/lib/utils/inviteCode';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
+import { isPreviewing } from './previewStore';
 import { toInviter, type Inviter } from './inviter';
 import { keys } from './keys';
 import { sessionKey, useSession } from './session';
@@ -48,7 +49,10 @@ export function toInviteLink(
  */
 export function useInviteLink(userId: string | null, active = true): Remote<InviteLink> {
   const session = useSession();
-  const enabled = active && !!userId && session.status !== 'unknown';
+  // POST /me/invite-link creates the link on first ask: a write, so never sent
+  // in Preview as user (PRD, Read only), where the panel shows its error state.
+  const previewing = isPreviewing();
+  const enabled = active && !!userId && session.status !== 'unknown' && !previewing;
   const query = useQuery({
     queryKey: keys.invite.link(sessionKey(session)),
     enabled,
@@ -68,7 +72,11 @@ export function useInviteLink(userId: string | null, active = true): Remote<Invi
   return {
     data: query.data ?? null,
     isLoading: enabled && query.isPending,
-    error: query.error ? normaliseError(query.error) : null,
+    error: query.error
+      ? normaliseError(query.error)
+      : previewing && active
+        ? normaliseError(new ApiError(403))
+        : null,
     retry: () => void query.refetch(),
   };
 }

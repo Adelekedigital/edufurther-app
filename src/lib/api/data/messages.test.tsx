@@ -14,6 +14,7 @@ import {
   useThread,
 } from './messages';
 import type { WireChatPerson, WireMessage, WireThread } from './messages';
+import { previewStore, resetPreviewStoreForTests } from './previewStore';
 
 const GET = vi.fn();
 const POST = vi.fn();
@@ -193,6 +194,38 @@ describe('useMarkRead', () => {
     const { result } = renderHook(() => useMarkRead(), { wrapper });
     await act(() => result.current.mutateAsync({ withId: 'u-1', upTo: 'm1' }));
     expect(qc.getQueryData<Thread>(key)?.myLastReadAt).toBe('2026-10-27T10:00:00Z');
+  });
+});
+
+describe('useMarkRead: Preview as user (PRD, Read only)', () => {
+  afterEach(() => {
+    sessionStorage.clear();
+    resetPreviewStoreForTests();
+  });
+
+  it('opening a chat in preview marks nothing read: no request, no read mark moved', async () => {
+    previewStore.started(
+      's-1',
+      {
+        id: 'me-1',
+        email: 'amara.okafor@example.com',
+        name: 'Amara Okafor',
+        firstName: 'Amara',
+        initials: 'AO',
+        role: 'mentee',
+      },
+      { revealed: true, canReveal: true },
+    );
+    const key = ['messages', 'me-1', 'thread', 'u-1'];
+    const before = {
+      ...toThreadLike(),
+      items: [toMessage(wireMsg('m1', { sent_at: '2026-10-27T10:00:00Z' }))],
+    };
+    qc.setQueryData<Thread>(key, before);
+    const { result } = renderHook(() => useMarkRead(), { wrapper });
+    await act(() => result.current.mutateAsync({ withId: 'u-1', upTo: 'm1' }));
+    expect(POST).not.toHaveBeenCalled();
+    expect(qc.getQueryData<Thread>(key)?.myLastReadAt).toBe(before.myLastReadAt);
   });
 });
 

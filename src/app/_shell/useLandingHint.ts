@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { saveLandingHint } from '@/lib/api/data/landingHint';
+import { usePreview } from '@/lib/api/data/preview';
 import { useSession } from '@/lib/api/data/session';
 import { memberHome, viewerRole } from '@/lib/utils/access';
 import { CHOSE_EXPLORE_COOKIE, LANDING_PATHS } from '@/lib/utils/landingHint';
@@ -27,7 +28,10 @@ export function landingHintFor(viewer: Viewer): string | null | undefined {
  */
 export function useLandingHint(viewer: Viewer, pathname: string | null): void {
   const session = useSession();
-  const userId = session.status === 'present' ? session.userId : null;
+  // Preview as user: the viewer is the previewed person but the cookie would be
+  // bound to the admin's own sign-in, so nothing is written (PRD, Read only).
+  const previewing = usePreview().sessionId !== null;
+  const userId = session.status === 'present' && !previewing ? session.userId : null;
   const hint = landingHintFor(viewer);
   const choseAs =
     viewer.kind === 'member' && !!hint && !!pathname && LANDING_PATHS.has(pathname) ? userId : null;

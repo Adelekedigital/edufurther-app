@@ -240,6 +240,8 @@ export const keys = {
     notes: (me: string, id: string) => ['admin', me, 'mentors', 'notes', id] as const,
     mentees: (me: string, q: string) => ['admin', me, 'mentees', q] as const,
     menteeCredits: (me: string, id: string) => ['admin', me, 'mentee-credits', id] as const,
+    /** Preview as user's picker (GET /admin/users). */
+    users: (me: string, q: string, role: string) => ['admin', me, 'users', q, role] as const,
     creditLog: (me: string, type: string) => ['admin', me, 'credit-log', type] as const,
     creditRules: (me: string) => ['admin', me, 'credit-rules'] as const,
   },
