@@ -73,6 +73,7 @@ function msg(
     sent_at: at,
     edited_at: null,
     deleted: false,
+    hidden_in_preview: false,
     ...extra,
   };
 }
@@ -308,6 +309,7 @@ function row(c: Chat): WireChatRow {
           mine: last.mine,
           at: last.sent_at,
           deleted: last.deleted,
+          hidden_in_preview: false,
         }
       : null,
   };

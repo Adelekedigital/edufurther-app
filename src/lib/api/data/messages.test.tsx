@@ -55,6 +55,7 @@ const wireMsg = (id: string, over: Partial<WireMessage> = {}): WireMessage => ({
   sent_at: '2026-10-27T09:00:00Z',
   edited_at: null,
   deleted: false,
+  hidden_in_preview: false,
   ...over,
 });
 
