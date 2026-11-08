@@ -138,7 +138,8 @@
 @media (max-width: 767px) {
   .panel {
     position: fixed;
-    top: calc(var(--ef-va-h) + 4px);
+    /* Just under the bar on phones (its own height token, set in this PR). */
+    top: calc(var(--preview-bar-h-phone) + 4px);
     left: 8px;
     right: 8px;
     width: auto;

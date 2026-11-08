@@ -42,8 +42,11 @@
   --on-dark-fill: rgba(255, 255, 255, 0.06);
   --on-dark-fill-hover: rgba(255, 255, 255, 0.14);
   --on-dark-hover: rgba(255, 255, 255, 0.12);
-  /* The bar's height while it shows (40px desktop, 48px phones); 0 otherwise.
-     Set on <html> by the bar, read by every sticky top edge under it. */
+  /* The bar's own height (AppShell.dc.html --ef-va-h: 40px, 48px on phones). */
+  --preview-bar-h: 40px;
+  --preview-bar-h-phone: 48px;
+  /* How far every sticky top edge moves down: the bar's height while it shows
+     (html[data-previewing], globals.css), 0 otherwise. Never read by the bar itself. */
   --ef-va-h: 0px;
 
   /* Cover colour swatch edge, so pale swatches read on white (Mentor Profile.dc.html). */

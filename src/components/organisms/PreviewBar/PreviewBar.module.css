@@ -5,7 +5,8 @@
   z-index: 12;
   flex: none;
   box-sizing: border-box;
-  height: var(--ef-va-h);
+  /* Its own height, not --ef-va-h (which it sets for what sits under it). */
+  height: var(--preview-bar-h);
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -99,6 +100,9 @@
 
 /* Phones: 48px, no "Preview as" or name line, the short labels (PRD, Phone). */
 @media (max-width: 767px) {
+  .bar {
+    height: var(--preview-bar-h-phone);
+  }
   .lead,
   .who,
   .long {
