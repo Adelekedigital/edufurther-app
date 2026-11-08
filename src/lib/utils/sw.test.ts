@@ -3,11 +3,14 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * public/sw.js, run as written inside a fake worker scope: the rules ADR 0011
- * promises (never a page or the API from cache, code cache-first) are pinned
- * against the real file.
+ * The service worker (src/lib/pwa/worker.js, as /sw.js serves it), run inside
+ * a fake worker scope: the rules ADR 0011 promises (never a page or the API
+ * from cache, code cache-first) are pinned against the real file.
  */
-const CODE = readFileSync(join(process.cwd(), 'public/sw.js'), 'utf8');
+const CODE = readFileSync(join(process.cwd(), 'src/lib/pwa/worker.js'), 'utf8').replace(
+  "'__BUILD__'",
+  "'b2'",
+);
 const ORIGIN = 'https://app.test';
 
 class FakeCache {
@@ -157,6 +160,35 @@ describe('sw.js: pages', () => {
   });
 });
 
+describe('sw.js: pages, the hard cases', () => {
+  it('a preload that fails: the offline page, not a broken launch', async () => {
+    await lifecycle('install');
+    const res = await (async () => {
+      let answer: Promise<Response> | null = null;
+      listeners.fetch!({
+        request: { url: `${ORIGIN}/home`, method: 'GET', mode: 'navigate' },
+        preloadResponse: Promise.reject(new TypeError('offline')),
+        respondWith: (p: Promise<Response>) => (answer = p),
+        waitUntil: () => {},
+      });
+      return answer!;
+    })();
+    expect(await res.text()).toBe(`net:${ORIGIN}/offline.html`);
+  });
+
+  it('a redirect (/ to a home, the Explore landing) is passed through as it came', async () => {
+    const redirect = new Response(null, { status: 307, headers: { location: '/dashboard' } });
+    const res = await request('/', { mode: 'navigate', preload: redirect });
+    expect(res).toBe(redirect);
+  });
+
+  it('the offline page failing at install doesn’t stop the worker installing', async () => {
+    network.mockRejectedValueOnce(new TypeError('offline'));
+    await lifecycle('install');
+    expect(scope.skipWaiting).toHaveBeenCalled();
+  });
+});
+
 describe('sw.js: the app’s code and images', () => {
   it('hashed build files: from the cache after the first load', async () => {
     const a = await request('/_next/static/chunks/app-1a2b.js');
@@ -166,7 +198,9 @@ describe('sw.js: the app’s code and images', () => {
   });
 
   it('a failed build file is not kept', async () => {
-    network.mockResolvedValueOnce(new Response('nope', { status: 404 }));
+    const missing = new Response('nope', { status: 404 });
+    Object.defineProperty(missing, 'type', { value: 'basic' });
+    network.mockResolvedValueOnce(missing);
     await request('/_next/static/chunks/gone.js');
     await request('/_next/static/chunks/gone.js');
     expect(network).toHaveBeenCalledTimes(2);
@@ -179,6 +213,13 @@ describe('sw.js: the app’s code and images', () => {
     expect(await res!.text()).toBe(`net:${ORIGIN}/brand/edufurther-logo-630.png`);
     expect(network).toHaveBeenCalledTimes(1); // the background refresh
   });
+
+  it('code and images are kept apart, each under this deploy’s name', async () => {
+    await request('/_next/static/a.js');
+    await request('/brand/logo.png');
+    const names = await caches.keys();
+    expect(names).toEqual(expect.arrayContaining(['ef-code-b2', 'ef-images-b2']));
+  });
 });
 
 describe('sw.js: lifecycle', () => {
@@ -188,23 +229,16 @@ describe('sw.js: lifecycle', () => {
     expect(scope.skipWaiting).toHaveBeenCalled();
   });
 
-  it('activate drops older versions of its own caches only, turns on preload, claims open pages', async () => {
-    await caches.open('ef-static-v0');
+  it('activate drops the last deploy’s caches, its own only, turns on preload, claims open pages', async () => {
+    await caches.open('ef-code-b1');
+    await caches.open('ef-static-v1');
     await caches.open('someone-elses-cache');
     await lifecycle('activate');
     const names = await caches.keys();
-    expect(names).not.toContain('ef-static-v0');
+    expect(names).not.toContain('ef-code-b1');
+    expect(names).not.toContain('ef-static-v1');
     expect(names).toContain('someone-elses-cache');
     expect(scope.registration.navigationPreload.enable).toHaveBeenCalled();
     expect(scope.clients.claim).toHaveBeenCalled();
-  });
-
-  it('PURGE (sign-out) drops everything it keeps', async () => {
-    await lifecycle('install');
-    await request('/_next/static/a.js');
-    let done: Promise<unknown> = Promise.resolve();
-    listeners.message!({ data: { type: 'PURGE' }, waitUntil: (p: Promise<unknown>) => (done = p) });
-    await done;
-    expect((await caches.keys()).filter((n) => n.startsWith('ef-'))).toEqual([]);
   });
 });

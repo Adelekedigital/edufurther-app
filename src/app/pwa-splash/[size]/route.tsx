@@ -16,8 +16,8 @@ export function generateStaticParams() {
   return SPLASH_SIZES.map((s) => ({ size: splashKey(s) }));
 }
 
-/** The wordmark's own size (public/brand/edufurther-logo-630.png). */
-const LOGO = { width: 630, height: 84 };
+/** The full-size wordmark (public/brand/edufurther-logo-full.png), never upscaled. */
+const LOGO = { width: 4096, height: 547 };
 
 export async function GET(_req: Request, { params }: { params: Promise<{ size: string }> }) {
   const { size } = await params;
@@ -25,7 +25,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ size: s
   if (!match) return new Response(null, { status: 404 });
   const width = match.width * match.scale;
   const height = match.height * match.scale;
-  const png = await readFile(join(process.cwd(), 'public/brand/edufurther-logo-630.png'));
+  const png = await readFile(join(process.cwd(), 'public/brand/edufurther-logo-full.png'));
   // Half the screen's width, as the app draws it at the top of a page.
   const logoWidth = Math.round(width * 0.5);
   const logoHeight = Math.round((logoWidth * LOGO.height) / LOGO.width);

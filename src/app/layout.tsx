@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   description: 'Experience-led mentorship for your study-abroad journey.',
   // startupImage: the iPhone's launch screen (logo on white) instead of black.
   appleWebApp: { capable: true, title: 'EduFurther', startupImage: APPLE_STARTUP_IMAGES },
+  // Next 16 writes only the unprefixed `mobile-web-app-capable`; iOS reads the
+  // launch screens of a home-screen app that declares the Apple one.
+  other: { 'apple-mobile-web-app-capable': 'yes' },
   icons: { apple: '/pwa-icon/192' },
 };
 

@@ -35,35 +35,49 @@ show one person's page or data to another on a shared device.
 
 ## Decision
 
-Option 1, as a hand-written `public/sw.js`:
+Option 1, as a hand-written worker (`src/lib/pwa/worker.js`), served at
+`/sw.js` by a static route (`src/app/sw.js`) that bakes in the deploy's id:
 
-- `/_next/static/**` (code, styles, fonts; content-hashed) is cache-first.
-  The newest 400 entries are kept, so old deploys don't pile up.
-- `/brand/`, `/illustrations/`, `/pwa-icon/` and `/pwa-splash/` (fixed
-  names) use stale-while-revalidate.
-- Pages are network-only with navigation preload. Only when the network
+- **Per-deploy caches.** Cache names carry the deploy's id
+  (`VERCEL_DEPLOYMENT_ID`, else the commit). Each deploy's worker drops the
+  previous deploy's caches on activate. Nothing written to a cache outlives
+  a deploy, including anything an XSS might have planted; the cost is one
+  full code download after each deploy.
+- **Code:** `/_next/static/**` (code, styles, fonts; content-hashed) is
+  cache-first, capped at 600 entries.
+- **Images:** `/brand/`, `/illustrations/`, `/pwa-icon/` and `/pwa-splash/`
+  (fixed names) use stale-while-revalidate, in a cache of their own capped at
+  100 entries.
+- **Pages:** network-only, with navigation preload. Only when the network
   fails is the precached `public/offline.html` shown: static, and about no
-  one.
+  one. If that precache fails, the worker installs anyway.
 - **Never handled:** `/api/*`, anything but GET, and other origins. These go
   straight to the network, untouched.
 - **Updates:** `skipWaiting` plus `clients.claim`. This is safe here only
-  because no page is served from the cache: a new worker can't put an old
-  page against a new API, and the code an open page still asks for stays in
-  the cache. If a later change caches pages, revisit this and move to
-  "prompt to reload".
+  because no page is served from the cache, so a new worker can't put an old
+  page against a new API. An open old page keeps the code it already ran; a
+  chunk it never loaded comes from the network, as without a worker. If a
+  later change caches pages, revisit this and move to "prompt to reload".
 - **Registration:** `src/app/_shell/ServiceWorkerRegistration.tsx`, mounted
   in the root layout, after page load, production only. `/sw.js` and
   `/offline.html` are served `no-cache` (`PWA_HEADERS`).
-- **Sign-out:** `useSignOut` clears every `ef-` cache. None holds personal
-  data, but a shared device starts clean.
-- **Off switch:** `NEXT_PUBLIC_SERVICE_WORKER=off`, then redeploy. Every
-  visit unregisters the worker and clears its caches. This works because the
-  worker never serves pages, so the page carrying the off switch always
-  comes from the network.
-- **iOS launch screens:** `src/app/pwa-splash/[size]`, the wordmark on white,
-  one per iPhone size (`sizes.ts`). Built statically at build time
-  (`force-static`), so no render is billed per launch. Android builds its
-  own splash from the manifest's name, background colour and icon.
+- **Sign-out:** clears nothing. The caches hold only code, images and the
+  offline page, and clearing them would lose the offline page and slow the
+  next launch.
+- **Off switch:** `NEXT_PUBLIC_SERVICE_WORKER=off`, then redeploy. `/sw.js`
+  then serves `src/lib/pwa/killWorker.js`. The browser checks `/sw.js` on
+  every page load, so the bad worker is replaced without any page code
+  having to run; the new one handles no requests, clears the caches and
+  unregisters itself. Pages also unregister it from
+  `lib/utils/serviceWorker.ts`.
+- **iOS launch screens:** `src/app/pwa-splash/[size]`, the full-size
+  wordmark on white, one per iPhone size (`sizes.ts`, the iPhone Air
+  included). Built statically (`force-static`), so no render is billed per
+  launch. The meta tag `apple-mobile-web-app-capable` is set explicitly,
+  because Next 16 writes only the unprefixed one. An existing install may
+  need removing and re-adding before iOS picks the screens up. Android builds
+  its own splash from the manifest's name, background colour and icon.
+- **`/pwa-icon/*`** is now static too.
 
 ## Consequences
 
@@ -89,12 +103,13 @@ Bad:
 
 ## Evidence
 
-- `public/sw.js`, `public/offline.html`
-- `src/lib/utils/serviceWorker.ts` (registration, off switch, `clearAppCaches`)
+- `src/lib/pwa/worker.js`, `src/lib/pwa/killWorker.js`, `src/app/sw.js/route.ts`,
+  `public/offline.html`
+- `src/lib/utils/serviceWorker.ts` (registration, the page-side off switch)
 - `src/app/_shell/ServiceWorkerRegistration.tsx`, `src/app/layout.tsx`
 - `src/app/pwa-splash/`
 - `src/lib/securityHeaders.ts` (`PWA_HEADERS`)
 - `src/proxy.ts` (the matcher skips `pwa-splash/`)
-- Tests: `src/lib/utils/sw.test.ts` runs the real `public/sw.js` in a fake
-  worker scope; plus `serviceWorker.test.ts`, `pwa-splash/sizes.test.ts` and
-  `proxy.matcher.test.ts`
+- Tests: `src/lib/utils/sw.test.ts` runs the real worker in a fake worker
+  scope; plus `src/app/sw.js/route.test.ts`, `serviceWorker.test.ts`,
+  `pwa-splash/sizes.test.ts` and `proxy.matcher.test.ts`

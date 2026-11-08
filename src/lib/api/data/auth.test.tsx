@@ -26,12 +26,6 @@ vi.mock('@/lib/utils/hardNavigate', () => ({
 }));
 vi.mock('./session', () => ({ beginSignOut: () => order.push('freeze') }));
 vi.mock('@/lib/utils/leaveGuard', () => ({ releaseLeaveGuards: () => order.push('release') }));
-// The service worker's caches go before the page leaves (ADR 0011).
-vi.mock('@/lib/utils/serviceWorker', () => ({
-  clearAppCaches: async () => {
-    order.push('caches');
-  },
-}));
 
 const { useSignOut, useSignOutHere, markAccountDeleted, takeAccountDeleted } =
   await import('./auth');
@@ -53,7 +47,7 @@ describe('useSignOut (Logout)', () => {
     await act(() => result.current());
     // Frozen first: no signed-out redraw. Signed out before /login, which would
     // send a signed-in visitor straight back on.
-    expect(order).toEqual(['freeze', 'release', 'signOut', 'caches', 'go /login']);
+    expect(order).toEqual(['freeze', 'release', 'signOut', 'go /login']);
   });
 
   it('signing out throws: /login loads anyway, so nobody is left on a half signed-out page', async () => {
@@ -61,13 +55,13 @@ describe('useSignOut (Logout)', () => {
     const { result } = renderSignOut();
     // Never rejects: the menu calls it as `void signOut()`.
     await act(() => result.current());
-    expect(order).toEqual(['freeze', 'release', 'caches', 'go /login']);
+    expect(order).toEqual(['freeze', 'release', 'go /login']);
   });
 
   it('lands where the caller says (a deleted account’s notice)', async () => {
     const { result } = renderSignOut('/login?deleted=1');
     await act(() => result.current());
-    expect(order).toEqual(['freeze', 'release', 'signOut', 'caches', 'go /login?deleted=1']);
+    expect(order).toEqual(['freeze', 'release', 'signOut', 'go /login?deleted=1']);
   });
 
   it('runs the caller’s last step right before the page leaves', async () => {

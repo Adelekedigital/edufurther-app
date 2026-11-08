@@ -2,17 +2,19 @@
  * iPhone launch screens (`apple-touch-startup-image`). iOS shows one only
  * when its pixel size and media query match the device exactly; without a
  * match it shows black until the page paints. Portrait only: the installed
- * app opens upright. Points × scale = pixels.
+ * app opens upright. Points × scale = pixels. A new iPhone size needs a row
+ * here, or it shows black (ADR 0011).
  */
 export type SplashSize = { width: number; height: number; scale: 2 | 3 };
 
 export const SPLASH_SIZES: readonly SplashSize[] = [
-  { width: 440, height: 956, scale: 3 }, // 16 Pro Max
-  { width: 402, height: 874, scale: 3 }, // 16 Pro
+  { width: 440, height: 956, scale: 3 }, // 16 Pro Max, 17 Pro Max
+  { width: 420, height: 912, scale: 3 }, // Air
+  { width: 402, height: 874, scale: 3 }, // 16 Pro, 17, 17 Pro
   { width: 430, height: 932, scale: 3 }, // 14 Pro Max, 15 Plus, 15 Pro Max, 16 Plus
   { width: 393, height: 852, scale: 3 }, // 14 Pro, 15, 15 Pro, 16
   { width: 428, height: 926, scale: 3 }, // 12 Pro Max, 13 Pro Max, 14 Plus
-  { width: 390, height: 844, scale: 3 }, // 12, 12 Pro, 13, 13 Pro, 14
+  { width: 390, height: 844, scale: 3 }, // 12, 12 Pro, 13, 13 Pro, 14, 16e
   { width: 375, height: 812, scale: 3 }, // X, XS, 11 Pro, 12 mini, 13 mini
   { width: 414, height: 896, scale: 3 }, // XS Max, 11 Pro Max
   { width: 414, height: 896, scale: 2 }, // XR, 11

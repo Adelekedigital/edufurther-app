@@ -1,11 +1,11 @@
 /**
  * The service worker's page side (ADR 0011). The worker itself is
- * public/sw.js.
+ * src/lib/pwa/worker.js, served at /sw.js by src/app/sw.js.
  *
- * Off switch: NEXT_PUBLIC_SERVICE_WORKER=off (then redeploy) makes every
- * visit unregister the worker and drop its caches, the way out if a bad
- * worker ever ships. The worker never serves pages from its cache, so the
- * page carrying this code always comes from the network.
+ * Off switch: NEXT_PUBLIC_SERVICE_WORKER=off (then redeploy). /sw.js then
+ * serves a worker that removes itself and its caches (src/lib/pwa/killWorker.js),
+ * which works even if the page's code can't run; and every page also
+ * unregisters it from here.
  */
 
 export const SW_URL = '/sw.js';
@@ -42,9 +42,9 @@ async function removeServiceWorker(): Promise<void> {
 }
 
 /**
- * Drops everything the worker keeps (all `ef-` caches). Called on sign-out:
- * the caches hold only code, images and the offline page, nothing personal,
- * but a shared device starts clean anyway.
+ * Drops everything the worker keeps (all `ef-` caches): the off switch's
+ * page-side half. Sign-out doesn't call it: the caches hold only code, images
+ * and the offline page, nothing personal (ADR 0011).
  */
 export async function clearAppCaches(): Promise<void> {
   try {
