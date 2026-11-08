@@ -17,11 +17,11 @@ html {
 /* Preview as user: the bar is showing (PreviewRoot), 40px on desktop and 48px
    on phones. Every sticky top edge below it reads --ef-va-h. */
 html[data-previewing] {
-  --ef-va-h: 40px;
+  --ef-va-h: var(--preview-bar-h);
 }
 @media (max-width: 767px) {
   html[data-previewing] {
-    --ef-va-h: 48px;
+    --ef-va-h: var(--preview-bar-h-phone);
   }
 }
 
