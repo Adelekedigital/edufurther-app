@@ -273,6 +273,25 @@ async function readThread(
   return toThread(data);
 }
 
+/** The most pages a full re-read goes back for, so a long scroll-back stays bounded. */
+export const REREAD_MAX_PAGES = 10;
+
+/**
+ * A whole fresh read of the chat: the newest page, then older pages until it
+ * reaches back to `since` (the oldest message the chat had loaded), so a
+ * reload (a preview reveal) keeps the history the reader had scrolled back to.
+ */
+async function rereadThread(withId: string, since: string | undefined, signal?: AbortSignal) {
+  let thread = await readThread(withId, {}, signal);
+  const reach = since ? Date.parse(since) : NaN;
+  for (let page = 1; page < REREAD_MAX_PAGES; page += 1) {
+    const first = thread.items[0];
+    if (!thread.hasMore || !first || !(Date.parse(first.sentAt) > reach)) break;
+    thread = mergeOlder(thread, await readThread(withId, { before: first.id }, signal));
+  }
+  return thread;
+}
+
 export type ThreadRemote = Remote<Thread> & {
   /** Reads the page before the oldest message on screen. */
   loadOlder: () => Promise<void>;
@@ -294,7 +313,7 @@ export function useThread(withId: string | null): ThreadRemote {
     enabled,
     queryFn: async ({ signal }) => {
       const prev = qc.getQueryData<Thread>(key);
-      if (!prev || !prev.cursor) return readThread(withId!, {}, signal);
+      if (!prev || !prev.cursor) return rereadThread(withId!, prev?.items[0]?.sentAt, signal);
       const newer = await readThread(withId!, { after: prev.cursor }, signal);
       // Merged into the cache as it is now, not as it was before the request:
       // older pages loaded (or my sends settled) meanwhile must survive.
@@ -335,8 +354,9 @@ export function useChatStatus(withId: string | null): Remote<Thread> {
 /**
  * Every Messages read, again, after a preview reveal: the list re-reads, and
  * each cached thread drops its cursor first, so its next read is a whole fresh
- * page (with bodies) rather than an `after=` read that would keep the masked
- * ones already in the cache.
+ * read (with bodies) rather than an `after=` read that would keep the masked
+ * ones already in the cache. That read goes back as far as the chat had been
+ * scrolled (`rereadThread`), so no loaded history drops out.
  */
 export function reloadMessages(qc: QueryClient) {
   const isThread = (q: Query) => q.queryKey[0] === 'messages' && q.queryKey[2] === 'thread';

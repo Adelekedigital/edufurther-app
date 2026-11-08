@@ -12,6 +12,7 @@ import {
   useChats,
   useMarkRead,
   useThread,
+  reloadMessages,
 } from './messages';
 import type { WireChatPerson, WireMessage, WireThread } from './messages';
 import { previewStore, resetPreviewStoreForTests } from './previewStore';
@@ -315,6 +316,39 @@ describe('useThread', () => {
     await waitFor(() =>
       expect(result.current.data?.items.map((m) => m.id)).toEqual(['m4', 'm5', 'm6']),
     );
+  });
+
+  it('a reload (a preview reveal) reads back as far as the chat was scrolled, bodies and all', async () => {
+    const at = { m4: '2026-10-27T08:00:00Z', m5: '2026-10-27T09:00:00Z' };
+    const masked = { hidden_in_preview: true, body: null };
+    GET.mockResolvedValueOnce({
+      data: wireThread([wireMsg('m5', { ...masked, sent_at: at.m5 })], { has_more: true }),
+      response: res(200),
+    });
+    const { result } = renderHook(() => useThread('u-1'), { wrapper });
+    await waitFor(() => expect(result.current.data?.items).toHaveLength(1));
+    GET.mockResolvedValueOnce({
+      data: wireThread([wireMsg('m4', { ...masked, sent_at: at.m4 })], { has_more: true }),
+      response: res(200),
+    });
+    await act(() => result.current.loadOlder());
+
+    GET.mockResolvedValueOnce({
+      data: wireThread([wireMsg('m5', { body: 'five', sent_at: at.m5 })], { has_more: true }),
+      response: res(200),
+    });
+    GET.mockResolvedValueOnce({
+      data: wireThread([wireMsg('m4', { body: 'four', sent_at: at.m4 })], { has_more: true }),
+      response: res(200),
+    });
+    await act(() => reloadMessages(qc));
+    await waitFor(() =>
+      expect(result.current.data?.items.map((m) => m.body)).toEqual(['four', 'five']),
+    );
+    expect(GET.mock.calls[2]![1]).toMatchObject({ params: { query: {} } });
+    expect(GET.mock.calls[3]![1]).toMatchObject({ params: { query: { before: 'm5' } } });
+    expect(GET).toHaveBeenCalledTimes(4);
+    expect(result.current.data?.hasMore).toBe(true);
   });
 
   it('a 404 is an error the page can show (not connected)', async () => {
