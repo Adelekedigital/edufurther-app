@@ -69,4 +69,13 @@ describe('ConfirmActions layout', () => {
     expect(second).toHaveAccessibleName('Keep Google Meet');
     expect(second).toHaveAttribute('data-autofocus');
   });
+
+  /** An edit modal's footer: Keep first, then the action; the form's field takes first focus. */
+  it('end: keep then confirm, and no autofocus on Keep', () => {
+    render(<ConfirmActions {...props} layout="end" />);
+    const [first, second] = screen.getAllByRole('button');
+    expect(first).toHaveAccessibleName('Keep Google Meet');
+    expect(second).toHaveAccessibleName('Switch to EduFurther video');
+    expect(first).not.toHaveAttribute('data-autofocus');
+  });
 });

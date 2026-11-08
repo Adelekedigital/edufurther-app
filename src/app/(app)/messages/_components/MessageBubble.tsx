@@ -2,6 +2,7 @@
 
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { FileCard } from '@/components/molecules/FileCard/FileCard';
+import { HiddenInPreview } from '@/components/molecules/HiddenInPreview/HiddenInPreview';
 import { CHAT_COPY, COMPOSER_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
 import { isFileExpired } from '@/lib/utils/files';
@@ -19,12 +20,15 @@ export function MessageBubble({
   read,
   timeZone,
   onOpenFile,
+  onReveal,
 }: {
   message: Message;
   read: boolean;
   timeZone: string;
   /** Opens the message's file in FileViewer. */
   onOpenFile: (file: MessageFile) => void;
+  /** Preview as user: opens the Reveal modal. Absent when the admin can't reveal. */
+  onReveal?: () => void;
 }) {
   const time = formatTime(message.sentAt, timeZone);
   if (message.deleted)
@@ -37,8 +41,16 @@ export function MessageBubble({
     );
   return (
     <div className={cx(styles.bubble, message.mine ? styles.mine : styles.theirs)}>
-      {message.body && <span className={styles.text}>{message.body}</span>}
-      {message.file && <BubbleFile file={message.file} mine={message.mine} onOpen={onOpenFile} />}
+      {message.hiddenInPreview ? (
+        <HiddenInPreview onReveal={onReveal} />
+      ) : (
+        <>
+          {message.body && <span className={styles.text}>{message.body}</span>}
+          {message.file && (
+            <BubbleFile file={message.file} mine={message.mine} onOpen={onOpenFile} />
+          )}
+        </>
+      )}
       <span className={styles.meta}>
         {message.editedAt && <span>{CHAT_COPY.edited}</span>}
         {time}

@@ -123,6 +123,13 @@
   color: var(--blue-700);
   font-weight: var(--weight-semibold);
 }
+/* A masked preview (Preview as user) on the row's one line, in the row's type. */
+.rowPreview .rowHidden {
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  font: inherit;
+  color: inherit;
+}
 .unread .rowPreview {
   color: var(--ink-900);
   font-weight: var(--weight-semibold);

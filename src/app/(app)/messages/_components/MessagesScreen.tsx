@@ -5,12 +5,14 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
 import { useChats } from '@/lib/api/data/messages';
+import { usePreview } from '@/lib/api/data/preview';
 import { EMPTY_INBOX_COPY, LIST_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { lockedPageGate, memberGate, MESSAGES_GATE } from '@/app/_shell/MentorGate';
+import { RevealLauncher } from '@/app/_shell/RevealLauncher';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { ChatList, ChatListSkeleton } from './ChatList';
 import { ChatGone, ChatPaneSkeleton } from './ChatPane';
@@ -53,6 +55,15 @@ export function MessagesScreen() {
   const [dialog, setDialog] = useState<'new' | 'settings' | null>(null);
   const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
   const say = (text: string) => setToast({ text, id: Date.now() });
+  // Preview as user: one Reveal modal for the screen, opened from any masked item.
+  const preview = usePreview();
+  const previewing = preview.sessionId !== null;
+  const revealed = previewing && preview.revealed;
+  // Tied to the session it was opened in, so an end or a new preview closes it.
+  const [revealingIn, setRevealingIn] = useState<string | null>(null);
+  const canReveal = previewing && preview.canReveal && !preview.revealed;
+  const onReveal = canReveal ? () => setRevealingIn(preview.sessionId) : undefined;
+  const revealing = canReveal && revealingIn === preview.sessionId;
   // Each chat keeps its unsent text while you switch chats (PRD "Drafts").
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
@@ -132,6 +143,7 @@ export function MessagesScreen() {
           }}
         />
       )}
+      {revealing && <RevealLauncher onClose={() => setRevealingIn(null)} />}
       <Snackbar message={toast?.text ?? null} stamp={toast?.id} />
     </>
   );
@@ -219,6 +231,8 @@ export function MessagesScreen() {
             onDraft={(v) => setDrafts((d) => ({ ...d, [openRow.person.id]: v }))}
             onBack={back}
             onToast={say}
+            onReveal={onReveal}
+            revealed={revealed}
           />
         ) : (
           url.withId && <ChatGone onBack={back} />

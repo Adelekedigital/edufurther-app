@@ -1,4 +1,5 @@
 import { LIST_COPY } from '@/lib/copy/messages';
+import { PREVIEW_COPY } from '@/lib/copy/preview';
 import { formatNextAvailable } from '@/lib/utils/format';
 import { rowTime } from '@/lib/utils/messageTime';
 import type { ChatPerson, ChatRow } from '@/types/messages';
@@ -20,6 +21,8 @@ export function previewOf(row: ChatRow): string {
   const last = row.last;
   if (!last) return LIST_COPY.noMessages;
   if (last.deleted) return last.mine ? LIST_COPY.deletedMine : LIST_COPY.deletedTheirs;
+  // Preview as user: masked until the admin reveals; never a stand-in body.
+  if (last.hiddenInPreview) return PREVIEW_COPY.hidden.text;
   const body =
     last.text?.trim() || (last.fileName ? LIST_COPY.sentFile(last.fileName) : LIST_COPY.noMessages);
   return last.mine ? `${LIST_COPY.you}${body}` : body;
@@ -33,6 +36,8 @@ export type RowView = {
   time: string;
   sub: string;
   preview: string;
+  /** Preview as user: the last message is masked (HiddenInPreview, not the text). */
+  hidden: boolean;
   unread: number;
   /** "Next: {when}", or null when nothing is upcoming. */
   chip: string | null;
@@ -48,6 +53,7 @@ export function rowView(row: ChatRow, timeZone: string, now = new Date()): RowVi
     time: row.last ? rowTime(row.last.at, timeZone, now) : '',
     sub: personLine(row.person),
     preview: previewOf(row),
+    hidden: !!row.last && !row.last.deleted && row.last.hiddenInPreview,
     unread: row.unread,
     chip: row.nextBooking
       ? LIST_COPY.next(formatNextAvailable(row.nextBooking.startsAt, timeZone, now))

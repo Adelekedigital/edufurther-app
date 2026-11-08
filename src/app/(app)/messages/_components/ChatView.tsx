@@ -6,6 +6,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { HiddenInPreview } from '@/components/molecules/HiddenInPreview/HiddenInPreview';
 import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
 import { useAttachedFile } from '@/lib/api/data/attachedFile';
 import { messageViewerFile } from '@/lib/utils/files';
@@ -42,6 +43,8 @@ export function ChatView({
   onDraft,
   starters,
   onRetried,
+  onReveal,
+  revealed = false,
 }: {
   person: ChatPerson;
   nextBooking: NextBooking | null;
@@ -54,6 +57,10 @@ export function ChatView({
   starters: Starter[];
   /** "Message sent." after a Try again goes through. */
   onRetried: () => void;
+  /** Preview as user: opens the Reveal modal; absent when the admin can't reveal. */
+  onReveal?: () => void;
+  /** Preview as user: revealed in this session, so the "Revealed by you" line shows. */
+  revealed?: boolean;
 }) {
   const thread = useThread(person.id);
   const outbox = useOutbox(person.id);
@@ -131,6 +138,22 @@ export function ChatView({
     [messages, outbox, timeZone, divider, t?.theirLastReadAt],
   );
 
+  // A reveal just landed: the Reveal button pressed goes as the bodies load,
+  // so focus moves to the line that says what happened. It waits while the
+  // modal still holds focus, and never takes it from elsewhere on the page.
+  const revealLine = useRef<HTMLSpanElement>(null);
+  const wasRevealed = useRef(revealed);
+  const focusReveal = useRef(false);
+  useEffect(() => {
+    if (revealed && !wasRevealed.current) focusReveal.current = true;
+    wasRevealed.current = revealed;
+    if (!focusReveal.current) return;
+    const at = document.activeElement;
+    if (at && at !== document.body && !scrollRef.current?.contains(at)) return;
+    focusReveal.current = false;
+    revealLine.current?.focus({ preventScroll: true });
+  }, [revealed, t]);
+
   const first = person.firstName;
   const lock = t?.lock ?? null;
   const empty = !!t && messages.length === 0 && outbox.length === 0;
@@ -207,6 +230,7 @@ export function ChatView({
           <Icon name="lock" size={16} className={styles.privacyIcon} />
           <span>{CHAT_COPY.privacy(first)}</span>
         </p>
+        {revealed && <HiddenInPreview revealed ref={revealLine} className={styles.revealed} />}
         {!t && <ThreadSkeleton />}
         {t?.hasMore && (
           <Button
@@ -270,6 +294,7 @@ export function ChatView({
               read={it.read}
               timeZone={timeZone}
               onOpenFile={(file) => setViewing({ file, mine: it.message.mine })}
+              onReveal={onReveal}
             />
           ) : (
             <OutboxBubble
