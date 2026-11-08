@@ -144,9 +144,11 @@
     right: 8px;
     width: auto;
   }
-  /* 44px targets on phones (PRD, Phone). */
+  /* 44px targets on phones (PRD, Phone), and 16px text so iOS doesn't zoom
+     (as the Input atom). */
   .search {
     height: var(--touch-target-min);
+    font-size: var(--text-p-md);
   }
   .retry {
     min-height: var(--touch-target-min);
