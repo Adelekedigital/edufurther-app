@@ -273,21 +273,22 @@ async function readThread(
   return toThread(data);
 }
 
-/** The most pages a full re-read goes back for, so a long scroll-back stays bounded. */
-export const REREAD_MAX_PAGES = 10;
-
 /**
  * A whole fresh read of the chat: the newest page, then older pages until it
  * reaches back to `since` (the oldest message the chat had loaded), so a
- * reload (a preview reveal) keeps the history the reader had scrolled back to.
+ * reload (a preview reveal) keeps all the history the reader had scrolled
+ * back to. No page cap: it reads only as many pages as the reader had already
+ * loaded. It stops at the top of the chat, or on a page that adds nothing.
  */
 async function rereadThread(withId: string, since: string | undefined, signal?: AbortSignal) {
   let thread = await readThread(withId, {}, signal);
   const reach = since ? Date.parse(since) : NaN;
-  for (let page = 1; page < REREAD_MAX_PAGES; page += 1) {
+  for (;;) {
     const first = thread.items[0];
     if (!thread.hasMore || !first || !(Date.parse(first.sentAt) > reach)) break;
-    thread = mergeOlder(thread, await readThread(withId, { before: first.id }, signal));
+    const next = mergeOlder(thread, await readThread(withId, { before: first.id }, signal));
+    if (next.items[0]?.id === first.id) break;
+    thread = next;
   }
   return thread;
 }
