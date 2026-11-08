@@ -4,6 +4,7 @@ import {
   isPreviewEnded,
   PREVIEW_HEADER,
   PROBLEM_PREVIEW_ENDED,
+  PROBLEM_PREVIEW_NOT_FOUND,
   PROBLEM_READ_ONLY,
 } from './previewMiddleware';
 import { previewStore, resetPreviewStoreForTests, type PreviewUser } from './previewStore';
@@ -111,6 +112,25 @@ describe('createPreviewMiddleware: answers', () => {
     const req = await send(mw, 'https://x.test/api/v1/me');
     await answer(mw, req, problem(401, { type: PROBLEM_PREVIEW_ENDED, end_reason: 'weird' }));
     expect(previewStore.get().ended?.reason).toBe('idle');
+  });
+
+  it('404 preview-not-found (an unusable header) ends it quietly; any other 404 leaves it', async () => {
+    startPreview();
+    const mw = createPreviewMiddleware();
+    const req = await send(mw, 'https://x.test/api/v1/mentors/someone');
+    await answer(mw, req, problem(404, { type: 'about:blank', title: 'Not found' }));
+    expect(previewStore.get().sessionId).toBe('s-1');
+    const req2 = await send(mw, 'https://x.test/api/v1/me');
+    await answer(
+      mw,
+      req2,
+      problem(404, { type: PROBLEM_PREVIEW_NOT_FOUND, title: 'Preview not found' }),
+    );
+    expect(previewStore.get()).toMatchObject({
+      sessionId: null,
+      ended: null,
+      dropped: { returnTo: '/admin/mentors' },
+    });
   });
 
   it('a plain 401 (token expired) leaves the preview alone', async () => {

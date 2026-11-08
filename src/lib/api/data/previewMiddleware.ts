@@ -6,6 +6,8 @@ export const PREVIEW_HEADER = 'X-EF-Preview';
 
 export const PROBLEM_READ_ONLY = '/problems/read-only-view-as';
 export const PROBLEM_PREVIEW_ENDED = '/problems/preview-ended';
+/** Any unusable preview header (malformed, unknown, another admin's, no grant, flag off): one type, on any route. */
+export const PROBLEM_PREVIEW_NOT_FOUND = '/problems/preview-not-found';
 
 /**
  * The admin's own calls never carry the header: the preview endpoints, the
@@ -51,6 +53,7 @@ export async function isPreviewEnded(response: Response): Promise<boolean> {
  * middleware, so the header is on the request auth clones for its retry.
  * - adds X-EF-Preview to every non-admin call while this tab previews;
  * - 401 /problems/preview-ended: ends the preview here ("Preview ended");
+ * - 404 /problems/preview-not-found: the preview ends quietly;
  * - 403 /problems/read-only-view-as: the "Read only" notice. Background
  *   writes are never sent in preview, so a refused write is one the admin pressed.
  */
@@ -64,7 +67,8 @@ export function createPreviewMiddleware(): Middleware {
     },
     async onResponse({ request, response }) {
       if (!request.headers.has(PREVIEW_HEADER)) return response;
-      if (response.status !== 401 && response.status !== 403) return response;
+      if (response.status !== 401 && response.status !== 403 && response.status !== 404)
+        return response;
       const p = await problemOf(response);
       if (response.status === 401 && p?.type === PROBLEM_PREVIEW_ENDED) {
         const reason =
@@ -72,6 +76,10 @@ export function createPreviewMiddleware(): Middleware {
             ? (p.end_reason as PreviewEndReason | 'exit')
             : 'idle';
         previewStore.serverEnded(reason);
+      } else if (response.status === 404 && p?.type === PROBLEM_PREVIEW_NOT_FOUND) {
+        // The tab's preview isn't one the server will serve: it ends quietly, and
+        // the cache (which may hold this answer, e.g. /me) is cleared (backend reply).
+        previewStore.serverEnded(null);
       } else if (response.status === 403 && p?.type === PROBLEM_READ_ONLY) {
         previewStore.blocked(true);
       }
