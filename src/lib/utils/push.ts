@@ -35,23 +35,29 @@ export function keyBytes(base64url: string): Uint8Array<ArrayBuffer> {
   return out;
 }
 
-function sameKey(sub: PushSubscription, key: Uint8Array): boolean {
-  const current = sub.options?.applicationServerKey;
-  if (!current) return false;
-  const a = new Uint8Array(current);
-  return a.length === key.length && a.every((b, i) => b === key[i]);
-}
-
-/** Never longer than `ms`: a worker that never gets ready mustn't hold anything up. */
+/** Never longer than `ms`: a worker that never answers mustn't hold anything up. */
 function within<T>(ms: number, work: Promise<T>): Promise<T | null> {
   return Promise.race([work, new Promise<null>((r) => setTimeout(() => r(null), ms))]);
 }
 
-/** This device's subscription, or null (none, unsupported, or no worker yet). */
-export async function currentSubscription(): Promise<PushSubscription | null> {
+/**
+ * The worker's registration, or null at once when none is registered (it
+ * failed, or hasn't happened yet): never waits on `ready`, which then never
+ * comes.
+ */
+async function registration(): Promise<ServiceWorkerRegistration | null> {
   if (!pushSupported()) return null;
   try {
-    const reg = await within(3000, navigator.serviceWorker.ready);
+    return (await within(2000, navigator.serviceWorker.getRegistration('/'))) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** This device's subscription, or null (none, unsupported, or no worker). */
+export async function currentSubscription(): Promise<PushSubscription | null> {
+  try {
+    const reg = await registration();
     return (await reg?.pushManager.getSubscription()) ?? null;
   } catch {
     return null;
@@ -59,17 +65,30 @@ export async function currentSubscription(): Promise<PushSubscription | null> {
 }
 
 /**
- * Subscribes this device to `vapidKey`, reusing a subscription made with the
- * same key. One made with an older key (a rotation) is replaced: the push
- * service would refuse the server's new signature.
+ * A fresh subscription to `vapidKey`. Any subscription already here is
+ * dropped first, never reused: it may be another account's left behind by a
+ * session that ended without Logout, or made with an older key.
  */
 export async function subscribeDevice(vapidKey: string): Promise<PushSubscription> {
-  const key = keyBytes(vapidKey);
-  const reg = await navigator.serviceWorker.ready;
+  const reg = await registration();
+  if (!reg) throw new Error('No service worker to subscribe with');
   const existing = await reg.pushManager.getSubscription();
-  if (existing && sameKey(existing, key)) return existing;
   if (existing) await existing.unsubscribe();
-  return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+  return reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: keyBytes(vapidKey),
+  });
+}
+
+/**
+ * Drops this device's subscription without asking the server, for a session
+ * that ended without Logout (expired or revoked: no token to call with). The
+ * push service then refuses the old row, and the server forgets it (410).
+ */
+export async function dropDeviceSubscription(): Promise<void> {
+  setAppBadge(0);
+  const sub = await currentSubscription();
+  await sub?.unsubscribe().catch(() => false);
 }
 
 /** The app-icon badge: the unread messages count, cleared at 0. Where supported only. */

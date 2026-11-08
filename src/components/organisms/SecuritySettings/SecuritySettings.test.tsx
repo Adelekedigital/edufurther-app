@@ -257,3 +257,18 @@ describe('SecuritySettings › notifications on this device', () => {
     expect(screen.getByRole('switch', { name: C.notificationsTitle })).toBeInTheDocument();
   });
 });
+
+describe('SecuritySettings › notifications, blocked from the switch', () => {
+  it('focus moves to the card heading when the switch goes, and the line says why', async () => {
+    const base = { busy: false, failure: null, onChange: vi.fn() };
+    const { rerender } = render(<Host notifications={{ ...base, state: 'off' }} />);
+    const sw = screen.getByRole('switch', { name: SECURITY_COPY.notificationsTitle });
+    sw.focus();
+    rerender(<Host notifications={{ ...base, state: 'off', failure: 'blocked' }} />);
+    expect(screen.getByRole('heading', { name: SECURITY_COPY.notificationsTitle })).toHaveFocus();
+    expect(screen.getByText(SECURITY_COPY.notificationsBlocked)).toHaveAttribute(
+      'aria-live',
+      'polite',
+    );
+  });
+});

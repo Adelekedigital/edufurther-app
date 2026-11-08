@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button, ButtonAnchor } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -165,16 +165,27 @@ export function SecuritySettings(p: SecuritySettingsProps) {
 function NotificationsCard(n: DeviceNotifications) {
   const labelId = useId();
   const hintId = useId();
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const blocked = n.state === 'blocked' || n.failure === 'blocked';
+  // Blocked from the switch itself: it goes, so focus moves to the card's
+  // heading rather than falling to the page; the line below says why.
+  const wasBlocked = useRef(blocked);
+  useEffect(() => {
+    if (blocked && !wasBlocked.current) {
+      const lost = !document.activeElement || document.activeElement === document.body;
+      if (lost) headingRef.current?.focus();
+    }
+    wasBlocked.current = blocked;
+  }, [blocked]);
   return (
     <section className={styles.card} aria-labelledby={labelId}>
       <div className={styles.row}>
         <Tile icon="notifications" />
         <div className={styles.text}>
-          <h2 id={labelId} className={styles.rowTitle}>
+          <h2 id={labelId} ref={headingRef} tabIndex={-1} className={styles.rowTitle}>
             {C.notificationsTitle}
           </h2>
-          <span id={hintId} className={styles.meta}>
+          <span id={hintId} className={styles.meta} aria-live="polite">
             {blocked ? C.notificationsBlocked : C.notificationsHint}
           </span>
           {n.failure === 'failed' && (

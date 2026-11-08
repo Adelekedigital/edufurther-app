@@ -46,9 +46,11 @@ const wrap = () => {
 };
 
 /** /push/config answers `config`; the device read answers `subscribed`. */
+const srv = { subscribed: false };
 function server(config: unknown, subscribed = false) {
+  srv.subscribed = subscribed;
   GET.mockImplementation((path: string) =>
-    Promise.resolve(path === '/api/v1/push/config' ? config : ok({ subscribed })),
+    Promise.resolve(path === '/api/v1/push/config' ? config : ok({ subscribed: srv.subscribed })),
   );
 }
 
@@ -120,14 +122,21 @@ describe('usePushNotifications', () => {
   it('turnOn asks the browser in the tap, subscribes, and sends only the subscription fields', async () => {
     server(ok({ vapid_public_key: 'k' }));
     requestPermission.mockResolvedValue('granted');
-    subscribeDevice.mockResolvedValue({
-      toJSON: () => ({
-        endpoint: ENDPOINT,
-        expirationTime: null,
-        keys: { p256dh: 'p', auth: 'a' },
-      }),
+    subscribeDevice.mockImplementation(async () => {
+      device.permission = 'granted';
+      device.sub = { endpoint: ENDPOINT, unsubscribe: vi.fn() };
+      return {
+        toJSON: () => ({
+          endpoint: ENDPOINT,
+          expirationTime: null,
+          keys: { p256dh: 'p', auth: 'a' },
+        }),
+      };
     });
-    POST.mockResolvedValue(ok({ subscribed: true }, 201));
+    POST.mockImplementation(async () => {
+      srv.subscribed = true;
+      return ok({ subscribed: true }, 201);
+    });
     const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
     await waitFor(() => expect(result.current.state).toBe('off'));
     act(() => result.current.turnOn());
@@ -152,6 +161,65 @@ describe('usePushNotifications', () => {
     expect(POST).not.toHaveBeenCalled();
   });
 
+  it('closing the prompt without an answer is not "blocked": still off, switch kept', async () => {
+    server(ok({ vapid_public_key: 'k' }));
+    requestPermission.mockResolvedValue('default');
+    const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.state).toBe('off'));
+    act(() => result.current.turnOn());
+    await waitFor(() => expect(result.current.busy).toBe(false));
+    expect(result.current.failure).toBeNull();
+    expect(result.current.state).toBe('off');
+    expect(subscribeDevice).not.toHaveBeenCalled();
+  });
+
+  it('a second tap before the first lands asks only once', async () => {
+    server(ok({ vapid_public_key: 'k' }));
+    requestPermission.mockReturnValue(new Promise(() => {}));
+    const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.state).toBe('off'));
+    act(() => {
+      result.current.turnOn();
+      result.current.turnOn();
+    });
+    expect(requestPermission).toHaveBeenCalledTimes(1);
+  });
+
+  it("drops a subscription here that isn't this account's (left by an ended session)", async () => {
+    const unsubscribe = vi.fn().mockResolvedValue(true);
+    device.permission = 'granted';
+    device.sub = { endpoint: ENDPOINT, unsubscribe };
+    server(ok({ vapid_public_key: 'k' }), false);
+    const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.state).toBe('off'));
+    expect(unsubscribe).toHaveBeenCalled();
+  });
+
+  it('a failed read of this device says so, rather than a silent off', async () => {
+    device.permission = 'granted';
+    device.sub = { endpoint: ENDPOINT, unsubscribe: vi.fn() };
+    GET.mockImplementation((path: string) =>
+      Promise.resolve(path === '/api/v1/push/config' ? ok({ vapid_public_key: 'k' }) : fail(500)),
+    );
+    const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
+    // A 5xx is retried once first (retryOnce).
+    await waitFor(() => expect(result.current.failure).toBe('failed'), { timeout: 3000 });
+    expect(result.current.state).toBe('off');
+  });
+
+  it('turnOff that the server refuses: failed, and still on', async () => {
+    device.permission = 'granted';
+    device.sub = { endpoint: ENDPOINT, unsubscribe: vi.fn() };
+    server(ok({ vapid_public_key: 'k' }), true);
+    DELETE.mockResolvedValue({ error: {}, response: { ok: false, status: 500 } });
+    const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.state).toBe('on'));
+    act(() => result.current.turnOff());
+    await waitFor(() => expect(result.current.failure).toBe('failed'));
+    expect(result.current.state).toBe('on');
+    expect(device.sub?.unsubscribe).not.toHaveBeenCalled();
+  });
+
   it('turnOn that the server refuses: failed, and still off', async () => {
     server(ok({ vapid_public_key: 'k' }));
     requestPermission.mockResolvedValue('granted');
@@ -171,7 +239,11 @@ describe('usePushNotifications', () => {
     device.permission = 'granted';
     device.sub = { endpoint: ENDPOINT, unsubscribe };
     server(ok({ vapid_public_key: 'k' }), true);
-    DELETE.mockResolvedValue({ response: { ok: true, status: 204 } });
+    DELETE.mockImplementation(async () => {
+      srv.subscribed = false;
+      device.sub = null;
+      return { response: { ok: true, status: 204 } };
+    });
     const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
     await waitFor(() => expect(result.current.state).toBe('on'));
     act(() => result.current.turnOff());

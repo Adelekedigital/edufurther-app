@@ -1,8 +1,8 @@
-import { act, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+
 import { PUSH_COPY } from '@/lib/copy/push';
 import { notePushMoment } from '@/lib/utils/push';
-import { PushPrompt } from './PushPrompt';
+import { ASK_DELAY_MS, PushPrompt } from './PushPrompt';
 
 const push = vi.hoisted(() => ({
   state: 'off' as string,
@@ -14,7 +14,15 @@ const push = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/api/data/push', () => ({ usePushNotifications: () => push }));
 
+/** A moment, then the short wait before the ask shows. */
+const moment = (m: 'message' | 'booking') => {
+  act(() => notePushMoment(m));
+  act(() => vi.advanceTimersByTime(ASK_DELAY_MS));
+};
+
+afterEach(() => vi.useRealTimers());
 beforeEach(() => {
+  vi.useFakeTimers();
   localStorage.clear();
   Object.assign(push, { state: 'off', askable: true, busy: false, failure: null });
   push.turnOn.mockReset();
@@ -28,25 +36,25 @@ describe('PushPrompt', () => {
 
   it('after a message: the ask, once per device; the tap turns them on', async () => {
     render(<PushPrompt userId="u1" />);
-    act(() => notePushMoment('message'));
+    moment('message');
     expect(screen.getByRole('status')).toHaveTextContent(PUSH_COPY.ask.message);
-    await userEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
+    fireEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
     expect(push.turnOn).toHaveBeenCalledTimes(1);
-    act(() => notePushMoment('booking'));
+    moment('booking');
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
   });
 
   it('never asks when it cannot be offered or the browser was asked', () => {
     push.askable = false;
     render(<PushPrompt userId="u1" />);
-    act(() => notePushMoment('booking'));
+    moment('booking');
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
   });
 
   it('says the outcome of the tap', async () => {
     const { rerender } = render(<PushPrompt userId="u1" />);
-    act(() => notePushMoment('booking'));
-    await userEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
+    moment('booking');
+    fireEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
     push.busy = true;
     rerender(<PushPrompt userId="u1" />);
     Object.assign(push, { busy: false, state: 'on', askable: false });
@@ -56,8 +64,8 @@ describe('PushPrompt', () => {
 
   it('a refusal says where to allow them', async () => {
     const { rerender } = render(<PushPrompt userId="u1" />);
-    act(() => notePushMoment('message'));
-    await userEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
+    moment('message');
+    fireEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
     push.busy = true;
     rerender(<PushPrompt userId="u1" />);
     Object.assign(push, { busy: false, failure: 'blocked' });
@@ -71,6 +79,7 @@ describe('PushPrompt', () => {
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
     push.askable = true;
     rerender(<PushPrompt userId="u1" mentorWithBookings />);
+    act(() => vi.advanceTimersByTime(ASK_DELAY_MS));
     expect(screen.getByRole('status')).toHaveTextContent(PUSH_COPY.ask.mentor);
   });
 
@@ -78,5 +87,25 @@ describe('PushPrompt', () => {
     localStorage.setItem('ef-push-asked', '1');
     render(<PushPrompt userId="u1" mentorWithBookings />);
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
+  });
+
+  it('an ask that times out unseen-to-the-end is used up only then; tapped, at once', () => {
+    render(<PushPrompt userId="u1" />);
+    moment('message');
+    expect(localStorage.getItem('ef-push-asked')).toBeNull();
+    act(() => vi.advanceTimersByTime(15_000));
+    expect(localStorage.getItem('ef-push-asked')).toBe('1');
+    expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
+  });
+
+  it('a failed turn-on points to Settings', async () => {
+    const { rerender } = render(<PushPrompt userId="u1" />);
+    moment('booking');
+    fireEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
+    push.busy = true;
+    rerender(<PushPrompt userId="u1" />);
+    Object.assign(push, { busy: false, failure: 'failed' });
+    rerender(<PushPrompt userId="u1" />);
+    expect(screen.getByRole('status')).toHaveTextContent(PUSH_COPY.failed);
   });
 });

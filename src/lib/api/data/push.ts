@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   currentSubscription,
@@ -36,6 +36,8 @@ export type PushState =
 export type PushFailure = 'blocked' | 'failed';
 
 class PushBlocked extends Error {}
+/** The prompt was closed without an answer: nothing is blocked, it can be asked again. */
+class PushDismissed extends Error {}
 
 /** null: push isn't set up on the server (503), so it's never offered. */
 async function readConfig(signal: AbortSignal): Promise<string | null> {
@@ -45,9 +47,13 @@ async function readConfig(signal: AbortSignal): Promise<string | null> {
   return data.vapid_public_key;
 }
 
-/** On: this device is subscribed and the server has it for this account. */
+/**
+ * On: this device is subscribed and the server has it for this account. A
+ * subscription here that isn't this account's is dropped: it was left by
+ * someone whose session ended without Logout, and would keep showing them
+ * their notifications on this device.
+ */
 async function readDevice(signal: AbortSignal): Promise<boolean> {
-  if (pushPermission() !== 'granted') return false;
   const sub = await currentSubscription();
   if (!sub) return false;
   const { data, error, response } = await api.GET('/api/v1/me/push-subscriptions', {
@@ -55,7 +61,8 @@ async function readDevice(signal: AbortSignal): Promise<boolean> {
     signal,
   });
   if (!data) throw apiError(response.status, error, response);
-  return data.subscribed;
+  if (!data.subscribed) await sub.unsubscribe().catch(() => false);
+  return data.subscribed && pushPermission() === 'granted';
 }
 
 /*
@@ -107,16 +114,21 @@ export function usePushNotifications(userId: string | null) {
   const vapidKey = config.data ?? null;
 
   const deviceKey = keys.push.device(userId ?? 'none');
+  const [changing, setChanging] = useState(false);
   const status = useQuery({
     queryKey: deviceKey,
-    enabled: usable && vapidKey !== null,
+    // Not while a change is on its way: a read between the new subscription
+    // and its POST would find it unknown to the server and drop it.
+    enabled: usable && vapidKey !== null && !changing,
     retry: retryOnce,
     queryFn: ({ signal }) => readDevice(signal),
   });
 
   const enable = useMutation({
     mutationFn: async (permission: Promise<NotificationPermission>) => {
-      if ((await permission) !== 'granted') throw new PushBlocked();
+      const answer = await permission;
+      if (answer === 'denied') throw new PushBlocked();
+      if (answer !== 'granted') throw new PushDismissed();
       const sub = await subscribeDevice(vapidKey!);
       const { endpoint, keys: k, expirationTime } = sub.toJSON();
       if (!endpoint || !k?.p256dh || !k.auth) throw new Error('Incomplete push subscription');
@@ -145,31 +157,53 @@ export function usePushNotifications(userId: string | null) {
     onSuccess: () => qc.setQueryData(deviceKey, false),
   });
 
+  // One change at a time, however fast the second tap: state lands a render later.
+  const inFlight = useRef(false);
+  const settle = {
+    onSettled: () => {
+      inFlight.current = false;
+      setChanging(false);
+    },
+  };
+  const begin = () => {
+    inFlight.current = true;
+    setChanging(true);
+    void qc.cancelQueries({ queryKey: deviceKey });
+  };
+
   const turnOn = useCallback(() => {
-    if (!vapidKey || enable.isPending || disable.isPending) return;
+    if (!vapidKey || inFlight.current) return;
+    begin();
     disable.reset();
     // Asked now, in the tap itself: awaiting anything first loses it on iOS.
-    enable.mutate(Notification.requestPermission());
+    enable.mutate(Notification.requestPermission(), settle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vapidKey, enable, disable]);
 
   const turnOff = useCallback(() => {
-    if (enable.isPending || disable.isPending) return;
+    if (inFlight.current) return;
+    begin();
     enable.reset();
-    disable.mutate();
+    disable.mutate(undefined, settle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enable, disable]);
 
   let state: PushState;
   if (!usable || config.isError || (config.isSuccess && vapidKey === null)) state = 'hidden';
+  else if (!config.isSuccess) state = 'loading';
   else if (device.permission === 'denied') state = 'blocked';
   else if (status.data === undefined) state = status.isError ? 'off' : 'loading';
   else state = status.data ? 'on' : 'off';
 
   const failed = enable.error ?? disable.error;
-  const failure: PushFailure | null = !failed
-    ? null
-    : failed instanceof PushBlocked
-      ? 'blocked'
-      : 'failed';
+  const failure: PushFailure | null =
+    failed instanceof PushDismissed
+      ? null
+      : failed instanceof PushBlocked
+        ? 'blocked'
+        : failed || (status.isError && status.data === undefined)
+          ? 'failed'
+          : null;
 
   return {
     state,

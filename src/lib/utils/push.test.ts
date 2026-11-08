@@ -56,3 +56,65 @@ describe('setAppBadge', () => {
     expect(() => setAppBadge(2)).not.toThrow();
   });
 });
+
+describe('the device subscription', () => {
+  type Sub = { endpoint: string; unsubscribe: ReturnType<typeof vi.fn> };
+  let existing: Sub | null;
+  const subscribe = vi.fn();
+  let reg: unknown;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    vi.stubEnv('NODE_ENV', 'production');
+    existing = null;
+    subscribe.mockReset();
+    reg = {
+      pushManager: {
+        getSubscription: async () => existing,
+        subscribe: (...a: unknown[]) => subscribe(...a),
+      },
+    };
+    Object.assign(window, {
+      PushManager: function PushManager() {},
+      Notification: { permission: 'granted' },
+    });
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: { getRegistration: vi.fn(async () => reg) },
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    delete (navigator as unknown as Record<string, unknown>).serviceWorker;
+    delete (window as unknown as Record<string, unknown>).PushManager;
+    delete (window as unknown as Record<string, unknown>).Notification;
+  });
+
+  it('no worker registered: no subscription, at once (never waits on ready)', async () => {
+    reg = undefined;
+    const m = await import('./push');
+    await expect(m.currentSubscription()).resolves.toBeNull();
+    await expect(m.subscribeDevice('aGk')).rejects.toThrow();
+  });
+
+  it('subscribing drops whatever subscription is here first, never reusing it', async () => {
+    const old = { endpoint: 'old', unsubscribe: vi.fn().mockResolvedValue(true) };
+    existing = old;
+    subscribe.mockResolvedValue({ endpoint: 'new' });
+    const m = await import('./push');
+    await expect(m.subscribeDevice('aGk')).resolves.toEqual({ endpoint: 'new' });
+    expect(old.unsubscribe).toHaveBeenCalled();
+    expect(subscribe).toHaveBeenCalledWith({
+      userVisibleOnly: true,
+      applicationServerKey: expect.any(Uint8Array),
+    });
+  });
+
+  it('an ended session drops the subscription here without asking the server', async () => {
+    const sub = { endpoint: 'x', unsubscribe: vi.fn().mockResolvedValue(true) };
+    existing = sub;
+    const m = await import('./push');
+    await m.dropDeviceSubscription();
+    expect(sub.unsubscribe).toHaveBeenCalled();
+  });
+});

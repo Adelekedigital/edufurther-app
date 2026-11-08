@@ -8,6 +8,11 @@ import { markPushAsked, onPushMoment, pushAsked, type PushMoment } from '@/lib/u
 
 /** Long enough to read and tap; Settings keeps the switch for later. */
 const ASK_MS = 15_000;
+/**
+ * The ask comes a moment after the moment itself, so the screen's own toast
+ * for it (only the newest toast shows) comes first and doesn't hide the ask.
+ */
+export const ASK_DELAY_MS = 1_200;
 const OUTCOME_MS = 5_000;
 
 type Toast = { text: string; stamp: number; ask: boolean };
@@ -42,10 +47,18 @@ export function PushPrompt({
     askable.current = push.askable;
   }, [push.askable]);
 
+  // An ask already on its way or showing: a second moment changes nothing.
+  const pending = useRef(false);
   const ask = useCallback((moment: Ask) => {
-    if (!askable.current || pushAsked()) return;
-    markPushAsked();
-    setToast({ text: PUSH_COPY.ask[moment], stamp: Date.now(), ask: true });
+    if (!askable.current || pushAsked() || pending.current) return;
+    pending.current = true;
+    setTimeout(() => {
+      if (!askable.current || pushAsked()) {
+        pending.current = false;
+        return;
+      }
+      setToast({ text: PUSH_COPY.ask[moment], stamp: Date.now(), ask: true });
+    }, ASK_DELAY_MS);
   }, []);
   useEffect(() => onPushMoment(ask), [ask]);
   // Once push can be offered here (its config has loaded), not before.
@@ -72,7 +85,18 @@ export function PushPrompt({
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), toast.ask ? ASK_MS : OUTCOME_MS);
+    const t = setTimeout(
+      () => {
+        // Asked once it has been on screen its whole time, or tapped: never
+        // before, so an ask nobody saw doesn't use up the device's one ask.
+        if (toast.ask) {
+          markPushAsked();
+          pending.current = false;
+        }
+        setToast(null);
+      },
+      toast.ask ? ASK_MS : OUTCOME_MS,
+    );
     return () => clearTimeout(t);
   }, [toast]);
 
@@ -86,6 +110,8 @@ export function PushPrompt({
               label: PUSH_COPY.turnOn,
               onClick: () => {
                 phase.current = 'asked';
+                markPushAsked();
+                pending.current = false;
                 setToast(null);
                 push.turnOn();
               },
