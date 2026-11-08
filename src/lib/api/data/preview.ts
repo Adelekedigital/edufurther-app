@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
@@ -117,6 +117,9 @@ export function usePreviewActions() {
   const qc = useQueryClient();
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  // One pick at a time (code review): a ref, so even two clicks in the same
+  // tick can't both send, and the last answer can't open someone else.
+  const inFlight = useRef(false);
   const [error, setError] = useState<PreviewStartError | null>(null);
 
   // The order matters (code review): the page being left stops drawing first,
@@ -137,6 +140,8 @@ export function usePreviewActions() {
   /** Pick someone: a new session, or a switch of the live one (no exit needed). */
   const preview = useCallback(
     async (target: Target, from?: string | null) => {
+      if (inFlight.current) return false;
+      inFlight.current = true;
       setPending(true);
       setError(null);
       try {
@@ -169,6 +174,7 @@ export function usePreviewActions() {
         setError('failed');
         return false;
       } finally {
+        inFlight.current = false;
         setPending(false);
       }
     },
