@@ -245,6 +245,11 @@ export const keys = {
     creditLog: (me: string, type: string) => ['admin', me, 'credit-log', type] as const,
     creditRules: (me: string) => ['admin', me, 'credit-rules'] as const,
   },
+  /** Push notifications (push.ts): the server's key, and this device's state per account. */
+  push: {
+    config: ['push', 'config'] as const,
+    device: (userId: string) => ['push', 'device', userId] as const,
+  },
   /**
    * Messages (PRD Messages), keyed by the signed-in user (`me`). A read moves
    * the thread's read mark and invalidates `chats` and `unread`; a send patches

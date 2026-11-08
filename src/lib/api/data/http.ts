@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch';
 import type { paths } from '@/lib/api/generated/schema';
 import { getAccessToken, refreshAccessToken, signOut } from '@/lib/vendor/supabase/browser';
+import { dropDeviceSubscription } from '@/lib/utils/push';
 import { createAuthMiddleware } from './authMiddleware';
 import { createPreviewMiddleware, isPreviewEnded } from './previewMiddleware';
 
@@ -31,7 +32,13 @@ api.use(
   createAuthMiddleware({
     getToken: getAccessToken,
     refresh: refreshAccessToken,
-    onExpired: signOut,
+    // An ended session (expired or revoked) leaves no pushes behind on this
+    // device for the next person: there is no token to tell the server, so
+    // the subscription itself goes (lib/utils/push).
+    onExpired: async () => {
+      void dropDeviceSubscription();
+      await signOut();
+    },
     isFinal: isPreviewEnded,
   }),
 );

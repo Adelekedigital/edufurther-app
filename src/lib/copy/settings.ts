@@ -138,6 +138,12 @@ export const SECURITY_COPY = {
   viaGoogle: (email: string) => `With Google (${email}).`,
   viaCode: (email: string) => `With a 6-digit code sent to ${email}.`,
   alsoCode: 'You can also log in with a code sent to this email.',
+  notificationsTitle: 'Notifications on this device',
+  notificationsHint:
+    'New messages, booking requests and replies, and a reminder 5 minutes before each session.',
+  notificationsBlocked:
+    'Notifications are blocked for EduFurther here. Allow them in your browser or phone settings, then come back.',
+  notificationsFailed: "We couldn't change your notifications. Please try again.",
   deleteHeading: 'Delete account',
   deleteBodyMentee:
     'Deletes your profile, goals, bookings and messages. You have 30 days to restore it through support.',

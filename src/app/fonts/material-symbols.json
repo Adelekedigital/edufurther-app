@@ -97,6 +97,7 @@
     "my_location",
     "new_releases",
     "no_photography",
+    "notifications",
     "open_in_new",
     "palette",
     "pause_circle",
@@ -165,5 +166,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "b6739f44fcf0ec22747743cff36ba94314095541fde91c777cac5ebf821e2440"
+  "sha256": "da446eecb4b1a6c940717954a84bd32a45187fad09f451ef9581200afab4922b"
 }

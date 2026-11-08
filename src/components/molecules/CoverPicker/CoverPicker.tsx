@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { Switch } from '@/components/atoms/Switch/Switch';
+import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
 import { COVER_KEYS, coverVars, type CoverKey } from '@/lib/utils/cover';
 import { cx } from '@/lib/utils/cx';
 import styles from './CoverPicker.module.css';
@@ -58,8 +58,6 @@ export function CoverPicker(props: CoverPickerProps) {
   const dialogId = useId();
   const titleId = useId();
   const hintId = useId();
-  const artId = useId();
-  const artHintId = useId();
   const imageErrorId = useId();
 
   // "Saved" shows for a moment after each save (design: 1.8s).
@@ -208,22 +206,18 @@ export function CoverPicker(props: CoverPickerProps) {
             })}
           </div>
           {/* Shown with an image too (CoverPicker.dc.html): the art saves for when the image goes. */}
-          <div className={styles.artRow}>
-            <span className={styles.artText}>
-              <span id={artId} className={styles.artLabel}>
-                Show my topics on the cover
-              </span>
-              <span id={artHintId} className={styles.hint}>
-                Faint icons from your first 3 topics.
-              </span>
-            </span>
-            <Switch
-              checked={artOn}
-              onChange={onToggleArt}
-              aria-labelledby={artId}
-              aria-describedby={artHintId}
-            />
-          </div>
+          <SwitchRow
+            label="Show my topics on the cover"
+            hint="Faint icons from your first 3 topics."
+            checked={artOn}
+            onChange={onToggleArt}
+            classes={{
+              row: styles.artRow,
+              text: styles.artText,
+              label: styles.artLabel,
+              hint: styles.hint,
+            }}
+          />
           <div className={styles.divider} aria-hidden />
           <button
             type="button"

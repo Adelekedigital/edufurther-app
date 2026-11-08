@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button, ButtonAnchor } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -10,6 +10,7 @@ import { Input } from '@/components/atoms/Input/Input';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
 import { SECURITY_COPY as C } from '@/lib/copy/settings';
 import { supportHref } from '@/lib/utils/mailto';
 import type { LoginProvider } from '@/types/settings';
@@ -50,6 +51,20 @@ export type SecuritySettingsProps = {
   /** Why the delete failed, in our words; the confirm stays open. */
   deleteError: string | null;
   renderShell: (shell: DeleteShell, body: ReactNode) => ReactNode;
+  /**
+   * Notifications on this device (decision 312). Absent: nothing to offer
+   * here (unsupported, push not set up, or a preview), so no card.
+   */
+  notifications?: DeviceNotifications;
+};
+
+export type DeviceNotifications = {
+  state: 'loading' | 'blocked' | 'on' | 'off';
+  /** A change is on its way: the switch waits for it. */
+  busy: boolean;
+  /** Why the last change didn't happen, if it didn't. */
+  failure: 'blocked' | 'failed' | null;
+  onChange: (on: boolean) => void;
 };
 
 /**
@@ -107,6 +122,8 @@ export function SecuritySettings(p: SecuritySettingsProps) {
         </div>
       </section>
 
+      {p.notifications && <NotificationsCard {...p.notifications} />}
+
       <section className={styles.danger} aria-labelledby={dangerId}>
         <div className={styles.dangerText}>
           <h2 id={dangerId} className={styles.dangerTitle}>
@@ -137,6 +154,52 @@ export function SecuritySettings(p: SecuritySettingsProps) {
 
       {p.deleteOpen && <DeleteConfirm {...p} mentor={mentor} />}
     </div>
+  );
+}
+
+/**
+ * One switch for this device: a phone and a laptop are each turned on where
+ * they are. Blocked in the browser or phone settings: no switch, as only those
+ * settings can undo it, and the line says so.
+ */
+function NotificationsCard(n: DeviceNotifications) {
+  const headingRef = useRef<HTMLElement>(null);
+  const blocked = n.state === 'blocked' || n.failure === 'blocked';
+  // Blocked from the switch itself: it goes, so focus moves to the card's
+  // heading rather than falling to the page; the line below says why.
+  const wasBlocked = useRef(blocked);
+  useEffect(() => {
+    if (blocked && !wasBlocked.current) {
+      const lost = !document.activeElement || document.activeElement === document.body;
+      if (lost) headingRef.current?.focus();
+    }
+    wasBlocked.current = blocked;
+  }, [blocked]);
+  return (
+    <section className={styles.card} aria-label={C.notificationsTitle}>
+      <SwitchRow
+        label={C.notificationsTitle}
+        labelAs="h2"
+        labelRef={headingRef}
+        labelFocusable
+        hint={blocked ? C.notificationsBlocked : C.notificationsHint}
+        hintLive
+        checked={n.state === 'on'}
+        onChange={n.onChange}
+        busy={n.busy}
+        loading={n.state === 'loading'}
+        noSwitch={blocked}
+        leading={<Tile icon="notifications" />}
+        after={
+          n.failure === 'failed' && (
+            <span className={styles.failed} role="alert">
+              {C.notificationsFailed}
+            </span>
+          )
+        }
+        classes={{ row: styles.row, text: styles.text, label: styles.rowTitle, hint: styles.meta }}
+      />
+    </section>
   );
 }
 

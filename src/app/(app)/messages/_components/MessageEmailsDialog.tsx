@@ -1,10 +1,8 @@
 'use client';
 
-import { useId } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
-import { Switch } from '@/components/atoms/Switch/Switch';
+import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useMessageSettings, useSaveMessageSettings } from '@/lib/api/data/messages';
 import { SETTINGS_COPY } from '@/lib/copy/messages';
@@ -16,8 +14,6 @@ import styles from './MessageEmailsDialog.module.css';
  * closes with the on/off toast. A sheet on phones.
  */
 export function MessageEmailsDialog({ onDone }: { onDone: (toast: string | null) => void }) {
-  const titleId = useId();
-  const hintId = useId();
   const settings = useMessageSettings(true);
   const save = useSaveMessageSettings();
   const on = settings.data?.unreadEmails;
@@ -38,31 +34,23 @@ export function MessageEmailsDialog({ onDone }: { onDone: (toast: string | null)
       closeDisabled={saving}
     >
       <div className={styles.body}>
-        <div className={styles.row}>
-          <span className={styles.copy}>
-            <span id={titleId} className={styles.label}>
-              {SETTINGS_COPY.switchLabel}
-            </span>
-            <span id={hintId} className={styles.hint}>
-              {SETTINGS_COPY.switchHint}
-            </span>
-          </span>
-          {on === undefined ? (
-            settings.error ? null : (
-              <Skeleton width="39px" height="24px" radius="full" />
-            )
-          ) : (
-            <Switch
-              checked={on}
-              aria-labelledby={titleId}
-              aria-describedby={hintId}
-              className={styles.switch}
-              // One save at a time: a second flip mid-save could land out of order.
-              disabled={saving}
-              onChange={(next) => save.mutate({ unreadEmails: next })}
-            />
-          )}
-        </div>
+        <SwitchRow
+          label={SETTINGS_COPY.switchLabel}
+          hint={SETTINGS_COPY.switchHint}
+          checked={!!on}
+          loading={on === undefined && !settings.error}
+          noSwitch={on === undefined && !!settings.error}
+          // One save at a time: a second flip mid-save could land out of order.
+          disabled={saving}
+          onChange={(next) => save.mutate({ unreadEmails: next })}
+          classes={{
+            row: styles.row,
+            text: styles.copy,
+            label: styles.label,
+            hint: styles.hint,
+            switch: styles.switch,
+          }}
+        />
         {settings.error && !settings.data && (
           <p className={styles.error} role="alert">
             {SETTINGS_COPY.loadError}{' '}

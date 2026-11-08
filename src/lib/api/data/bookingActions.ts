@@ -7,6 +7,7 @@ import type { PickableReason } from '@/types/booking';
 import { ApiError, apiError, normaliseError, retryAfterMinutes } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { notePushMoment } from '@/lib/utils/push';
 
 export type BookingAction = 'accept' | 'decline' | 'withdraw' | 'cancel';
 
@@ -152,6 +153,11 @@ export function useBookingAction(action: BookingAction) {
       }
     },
     retry: false,
+    // A mentor accepting is a moment worth knowing the next one by: the
+    // one-time notifications ask may follow (lib/utils/push).
+    onSuccess: () => {
+      if (action === 'accept') notePushMoment('booking');
+    },
     onSettled: () => {
       // On failure too: a 409 means the row has already moved, and the only way
       // to show what it moved to is to ask.

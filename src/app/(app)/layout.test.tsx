@@ -26,6 +26,14 @@ vi.mock('@/lib/api/data/viewer', () => ({
 }));
 vi.mock('@/lib/utils/useOnline', () => ({ useOnline: () => h.online }));
 vi.mock('@/app/_shell/useAppShell', () => ({ useAppShell: () => h.shell }));
+// The notifications ask has its own tests; here only what the layout passes it.
+const pushPrompt = vi.hoisted(() => vi.fn());
+vi.mock('@/app/_shell/PushPrompt', () => ({
+  PushPrompt: (p: unknown) => {
+    pushPrompt(p);
+    return null;
+  },
+}));
 vi.mock('@/components/templates/AppShell/AppShell', () => ({
   // Stand-in that records the props the layout passes.
   AppShell: (props: {
@@ -158,5 +166,15 @@ describe('routes that share this shell', () => {
     const { join } = await import('node:path');
     expect(existsSync(join(__dirname, 'mentors', '[handle]', 'page.tsx'))).toBe(true);
     expect(existsSync(join(__dirname, '..', 'mentors'))).toBe(false);
+  });
+});
+
+describe('onHomeOrBookings', () => {
+  it('Home and Bookings only', async () => {
+    const { onHomeOrBookings } = await import('./layout');
+    expect(onHomeOrBookings('/dashboard')).toBe(true);
+    expect(onHomeOrBookings('/bookings')).toBe(true);
+    expect(onHomeOrBookings('/messages')).toBe(false);
+    expect(onHomeOrBookings('/explore')).toBe(false);
   });
 });

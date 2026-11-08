@@ -171,3 +171,32 @@ describe('refusals say what happened, in our words', () => {
     expect(post).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('the notifications ask', () => {
+  it.each([
+    ['accept', ['booking']],
+    ['decline', []],
+    ['withdraw', []],
+    ['cancel', []],
+  ] as const)('%s: moments %j', async (action, expected) => {
+    const { onPushMoment } = await import('@/lib/utils/push');
+    const heard: string[] = [];
+    const stop = onPushMoment((m) => heard.push(m));
+    post.mockResolvedValue(ok());
+    const result = await run(action);
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    stop();
+    expect(heard).toEqual(expected);
+  });
+
+  it('a failed accept is no moment', async () => {
+    const { onPushMoment } = await import('@/lib/utils/push');
+    const heard: string[] = [];
+    const stop = onPushMoment((m) => heard.push(m));
+    post.mockResolvedValue(fail(409));
+    const result = await run('accept');
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    stop();
+    expect(heard).toEqual([]);
+  });
+});
