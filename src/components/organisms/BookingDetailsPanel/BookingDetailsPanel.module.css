@@ -4,8 +4,8 @@
 .aside {
   flex: 0 0 380px;
   position: sticky;
-  top: var(--space-6);
-  max-height: calc(100vh - 64px - var(--space-6) * 2);
+  top: calc(var(--space-6) + var(--ef-va-h));
+  max-height: calc(100vh - 64px - var(--space-6) * 2 - var(--ef-va-h));
   display: flex;
   flex-direction: column;
   border: var(--border-hairline) solid var(--ink-200);

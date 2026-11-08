@@ -12,7 +12,7 @@
 .bar {
   position: sticky;
   /* Under the shell's sticky header (the design's top: 0 would slide beneath it). */
-  top: calc(var(--navbar-h-mobile) + env(safe-area-inset-top));
+  top: calc(var(--navbar-h-mobile) + env(safe-area-inset-top) + var(--ef-va-h));
   z-index: 20;
   margin: calc(var(--space-6) * -1) calc(var(--space-7) * -1) 0;
   padding: var(--space-4) var(--space-7);

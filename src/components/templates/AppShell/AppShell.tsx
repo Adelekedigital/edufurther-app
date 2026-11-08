@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AccountMenu, type AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
@@ -159,6 +160,11 @@ type AppShellProps = {
   };
   /** The setup lock (accessFor): what is held, and where Home goes meanwhile. */
   access?: Access;
+  /**
+   * Preview as user's way in (AppShell.dc.html `vaEntry`): an admin who may
+   * preview, while not previewing. The header's preview icon opens the bar.
+   */
+  onPreview?: () => void;
   offline: boolean;
   children: ReactNode;
 };
@@ -175,6 +181,7 @@ export function AppShell({
   chrome,
   account,
   access,
+  onPreview,
   offline,
   children,
 }: AppShellProps) {
@@ -226,6 +233,16 @@ export function AppShell({
         expanded={creditsOpen}
         controls={creditsId}
         onClick={togglePill}
+      />
+    ) : null;
+  const previewEntry = () =>
+    onPreview ? (
+      <IconButton
+        icon="preview"
+        size="lg"
+        aria-label="Preview as user"
+        title="Preview as user"
+        onClick={onPreview}
       />
     ) : null;
   const counts = account?.counts ?? {};
@@ -296,7 +313,12 @@ export function AppShell({
         <Link href="/" prefetch={PREFETCH} className={styles.logo} aria-label="EduFurther home">
           <BrandLogo width={180} height={24} priority />
         </Link>
-        {member && credits && <div className={styles.headerCredits}>{pill()}</div>}
+        {member && (credits || onPreview) && (
+          <div className={styles.headerCredits}>
+            {pill()}
+            {previewEntry()}
+          </div>
+        )}
         {guest && (
           <div className={styles.guestActions}>
             <ButtonLink href="/login" prefetch={PREFETCH} variant="secondary-outlined" size="large">
@@ -350,7 +372,12 @@ export function AppShell({
           </nav>
         )}
         <div className={styles.column}>
-          {member && <div className={styles.contentBar}>{pill()}</div>}
+          {member && (
+            <div className={styles.contentBar}>
+              {pill()}
+              {previewEntry()}
+            </div>
+          )}
           {member && offline && (
             <div className={styles.offlineColumn}>
               <OfflineBanner />

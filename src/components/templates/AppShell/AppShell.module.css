@@ -1,6 +1,7 @@
 .shell {
-  min-height: 100vh;
-  min-height: 100dvh;
+  /* Under the Preview as user bar when it shows (--ef-va-h, 0 otherwise). */
+  min-height: calc(100vh - var(--ef-va-h));
+  min-height: calc(100dvh - var(--ef-va-h));
   display: flex;
   flex-direction: column;
   background: var(--surface-page);
@@ -23,7 +24,7 @@
 
 .header {
   position: sticky;
-  top: 0;
+  top: var(--ef-va-h);
   z-index: 10;
   flex: none;
   height: var(--navbar-h-mobile);
@@ -59,10 +60,10 @@
   /* Its own layer: the account menu inside it must paint over in-page
      popovers (30), and stay under "Your credits" (40), modals (50), toasts (100). */
   z-index: 35;
-  top: 0;
+  top: var(--ef-va-h);
   align-self: flex-start;
-  height: 100vh;
-  height: 100dvh;
+  height: calc(100vh - var(--ef-va-h));
+  height: calc(100dvh - var(--ef-va-h));
   width: 88px;
   flex: none;
   box-sizing: border-box;
@@ -244,7 +245,7 @@
    bell, which isn't built (design-divergence.md), so it's an empty bar. */
 .contentBar {
   position: sticky;
-  top: 0;
+  top: var(--ef-va-h);
   z-index: 10;
   flex: none;
   height: var(--navbar-h-mobile);
@@ -252,6 +253,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: var(--space-2);
   padding: 0 var(--space-6);
   background: var(--surface-page);
   border-bottom: var(--border-hairline) solid var(--border-subtle);
@@ -467,7 +469,7 @@
   }
 }
 
-/* Phones: the credits pill on the right of the member header. */
+/* Phones: the credits pill and the preview icon on the right of the member header. */
 .headerCredits {
   display: flex;
   align-items: center;

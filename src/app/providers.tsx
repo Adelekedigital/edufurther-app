@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionHintProvider } from '@/lib/api/data/session';
+import { PreviewRoot } from './_shell/PreviewRoot';
 import type { SessionState } from '@/lib/vendor/supabase/browser';
 
 export function Providers({
@@ -23,7 +24,10 @@ export function Providers({
   );
   return (
     <QueryClientProvider client={client}>
-      <SessionHintProvider hint={session}>{children}</SessionHintProvider>
+      <SessionHintProvider hint={session}>
+        {/* Preview as user: the bar above every app screen, when an admin previews. */}
+        <PreviewRoot>{children}</PreviewRoot>
+      </SessionHintProvider>
     </QueryClientProvider>
   );
 }
