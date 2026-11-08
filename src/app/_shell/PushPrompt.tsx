@@ -85,18 +85,25 @@ export function PushPrompt({
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(
-      () => {
-        // Asked once it has been on screen its whole time, or tapped: never
-        // before, so an ask nobody saw doesn't use up the device's one ask.
-        if (toast.ask) {
-          markPushAsked();
-          pending.current = false;
-        }
-        setToast(null);
-      },
-      toast.ask ? ASK_MS : OUTCOME_MS,
-    );
+    const ms = toast.ask ? ASK_MS : OUTCOME_MS;
+    let t: ReturnType<typeof setTimeout>;
+    const dismiss = () => {
+      // Someone is on the toast's button (keyboard, screen reader): it stays
+      // until they leave it, as the Home Undo toast does, so focus never
+      // falls to the page.
+      if (document.activeElement?.closest('[role="status"]')) {
+        t = setTimeout(dismiss, ms);
+        return;
+      }
+      // Asked once it has been on screen its whole time, or tapped: never
+      // before, so an ask nobody saw doesn't use up the device's one ask.
+      if (toast.ask) {
+        markPushAsked();
+        pending.current = false;
+      }
+      setToast(null);
+    };
+    t = setTimeout(dismiss, ms);
     return () => clearTimeout(t);
   }, [toast]);
 

@@ -108,4 +108,17 @@ describe('PushPrompt', () => {
     rerender(<PushPrompt userId="u1" />);
     expect(screen.getByRole('status')).toHaveTextContent(PUSH_COPY.failed);
   });
+
+  it('stays while its button has focus, so focus never falls to the page', () => {
+    render(<PushPrompt userId="u1" />);
+    moment('message');
+    const button = screen.getByRole('button', { name: PUSH_COPY.turnOn });
+    button.focus();
+    act(() => vi.advanceTimersByTime(15_000));
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveFocus();
+    button.blur();
+    act(() => vi.advanceTimersByTime(15_000));
+    expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
+  });
 });

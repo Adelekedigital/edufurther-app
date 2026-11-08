@@ -14,6 +14,8 @@ vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./profileScreen.harness')).mocks.appShell(),
 );
 // A profile is shared (no role redirect); the redirect has its own tests.
+// The notifications ask is the shell's, tested on its own.
+vi.mock('@/app/_shell/PushPrompt', () => ({ PushPrompt: () => null }));
 vi.mock('@/app/_shell/RoleRedirect', () => ({
   RoleRedirect: ({ children }: { children: ReactNode }) => children,
 }));
