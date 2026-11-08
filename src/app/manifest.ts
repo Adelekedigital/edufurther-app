@@ -15,8 +15,10 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: BRAND_WHITE,
     theme_color: BRAND_BLUE,
     icons: [
-      // PLACEHOLDER icons (design says so too) — replace with the final brand icon.
-      { src: '/pwa-icon/192', sizes: '192x192', type: 'image/png' },
+      // The swoosh "e" on white (owner, 2026-11-07; app/pwa-icon). Sized to the
+      // maskable safe zone, so one image serves both purposes.
+      { src: '/pwa-icon/192', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: '/pwa-icon/512', sizes: '512x512', type: 'image/png', purpose: 'any' },
       { src: '/pwa-icon/512', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
   };
