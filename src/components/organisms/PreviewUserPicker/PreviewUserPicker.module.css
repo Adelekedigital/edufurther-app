@@ -1,0 +1,154 @@
+/* AppShell.dc.html "View as user (admin)" picker panel. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 49;
+}
+.panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 340px;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--white);
+  color: var(--ink-900);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(--shadow-menu),
+    inset 0 0 0 1px var(--ink-200);
+}
+.head {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--ink-100);
+}
+.search {
+  width: 100%;
+  height: var(--button-h-medium);
+  box-sizing: border-box;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--ink-300);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  color: var(--ink-900);
+}
+.search::placeholder {
+  color: var(--text-placeholder);
+}
+.search:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+}
+.roles {
+  margin-top: var(--space-2);
+}
+.miss {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--red-50);
+  color: var(--red-700);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+}
+.miss > :first-child {
+  flex: none;
+}
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+}
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.note {
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.skeletons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+}
+.skeleton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--touch-target-min);
+}
+.skeletonText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.retry {
+  min-height: var(--button-compact-h);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+}
+.retry:hover {
+  color: var(--blue-700);
+}
+.retry:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+/* Where "more on scroll" watches: the list's end. */
+.end {
+  flex: none;
+  height: 1px;
+}
+
+/* Phones: full width, 8px from each edge, just under the bar. */
+@media (max-width: 767px) {
+  .panel {
+    position: fixed;
+    /* Just under the bar on phones (its own height token, set in this PR). */
+    top: calc(var(--preview-bar-h-phone) + 4px);
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+  /* 44px targets on phones (PRD, Phone). */
+  .search {
+    height: var(--touch-target-min);
+  }
+  .retry {
+    min-height: var(--touch-target-min);
+  }
+}

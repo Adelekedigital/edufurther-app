@@ -1,0 +1,50 @@
+/* AppShell.dc.html `vaUsers` row. */
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 52px;
+  box-sizing: border-box;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-ui);
+}
+.row:hover,
+.active {
+  background: var(--ink-50);
+}
+.selected,
+.selected:hover {
+  background: var(--blue-50);
+}
+/* The keyboard's row, on the chosen one too: a ring, since both are tinted. */
+.active {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+.text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+.who {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.check {
+  flex: none;
+  color: var(--blue-500);
+}

@@ -106,6 +106,7 @@
     "photo_camera",
     "picture_as_pdf",
     "power",
+    "preview",
     "progress_activity",
     "psychology",
     "public",
@@ -164,5 +165,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "a15b31815e21f6d73d8cd2194f7ade3b2e0c5614f4b0aa9c1468b295717d2f7d"
+  "sha256": "b6739f44fcf0ec22747743cff36ba94314095541fde91c777cac5ebf821e2440"
 }

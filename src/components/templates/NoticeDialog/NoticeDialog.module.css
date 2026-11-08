@@ -1,0 +1,10 @@
+/* The message (Modal.dc.html confirm body: p-sm, ink-700). */
+.body {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.body strong {
+  color: var(--ink-900);
+}
