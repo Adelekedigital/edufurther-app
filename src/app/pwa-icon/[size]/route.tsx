@@ -6,6 +6,14 @@ import { ImageResponse } from 'next/og';
  * /public and point app/manifest.ts at them.
  * Colours are the manifest's theme colour and white; ImageResponse cannot read CSS variables.
  */
+/** Built once per deploy for each size (no render billed per request). */
+export const dynamic = 'force-static';
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return [{ size: '192' }, { size: '512' }];
+}
+
 export async function GET(_req: Request, { params }: { params: Promise<{ size: string }> }) {
   const { size } = await params;
   const px = size === '512' ? 512 : 192;

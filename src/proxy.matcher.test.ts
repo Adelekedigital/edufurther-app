@@ -37,3 +37,11 @@ describe('proxy matcher', () => {
     }
   });
 });
+
+describe('proxy matcher: the PWA files never pay for a session check', () => {
+  it('the worker, the offline page, icons and splash screens are skipped', () => {
+    for (const url of ['/sw.js', '/offline.html', '/pwa-icon/192', '/pwa-splash/1290x2796']) {
+      expect(runs(url), url).toBe(false);
+    }
+  });
+});

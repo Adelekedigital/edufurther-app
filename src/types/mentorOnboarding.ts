@@ -57,10 +57,10 @@ export type MentorApplicationState = {
   lastStep: MentorStep | null;
   /** A mentor profile exists (step 1 has been saved at least once). */
   hasProfile: boolean;
-  /** Submitted and not yet decided (PENDING BACKEND B2 `submitted_at`). */
+  /** Submitted and not yet decided (`mentor_profile.submitted_at`, from the published spec). */
   submitted: boolean;
   approvalStatus: 'pending' | 'approved' | 'declined' | null;
-  /** The one-time approved screen was seen (PENDING BACKEND B1 `approved_seen_at`). */
+  /** The one-time approved screen was seen (`mentor_profile.approved_seen_at`, from the published spec). */
   approvedSeen: boolean;
   /** An "Intro chat" session type already exists: step 4 never makes a second. */
   hasIntroChat: boolean;

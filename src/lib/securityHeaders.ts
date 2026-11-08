@@ -13,3 +13,13 @@ export const SECURITY_HEADERS = [
     headers: [{ key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' }],
   },
 ];
+
+/**
+ * The service worker (public/sw.js, ADR 0011) is always revalidated, so a fix
+ * to it reaches every device on its next visit. The offline page too: it is
+ * precached at install, and a stale copy would outlive its own fix.
+ */
+export const PWA_HEADERS = [
+  { source: '/sw.js', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
+  { source: '/offline.html', headers: [{ key: 'Cache-Control', value: 'no-cache' }] },
+];

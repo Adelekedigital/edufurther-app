@@ -6,13 +6,19 @@ import type { SessionState } from '@/lib/vendor/supabase/browser';
 import { fontVariables } from './fonts';
 import { Providers } from './providers';
 import { RouteFocusManager } from './_shell/RouteFocusManager';
+import { ServiceWorkerRegistration } from './_shell/ServiceWorkerRegistration';
+import { APPLE_STARTUP_IMAGES } from './pwa-splash/sizes';
 import '@/styles/globals.css';
 import { BRAND_BLUE } from '@/styles/brand';
 
 export const metadata: Metadata = {
   title: { default: 'EduFurther', template: '%s · EduFurther' },
   description: 'Experience-led mentorship for your study-abroad journey.',
-  appleWebApp: { capable: true, title: 'EduFurther' },
+  // startupImage: the iPhone's launch screen (logo on white) instead of black.
+  appleWebApp: { capable: true, title: 'EduFurther', startupImage: APPLE_STARTUP_IMAGES },
+  // Next 16 writes only the unprefixed `mobile-web-app-capable`; iOS reads the
+  // launch screens of a home-screen app that declares the Apple one.
+  other: { 'apple-mobile-web-app-capable': 'yes' },
   icons: { apple: '/pwa-icon/192' },
 };
 
@@ -35,6 +41,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
     <html lang="en" className={fontVariables}>
       <body>
         <RouteFocusManager />
+        <ServiceWorkerRegistration />
         <Providers session={await sessionHint()}>{children}</Providers>
       </body>
     </html>
