@@ -119,6 +119,9 @@ export function PreviewRoot({ children }: { children: ReactNode }) {
     const onClick = (e: MouseEvent) => {
       const a = (e.target as Element | null)?.closest?.('a[href]');
       if (!(a instanceof HTMLAnchorElement) || e.defaultPrevented) return;
+      // A new tab or window (modifier or middle click) opens as the admin anyway
+      // (PRD: a new tab opens as the admin), so the browser keeps it (GitHub review).
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
       const to = serverRoute(a.href);
       if (!to) return;
       e.preventDefault();

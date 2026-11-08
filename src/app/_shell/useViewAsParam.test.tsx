@@ -87,6 +87,10 @@ describe('useViewAsParam (?viewAs=, PRD Ways in)', () => {
     h.pathname = '/explore';
     rerender();
     expect(result.current).toBe(false);
+    // Coming back to /home later, with no parameter, shows the page (GitHub review).
+    h.pathname = '/home';
+    rerender();
+    expect(result.current).toBe(false);
   });
 
   it('an admin who may preview: starts it from this page, the parameter gone', () => {

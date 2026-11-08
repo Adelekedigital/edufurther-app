@@ -54,6 +54,10 @@ export function useViewAsParam(
     void preview({ email }, url.pathname);
   }, [viewer.kind, may, pathname, router, preview]);
 
-  // Not found holds for the page it was asked on; moving on clears it.
+  // Not found holds only for the visit it was asked on: leaving that page
+  // clears it, so a later plain visit to the same path shows the page (GitHub review).
+  useEffect(() => {
+    if (denied !== null && denied !== pathname) previewStore.undeny();
+  }, [denied, pathname]);
   return denied !== null && denied === pathname;
 }

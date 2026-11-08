@@ -361,3 +361,44 @@ describe('PreviewRoot: the notices', () => {
     expect(previewStore.get().dropped).toBeNull();
   });
 });
+
+describe('PreviewRoot: links the server answers as the admin', () => {
+  const linkTo = (href: string) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.textContent = 'go';
+    document.body.appendChild(a);
+    return a;
+  };
+
+  it('Join shows Read only; a plain click on Home routes to the previewed Home', () => {
+    renderRoot();
+    act(() => startAmara());
+    const join = linkTo('/sessions/s-9/enter');
+    act(() => join.click());
+    expect(previewStore.get().blocked).toBe(true);
+    const home = linkTo('/');
+    act(() => home.click());
+    expect(h.push).toHaveBeenLastCalledWith('/home');
+    join.remove();
+    home.remove();
+  });
+
+  it('a Ctrl, Cmd or middle click is left to the browser (a new tab opens as the admin)', () => {
+    renderRoot();
+    act(() => startAmara());
+    act(() => previewStore.blocked(false));
+    const join = linkTo('/sessions/s-9/enter');
+    const ev = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
+    act(() => {
+      join.dispatchEvent(ev);
+    });
+    expect(previewStore.get().blocked).toBe(false);
+    const meta = new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true });
+    act(() => {
+      join.dispatchEvent(meta);
+    });
+    expect(previewStore.get().blocked).toBe(false);
+    join.remove();
+  });
+});
