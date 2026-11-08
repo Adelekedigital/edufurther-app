@@ -84,6 +84,15 @@ describe('api (http.ts): Preview as user before auth', () => {
     });
   });
 
+  it('a write is never sent: no fetch, no refresh, the caller gets the read-only 403', async () => {
+    const { error, response } = await api.POST('/api/v1/me/mentor-application/approved-seen');
+    expect(h.fetch).not.toHaveBeenCalled();
+    expect(h.refresh).not.toHaveBeenCalled();
+    expect(response.status).toBe(403);
+    expect(error).toMatchObject({ type: '/problems/read-only-view-as' });
+    expect(previewStore.get().blocked).toBe(true);
+  });
+
   it('the admin’s own calls go without the header', async () => {
     h.fetch.mockResolvedValueOnce(json(200, { data: [], next_cursor: null }));
     await api.GET('/api/v1/admin/users', { params: { query: { role: 'all' } } });
