@@ -92,6 +92,17 @@ describe('PreviewUserPicker: the combobox', () => {
     expect(search).not.toHaveAttribute('aria-activedescendant');
   });
 
+  it('a page added on scroll keeps the row the keyboard is on, and Enter still picks it', async () => {
+    const { search, view, props } = setup();
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}');
+    const on = search.getAttribute('aria-activedescendant');
+    expect(on).toBeTruthy();
+    view.rerender(<PreviewUserPicker {...props} users={[...props.users, user(8), user(9)]} />);
+    expect(search).toHaveAttribute('aria-activedescendant', on!);
+    await userEvent.keyboard('{Enter}');
+    expect(props.onPick).toHaveBeenCalledWith(props.users[1]);
+  });
+
   it('typing reports the query', async () => {
     function Controlled() {
       const [q, setQ] = useState('');
