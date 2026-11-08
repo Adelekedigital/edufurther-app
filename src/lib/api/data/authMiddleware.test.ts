@@ -61,3 +61,53 @@ describe('createAuthMiddleware', () => {
     expect(onExpired).toHaveBeenCalledOnce();
   });
 });
+
+describe('createAuthMiddleware: isFinal (Preview as user)', () => {
+  it('a 401 isFinal says yes to is returned as it is: no refresh, no retry, no sign-out', async () => {
+    const refresh = vi.fn(async () => 'new');
+    const onExpired = vi.fn(async () => {});
+    const fetch = vi.fn();
+    const isFinal = vi.fn(async () => true);
+    const mw = createAuthMiddleware({
+      getToken: async () => 'old',
+      refresh,
+      onExpired,
+      isFinal,
+      fetch: fetch as unknown as typeof globalThis.fetch,
+    });
+    const first = new Response('{"type":"/problems/preview-ended"}', { status: 401 });
+    const res = await run(mw, new Request('https://x.test/api/v1/me'), first);
+    expect(res).toBe(first);
+    expect(isFinal).toHaveBeenCalledWith(first);
+    expect(refresh).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+    expect(onExpired).not.toHaveBeenCalled();
+  });
+
+  it('a 401 isFinal says no to still refreshes and retries', async () => {
+    const fetch = vi.fn(async () => new Response(null, { status: 200 }));
+    const mw = createAuthMiddleware({
+      getToken: async () => 'old',
+      refresh: async () => 'new',
+      onExpired: vi.fn(),
+      isFinal: async () => false,
+      fetch: fetch as unknown as typeof globalThis.fetch,
+    });
+    const res = await run(mw, new Request('https://x.test/a'), new Response(null, { status: 401 }));
+    expect(res.status).toBe(200);
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+
+  it('isFinal is only asked about a 401', async () => {
+    const isFinal = vi.fn(async () => true);
+    const mw = createAuthMiddleware({
+      getToken: async () => 'old',
+      refresh: vi.fn(),
+      onExpired: vi.fn(),
+      isFinal,
+    });
+    await run(mw, new Request('https://x.test/a'), new Response(null, { status: 403 }));
+    await run(mw, new Request('https://x.test/a'), new Response(null, { status: 200 }));
+    expect(isFinal).not.toHaveBeenCalled();
+  });
+});

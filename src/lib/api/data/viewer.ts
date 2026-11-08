@@ -17,6 +17,7 @@ import { api } from './http';
 import { menteeByChoice } from './roles';
 import { keys } from './keys';
 import { useSession } from './session';
+import { previewStore } from './previewStore';
 
 type UserRead = components['schemas']['UserRead'];
 
@@ -66,6 +67,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     // A grant with no role named reads as the narrowest one: the UI never offers
     // a decision the API might refuse.
     adminRole: me.is_admin ? (me.admin_role ?? 'limited_access') : null,
+    canPreviewAsUser: me.can_preview_as_user === true,
     bookingCounts: {
       pending: sumSides(
         me.booking_counts?.as_mentor?.awaiting_your_response,
@@ -237,11 +239,13 @@ MOCK_VIEWERS.admin = {
   initials: 'AO',
   isAdmin: true,
   adminRole: 'super_admin',
+  canPreviewAsUser: true,
 };
 MOCK_VIEWERS['admin-mentor'] = {
   ...(MOCK_VIEWERS.mentor as Extract<Viewer, { kind: 'member' }>),
   isAdmin: true,
   adminRole: 'super_admin',
+  canPreviewAsUser: true,
 };
 MOCK_VIEWERS['admin-limited'] = { ...MOCK_VIEWERS.admin, adminRole: 'limited_access' } as Viewer;
 
@@ -283,8 +287,15 @@ function useMockViewer(): Viewer | null {
     () => null,
   );
   const hydrated = useHydrated();
+  // Preview as user: the mock /me answers as the previewed role, as the real one does.
+  const previewRole = useSyncExternalStore(
+    previewStore.subscribe,
+    () => previewStore.get().user?.role ?? null,
+    () => null,
+  );
   if (!env) return null;
   if (!hydrated) return MOCK_PENDING;
+  if (previewRole) return MOCK_VIEWERS[previewRole]!;
   const byRoute = onMentorPage(path) ? 'mentor' : onAdminPage(path) ? 'admin' : env;
   const pick = param ?? byRoute;
   // Own keys only: `?mockViewer=constructor` must not reach Object.prototype.
