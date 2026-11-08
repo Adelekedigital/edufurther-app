@@ -227,26 +227,33 @@ export function useRestorePreview() {
   useEffect(() => {
     if (!sessionId || user) return;
     const ctrl = new AbortController();
-    void (async () => {
-      try {
-        const { data, response } = await api.GET('/api/v1/admin/preview-sessions/{preview_id}', {
-          params: { path: { preview_id: sessionId } },
-          signal: ctrl.signal,
-        });
-        if (data?.ended_at) {
-          previewStore.serverEnded(data.end_reason, toPreviewUser(data.user).name);
-        } else if (data) {
-          const v = fromSession(data);
-          previewStore.started(v.id, v.user, v.access);
-        } else if (response.status === 404) {
-          previewStore.serverEnded(null);
-        }
-      } catch {
-        // Offline or aborted: the next call tells (a 401 preview-ended ends it).
-      }
-    })();
+    void readPreviewSession(sessionId, ctrl.signal);
     return () => ctrl.abort();
   }, [sessionId, user]);
+}
+
+/**
+ * GET /{id} and settle the store from it: ended_at ends it ("Preview ended"
+ * for idle or the cap), a live one fills it in, and a 404 (not ours, or gone)
+ * ends it quietly. Offline or aborted leaves it be: the next call tells.
+ */
+async function readPreviewSession(sessionId: string, signal?: AbortSignal) {
+  try {
+    const { data, response } = await api.GET('/api/v1/admin/preview-sessions/{preview_id}', {
+      params: { path: { preview_id: sessionId } },
+      signal,
+    });
+    if (data?.ended_at) {
+      previewStore.serverEnded(data.end_reason, toPreviewUser(data.user).name);
+    } else if (data) {
+      const v = fromSession(data);
+      previewStore.started(v.id, v.user, v.access);
+    } else if (response.status === 404) {
+      previewStore.serverEnded(null);
+    }
+  } catch {
+    // Offline or aborted: the next call tells (a 401 preview-ended ends it).
+  }
 }
 
 /** The longest reason the reveal takes (backend `PreviewReveal.reason`). */
@@ -268,11 +275,23 @@ export function useRevealPreview() {
         '/api/v1/admin/preview-sessions/{preview_id}/reveals',
         { params: { path: { preview_id: id } }, body: { reason } },
       );
-      if (!data) throw apiError(response.status, error, response);
+      if (!data) {
+        // An admin call carries no preview header, so the preview middleware
+        // never sees these: 409 is a session that has ended (read it, so idle
+        // or the cap says "Preview ended"), 404 one that isn't ours any more.
+        if (response.status === 409) await readPreviewSession(id);
+        else if (response.status === 404) previewStore.serverEnded(null);
+        throw apiError(response.status, error, response);
+      }
       return data;
     },
-    onSuccess: () => {
-      previewStore.revealed();
+    onSuccess: (data) => {
+      // Only for the session and person it was asked for: a late answer after
+      // a switch (same id, new user) must not mark the new person revealed.
+      const now = previewStore.get();
+      if (data.revealed && data.id === now.sessionId && data.user.user_id === now.user?.id) {
+        previewStore.revealed();
+      }
       void reloadMessages(qc);
     },
   });

@@ -6,8 +6,13 @@ import { useRevealPreview } from './preview';
 import { previewStore, resetPreviewStoreForTests } from './previewStore';
 
 const POST = vi.fn();
+const GET = vi.fn();
 vi.mock('./http', () => ({
-  api: { GET: vi.fn(), POST: (...a: unknown[]) => POST(...a), PATCH: vi.fn() },
+  api: {
+    GET: (...a: unknown[]) => GET(...a),
+    POST: (...a: unknown[]) => POST(...a),
+    PATCH: vi.fn(),
+  },
 }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 
@@ -46,6 +51,7 @@ function setup() {
 
 beforeEach(() => {
   POST.mockReset();
+  GET.mockReset();
   resetPreviewStoreForTests();
   previewStore.started('ps-1', AMARA, { revealed: false, canReveal: true }, '/admin');
 });
@@ -80,6 +86,50 @@ describe('useRevealPreview', () => {
     const { result } = setup();
     act(() => result.current.mutate('Ticket 4821'));
     await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(previewStore.get().revealed).toBe(false);
+  });
+
+  const refused = (status: number) => ({
+    data: undefined,
+    error: { detail: 'no' },
+    response: new Response(null, { status }),
+  });
+
+  it('a 409 is a preview that has ended: it reads the session, so the cap says "Preview ended"', async () => {
+    POST.mockResolvedValue(refused(409));
+    GET.mockResolvedValue({
+      data: { ...session, ended_at: '2026-11-07T12:00:00Z', end_reason: 'max_length' },
+      response: new Response(null, { status: 200 }),
+    });
+    const { result } = setup();
+    act(() => result.current.mutate('Ticket 4821'));
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    const s = previewStore.get();
+    expect(s.sessionId).toBeNull();
+    expect(s.ended).toEqual({ name: 'Amara Okafor', reason: 'max_length', returnTo: '/admin' });
+  });
+
+  it('a 404 is a preview that is no longer ours: it ends quietly', async () => {
+    POST.mockResolvedValue(refused(404));
+    const { result } = setup();
+    act(() => result.current.mutate('Ticket 4821'));
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(GET).not.toHaveBeenCalled();
+    const s = previewStore.get();
+    expect(s.sessionId).toBeNull();
+    expect(s.ended).toBeNull();
+    expect(s.dropped).toEqual({ returnTo: '/admin' });
+  });
+
+  it('a late answer after a switch does not mark the new person revealed', async () => {
+    let answer: (v: unknown) => void = () => {};
+    POST.mockReturnValue(new Promise((r) => (answer = r)));
+    const { result } = setup();
+    act(() => result.current.mutate('Ticket 4821'));
+    const ujunwa = { ...AMARA, id: 'u-ujunwa', name: 'Ujunwa Eze', firstName: 'Ujunwa' };
+    act(() => previewStore.started('ps-1', ujunwa, { revealed: false, canReveal: true }));
+    answer({ data: session, response: new Response(null, { status: 201 }) });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(previewStore.get().revealed).toBe(false);
   });
 });

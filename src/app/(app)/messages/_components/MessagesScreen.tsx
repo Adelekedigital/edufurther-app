@@ -59,9 +59,11 @@ export function MessagesScreen() {
   const preview = usePreview();
   const previewing = preview.sessionId !== null;
   const revealed = previewing && preview.revealed;
-  const [revealing, setRevealing] = useState(false);
-  const onReveal =
-    previewing && preview.canReveal && !preview.revealed ? () => setRevealing(true) : undefined;
+  // Tied to the session it was opened in, so an end or a new preview closes it.
+  const [revealingIn, setRevealingIn] = useState<string | null>(null);
+  const canReveal = previewing && preview.canReveal && !preview.revealed;
+  const onReveal = canReveal ? () => setRevealingIn(preview.sessionId) : undefined;
+  const revealing = canReveal && revealingIn === preview.sessionId;
   // Each chat keeps its unsent text while you switch chats (PRD "Drafts").
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
@@ -141,7 +143,7 @@ export function MessagesScreen() {
           }}
         />
       )}
-      {revealing && <RevealLauncher onClose={() => setRevealing(false)} />}
+      {revealing && <RevealLauncher onClose={() => setRevealingIn(null)} />}
       <Snackbar message={toast?.text ?? null} stamp={toast?.id} />
     </>
   );

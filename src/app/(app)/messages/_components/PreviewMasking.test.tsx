@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { previewStore, resetPreviewStoreForTests } from '@/lib/api/data/previewStore';
 import type { Message } from '@/types/messages';
@@ -130,6 +130,21 @@ describe('Messages in a preview (Preview as user)', () => {
     await user.type(dialog.getByRole('textbox', { name: 'Reason' }), 'Ticket 4821');
     await user.click(dialog.getByRole('button', { name: 'Reveal' }));
     expect(reveal).toHaveBeenCalledWith('Ticket 4821', expect.anything());
+  });
+
+  it('the preview ending closes Reveal, and the next preview does not reopen it', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    previewAs({ revealed: false, canReveal: true });
+    openMasked();
+    render(<MessagesScreen />);
+    await user.click(chat().getAllByRole('button', { name: 'Reveal' })[0]!);
+    expect(screen.getByRole('dialog', { name: 'Reveal hidden details' })).toBeInTheDocument();
+
+    act(() => previewStore.serverEnded('max_length'));
+    expect(screen.queryByRole('dialog', { name: 'Reveal hidden details' })).not.toBeInTheDocument();
+
+    act(() => previewStore.started('ps-2', AMARA, { revealed: false, canReveal: true }, '/admin'));
+    expect(screen.queryByRole('dialog', { name: 'Reveal hidden details' })).not.toBeInTheDocument();
   });
 
   it('revealed: the bodies show, with the "Revealed by you" line', () => {
