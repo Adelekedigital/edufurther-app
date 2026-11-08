@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, type ReactNode } from 'react';
+import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { PreviewUser } from '@/lib/api/data/previewStore';
 import { PREVIEW_COPY, type AppEnv } from '@/lib/copy/preview';
@@ -51,11 +52,18 @@ export const PreviewBar = forwardRef<HTMLButtonElement, PreviewBarProps>(functio
       </span>
       {user && <span className={styles.who}>{PREVIEW_COPY.who(user.name, user.role)}</span>}
       <span className={styles.spacer} />
-      <span className={styles.chip}>
-        <Icon name="lock" size={14} />
+      {/* The DS orange accent Badge, the one orange allowed in product UI (project-conventions). */}
+      <Badge
+        type="accent"
+        color="orange"
+        shape="pill"
+        size="md"
+        icon="lock"
+        className={styles.chip}
+      >
         <span className={styles.long}>{PREVIEW_COPY.chip(env)}</span>
         <span className={styles.short}>{PREVIEW_COPY.chipShort}</span>
-      </span>
+      </Badge>
       <button
         type="button"
         className={styles.exit}

@@ -67,14 +67,6 @@
 }
 .chip {
   flex: none;
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 2px var(--space-2);
-  border-radius: var(--radius-full);
-  background: var(--orange-50);
-  color: var(--orange-800);
-  font-weight: var(--weight-semibold);
 }
 .exit {
   flex: none;

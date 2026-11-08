@@ -117,7 +117,23 @@ describe('PreviewUserPicker: the combobox', () => {
     render(<Controlled />);
     await userEvent.keyboard('zz');
     expect(screen.getByRole('combobox')).toHaveValue('zz');
-    expect(screen.getByText('No users match “zz”.')).toBeInTheDocument();
+    // Shown under the list, and said once by the always-mounted live region.
+    expect(screen.getByRole('status')).toHaveTextContent('No users match “zz”.');
+    expect(screen.getAllByText('No users match “zz”.')).toHaveLength(2);
+  });
+
+  it('a modal dialog: focus starts in the search, Escape closes from anywhere in it', async () => {
+    const { props } = setup({ status: 'error', users: [] });
+    expect(screen.getByRole('dialog', { name: 'Choose a user to preview as' })).toHaveAttribute(
+      'aria-modal',
+      'true',
+    );
+    expect(screen.getByRole('combobox')).toHaveFocus();
+    // Escape away from the search (the Tab wrap is the shared useFocusTrap's,
+    // tested there and in the browser: jsdom has no layout for its visibility check).
+    screen.getByRole('button', { name: 'Try again' }).focus();
+    await userEvent.keyboard('{Escape}');
+    expect(props.onClose).toHaveBeenCalledOnce();
   });
 
   it('the current person is selected, with a check', () => {
@@ -161,10 +177,10 @@ describe('PreviewUserPicker: role filter (the shared RadioChips row)', () => {
 });
 
 describe('PreviewUserPicker: states', () => {
-  it('loading: a busy status "Loading users", no rows', () => {
+  it('loading: the live region says "Loading users", the list is busy, no rows', () => {
     setup({ status: 'loading', users: [] });
-    const status = screen.getByRole('status', { name: 'Loading users' });
-    expect(status).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('status')).toHaveTextContent('Loading users');
+    expect(screen.getByRole('listbox').parentElement).toHaveAttribute('aria-busy', 'true');
     expect(screen.queryAllByRole('option')).toHaveLength(0);
     // The listbox stays: the combobox's aria-controls still names it.
     expect(screen.getByRole('listbox')).toBeInTheDocument();
@@ -198,9 +214,9 @@ describe('PreviewUserPicker: states', () => {
     );
   });
 
-  it('loading more: a status under the rows', () => {
+  it('loading more: the live region says so, the rows stay', () => {
     setup({ more: more({ hasMore: true, loadingMore: true }) });
-    expect(screen.getByRole('status', { name: 'Loading more users' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Loading more users');
     expect(screen.getAllByRole('option')).toHaveLength(3);
   });
 

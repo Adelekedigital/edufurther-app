@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { PreviewUserRow } from '@/components/molecules/PreviewUserRow/PreviewUserRow';
 import { RadioChips } from '@/components/molecules/RadioChips/RadioChips';
 import type { PreviewRole, PreviewUser } from '@/lib/api/data/previewStore';
 import { PREVIEW_COPY } from '@/lib/copy/preview';
+import { useFocusTrap } from '@/lib/utils/useFocusTrap';
 import styles from './PreviewUserPicker.module.css';
 
 export type PickerRole = 'all' | PreviewRole;
@@ -65,6 +67,10 @@ export function PreviewUserPicker({
   const rowId = useId();
   const [active, setActive] = useState(-1);
   const end = useRef<HTMLDivElement>(null);
+  // A dialog like every other here (GitHub review): Tab stays inside, Escape
+  // closes from anywhere in it, and focus goes back to the bar's button.
+  const panel = useRef<HTMLDivElement>(null);
+  useFocusTrap(panel, onClose);
   // A new answer starts the keyboard from the top.
   const [seen, setSeen] = useState(users);
   if (seen !== users) {
@@ -86,10 +92,7 @@ export function PreviewUserPicker({
   }, [hasMore, loadingMore, loadMoreFailed, loadMore]);
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      onClose();
-    } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && users.length > 0) {
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && users.length > 0) {
       e.preventDefault();
       const step = e.key === 'ArrowDown' ? 1 : -1;
       const next = Math.min(users.length - 1, Math.max(0, active + step));
@@ -102,10 +105,26 @@ export function PreviewUserPicker({
   };
 
   const ready = status === 'ready';
+  const announce = useAnnouncement(
+    status === 'loading'
+      ? PREVIEW_COPY.picker.loading
+      : loadingMore
+        ? PREVIEW_COPY.picker.loadingMore
+        : ready && users.length === 0
+          ? PREVIEW_COPY.picker.noMatch(query.trim())
+          : null,
+  );
   return (
     <>
       <div className={styles.scrim} aria-hidden onClick={onClose} />
-      <div id={id} role="dialog" aria-label={PREVIEW_COPY.picker.panel} className={styles.panel}>
+      <div
+        ref={panel}
+        id={id}
+        role="dialog"
+        aria-modal="true"
+        aria-label={PREVIEW_COPY.picker.panel}
+        className={styles.panel}
+      >
         <div className={styles.head}>
           <input
             type="search"
@@ -143,7 +162,9 @@ export function PreviewUserPicker({
             </p>
           )}
         </div>
-        <div className={styles.body}>
+        {/* Always mounted, so each new status is heard (GitHub review; LiveRegion). */}
+        <LiveRegion message={announce} />
+        <div className={styles.body} aria-busy={status === 'loading' || loadingMore || undefined}>
           {/* Always in the panel while open: the combobox's aria-controls names it. */}
           <ul
             id={listId}
@@ -164,15 +185,11 @@ export function PreviewUserPicker({
               ))}
           </ul>
           {ready && users.length === 0 && (
-            <p role="status" className={styles.note}>
-              {PREVIEW_COPY.picker.noMatch(query.trim())}
-            </p>
+            <p className={styles.note}>{PREVIEW_COPY.picker.noMatch(query.trim())}</p>
           )}
-          {status === 'loading' && <SkeletonRows label={PREVIEW_COPY.picker.loading} />}
+          {status === 'loading' && <SkeletonRows />}
           {status === 'error' && <RetryNote text={PREVIEW_COPY.picker.error} onRetry={onRetry} />}
-          {ready && loadingMore && (
-            <SkeletonRows label={PREVIEW_COPY.picker.loadingMore} count={1} />
-          )}
+          {ready && loadingMore && <SkeletonRows count={1} />}
           {ready && loadMoreFailed && (
             <RetryNote text={PREVIEW_COPY.picker.moreFailed} onRetry={loadMore} />
           )}
@@ -195,10 +212,10 @@ function RetryNote({ text, onRetry }: { text: string; onRetry: () => void }) {
   );
 }
 
-/** The design's loading rows: a 32px circle and two bars (`vaSkel`). */
-function SkeletonRows({ label, count = 3 }: { label: string; count?: number }) {
+/** The design's loading rows: a 32px circle and two bars (`vaSkel`); the LiveRegion says "Loading users". */
+function SkeletonRows({ count = 3 }: { count?: number }) {
   return (
-    <div role="status" aria-busy="true" aria-label={label} className={styles.skeletons}>
+    <div aria-hidden className={styles.skeletons}>
       {Array.from({ length: count }, (_, i) => (
         <div key={i} className={styles.skeleton}>
           <Skeleton width="32px" height="32px" radius="full" />
@@ -210,4 +227,15 @@ function SkeletonRows({ label, count = 3 }: { label: string; count?: number }) {
       ))}
     </div>
   );
+}
+
+/** The LiveRegion message for `text`: a new id each time the words change, none when there are none. */
+function useAnnouncement(text: string | null) {
+  const [message, setMessage] = useState<{ text: string; id: number } | null>(null);
+  const [last, setLast] = useState<string | null>(null);
+  if (text !== last) {
+    setLast(text);
+    setMessage(text ? { text, id: (message?.id ?? 0) + 1 } : null);
+  }
+  return message;
 }
