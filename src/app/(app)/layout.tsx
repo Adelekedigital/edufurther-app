@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
+import { PushPrompt } from '@/app/_shell/PushPrompt';
 import { RoleRedirect } from '@/app/_shell/RoleRedirect';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -35,6 +36,20 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
 /** The admin app's pages, by their segment under `/admin`. */
 const ADMIN_ACTIVE: Record<string, string> = { mentors: 'Mentors', credits: 'Credits' };
 
+/** Home or Bookings: where a mentor with bookings may be asked about notifications. */
+export function onHomeOrBookings(pathname: string): boolean {
+  const nav = activeFor(pathname);
+  return nav === 'Home' || nav === 'Bookings';
+}
+
+/** At least one booking, upcoming or pending, by /me's counts. */
+function hasBookings(member: {
+  bookingCounts?: { pending: number | null; upcoming: number | null };
+}) {
+  const c = member.bookingCounts;
+  return (c?.pending ?? 0) + (c?.upcoming ?? 0) > 0;
+}
+
 export function activeFor(pathname: string): string {
   const [, segment = '', sub = ''] = pathname.split('/');
   if (segment === 'admin') return ADMIN_ACTIVE[sub] ?? '';
@@ -53,7 +68,7 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { chrome, account, nav, adminEntry, access, messages, onPreview } = useAppShell();
+  const { chrome, account, nav, adminEntry, access, messages, onPreview, member } = useAppShell();
   const online = useOnline();
 
   return (
@@ -69,6 +84,10 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       offline={!online}
     >
       <RoleRedirect>{children}</RoleRedirect>
+      <PushPrompt
+        userId={member?.id ?? null}
+        mentorWithBookings={!!member?.isMentor && onHomeOrBookings(pathname) && hasBookings(member)}
+      />
     </AppShell>
   );
 }

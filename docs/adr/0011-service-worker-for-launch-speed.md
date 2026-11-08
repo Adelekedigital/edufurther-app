@@ -113,3 +113,33 @@ Bad:
 - Tests: `src/lib/utils/sw.test.ts` runs the real worker in a fake worker
   scope; plus `src/app/sw.js/route.test.ts`, `serviceWorker.test.ts`,
   `pwa-splash/sizes.test.ts` and `proxy.matcher.test.ts`
+
+## Amendment (2026-11-08): push notifications
+
+The worker also shows push notifications (decision 312, backend #386). The
+caching rules above are unchanged: the push half never touches a cache.
+
+- **Payload** `{type, title, body, url, tag, badge}`, written by the server.
+  The lock screen gets only who and what, never message text. `tag` replaces
+  an earlier notification about the same chat or session. `badge` (unread
+  messages) sets the app icon, cleared at 0. An unreadable payload still shows
+  a plain "EduFurther" notification: a silent push is penalised by browsers.
+- **Taps** open `url` as sent, but only as a path on this origin; anything
+  else (another site, `//host`, a non-path) opens Home. An open window is
+  brought forward and moved there; otherwise a new one opens.
+- **Subscribing** (`lib/api/data/push.ts`, `lib/utils/push.ts`): only where
+  the Push API exists (an iPhone needs the Home Screen app), never in a
+  Preview as user, and never when `/push/config` answers 503. The browser's
+  prompt is asked in the tap itself, before anything is awaited (iOS).
+  A subscription made with an older server key is replaced.
+- **Where it's offered**: Settings › Login and security, "Notifications on
+  this device", for both roles; and a one-time toast per device after a
+  meaningful moment: a message sent, a booking made, a booking accepted, or a
+  mentor with bookings on Home or Bookings (owner, 2026-11-08).
+- **Sign-out** removes the server row (skipped in a preview, where it would be 403) and the subscription itself, and clears the badge, before the session
+  ends, within 2 s.
+- **Badge** also follows the app's own unread count while the app is open,
+  never a previewed person's.
+- Tests: `src/lib/utils/sw.push.test.ts` (the real worker's push and click
+  handlers), `lib/api/data/push.test.tsx`, `lib/utils/push.test.ts`,
+  `app/_shell/PushPrompt.test.tsx`, and the SecuritySettings card tests.

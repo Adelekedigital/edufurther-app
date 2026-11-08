@@ -1,8 +1,10 @@
 /*
  * EduFurther service worker (ADR 0011), served at /sw.js by src/app/sw.js,
- * which fills in BUILD with the deploy's id. Its one job: make a cold launch
+ * which fills in BUILD with the deploy's id. Its first job: make a cold launch
  * of the installed app fast by keeping the app's code on the device, so
  * nothing but the page itself has to come over the network.
+ *
+ * It also shows push notifications (the end of this file).
  *
  * What it never does, by design:
  * - serve a page from cache: pages are drawn per person (the session hint, the
@@ -136,4 +138,88 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(staleWhileRevalidate(event));
   }
   // Everything else: the browser's own handling, untouched.
+});
+
+/*
+ * Push notifications (decision 312). The server sends
+ * { type, title, body, url, tag, badge }:
+ * - the lock screen shows only who and what ("New message from Ada"), never
+ *   message text: the server writes it that way;
+ * - `tag` replaces an earlier notification about the same chat or session;
+ * - `badge` is the receiver's unread messages count, for the app icon;
+ * - `url` is opened as sent, but only ever inside this app (a path on this
+ *   origin): anything else opens Home.
+ */
+
+const FALLBACK = { title: 'EduFurther', body: 'You have a new update.' };
+
+function readPush(event) {
+  try {
+    const data = event.data ? event.data.json() : null;
+    return data && typeof data === 'object' ? data : {};
+  } catch {
+    return {};
+  }
+}
+
+/** A path on this origin, or Home. Never another site. */
+function inAppUrl(raw) {
+  if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return '/';
+  try {
+    const url = new URL(raw, self.location.origin);
+    return url.origin === self.location.origin ? url.pathname + url.search + url.hash : '/';
+  } catch {
+    return '/';
+  }
+}
+
+function setBadge(count) {
+  const nav = self.navigator;
+  if (typeof count !== 'number' || !Number.isFinite(count)) return undefined;
+  if (count > 0 && nav.setAppBadge) return nav.setAppBadge(Math.floor(count)).catch(() => {});
+  if (count <= 0 && nav.clearAppBadge) return nav.clearAppBadge().catch(() => {});
+  return undefined;
+}
+
+self.addEventListener('push', (event) => {
+  const data = readPush(event);
+  const title = typeof data.title === 'string' && data.title ? data.title : FALLBACK.title;
+  const body = typeof data.body === 'string' ? data.body : FALLBACK.body;
+  const options = {
+    body,
+    icon: '/pwa-icon/192',
+    data: { url: inAppUrl(data.url) },
+  };
+  if (typeof data.tag === 'string' && data.tag) {
+    options.tag = data.tag;
+    // The same chat again: tell them again, not silently.
+    options.renotify = true;
+  }
+  // Every push shows a notification (userVisibleOnly): browsers penalise a silent one.
+  event.waitUntil(
+    Promise.all([self.registration.showNotification(title, options), setBadge(data.badge)]),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const path = inAppUrl(event.notification.data && event.notification.data.url);
+  event.waitUntil(
+    (async () => {
+      const target = new URL(path, self.location.origin).href;
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      // An open window of the app: bring it forward on the right screen.
+      for (const client of windows) {
+        if (new URL(client.url).origin !== self.location.origin) continue;
+        try {
+          const focused = await client.focus();
+          if (client.url !== target && focused.navigate) await focused.navigate(target);
+          return;
+        } catch {
+          // Not navigable (not controlled yet): open a new one below.
+        }
+      }
+      await self.clients.openWindow(target);
+    })(),
+  );
 });

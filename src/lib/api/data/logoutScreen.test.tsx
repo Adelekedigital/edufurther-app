@@ -28,6 +28,7 @@ vi.mock('@/lib/vendor/supabase/browser', () => ({
 const navigate = vi.fn();
 // Sign-out ends a Preview as user first (./preview); none is live here.
 vi.mock('./preview', () => ({ endPreviewForSignOut: async () => {} }));
+vi.mock('./push', () => ({ forgetPushForSignOut: async () => {} }));
 vi.mock('@/lib/utils/hardNavigate', () => ({ hardNavigate: (p: string) => navigate(p) }));
 
 const { useSession, SessionHintProvider } = await import('./session');

@@ -17,6 +17,7 @@ import {
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import { beginSignOut } from './session';
 import { endPreviewForSignOut } from './preview';
+import { forgetPushForSignOut } from './push';
 import { clearAllBookingDrafts } from '@/lib/utils/bookingDraft';
 
 export { authConfigured, signedInUser };
@@ -80,6 +81,9 @@ export function useSignOut(to: `/login${string}` = '/login', beforeLeave?: () =>
     focusManager.setEventListener(() => () => {});
     onlineManager.setEventListener(() => () => {});
     void qc.cancelQueries();
+    // This device stops getting this account's pushes, while the token still
+    // works (bounded at 2 s; skips the server call in a preview).
+    await forgetPushForSignOut();
     // A preview ends with the admin's session (PRD, Session end), logged as sign_out.
     await endPreviewForSignOut();
     try {

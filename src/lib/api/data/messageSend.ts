@@ -8,6 +8,7 @@ import { keys } from './keys';
 import { inTimeOrder, toMessage } from './messages';
 import { api } from './http';
 import { sessionKey, useSession } from './session';
+import { notePushMoment } from '@/lib/utils/push';
 
 /**
  * The outbox: messages this tab has written and the server hasn't stored yet.
@@ -73,6 +74,8 @@ async function post(item: OutboxItem): Promise<boolean> {
     if (!response.ok || !data) throw apiError(response.status, error, response);
     update(item.clientId, null);
     settle(item.to, toMessage(data));
+    // A message sent: the one-time notifications ask may follow (lib/utils/push).
+    notePushMoment('message');
     return true;
   } catch (e) {
     // No response at all while offline: wait for the connection, don't fail.

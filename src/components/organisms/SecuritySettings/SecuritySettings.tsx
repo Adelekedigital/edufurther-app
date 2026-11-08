@@ -8,6 +8,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Input } from '@/components/atoms/Input/Input';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
+import { Switch } from '@/components/atoms/Switch/Switch';
 import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SECURITY_COPY as C } from '@/lib/copy/settings';
@@ -50,6 +51,20 @@ export type SecuritySettingsProps = {
   /** Why the delete failed, in our words; the confirm stays open. */
   deleteError: string | null;
   renderShell: (shell: DeleteShell, body: ReactNode) => ReactNode;
+  /**
+   * Notifications on this device (decision 312). Absent: nothing to offer
+   * here (unsupported, push not set up, or a preview), so no card.
+   */
+  notifications?: DeviceNotifications;
+};
+
+export type DeviceNotifications = {
+  state: 'loading' | 'blocked' | 'on' | 'off';
+  /** A change is on its way: the switch waits for it. */
+  busy: boolean;
+  /** Why the last change didn't happen, if it didn't. */
+  failure: 'blocked' | 'failed' | null;
+  onChange: (on: boolean) => void;
 };
 
 /**
@@ -107,6 +122,8 @@ export function SecuritySettings(p: SecuritySettingsProps) {
         </div>
       </section>
 
+      {p.notifications && <NotificationsCard {...p.notifications} />}
+
       <section className={styles.danger} aria-labelledby={dangerId}>
         <div className={styles.dangerText}>
           <h2 id={dangerId} className={styles.dangerTitle}>
@@ -137,6 +154,51 @@ export function SecuritySettings(p: SecuritySettingsProps) {
 
       {p.deleteOpen && <DeleteConfirm {...p} mentor={mentor} />}
     </div>
+  );
+}
+
+/**
+ * One switch for this device: a phone and a laptop are each turned on where
+ * they are. Blocked in the browser or phone settings: no switch, as only those
+ * settings can undo it, and the line says so.
+ */
+function NotificationsCard(n: DeviceNotifications) {
+  const labelId = useId();
+  const hintId = useId();
+  const blocked = n.state === 'blocked' || n.failure === 'blocked';
+  return (
+    <section className={styles.card} aria-labelledby={labelId}>
+      <div className={styles.row}>
+        <Tile icon="notifications" />
+        <div className={styles.text}>
+          <h2 id={labelId} className={styles.rowTitle}>
+            {C.notificationsTitle}
+          </h2>
+          <span id={hintId} className={styles.meta}>
+            {blocked ? C.notificationsBlocked : C.notificationsHint}
+          </span>
+          {n.failure === 'failed' && (
+            <span className={styles.failed} role="alert">
+              {C.notificationsFailed}
+            </span>
+          )}
+        </div>
+        {n.state === 'loading' ? (
+          <Skeleton width="39px" height="24px" radius="full" />
+        ) : (
+          !blocked && (
+            <Switch
+              checked={n.state === 'on'}
+              aria-labelledby={labelId}
+              aria-describedby={hintId}
+              aria-busy={n.busy || undefined}
+              disabled={n.busy}
+              onChange={n.onChange}
+            />
+          )
+        )}
+      </div>
+    </section>
   );
 }
 

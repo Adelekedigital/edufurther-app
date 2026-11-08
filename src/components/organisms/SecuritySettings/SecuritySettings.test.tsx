@@ -205,3 +205,55 @@ describe('SecuritySettings', () => {
     expect(screen.getByRole('button', { name: 'Keep my account' })).toBeDisabled();
   });
 });
+
+describe('SecuritySettings › notifications on this device', () => {
+  const C = SECURITY_COPY;
+  const notifications = (over: Partial<NonNullable<SecuritySettingsProps['notifications']>>) => ({
+    state: 'off' as const,
+    busy: false,
+    failure: null,
+    onChange: vi.fn(),
+    ...over,
+  });
+
+  it('no card when nothing can be offered', () => {
+    render(<Host />);
+    expect(screen.queryByRole('heading', { name: C.notificationsTitle })).not.toBeInTheDocument();
+  });
+
+  it('a named, described switch that turns them on', async () => {
+    const onChange = vi.fn();
+    render(<Host notifications={notifications({ onChange })} />);
+    const sw = screen.getByRole('switch', { name: C.notificationsTitle });
+    expect(sw).toHaveAttribute('aria-checked', 'false');
+    expect(sw).toHaveAccessibleDescription(C.notificationsHint);
+    await userEvent.click(sw);
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it('on: the switch is on, and turns them off', async () => {
+    const onChange = vi.fn();
+    render(<Host notifications={notifications({ state: 'on', onChange })} />);
+    const sw = screen.getByRole('switch', { name: C.notificationsTitle });
+    expect(sw).toHaveAttribute('aria-checked', 'true');
+    await userEvent.click(sw);
+    expect(onChange).toHaveBeenCalledWith(false);
+  });
+
+  it('busy: the switch waits', () => {
+    render(<Host notifications={notifications({ busy: true })} />);
+    expect(screen.getByRole('switch', { name: C.notificationsTitle })).toBeDisabled();
+  });
+
+  it('blocked: no switch, and the line says where to allow them', () => {
+    render(<Host notifications={notifications({ state: 'blocked' })} />);
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument();
+    expect(screen.getByText(C.notificationsBlocked)).toBeInTheDocument();
+  });
+
+  it('a failed change is said, and the switch stays', () => {
+    render(<Host notifications={notifications({ failure: 'failed' })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent(C.notificationsFailed);
+    expect(screen.getByRole('switch', { name: C.notificationsTitle })).toBeInTheDocument();
+  });
+});

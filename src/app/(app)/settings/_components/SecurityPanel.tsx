@@ -8,13 +8,15 @@ import { SecuritySettings } from '@/components/organisms/SecuritySettings/Securi
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useDeleteAccount, useLoginProvider } from '@/lib/api/data/account';
 import { markAccountDeleted, useSignOut } from '@/lib/api/data/auth';
+import { usePushNotifications } from '@/lib/api/data/push';
 import { useMenteeProfile } from '@/lib/api/data/settings';
 import { SETTINGS_COPY } from '@/lib/copy/settings';
 import styles from './SecurityPanel.module.css';
 
 /**
  * Settings › Login and security. Reads the /me Settings already holds (no
- * second fetch) and how the session logged in. A deleted account is signed out
+ * second fetch) and how the session logged in, and this device's push
+ * notifications (a card only where they can be offered). A deleted account is signed out
  * here and lands on /login with the notice (useSignOut freezes the screen
  * first, so it never redraws signed out).
  */
@@ -29,6 +31,7 @@ export function SecurityPanel({
   const { profile, status, retry, retrying } = useMenteeProfile(userId);
   const { provider } = useLoginProvider(userId);
   const deleting = useDeleteAccount();
+  const push = usePushNotifications(userId);
   const signOut = useSignOut('/login?deleted=1', markAccountDeleted);
   const [open, setOpen] = useState(false);
   // One request, however fast the second press: state lands a render later.
@@ -81,6 +84,16 @@ export function SecurityPanel({
       deleting={deleting.isPending || deleting.isSuccess}
       deleteError={deleting.error?.copy ?? null}
       renderShell={(shell, body) => <ModalShell {...shell}>{body}</ModalShell>}
+      notifications={
+        push.state === 'hidden'
+          ? undefined
+          : {
+              state: push.state,
+              busy: push.busy,
+              failure: push.failure,
+              onChange: (on) => (on ? push.turnOn() : push.turnOff()),
+            }
+      }
     />
   );
 }
