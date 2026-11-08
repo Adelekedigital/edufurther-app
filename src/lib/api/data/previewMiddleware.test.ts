@@ -69,6 +69,53 @@ describe('createPreviewMiddleware: the header', () => {
   });
 });
 
+describe('createPreviewMiddleware: writes are never sent', () => {
+  const call = (mw: Mw, url: string, method: string) =>
+    mw.onRequest!({ request: new Request(url, { method }) } as never);
+
+  it.each(['POST', 'PUT', 'PATCH', 'DELETE'])(
+    'previewing: a member %s is answered here with the read-only 403, and "Read only" opens',
+    async (method) => {
+      startPreview();
+      const out = await call(createPreviewMiddleware(), 'https://x.test/api/v1/me/profile', method);
+      expect(out).toBeInstanceOf(Response);
+      const res = out as Response;
+      expect(res.status).toBe(403);
+      expect(await res.json()).toMatchObject({
+        type: PROBLEM_READ_ONLY,
+        code: 'read_only_view_as',
+      });
+      expect(previewStore.get().blocked).toBe(true);
+    },
+  );
+
+  it('previewing: reads still go, with the header', async () => {
+    startPreview();
+    for (const method of ['GET', 'HEAD', 'OPTIONS']) {
+      const out = await call(createPreviewMiddleware(), 'https://x.test/api/v1/me', method);
+      expect(out).toBeInstanceOf(Request);
+      expect((out as Request).headers.get(PREVIEW_HEADER)).toBe('s-1');
+    }
+    expect(previewStore.get().blocked).toBe(false);
+  });
+
+  it('previewing: the admin’s own writes go (exit, page views, reveal)', async () => {
+    startPreview();
+    const out = await call(
+      createPreviewMiddleware(),
+      'https://x.test/api/v1/admin/preview-sessions/s-1/end',
+      'POST',
+    );
+    expect(out).toBeInstanceOf(Request);
+    expect(previewStore.get().blocked).toBe(false);
+  });
+
+  it('not previewing: writes go as always', async () => {
+    const out = await call(createPreviewMiddleware(), 'https://x.test/api/v1/me/profile', 'PATCH');
+    expect(out).toBeInstanceOf(Request);
+  });
+});
+
 describe('createPreviewMiddleware: answers', () => {
   it('401 preview-ended ends the preview with the server’s reason', async () => {
     startPreview();

@@ -34,6 +34,25 @@ async function problemOf(response: Response): Promise<Problem | null> {
   }
 }
 
+/** The methods a preview may send (backend decision 313, `READ_ONLY_METHODS`); any other is refused. */
+const READ_ONLY_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+/**
+ * The server's own refusal, answered here instead (owner, 2026-11-08): the
+ * same 403 problem the backend sends, so every caller sees what it saw before.
+ */
+function readOnlyRefusal(): Response {
+  return new Response(
+    JSON.stringify({
+      type: PROBLEM_READ_ONLY,
+      title: 'Read only',
+      status: 403,
+      code: 'read_only_view_as',
+    }),
+    { status: 403, headers: { 'Content-Type': 'application/problem+json' } },
+  );
+}
+
 // `exit` too: a duplicated tab (it copies sessionStorage) after Exit in the other one ends quietly.
 const END_REASONS: ReadonlySet<string> = new Set(['idle', 'max_length', 'sign_out', 'exit']);
 
@@ -54,14 +73,22 @@ export async function isPreviewEnded(response: Response): Promise<boolean> {
  * - adds X-EF-Preview to every non-admin call while this tab previews;
  * - 401 /problems/preview-ended: ends the preview here ("Preview ended");
  * - 404 /problems/preview-not-found: the preview ends quietly;
- * - 403 /problems/read-only-view-as: the "Read only" notice. Background
- *   writes are never sent in preview, so a refused write is one the admin pressed.
+ * - a write (any method but GET, HEAD, OPTIONS) is never sent: it is answered
+ *   here with the server's 403 read-only problem and opens "Read only" at once
+ *   (owner, 2026-11-08: nothing leaves the browser, no wait for the refusal);
+ * - 403 /problems/read-only-view-as from the server (a read it refuses): the
+ *   same notice. Background writes are never made in preview, so a refused
+ *   write is one the admin pressed.
  */
 export function createPreviewMiddleware(): Middleware {
   return {
     onRequest({ request }) {
       const id = previewSessionId();
       if (!id || isAdminCall(request.url)) return request;
+      if (!READ_ONLY_METHODS.has(request.method.toUpperCase())) {
+        previewStore.blocked(true);
+        return readOnlyRefusal();
+      }
       request.headers.set(PREVIEW_HEADER, id);
       return request;
     },
