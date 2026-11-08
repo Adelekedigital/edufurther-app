@@ -78,9 +78,11 @@ node scripts/review-page.mjs /           # needs the app running
 12. **Conventional Commits.** The release tooling parses them.
 13. **No file over 1000 lines of code** (ESLint `max-lines`, comments not counted).
     Split past 900. Comments say why, briefly.
-14. **DRY: reuse before you build** (owner, 2026-10-20). One component per UI concept,
-    for every role and screen. Search for an existing atom/molecule/organism and
-    extend it with a prop or variant; a second implementation is a defect to fix.
+14. **DRY: reuse before you build** (owner, 2026-10-20; tightened 2026-11-08). One
+    component per UI concept, for every role and screen. Search for the whole pattern
+    (the row or card around an atom, behaviour, helpers, test harnesses), not just the
+    atom. A second implementation is a defect: consolidate it and migrate every copy in
+    the same PR, never a follow-up (`project-conventions`, DRY 5–7).
 
 ## Layout
 

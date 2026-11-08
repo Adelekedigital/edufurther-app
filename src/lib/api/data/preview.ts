@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { personInitials } from '@/lib/utils/person';
+import { within } from '@/lib/utils/within';
 import { ApiError, apiError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
@@ -218,7 +219,7 @@ export async function endPreviewForSignOut() {
   const id = previewStore.get().sessionId;
   previewStore.clear();
   if (!id) return;
-  await Promise.race([endSession(id, 'sign_out'), new Promise((r) => setTimeout(r, 2000))]);
+  await within(2000, endSession(id, 'sign_out'));
 }
 
 /**

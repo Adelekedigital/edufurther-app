@@ -1,7 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState, type ReactNode } from 'react';
 import { fn, userEvent, within } from 'storybook/test';
-import { SecuritySettings, type DeleteShell, type SecuritySettingsProps } from './SecuritySettings';
+import {
+  SecuritySettings,
+  type DeleteShell,
+  type DeviceNotifications,
+  type SecuritySettingsProps,
+} from './SecuritySettings';
 
 // Organism stories can't import ModalShell (a template), so this stand-in
 // frame is the modal's sm size and padding, with its title; the page renders
@@ -93,4 +98,25 @@ export const DeleteFailed: Story = {
     deleteOpen: true,
     deleteError: 'We couldn’t delete your account. Nothing has changed. Try again.',
   },
+};
+
+const device = (over: Partial<DeviceNotifications> = {}): DeviceNotifications => ({
+  state: 'off',
+  busy: false,
+  failure: null,
+  onChange: () => {},
+  ...over,
+});
+/** Push can be offered here: the switch for this device. */
+export const NotificationsOff: Story = { args: { notifications: device() } };
+export const NotificationsOn: Story = { args: { notifications: device({ state: 'on' }) } };
+export const NotificationsLoading: Story = {
+  args: { notifications: device({ state: 'loading' }) },
+};
+/** Blocked in the browser or phone settings: no switch, and where to allow them. */
+export const NotificationsBlocked: Story = {
+  args: { notifications: device({ state: 'blocked' }) },
+};
+export const NotificationsFailed: Story = {
+  args: { notifications: device({ failure: 'failed' }) },
 };

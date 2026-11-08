@@ -102,6 +102,7 @@ export const ICON_NAMES = [
   'more_vert',
   'my_location',
   'new_releases',
+  'notifications',
   'no_photography',
   'open_in_new',
   'palette',

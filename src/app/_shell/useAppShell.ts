@@ -1,7 +1,7 @@
 'use client';
 
 import { MENTOR_ONBOARDING_LIVE } from '@/lib/config/auth';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import type { AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { useAdminSummary } from '@/lib/api/data/admin';
@@ -14,6 +14,7 @@ import { LIST_COPY } from '@/lib/copy/messages';
 import { useViewer } from '@/lib/api/data/viewer';
 import { accessFor, inSetup, isUnder, setupCredits, type Access } from '@/lib/utils/access';
 import { personCover } from '@/lib/utils/person';
+import { setAppBadge } from '@/lib/utils/push';
 import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import { canBookFor } from './bookBlocked';
@@ -128,6 +129,11 @@ export function useAppShell() {
   const unread = useUnreadTotal(
     MESSAGES_LIVE && !!member && !inAdmin && !access.locked.has('Messages'),
   );
+  // The app icon's badge follows the same count (decision 312: unread
+  // messages). Never a previewed person's count on the admin's device.
+  useEffect(() => {
+    if (unread !== null && !previewing) setAppBadge(unread);
+  }, [unread, previewing]);
   const items = accountItems(
     member,
     () => {

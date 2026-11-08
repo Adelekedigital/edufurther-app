@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
-import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { Snackbar, toastHasFocus } from '@/components/molecules/Snackbar/Snackbar';
 import { FloatingHelp } from '@/components/organisms/FloatingHelp/FloatingHelp';
 import { InviteModal } from '@/components/templates/InviteModal/InviteModal';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
@@ -177,7 +177,7 @@ export function MenteeHomeScreen() {
   const undone = useRef(false);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
   const dismissToast = () => {
-    if (document.activeElement?.closest('[role="status"]')) {
+    if (toastHasFocus()) {
       toastTimer.current = setTimeout(dismissToast, UNDO_MS);
       return;
     }
