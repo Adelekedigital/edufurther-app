@@ -84,6 +84,8 @@ describe('useMarkApprovedSeen: Preview as user (PRD, Read only)', () => {
     result.current.markSeen();
     await waitFor(() => expect(qc.getMutationCache().getAll()[0]?.state.status).toBe('success'));
     expect(POST).not.toHaveBeenCalled();
+    // Nothing was sent, so the cache doesn't claim the mentor saw it (GitHub review, PR 494).
+    expect(qc.getQueryData(KEY)).toMatchObject({ seen: false });
   });
 });
 

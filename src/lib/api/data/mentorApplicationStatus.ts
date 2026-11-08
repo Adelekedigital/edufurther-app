@@ -104,6 +104,8 @@ export function useMarkApprovedSeen(userId: string | null) {
       if (!response.ok && response.status !== 409) throw apiError(response.status, error);
     },
     onSuccess: () => {
+      // Nothing was sent in preview: the previewed mentor hasn't seen it, so the cache says so too.
+      if (isPreviewing()) return;
       qc.setQueryData<MentorApplication>(keys.viewer.mentorApplication(userId ?? 'none'), (a) =>
         a?.stage === 'approved' ? { ...a, seen: true } : a,
       );
