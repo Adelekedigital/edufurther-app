@@ -12,6 +12,7 @@ import { NoticeDialog } from '@/components/templates/NoticeDialog/NoticeDialog';
 import {
   previewHome,
   useAdminUsers,
+  useConfirmLiveOnBlock,
   usePreview,
   usePreviewActions,
   useRestorePreview,
@@ -41,6 +42,7 @@ const SEARCH_DEBOUNCE_MS = 250;
 export function PreviewRoot({ children }: { children: ReactNode }) {
   const state = usePreview();
   useRestorePreview();
+  useConfirmLiveOnBlock();
   const qc = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
