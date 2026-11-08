@@ -18,3 +18,26 @@ describe('iPhone launch screens', () => {
     }
   });
 });
+
+describe('the launch-screen slogan (owner, 2026-11-08)', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('is hidden unless PWA_SPLASH_SLOGAN=true', async () => {
+    const { splashSloganShown } = await import('./sizes');
+    vi.stubEnv('PWA_SPLASH_SLOGAN', '');
+    expect(splashSloganShown()).toBe(false);
+    vi.stubEnv('PWA_SPLASH_SLOGAN', 'yes');
+    expect(splashSloganShown()).toBe(false);
+    vi.stubEnv('PWA_SPLASH_SLOGAN', 'true');
+    expect(splashSloganShown()).toBe(true);
+  });
+
+  it('uses the design system’s smallest paragraph size and its line height', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { SLOGAN_TYPE } = await import('./sizes');
+    const css = readFileSync(join(process.cwd(), 'src/styles/tokens/typography.css'), 'utf8');
+    expect(css).toContain(`--text-p-xs: ${SLOGAN_TYPE.points}px;`);
+    expect(css).toContain(`--lh-p: ${SLOGAN_TYPE.lineHeight};`);
+  });
+});
