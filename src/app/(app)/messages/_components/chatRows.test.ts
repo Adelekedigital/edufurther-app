@@ -34,6 +34,12 @@ describe('previewOf (PRD "Preview", Q9)', () => {
       last({ text: null, mine: true, hiddenInPreview: true }),
       'Message hidden in preview',
     ],
+    [
+      // The backend masks every message in a preview, deleted ones included: deleted still reads as deleted.
+      'a deleted one, masked in a preview',
+      last({ text: null, deleted: true, hiddenInPreview: true }),
+      'This message was deleted',
+    ],
   ])('%s', (_, l, want) => {
     expect(previewOf(chatRow({ last: l }))).toBe(want);
   });
