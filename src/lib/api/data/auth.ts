@@ -6,6 +6,7 @@ import { hardNavigate } from '@/lib/utils/hardNavigate';
 import { releaseLeaveGuards } from '@/lib/utils/leaveGuard';
 import { normaliseEmail } from '@/lib/utils/emailTypo';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
+import { clearAppCaches } from '@/lib/utils/serviceWorker';
 import {
   endSessionHere,
   sendEmailCode,
@@ -86,6 +87,8 @@ export function useSignOut(to: `/login${string}` = '/login', beforeLeave?: () =>
     }
     // A booking draft's answers can be personal: none stays in the tab.
     clearAllBookingDrafts();
+    // The service worker's caches hold no one's data, but a shared device starts clean.
+    await clearAppCaches();
     beforeLeave?.();
     hardNavigate(to);
   }, [qc, to, beforeLeave]);
