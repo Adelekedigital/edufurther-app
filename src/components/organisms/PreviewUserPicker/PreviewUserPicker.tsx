@@ -71,11 +71,13 @@ export function PreviewUserPicker({
   // closes from anywhere in it, and focus goes back to the bar's button.
   const panel = useRef<HTMLDivElement>(null);
   useFocusTrap(panel, onClose);
-  // A new answer starts the keyboard from the top.
+  // A new answer (a search or a role) starts the keyboard from the top; a page
+  // added on scroll keeps the row the keyboard is on.
   const [seen, setSeen] = useState(users);
   if (seen !== users) {
+    const appended = users.length >= seen.length && seen.every((u, i) => users[i]?.id === u.id);
     setSeen(users);
-    setActive(-1);
+    if (!appended) setActive(-1);
   }
 
   // More on scroll (PRD): the list's end coming into view asks for the next page.
