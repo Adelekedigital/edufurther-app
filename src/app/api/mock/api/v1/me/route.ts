@@ -81,6 +81,7 @@ export async function GET(req: Request) {
     timezone: 'Africa/Lagos',
     created_at: '2026-10-17T09:00:00Z',
     is_admin: false,
+    can_preview_as_user: false,
     education: [],
     awards: [],
     mentee_completed_sessions: 0,
