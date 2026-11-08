@@ -63,6 +63,11 @@ Vercel preview pattern `https://*-<team>.vercel.app/**`. The magic link lands on
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | prod publishable key | dev publishable key | public by design |
 | `NEXT_PUBLIC_API_BASE_URL` | *unset* | *unset* | unset = same-origin proxy |
 | `ENABLE_MOCK_API` | **never** | **never** | mock is for local dev and CI only |
+| `NEXT_PUBLIC_MOCK_VIEWER` | **never** | **never** | fakes the viewer with no sign-in and no token, so booking fails with 401 (see above). Local dev only |
+| `NEXT_PUBLIC_ONBOARDING_ENABLED` | `true` | `true` | mentee onboarding; read as `=== 'true'`, so unset is off and `/onboarding` is not found (`src/lib/config/auth.ts`) |
+| `NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED` | `true` | `true` | mentor onboarding and `/mentor-application`; read as `=== 'true'`, so unset is off (`src/lib/config/auth.ts`) |
+| `NEXT_PUBLIC_MESSAGES_ENABLED` | `true` | `true` | Messages, its nav item and every Message button; read as `=== 'true'`, so unset is off and `/messages` is not found (`src/lib/config/messages.ts`) |
+| `SITE_INDEXABLE` | `true`, once the site is meant to be indexed | *unset* | server-only; read as `=== 'true'` by `src/app/robots.ts`. Anything else keeps crawlers out |
 
 ## Where things are
 
@@ -72,15 +77,17 @@ Vercel preview pattern `https://*-<team>.vercel.app/**`. The magic link lands on
 | `src/components/{atoms,molecules,organisms,templates}` | Atomic levels; imports only point down |
 | `src/lib/api/generated/` | Generated locally from the private `openapi/openapi.json` (`pnpm gen:api`); **never committed**. Imported only by `lib/api/data/` |
 | `src/lib/api/data/` | Hooks, query keys, error normalisation, label rules — the seam |
-| `src/app/explore/` | The Explore screen — the only place that fetches |
+| `src/app/(app)/` | Every signed-in screen, inside the one app shell (ADR 0007). Sign-in, onboarding and invites sit beside it in `src/app/`. Routes fetch only through `src/lib/api/data/` |
 | `src/app/api/mock/` | Phase A mock of the backend contract (answers only with `ENABLE_MOCK_API=1`) |
 | `docs/handoff/` | Requests to / replies from the backend and design — **local only, never committed** |
 | `.claude/skills/project-conventions/` | Settled decisions, contract, divergences, failure log |
 
 ## Status
 
-Explore phase A: the list with every state, and the booking flow on mocked
-slots. Phase B wires auth and the real booking endpoints.
+Every screen is built and wired to the real backend: sign-in, onboarding, Home for both
+roles, Explore, mentor profiles, booking, bookings, session join, messages, settings,
+mentor onboarding and the mentor application, calendar and integrations, admin, and
+invites. The in-app mock (`ENABLE_MOCK_API=1`) stays for local dev and CI.
 
 ## Private files
 
