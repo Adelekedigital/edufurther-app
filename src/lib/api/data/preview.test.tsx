@@ -8,6 +8,7 @@ import {
   toPreviewUser,
   useAdminUsers,
   usePreviewActions,
+  useConfirmLiveOnBlock,
   useRestorePreview,
 } from './preview';
 import { previewStore, resetPreviewStoreForTests } from './previewStore';
@@ -214,6 +215,29 @@ describe('usePreviewActions: preview', () => {
     expect(result.current.pending).toBe(false);
   });
 
+  it('one pick at a time: a second pick while the first is in flight sends nothing', async () => {
+    let answer: (v: unknown) => void = () => {};
+    POST.mockReturnValueOnce(new Promise((r) => (answer = r)));
+    const { result } = renderHook(() => usePreviewActions(), { wrapper });
+    let first!: Promise<boolean>;
+    let second = true;
+    await act(async () => {
+      first = result.current.preview({ userId: 'u-1' }, '/admin');
+      second = await result.current.preview({ userId: 'u-2' }, '/admin');
+    });
+    expect(second).toBe(false);
+    expect(POST).toHaveBeenCalledOnce();
+    await act(async () => {
+      answer(ok(session(), 201));
+      await first;
+    });
+    expect(previewStore.get().user?.name).toBe('Amara Okafor');
+    // Once it lands, the next pick goes through.
+    PATCH.mockResolvedValueOnce(ok(session({ user: row({ user_id: 'u-2' }) })));
+    await act(() => result.current.preview({ userId: 'u-2' }, '/home'));
+    expect(PATCH).toHaveBeenCalledOnce();
+  });
+
   it('by email (?viewAs=): the POST names the email', async () => {
     POST.mockResolvedValueOnce(ok(session({ user: row({ role: 'mentor' }) }), 201));
     const { result } = renderHook(() => usePreviewActions(), { wrapper });
@@ -412,6 +436,41 @@ describe('useRestorePreview (after a refresh)', () => {
     renderHook(() => useRestorePreview());
     previewStore.started('s-1', toPreviewUser(row()), { revealed: false, canReveal: true });
     renderHook(() => useRestorePreview());
+    expect(GET).not.toHaveBeenCalled();
+  });
+});
+
+describe('useConfirmLiveOnBlock ("Read only" opened)', () => {
+  const live = () =>
+    previewStore.started('s-1', toPreviewUser(row()), { revealed: false, canReveal: true }, '/a');
+
+  it('a preview that ended on the server says "Preview ended" instead', async () => {
+    live();
+    GET.mockResolvedValueOnce(
+      ok(session({ ended_at: '2026-11-07T12:00:00Z', end_reason: 'idle' })),
+    );
+    renderHook(() => useConfirmLiveOnBlock());
+    act(() => previewStore.blocked(true));
+    await waitFor(() => expect(previewStore.get().sessionId).toBeNull());
+    expect(previewStore.get()).toMatchObject({
+      blocked: false,
+      ended: { reason: 'idle', returnTo: '/a' },
+    });
+  });
+
+  it('a live preview keeps the notice open and the store as it was', async () => {
+    live();
+    GET.mockResolvedValueOnce(ok(session()));
+    renderHook(() => useConfirmLiveOnBlock());
+    act(() => previewStore.blocked(true));
+    await waitFor(() => expect(GET).toHaveBeenCalledOnce());
+    await Promise.resolve();
+    expect(previewStore.get()).toMatchObject({ sessionId: 's-1', blocked: true });
+  });
+
+  it('asks nothing until the notice opens', () => {
+    live();
+    renderHook(() => useConfirmLiveOnBlock());
     expect(GET).not.toHaveBeenCalled();
   });
 });

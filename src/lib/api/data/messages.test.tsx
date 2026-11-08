@@ -9,6 +9,7 @@ import {
   toChatPerson,
   toChats,
   toMessage,
+  toThread,
   useChats,
   useMarkRead,
   useThread,
@@ -349,6 +350,57 @@ describe('useThread', () => {
     expect(GET.mock.calls[3]![1]).toMatchObject({ params: { query: { before: 'm5' } } });
     expect(GET).toHaveBeenCalledTimes(4);
     expect(result.current.data?.hasMore).toBe(true);
+  });
+
+  it('a reload reads back past ten pages when the chat was scrolled that far', async () => {
+    const at = (n: number) => `2026-10-27T${String(n).padStart(2, '0')}:00:00Z`;
+    const page = (n: number, body: string | null) => ({
+      data: wireThread([wireMsg(`m${n}`, { body, sent_at: at(n) })], { has_more: n > 1 }),
+      response: res(200),
+    });
+    // Twelve pages already loaded (masked), as if "Earlier" had been pressed 11 times.
+    const loaded = Array.from({ length: 12 }, (_, i) =>
+      wireMsg(`m${i + 1}`, { body: null, sent_at: at(i + 1) }),
+    );
+    qc.setQueryData(['messages', 'me-1', 'thread', 'u-1'], {
+      ...toThread(wireThread(loaded, { has_more: false })),
+      cursor: 'm12',
+    });
+    GET.mockResolvedValue({ data: wireThread([]), response: res(200) });
+    const { result } = renderHook(() => useThread('u-1'), { wrapper });
+    await waitFor(() => expect(result.current.data?.items).toHaveLength(12));
+    GET.mockReset();
+
+    for (let n = 12; n >= 1; n -= 1) GET.mockResolvedValueOnce(page(n, `b${n}`));
+    await act(() => reloadMessages(qc));
+    await waitFor(() => expect(result.current.data?.items[0]?.body).toBe('b1'));
+    expect(result.current.data?.items.map((m) => m.body)).toEqual(
+      Array.from({ length: 12 }, (_, i) => `b${i + 1}`),
+    );
+    expect(result.current.data?.hasMore).toBe(false);
+  });
+
+  it('a re-read stops on an older page that adds nothing', async () => {
+    const t = { m4: '2026-10-27T08:00:00Z', m5: '2026-10-27T09:00:00Z' };
+    GET.mockResolvedValueOnce({
+      data: wireThread([wireMsg('m5', { sent_at: t.m5 })], { has_more: true }),
+      response: res(200),
+    });
+    const { result } = renderHook(() => useThread('u-1'), { wrapper });
+    await waitFor(() => expect(result.current.data?.items).toHaveLength(1));
+    GET.mockResolvedValueOnce({
+      data: wireThread([wireMsg('m4', { sent_at: t.m4 })], { has_more: true }),
+      response: res(200),
+    });
+    await act(() => result.current.loadOlder());
+    const stuck = {
+      data: wireThread([wireMsg('m5', { sent_at: t.m5 })], { has_more: true }),
+      response: res(200),
+    };
+    GET.mockResolvedValueOnce(stuck).mockResolvedValueOnce(stuck);
+    await act(() => reloadMessages(qc));
+    await waitFor(() => expect(GET).toHaveBeenCalledTimes(4));
+    await waitFor(() => expect(result.current.data?.items.map((m) => m.id)).toEqual(['m5']));
   });
 
   it('a 404 is an error the page can show (not connected)', async () => {
