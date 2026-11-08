@@ -312,6 +312,11 @@ export type Viewer =
       isAdmin?: boolean;
       /** The strongest grant (`/me` admin_role); `limited_access` can't decide on mentors. */
       adminRole?: AdminRole | null;
+      /**
+       * `/me` can_preview_as_user: an admin, with Preview as user switched on.
+       * False while previewing (the previewed person's /me answers).
+       */
+      canPreviewAsUser?: boolean;
     };
 
 export type CreditState = 'on_track' | 'moderate' | 'low' | 'exhausted';

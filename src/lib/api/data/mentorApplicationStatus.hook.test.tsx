@@ -4,6 +4,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import type { Viewer } from '@/types/mentor';
 import { keys } from './keys';
 import { useMarkApprovedSeen, type MentorApplication } from './mentorApplicationStatus';
+import { previewStore, resetPreviewStoreForTests } from './previewStore';
 
 // Mentor onboarding on, before access.ts reads it.
 vi.hoisted(() => {
@@ -56,6 +57,33 @@ describe('useMarkApprovedSeen (PRD B3)', () => {
     result.current.markSeen();
     await waitFor(() => expect(qc.getMutationCache().getAll()[0]?.state.status).toBe('error'));
     expect(qc.getQueryData(KEY)).toMatchObject({ seen: false });
+  });
+});
+
+describe('useMarkApprovedSeen: Preview as user (PRD, Read only)', () => {
+  beforeEach(() => POST.mockReset());
+  afterEach(() => {
+    sessionStorage.clear();
+    resetPreviewStoreForTests();
+  });
+
+  it('an admin previewing the approved screen sends nothing for the mentor', async () => {
+    previewStore.started(
+      's-1',
+      {
+        id: 'u1',
+        email: 'g@example.com',
+        name: 'Gbenga Ekundayo',
+        firstName: 'Gbenga',
+        initials: 'GE',
+        role: 'mentor',
+      },
+      { revealed: false, canReveal: false },
+    );
+    const { qc, result } = setup();
+    result.current.markSeen();
+    await waitFor(() => expect(qc.getMutationCache().getAll()[0]?.state.status).toBe('success'));
+    expect(POST).not.toHaveBeenCalled();
   });
 });
 

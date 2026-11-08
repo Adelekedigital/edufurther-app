@@ -11,6 +11,7 @@ import {
   useInviteLookup,
   useReferrals,
 } from './invite';
+import { previewStore, resetPreviewStoreForTests } from './previewStore';
 
 const get = vi.fn();
 const post = vi.fn();
@@ -108,6 +109,41 @@ describe('useInviteLink', () => {
     const { result } = renderHook(() => useInviteLink('me', false), { wrapper });
     expect(post).not.toHaveBeenCalled();
     expect(result.current.isLoading).toBe(false);
+  });
+});
+
+describe('useInviteLink: Preview as user (PRD, Read only)', () => {
+  beforeEach(() => {
+    previewStore.started(
+      's-1',
+      {
+        id: 'me',
+        email: 'amara.okafor@example.com',
+        name: 'Amara Okafor',
+        firstName: 'Amara',
+        initials: 'AO',
+        role: 'mentee',
+      },
+      { revealed: false, canReveal: false },
+    );
+  });
+  afterEach(() => {
+    sessionStorage.clear();
+    resetPreviewStoreForTests();
+  });
+
+  it('never POSTs (it creates the link): the panel shows its error state instead', () => {
+    const { result } = renderHook(() => useInviteLink('me'), { wrapper });
+    expect(post).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.data).toBeNull();
+    expect(result.current.error).not.toBeNull();
+  });
+
+  it('inactive in preview: no error either', () => {
+    const { result } = renderHook(() => useInviteLink('me', false), { wrapper });
+    expect(post).not.toHaveBeenCalled();
+    expect(result.current.error).toBeNull();
   });
 });
 

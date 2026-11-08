@@ -28,6 +28,14 @@ describe('toViewer (backend auth reply #3)', () => {
     expect(toViewer(me(limited))).toMatchObject({ isAdmin: true, adminRole: 'limited_access' });
   });
 
+  it('Preview as user: canPreviewAsUser only when /me says can_preview_as_user true', () => {
+    expect(toViewer(me()).canPreviewAsUser).toBe(false);
+    expect(toViewer(me({ is_admin: true, can_preview_as_user: true })).canPreviewAsUser).toBe(true);
+    expect(toViewer(me({ is_admin: true, can_preview_as_user: false })).canPreviewAsUser).toBe(
+      false,
+    );
+  });
+
   it('a goal makes a mentee; no mentor profile → not a mentor', () => {
     const v = toViewer(me({ goal: {} as Me['goal'] }));
     expect(v).toMatchObject({ isMentee: true, isApprovedMentor: false, initials: 'E' });

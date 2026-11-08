@@ -1,5 +1,6 @@
 'use client';
 
+import { isPreviewing } from '@/lib/api/data/previewStore';
 import { useCallback, useSyncExternalStore } from 'react';
 
 /**
@@ -25,6 +26,13 @@ function read(key: string): boolean {
 }
 
 function write(key: string, on: boolean) {
+  // Preview as user: the flag belongs to the previewed person, not this admin's
+  // device, so it lasts for the visit only (PRD, Read only: nothing written).
+  if (isPreviewing()) {
+    memory.set(key, on);
+    listeners.forEach((l) => l());
+    return;
+  }
   try {
     if (on) window.localStorage.setItem(key, '1');
     else window.localStorage.removeItem(key);

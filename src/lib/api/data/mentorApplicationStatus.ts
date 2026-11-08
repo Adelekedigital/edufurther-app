@@ -6,6 +6,7 @@ import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { keys } from './keys';
 import type { components } from '@/lib/api/generated/schema';
 import { api } from './http';
+import { isPreviewing } from './previewStore';
 import { patchViewer } from './viewer';
 import { useSetPrimaryRole } from './roleHooks';
 import { mentorStageOf } from '@/lib/utils/access';
@@ -97,6 +98,8 @@ export function useMarkApprovedSeen(userId: string | null) {
   const qc = useQueryClient();
   const mutation = useMutation<void, AppError, void>({
     mutationFn: async () => {
+      // Preview as user: an admin reading the approved screen isn't the mentor seeing it.
+      if (isPreviewing()) return;
       const { error, response } = await api.POST('/api/v1/me/mentor-application/approved-seen');
       if (!response.ok && response.status !== 409) throw apiError(response.status, error);
     },
