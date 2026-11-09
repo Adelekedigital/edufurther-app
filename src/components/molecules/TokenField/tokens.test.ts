@@ -6,7 +6,7 @@ import {
   segments,
   valueAfter,
   valueBefore,
-  valueNames,
+  tokenEnd,
 } from './tokens';
 
 describe('segments', () => {
@@ -29,8 +29,15 @@ describe('segments', () => {
   });
 });
 
-it('valueNames lists every {name} in order', () => {
-  expect(valueNames('{a} and {b} then {a}')).toEqual(['a', 'b', 'a']);
+describe('tokenEnd', () => {
+  it('reaches the } of the value the caret is inside', () => {
+    expect(tokenEnd('Hi {mentorname} x', 6)).toBe(15);
+  });
+  it('stops at a space or another {: the caret when nothing closes it', () => {
+    expect(tokenEnd('Hi {men there}', 7)).toBe(7);
+    expect(tokenEnd('Hi {men{x}', 7)).toBe(7);
+    expect(tokenEnd('Hi {men', 7)).toBe(7);
+  });
 });
 
 describe('findTrigger', () => {
@@ -43,6 +50,11 @@ describe('findTrigger', () => {
     ["'/x", 3, { from: 1, query: 'x' }],
   ])('%j at %d opens', (text, caret, want) => {
     expect(findTrigger(text, caret, 'slashAndBrace')).toEqual(want);
+  });
+
+  it('the query takes digits, _ and accented letters', () => {
+    expect(findTrigger('/first_2', 8, 'slashAndBrace')).toEqual({ from: 0, query: 'first_2' });
+    expect(findTrigger('/créneau', 8, 'slashAndBrace')).toEqual({ from: 0, query: 'créneau' });
   });
 
   it('a slash inside a word does not open (and/or)', () => {
@@ -95,6 +107,13 @@ describe('valueBefore / valueAfter', () => {
     expect(valueAfter(t, 13)).toEqual([13, 16]);
     expect(valueAfter(t, 12)).toBeNull();
   });
+  it('agrees with the mirror: text with a stray brace is not one value', () => {
+    expect(valueBefore('{a} x}', 6)).toBeNull();
+    expect(valueBefore('{a}}', 4)).toBeNull();
+    expect(valueAfter('{a{b}', 0)).toBeNull();
+    expect(segments('{a{b}', ['b']).map((s) => s.kind)).toEqual(['text', 'value']);
+  });
+
   it('a lone brace is not a value', () => {
     expect(valueBefore('a}', 2)).toBeNull();
     expect(valueAfter('{a', 0)).toBeNull();

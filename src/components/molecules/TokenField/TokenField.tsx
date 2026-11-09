@@ -1,15 +1,24 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState, type ChangeEvent, type KeyboardEvent } from 'react';
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type SyntheticEvent,
+} from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { useListPosition, type ListSize } from '@/components/atoms/Select/useListPosition';
 import { cx } from '@/lib/utils/cx';
+import { stopEscape } from '@/lib/utils/focus';
 import {
   findTrigger,
   insertValue,
   matchValues,
   oneLine,
   segments,
+  tokenEnd,
   valueAfter,
   valueBefore,
   type TokenTriggers,
@@ -74,9 +83,10 @@ export function TokenField({
   const fieldRef = useRef<HTMLTextAreaElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const caret = useRef(value.length);
-  // Set by an edit the field makes itself, applied once React has the new text.
-  const nextCaret = useRef<number | null>(null);
+  // Where the caret last was; null until the field has had focus (then: the end).
+  const caret = useRef<number | null>(null);
+  // An edit the field made itself: put the caret back once React has that text.
+  const nextCaret = useRef<{ at: number; text: string } | null>(null);
   const [menu, setMenu] = useState<Menu | null>(null);
 
   const names = values.map((v) => v.name);
@@ -93,43 +103,67 @@ export function TokenField({
     () => setMenu(null),
     LIST_SIZE,
   );
+  const caretAt = () => Math.min(caret.current ?? value.length, value.length);
 
   useLayoutEffect(() => {
-    const at = nextCaret.current;
+    const next = nextCaret.current;
     const el = fieldRef.current;
-    if (at === null || !el) return;
+    // Only for the text it was set for: a parent that changed it otherwise wins.
+    if (!next || !el || next.text !== value) return;
     nextCaret.current = null;
     el.focus();
-    el.setSelectionRange(at, at);
-    caret.current = at;
+    el.setSelectionRange(next.at, next.at);
+    caret.current = next.at;
   }, [value]);
 
   const edit = (text: string, at: number) => {
-    if (text.length > maxLength) return;
-    nextCaret.current = at;
+    nextCaret.current = { at, text };
     onChange(text);
   };
 
   const pick = (name: string) => {
     if (!menu) return;
-    const to = caret.current;
-    const r = insertValue(value, name, menu.viaButton ? to : menu.from, to);
+    const at = caretAt();
+    const from = menu.viaButton ? at : menu.from;
+    if (at < from) return setMenu(null);
+    // A trigger typed inside "{…}" (fixing a value) replaces the whole value.
+    const to = !menu.viaButton && value[menu.from] === '{' ? tokenEnd(value, at) : at;
+    const r = insertValue(value, name, from, to);
+    // Past the hard max: nothing changes and the list stays open.
+    if (r.text.length > maxLength) return;
     setMenu(null);
     edit(r.text, r.caret);
   };
 
-  const onText = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    const text = oneLine(e.target.value);
-    const at = e.target.selectionStart;
-    caret.current = at;
-    onChange(text);
+  // The list follows the caret: moved off its trigger, it closes.
+  const follow = (text: string, at: number) => {
     const t = findTrigger(text, at, triggers);
     setMenu(t ? { from: t.from, query: t.query, active: 0, viaButton: false } : null);
   };
 
+  const onText = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    nextCaret.current = null;
+    const raw = e.target.value;
+    const text = oneLine(raw);
+    const at = e.target.selectionStart;
+    caret.current = at;
+    // A pasted line break became a space: React rewrites the text, so hold the caret.
+    if (text !== raw) edit(text, at);
+    else onChange(text);
+    follow(text, at);
+  };
+
+  const onSelect = (e: SyntheticEvent<HTMLTextAreaElement>) => {
+    const at = e.currentTarget.selectionStart;
+    if (at === caret.current) return;
+    caret.current = at;
+    if (menu && !menu.viaButton) follow(value, at);
+  };
+
   const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    // Never act on keys that are composing a character (IME).
-    if (e.nativeEvent.isComposing) return;
+    // Never act on keys composing a character (IME); Safari sends its commit
+    // Enter after compositionend, as keyCode 229.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     const el = e.currentTarget;
     const at = el.selectionStart;
     const collapsed = at === el.selectionEnd;
@@ -148,7 +182,7 @@ export function TokenField({
         return;
       }
       if (e.key === 'Escape') {
-        e.preventDefault();
+        stopEscape(e);
         setMenu(null);
         return;
       }
@@ -181,17 +215,26 @@ export function TokenField({
   // The { } button opens the list at the caret and leaves focus in the field.
   const onButton = () => {
     if (open) return setMenu(null);
+    const at = caretAt();
     const el = fieldRef.current;
     if (el && document.activeElement !== el) {
       el.focus();
-      el.setSelectionRange(caret.current, caret.current);
+      el.setSelectionRange(at, at);
     }
-    setMenu({ from: caret.current, query: '', active: 0, viaButton: true });
+    caret.current = at;
+    setMenu({ from: at, query: '', active: 0, viaButton: true });
   };
 
   const hint = menu?.query
     ? `Values matching “${menu.query}”`
     : `${menuTitle} · ↑↓ to move, Enter to insert`;
+  const noMatch = `No values match “${menu?.query ?? ''}”. You can use ${values.length} values here.`;
+  // Heard, since the textbox's activedescendant changes are announced unevenly.
+  const announce = !open
+    ? ''
+    : options.length
+      ? `${options.length} ${options.length === 1 ? 'value' : 'values'}`
+      : noMatch;
 
   return (
     <div ref={wrapRef} className={styles.field}>
@@ -216,7 +259,7 @@ export function TokenField({
           </span>
         ))}
         {/* Keeps the last line's height when the text ends in a space. */}
-        {'​'}
+        {'\u200b'}
       </div>
       <textarea
         ref={fieldRef}
@@ -226,9 +269,7 @@ export function TokenField({
         value={value}
         onChange={onText}
         onKeyDown={onKey}
-        onSelect={(e) => {
-          caret.current = e.currentTarget.selectionStart;
-        }}
+        onSelect={onSelect}
         onBlur={() => {
           setMenu(null);
           onBlur?.();
@@ -242,7 +283,7 @@ export function TokenField({
         aria-describedby={describedBy || undefined}
         aria-autocomplete="list"
         // A textarea is a textbox, which takes no aria-expanded: the { } button carries it.
-        aria-controls={listId}
+        aria-controls={open ? listId : undefined}
         aria-activedescendant={open && options.length ? optionId(options[active]!.name) : undefined}
       />
       <button
@@ -255,6 +296,7 @@ export function TokenField({
         title="Insert a value"
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? listId : undefined}
       >
         <Icon name="data_object" size={20} />
       </button>
@@ -263,6 +305,8 @@ export function TokenField({
           ref={listRef}
           className={styles.list}
           style={placement?.style ?? { visibility: 'hidden' }}
+          // A press anywhere in the list (padding, hint, scrollbar) keeps focus in the field.
+          onMouseDown={(e) => e.preventDefault()}
         >
           {/* The hint and no-match lines sit outside the listbox: it holds options only. */}
           <span className={styles.hint}>{hint}</span>
@@ -276,10 +320,8 @@ export function TokenField({
                   role="option"
                   aria-selected={i === active}
                   className={cx(styles.option, i === active && styles.active)}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    pick(o.name);
-                  }}
+                  onMouseMove={() => i !== active && setMenu((m) => m && { ...m, active: i })}
+                  onClick={() => pick(o.name)}
                 >
                   <span className={styles.optionChip}>{o.name}</span>
                   {sub && <span className={styles.sub}>{sub}</span>}
@@ -287,13 +329,13 @@ export function TokenField({
               );
             })}
           </div>
-          {!options.length && (
-            <span className={styles.hint}>
-              No values match “{menu?.query}”. You can use {values.length} values here.
-            </span>
-          )}
+          {!options.length && <span className={styles.hint}>{noMatch}</span>}
         </div>
       )}
+      {/* Always in the DOM, so it's heard (failure-modes #32). */}
+      <span role="status" className="sr-only">
+        {announce}
+      </span>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { TokenField, type TokenValue } from './TokenField';
 
 const VALUES: TokenValue[] = [
@@ -44,7 +45,7 @@ function Host({
         maxLength={maxLength}
         menuTitle="Values this email can use"
       />
-      <output data-testid="value">{v}</output>
+      <span data-testid="value">{v}</span>
     </>
   );
 }
@@ -62,7 +63,8 @@ describe('TokenField', () => {
       'aria-expanded',
       'false',
     );
-    expect(f).toHaveAttribute('aria-controls', 'subject-values');
+    // Only while the list is there: no reference to a missing element.
+    expect(f).not.toHaveAttribute('aria-controls');
     expect(f).toHaveAttribute('placeholder', 'Type text, or / for a value');
     expect(f).toHaveAttribute('maxLength', '200');
   });
@@ -79,6 +81,8 @@ describe('TokenField', () => {
       screen.getByText('Values this email can use · ↑↓ to move, Enter to insert'),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('option')).toHaveLength(3);
+    expect(field()).toHaveAttribute('aria-controls', 'subject-values');
+    expect(screen.getByRole('status')).toHaveTextContent('3 values');
     await userEvent.type(field(), 'full');
     expect(screen.getAllByRole('option').map((o) => o.id)).toEqual(['subject-opt-mentorName']);
     expect(screen.getByText('Values matching “full”')).toBeInTheDocument();
@@ -133,9 +137,9 @@ describe('TokenField', () => {
     render(<Host />);
     await userEvent.type(field(), '/zzz');
     expect(screen.queryAllByRole('option')).toHaveLength(0);
-    expect(
-      screen.getByText('No values match “zzz”. You can use 3 values here.'),
-    ).toBeInTheDocument();
+    const line = 'No values match “zzz”. You can use 3 values here.';
+    expect(screen.getByText(line, { selector: 'span:not([role])' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent(line);
     expect(field()).not.toHaveAttribute('aria-activedescendant');
   });
 
@@ -145,6 +149,25 @@ describe('TokenField', () => {
     await userEvent.click(screen.getByRole('option', { name: /sessionDate/ }));
     expect(value()).toBe('Hi {sessionDate}');
     expect(field()).toHaveFocus();
+  });
+
+  it('the { } button, with the field never focused, inserts at the end of copy that arrived later', async () => {
+    function Late() {
+      const [v, setV] = useState('');
+      return (
+        <>
+          <button onClick={() => setV('Saved copy')}>Load</button>
+          <TokenField id="late" ariaLabel="Late" value={v} onChange={setV} values={VALUES} />
+          <span data-testid="value">{v}</span>
+        </>
+      );
+    }
+    render(<Late />);
+    await userEvent.click(screen.getByRole('button', { name: 'Load' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Insert a value' }));
+    expect(screen.getByRole('textbox', { name: 'Late' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    expect(value()).toBe('Saved copy {recipientName}');
   });
 
   it('the { } button opens the list at the caret without moving focus', async () => {
@@ -173,6 +196,80 @@ describe('TokenField', () => {
     expect(value()).toBe('one two');
   });
 
+  it('a paste mid-text keeps the caret after the pasted text', async () => {
+    render(<Host initial="Hi there" />);
+    const f = field();
+    await userEvent.click(f);
+    f.setSelectionRange(3, 3);
+    await userEvent.paste('a\nb ');
+    expect(value()).toBe('Hi a b there');
+    expect(f.selectionStart).toBe(7);
+  });
+
+  it('moving the caret back past the trigger closes the list: Enter inserts nothing', async () => {
+    render(<Host />);
+    await userEvent.type(field(), 'Hi /na');
+    await userEvent.keyboard('{ArrowLeft}{ArrowLeft}{ArrowLeft}{ArrowLeft}');
+    expect(list()).toBeNull();
+    await userEvent.keyboard('{Enter}');
+    expect(value()).toBe('Hi /na');
+  });
+
+  it('moving the caret on past the query closes the list: no text is lost', async () => {
+    render(<Host initial="Hi  there" />);
+    const f = field();
+    await userEvent.click(f);
+    f.setSelectionRange(3, 3);
+    await userEvent.keyboard('/na');
+    expect(list()).toBeInTheDocument();
+    await userEvent.keyboard('{End}{Enter}');
+    expect(list()).toBeNull();
+    expect(value()).toBe('Hi /na there');
+  });
+
+  it('fixing a value from the inside replaces the whole value', async () => {
+    render(<Host initial="Hi {mentorname} now" />);
+    const f = field();
+    await userEvent.click(f);
+    f.setSelectionRange(6, 6); // after "{me"
+    await userEvent.keyboard('n');
+    expect(list()).toBeInTheDocument();
+    await userEvent.keyboard('{Enter}');
+    expect(value()).toBe('Hi {mentorName} now');
+  });
+
+  it('a press on the list outside an option keeps focus and the list', async () => {
+    render(<Host />);
+    await userEvent.type(field(), '/');
+    await userEvent.click(
+      screen.getByText('Values this email can use · ↑↓ to move, Enter to insert'),
+    );
+    expect(field()).toHaveFocus();
+    expect(list()).toBeInTheDocument();
+  });
+
+  it('hovering an option makes it the active one', async () => {
+    render(<Host />);
+    await userEvent.type(field(), '/');
+    await userEvent.hover(screen.getByRole('option', { name: /sessionDate/ }));
+    expect(field()).toHaveAttribute('aria-activedescendant', 'subject-opt-sessionDate');
+  });
+
+  it('in a dialog, Escape closes the list and not the dialog', async () => {
+    const onClose = vi.fn();
+    render(
+      <ModalShell title="Edit" onClose={onClose}>
+        <Host />
+      </ModalShell>,
+    );
+    await userEvent.type(field(), '/');
+    await userEvent.keyboard('{Escape}');
+    expect(list()).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    await userEvent.keyboard('{Escape}');
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('Backspace after a value removes all of it', async () => {
     render(<Host initial="Hi {mentorName}" />);
     const f = field();
@@ -180,6 +277,7 @@ describe('TokenField', () => {
     f.setSelectionRange(15, 15);
     await userEvent.keyboard('{Backspace}');
     expect(value()).toBe('Hi ');
+    expect(f.selectionStart).toBe(3);
   });
 
   it('Delete before a value removes all of it', async () => {
@@ -189,6 +287,7 @@ describe('TokenField', () => {
     f.setSelectionRange(0, 0);
     await userEvent.keyboard('{Delete}');
     expect(value()).toBe(' hi');
+    expect(f.selectionStart).toBe(0);
   });
 
   it('← and → step over a value', async () => {
@@ -227,11 +326,13 @@ describe('TokenField', () => {
     expect(screen.getByRole('button', { name: 'Insert a value' })).toBeDisabled();
   });
 
-  it('an insert that would pass the hard max is refused', async () => {
+  it('an insert that would pass the hard max is refused: text, focus and list stay', async () => {
     render(<Host initial="1234567" maxLength={10} />);
     await userEvent.type(field(), ' /');
     await userEvent.keyboard('{Enter}');
     expect(value()).toBe('1234567 /');
+    expect(field()).toHaveFocus();
+    expect(list()).toBeInTheDocument();
   });
 
   it('with no match, Tab leaves the field: blur closes the list and calls onBlur', async () => {

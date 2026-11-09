@@ -1415,4 +1415,4 @@ Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch tar
 | The hint and no-match lines inside the `role="listbox"` | In the popup, outside the listbox; the listbox holds options only | A listbox may only own options (axe `aria-required-children`) | — |
 | The list `position:absolute` under the field, `z-index:41` | `position:fixed`, placed by Select's `useListPosition` (`{ max: 280, width: 340 }`), z-index 60 | One placement for every popup list: it flips above the field near the bottom, follows the phone keyboard and escapes a dialog's scroll box | — |
 | Placeholder `--ink-400`; focus by the browser's outline in `--blue-500` | `--ink-500` placeholder; the app's focus ring (`--focus-ring-*`) | Same as every field (rows above: placeholder contrast, one focus ring) | — |
-| (not drawn) an insert past `maxLength` | Refused: the text stays as it was | `maxLength` is the hard max the server enforces | — |
+| (not drawn) an insert past `maxLength` | Refused: the text, focus and the open list stay as they were | `maxLength` is the hard max the server enforces | — |

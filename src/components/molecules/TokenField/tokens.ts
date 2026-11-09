@@ -10,23 +10,19 @@ export type Segment = { text: string; kind: 'text' | 'value' | 'unknown' };
 /** The text as the mirror draws it: plain runs, known values, unknown values. */
 export function segments(text: string, names: readonly string[]): Segment[] {
   return text
-    .split(/(\{[^}]*\})/)
+    .split(/(\{[^{}]*\})/)
     .filter(Boolean)
     .map((t) => {
-      if (!/^\{[^}]*\}$/.test(t)) return { text: t, kind: 'text' };
+      if (!/^\{[^{}]*\}$/.test(t)) return { text: t, kind: 'text' };
       return { text: t, kind: names.includes(t.slice(1, -1)) ? 'value' : 'unknown' };
     });
 }
 
-/** Every `{name}` in the text, in order. */
-export function valueNames(text: string): string[] {
-  return (text.match(/\{[^}]*\}/g) ?? []).map((t) => t.slice(1, -1));
-}
-
-// A trigger counts at the start, or after a space or an opening bracket or quote.
+// A trigger counts at the start, or after a space or an opening bracket or
+// quote. The query is letters, digits and _ in any script.
 const TRIGGER = {
-  slashAndBrace: /(^|[\s(“"'])([/{])([A-Za-z]*)$/,
-  slash: /(^|[\s(“"'])(\/)([A-Za-z]*)$/,
+  slashAndBrace: /(^|[\s(“"'])([/{])([\p{L}\p{N}_]*)$/u,
+  slash: /(^|[\s(“"'])(\/)([\p{L}\p{N}_]*)$/u,
 } as const;
 
 /** The trigger the caret sits after, with what's been typed since: `{from, query}`. */
@@ -60,18 +56,33 @@ export function insertValue(
   return { text: before + ins + after, caret: before.length + ins.length };
 }
 
-/** The `{…}` that ends right at the caret, as [start, end). */
+/**
+ * Where a value being edited from the inside ends: typing in "{mentor|name}"
+ * reopens the list, and the pick must replace up to its `}`, not leave
+ * "name}" behind. The caret itself when no `}` closes it first.
+ */
+export function tokenEnd(text: string, caret: number): number {
+  for (let i = caret; i < text.length; i++) {
+    if (text[i] === '}') return i + 1;
+    if (/[\s{]/.test(text[i]!)) break;
+  }
+  return caret;
+}
+
+/** The `{…}` that ends right at the caret, as [start, end), as `segments` draws it. */
 export function valueBefore(text: string, caret: number): [number, number] | null {
   if (text[caret - 1] !== '}') return null;
   const start = text.lastIndexOf('{', caret - 1);
-  return start < 0 ? null : [start, caret];
+  if (start < 0 || text.slice(start + 1, caret - 1).includes('}')) return null;
+  return [start, caret];
 }
 
-/** The `{…}` that starts right at the caret, as [start, end). */
+/** The `{…}` that starts right at the caret, as [start, end), as `segments` draws it. */
 export function valueAfter(text: string, caret: number): [number, number] | null {
   if (text[caret] !== '{') return null;
   const close = text.indexOf('}', caret);
-  return close < 0 ? null : [caret, close + 1];
+  if (close < 0 || text.slice(caret + 1, close).includes('{')) return null;
+  return [caret, close + 1];
 }
 
 /** Values whose name or meaning holds the query (case- and accent-insensitive). */

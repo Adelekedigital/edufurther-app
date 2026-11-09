@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useCallback, useLayoutEffect, useRef, type KeyboardEvent } from 'react';
 
 /**
  * Focus, unless the element is inside something hidden: a tab panel kept in
@@ -40,4 +40,14 @@ export function useFocusAcrossLayouts<T extends HTMLElement>(
     had.current = !!node.current?.contains(document.activeElement);
     node.current = null;
   }, []);
+}
+
+/**
+ * Escape that closes a popup list closes only the list, not the dialog around
+ * it: useFocusTrap listens on document. Select and TokenField share this.
+ */
+export function stopEscape(e: KeyboardEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  e.nativeEvent.stopImmediatePropagation();
 }
