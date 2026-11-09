@@ -27,11 +27,15 @@ export function listenForOpenRequests(open: (path: string) => void): () => void 
   const onMessage = (e: MessageEvent) => {
     const d = e.data as { type?: unknown; url?: unknown } | null;
     if (!d || d.type !== OPEN_MESSAGE || typeof d.url !== 'string') return;
-    open(safeReturnTo(d.url, '/'));
+    // Only from a service worker (this container hears nothing else, but be plain).
+    if (typeof ServiceWorker !== 'undefined' && !(e.source instanceof ServiceWorker)) return;
+    // Answered first, so the worker never also navigates while the app moves.
     e.ports[0]?.postMessage('opened');
+    open(safeReturnTo(d.url, '/'));
   };
   sw.addEventListener('message', onMessage);
-  // A tap that woke the app may have queued its request before this listened.
+  // Lets queued worker messages in now rather than after load. A request sent
+  // before this listened is lost; the worker then moves the window itself.
   sw.startMessages?.();
   return () => sw.removeEventListener('message', onMessage);
 }

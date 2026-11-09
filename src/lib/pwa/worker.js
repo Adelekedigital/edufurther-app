@@ -162,15 +162,16 @@ function readPush(event) {
   }
 }
 
+/*
+ * The app's one link check (lib/pwa/safePath.js), put here as it is by /sw.js
+ * (app/sw.js/route.ts): one implementation, so a notification's link obeys
+ * exactly the rules every other link does.
+ */
+const safeReturnTo = __SAFE_RETURN_TO__;
+
 /** A path on this origin, or Home. Never another site. */
 function inAppUrl(raw) {
-  if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return '/';
-  try {
-    const url = new URL(raw, self.location.origin);
-    return url.origin === self.location.origin ? url.pathname + url.search + url.hash : '/';
-  } catch {
-    return '/';
-  }
+  return typeof raw === 'string' ? safeReturnTo(raw, '/') : '/';
 }
 
 function setBadge(count) {
@@ -202,34 +203,49 @@ self.addEventListener('push', (event) => {
 });
 
 /*
- * A tap opens the notification's screen. An open window is asked to go
- * there itself (OPEN_MESSAGE, answered by lib/utils/serviceWorker
+ * A tap opens the notification's screen. An open window of the app is asked
+ * to go there itself (OPEN_MESSAGE, answered by lib/utils/serviceWorker
  * listenForOpenRequests): the app moves with its own router, which works on
- * iOS, where WindowClient.navigate() is unreliable and the app would just come
- * forward on its last screen. No answer within ACK_MS: navigate(), then a new
- * window. The page checks the path again (safeReturnTo); this check is the
- * worker's own, as the worker can't import the app's code.
+ * iOS, where WindowClient.navigate() alone left the app on its last screen.
+ *
+ * Browsers let a tap focus or open a window only briefly (about a second), so:
+ * one window only, a short wait (ACK_MS), and with no window, or one that isn't
+ * this worker's, a new window at once. No answer from a window this worker
+ * controls: navigate() it; failing that, a new window.
  */
 const OPEN_MESSAGE = 'ef-open';
-const ACK_MS = 1500;
+const ACK_MS = 700;
 
-/** Asks an open window to show `path`; true once it says it has. */
+/** Asks a window to show `path`; true once it says it has, false after ACK_MS. */
 function askToOpen(client, path) {
   return new Promise((resolve) => {
+    let channel;
     let timer;
+    const settle = (opened) => {
+      clearTimeout(timer);
+      if (channel) channel.port1.close();
+      resolve(opened);
+    };
     try {
-      const channel = new MessageChannel();
-      timer = setTimeout(() => resolve(false), ACK_MS);
-      channel.port1.onmessage = () => {
-        clearTimeout(timer);
-        resolve(true);
-      };
+      channel = new MessageChannel();
+      channel.port1.onmessage = () => settle(true);
+      timer = setTimeout(() => settle(false), ACK_MS);
       client.postMessage({ type: OPEN_MESSAGE, url: path }, [channel.port2]);
     } catch {
-      clearTimeout(timer);
-      resolve(false);
+      settle(false);
     }
   });
+}
+
+/** The app's window to use: one this worker controls first, any of the app's next. */
+async function appWindow() {
+  const sameOrigin = (c) => new URL(c.url).origin === self.location.origin;
+  const controlled = (await self.clients.matchAll({ type: 'window' })).filter(sameOrigin);
+  if (controlled.length) return { client: controlled[0], controlled: true };
+  const any = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true })).filter(
+    sameOrigin,
+  );
+  return any.length ? { client: any[0], controlled: false } : null;
 }
 
 self.addEventListener('notificationclick', (event) => {
@@ -238,21 +254,20 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     (async () => {
       const target = new URL(path, self.location.origin).href;
-      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      // An open window of the app: bring it forward, then to the right screen.
-      for (const client of windows) {
-        if (new URL(client.url).origin !== self.location.origin) continue;
+      const found = await appWindow();
+      if (found && found.controlled) {
         try {
-          const focused = (await client.focus()) || client;
+          const focused = (await found.client.focus()) || found.client;
           if (await askToOpen(focused, path)) return;
           if (focused.navigate) {
             await focused.navigate(target);
             return;
           }
         } catch {
-          // Not reachable or not navigable: try the next, then a new window.
+          // Gone, or can't be moved: a new window below.
         }
       }
+      // No window, or one this worker can't move: a new one, while the tap still allows it.
       await self.clients.openWindow(target);
     })(),
   );
