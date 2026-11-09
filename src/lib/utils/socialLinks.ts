@@ -1,4 +1,5 @@
 import type { SocialKind, SocialMark } from '@/types/mentor';
+import { safeDecode } from './text';
 
 /**
  * Settings › Social links' platforms, in the design's order (Mentor
@@ -55,15 +56,10 @@ const LINKEDIN_HANDLE = /^(?!\p{M})[\p{L}\p{Nd}\p{Mn}\p{Mc}_-]{3,100}$/u;
  * encodes accented names), then NFKC. Null when it isn't one.
  */
 function linkedInSlug(raw: string): string | null {
-  let handle: string;
-  try {
-    handle = decodeURIComponent(raw);
-  } catch {
-    return null;
-  }
+  const decoded = safeDecode(raw);
   // A % left after one decode was encoded twice: the backend refuses it.
-  if (handle.includes('%')) return null;
-  handle = handle.normalize('NFKC');
+  if (decoded === null || decoded.includes('%')) return null;
+  const handle = decoded.normalize('NFKC');
   return LINKEDIN_HANDLE.test(handle) ? handle : null;
 }
 

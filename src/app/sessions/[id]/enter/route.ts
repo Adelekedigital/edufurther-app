@@ -3,6 +3,7 @@ import { enterSession } from '@/lib/api/data/sessionEnter';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
 import { ENTER_PARAM, SESSION_ID } from '@/lib/utils/sessionEnter';
 import { ACCESS_TOKEN_HEADER } from '@/lib/vendor/supabase/server';
+import { safeDecode } from '@/lib/utils/text';
 
 /**
  * `/sessions/{id}/enter`: where Join and Rejoin link to (#207, ADR 0009). It
@@ -18,10 +19,7 @@ import { ACCESS_TOKEN_HEADER } from '@/lib/vendor/supabase/server';
  */
 export async function GET(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id: raw } = await ctx.params;
-  let id = raw;
-  try {
-    id = decodeURIComponent(raw);
-  } catch {}
+  const id = safeDecode(raw) ?? raw;
   // The proxy only cleans paths without a dot, so act on nothing else.
   if (!SESSION_ID.test(id)) return see(request, '/bookings');
   const page = `/sessions/${encodeURIComponent(id)}`;

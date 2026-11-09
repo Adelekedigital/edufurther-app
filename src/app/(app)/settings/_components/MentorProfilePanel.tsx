@@ -9,6 +9,7 @@ import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SaveBar } from '@/components/molecules/SaveBar/SaveBar';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { MentorCoverCard } from '@/components/organisms/MentorCard/MentorCoverCard';
 import { MentorProfileForm } from '@/components/organisms/MentorProfileForm/MentorProfileForm';
 import { RemovePhotoConfirm } from '@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm';
@@ -41,7 +42,6 @@ import styles from './MentorProfilePanel.module.css';
 /** The design's eight languages, in its order (Mentor Settings.dc.html `languages`). */
 const COMMON = ['English', 'French', 'Yoruba', 'Swahili', 'Hausa', 'Igbo', 'Arabic', 'Portuguese'];
 /** How long "Profile saved" stays (the design's flash: 5s). */
-const TOAST_MS = 5000;
 
 const same = (a: MentorProfileValues, b: MentorProfileValues) =>
   a.name === b.name &&
@@ -102,17 +102,11 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
     const [assistBusy, setAssistBusy] = useState(false);
     const [waitDraft, setWaitDraft] = useState(false);
     const [tries, setTries] = useState(0);
-    const [toast, setToast] = useState<string | null>(null);
+    const [toast, setToast] = useTimedToast<string>();
     const [toastStamp, setToastStamp] = useState(0);
     const [confirmRemove, setConfirmRemove] = useState(false);
     const heading = useRef<HTMLHeadingElement>(null);
     const required = useRequiredFields(draft && base ? gapsOf(draft, base) : []);
-
-    useEffect(() => {
-      if (!toast) return;
-      const t = setTimeout(() => setToast(null), TOAST_MS);
-      return () => clearTimeout(t);
-    }, [toast]);
 
     // The save bar goes when the form is clean again: focus it held moves to
     // "About you" rather than falling to the page (WCAG 2.4.3).

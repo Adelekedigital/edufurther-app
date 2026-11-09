@@ -1,3 +1,5 @@
+import { safeDecode } from './text';
+
 /**
  * The booking a guest left to sign up (PRD H1 guest path, F1): read from
  * `/onboarding?for={handle}&sid={session_type_id}&time={iso}`. Never trusted
@@ -39,11 +41,6 @@ export function parseGuestBooking(q: URLSearchParams): GuestBooking | null {
  * as the onboarding hand-off names them (`for`). Null when it isn't one we mint.
  */
 export function profileHandle(profileHref: string): string | null {
-  let h: string;
-  try {
-    h = decodeURIComponent(profileHref.split('/').filter(Boolean).pop() ?? '');
-  } catch {
-    return null;
-  }
-  return BOOKING_TOKEN.test(h) ? h : null;
+  const h = safeDecode(profileHref.split('/').filter(Boolean).pop() ?? '');
+  return h !== null && BOOKING_TOKEN.test(h) ? h : null;
 }
