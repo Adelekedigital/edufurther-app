@@ -1,4 +1,5 @@
 import { MENTOR_ONBOARDING_LIVE } from '@/lib/config/auth';
+import { safeDecode } from './text';
 
 /**
  * The mentor landing hint (owner, 2026-11-01): a mentor whose browser load
@@ -44,11 +45,7 @@ export function isMentorHome(home: string): boolean {
 /** Whether `raw` (the CHOSE_EXPLORE_COOKIE value) is this verified user's own. */
 export function choseExplore(raw: string | undefined, userId: string): boolean {
   if (!raw) return false;
-  try {
-    return decodeURIComponent(raw) === userId;
-  } catch {
-    return false;
-  }
+  return safeDecode(raw) === userId;
 }
 
 export function encodeLanding(userId: string, home: string): string {
@@ -59,12 +56,8 @@ export function encodeLanding(userId: string, home: string): string {
 export function landingHomeFor(raw: string | undefined, userId: string): string | null {
   if (!raw) return null;
   // A cookie parser may or may not have decoded it already.
-  let value = raw;
-  try {
-    value = decodeURIComponent(raw);
-  } catch {
-    return null;
-  }
+  const value = safeDecode(raw);
+  if (value === null) return null;
   const at = value.indexOf(':');
   if (at <= 0 || value.slice(0, at) !== userId) return null;
   const home = value.slice(at + 1);

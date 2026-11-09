@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { SearchField } from '@/components/molecules/SearchField/SearchField';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { useAdminSummary } from '@/lib/api/data/admin';
 import {
   MENTOR_TABS,
@@ -46,7 +47,6 @@ import { AdminLoadError } from '../../_components/AdminLoadError';
 import styles from './AdminMentorsScreen.module.css';
 
 const panelOf = (t: MentorTab) => `admin-mentors-${t}`;
-const TOAST_MS = 4000;
 const SAY_SEARCH_MS = 600;
 type Toast = { text: string; tone: 'success' | 'error'; stamp: number };
 
@@ -69,7 +69,7 @@ export function AdminMentorsScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
   const [dialog, setDialog] = useState<MentorDialog | null>(null);
-  const [toast, setToast] = useState<Toast | null>(null);
+  const [toast, setToast] = useTimedToast<Toast>(4000);
   const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
 
   const summary = useAdminSummary(adminId);
@@ -82,13 +82,6 @@ export function AdminMentorsScreen() {
   const pause = usePauseMentor();
   const resume = useResumeMentor();
   const bulk = useBulkApprove();
-
-  // The toast goes after a few seconds; Snackbar's own status region has read it out.
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
   const tableRef = useRef<HTMLDivElement>(null);

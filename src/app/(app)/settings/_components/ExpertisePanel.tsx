@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SaveBar } from '@/components/molecules/SaveBar/SaveBar';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { EducationList } from '@/components/organisms/EducationList/EducationList';
 import { AwardList } from '@/components/organisms/MentorExpertise/AwardList';
 import { GuideCountriesCard } from '@/components/organisms/MentorExpertise/GuideCountriesCard';
@@ -45,7 +46,6 @@ const COMMON = [
   'France',
 ];
 /** How long a toast stays (the design's flash: 5s). */
-const TOAST_MS = 5000;
 /** Matches shown under "Add another country". */
 const MATCHES = 6;
 
@@ -91,15 +91,9 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
   const [deleting, setDeleting] = useState<{ kind: 'award' | 'education'; id: string } | null>(
     null,
   );
-  const [toast, setToast] = useState<{ text: string; at: number } | null>(null);
+  const [toast, setToast] = useTimedToast<{ text: string; at: number }>();
   const said = useRef(0);
   const say = (text: string) => setToast({ text, at: ++said.current });
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   const awardsHeading = useRef<HTMLHeadingElement>(null);
   const awardsAdd = useRef<HTMLButtonElement>(null);
   const eduHeading = useRef<HTMLHeadingElement>(null);

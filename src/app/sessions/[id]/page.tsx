@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SessionJoinScreen } from './_components/SessionJoinScreen';
+import { safeDecode } from '@/lib/utils/text';
 
 export const metadata: Metadata = {
   title: 'Your session',
@@ -10,9 +11,6 @@ export const metadata: Metadata = {
 export default async function SessionJoinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: raw } = await params;
   // A malformed %-sequence must not crash the render; the API answers it as not found.
-  let id = raw;
-  try {
-    id = decodeURIComponent(raw);
-  } catch {}
+  const id = safeDecode(raw) ?? raw;
   return <SessionJoinScreen key={id} id={id} />;
 }
