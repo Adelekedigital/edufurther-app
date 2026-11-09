@@ -1,16 +1,15 @@
 // @vitest-environment node
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { workerSource } from '@/app/sw.js/route';
 
 /**
  * The service worker (src/lib/pwa/worker.js, as /sw.js serves it), run inside
  * a fake worker scope: the rules ADR 0011 promises (never a page or the API
  * from cache, code cache-first) are pinned against the real file.
  */
-const CODE = readFileSync(join(process.cwd(), 'src/lib/pwa/worker.js'), 'utf8').replace(
-  "'__BUILD__'",
-  "'b2'",
-);
+// As /sw.js serves it: the deploy id filled in, the app's link check put in.
+vi.stubEnv('VERCEL_DEPLOYMENT_ID', 'b2');
+const CODE = workerSource();
+vi.unstubAllEnvs();
 const ORIGIN = 'https://app.test';
 
 class FakeCache {
@@ -65,7 +64,7 @@ let scope: {
   navigator: { setAppBadge: Fn; clearAppBadge: Fn };
 };
 /** The app's open windows, as clients.matchAll answers. */
-let windows: { url: string; focus: Fn }[];
+let windows: { url: string; focus: Fn; postMessage?: Fn; navigate?: Fn; controlled?: boolean }[];
 
 function boot() {
   cacheMap = new Map();
@@ -76,7 +75,10 @@ function boot() {
     skipWaiting: vi.fn(),
     clients: {
       claim: vi.fn(),
-      matchAll: vi.fn(async () => windows),
+      // Controlled windows only, unless asked for every one.
+      matchAll: vi.fn(async (o?: { includeUncontrolled?: boolean }) =>
+        o?.includeUncontrolled ? windows : windows.filter((w) => w.controlled !== false),
+      ),
       openWindow: vi.fn().mockResolvedValue(undefined),
     },
     registration: {
@@ -324,6 +326,10 @@ describe('sw.js: push (decision 312)', () => {
     ['//evil.example/phish', '/'],
     ['javascript:alert(1)', '/'],
     [42, '/'],
+    ['/.//evil.example', '/'],
+    ['/%2e//evil.example', '/'],
+    ['/a/..//evil.example', '/'],
+    [String.fromCharCode(47, 92) + 'evil.example', '/'],
     ['/sessions/s1#top', '/sessions/s1#top'],
   ])('keeps a url inside the app: %s → %s', async (url, kept) => {
     await push({ title: 't', body: 'b', url });
@@ -337,13 +343,100 @@ describe('sw.js: a tap on a notification', () => {
     expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/sessions/s1`);
   });
 
-  it('brings an open window forward and moves it to the url', async () => {
-    const navigate = vi.fn().mockResolvedValue(undefined);
-    windows.push({ url: `${ORIGIN}/home`, focus: vi.fn().mockResolvedValue({ navigate }) });
-    await tap('/bookings?tab=pending&booking=b1');
-    expect(navigate).toHaveBeenCalledWith(`${ORIGIN}/bookings?tab=pending&booking=b1`);
+  /** An open window: answers the "show this screen" request (now, late, or never). */
+  const appWindow = (
+    answers: boolean | 'late',
+    {
+      navigate = vi.fn().mockResolvedValue(undefined) as Fn | null,
+      focusTo = 'self' as 'self' | 'null',
+      controlled = true,
+    } = {},
+  ) => {
+    const asked: unknown[] = [];
+    const client = {
+      url: `${ORIGIN}/home`,
+      navigate: navigate ?? undefined,
+      controlled,
+      postMessage: vi.fn((msg: unknown, [port]: MessagePort[]) => {
+        asked.push(msg);
+        if (answers === true) port!.postMessage('opened');
+        if (answers === 'late') setTimeout(() => port!.postMessage('opened'), 2000);
+      }),
+      focus: vi.fn(),
+    };
+    client.focus.mockResolvedValue(focusTo === 'null' ? null : client);
+    windows.push(client as never);
+    return { client, asked, navigate };
+  };
+  /** A tap, with the clock run past the wait for an answer. */
+  const tapAndWait = async (url: string) => {
+    vi.useFakeTimers();
+    try {
+      const done = tap(url);
+      await vi.advanceTimersByTimeAsync(2500);
+      await done;
+    } finally {
+      vi.useRealTimers();
+    }
+  };
+
+  it('an open app is asked to show the screen itself, and nothing else happens', async () => {
+    const w = appWindow(true);
+    await tap('/messages?with=u2');
+    expect(w.client.focus).toHaveBeenCalled();
+    expect(w.asked).toEqual([{ type: 'ef-open', url: '/messages?with=u2' }]);
+    expect(w.navigate).not.toHaveBeenCalled();
     expect(scope.clients.openWindow).not.toHaveBeenCalled();
   });
+
+  it('focus() answering null still asks that window', async () => {
+    const w = appWindow(true, { focusTo: 'null' });
+    await tap('/sessions/s1');
+    expect(w.asked).toHaveLength(1);
+    expect(scope.clients.openWindow).not.toHaveBeenCalled();
+  });
+
+  it('only one window is asked, however many are open', async () => {
+    const a = appWindow(true);
+    const b = appWindow(true);
+    await tap('/sessions/s1');
+    expect(a.asked.length + b.asked.length).toBe(1);
+  });
+
+  it('no answer: the window is moved instead, once, even if the answer comes late', async () => {
+    const w = appWindow('late');
+    await tapAndWait('/bookings?tab=pending&booking=b1');
+    expect(w.navigate).toHaveBeenCalledTimes(1);
+    expect(w.navigate).toHaveBeenCalledWith(`${ORIGIN}/bookings?tab=pending&booking=b1`);
+    expect(scope.clients.openWindow).not.toHaveBeenCalled();
+  });
+
+  it('no answer and no way to move it: a new window at the screen', async () => {
+    appWindow(false, { navigate: null });
+    await tapAndWait('/sessions/s1');
+    expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/sessions/s1`);
+  });
+
+  it('a move that fails: a new window', async () => {
+    appWindow(false, { navigate: vi.fn().mockRejectedValue(new TypeError('uncontrolled')) });
+    await tapAndWait('/sessions/s1');
+    expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/sessions/s1`);
+  });
+
+  it('a window this worker doesn’t control: a new window at once, nothing asked', async () => {
+    const w = appWindow(true, { controlled: false });
+    await tap('/sessions/s1');
+    expect(w.asked).toEqual([]);
+    expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/sessions/s1`);
+  });
+
+  it.each(['/.//evil.example', '/%2e//evil.example', '/a/..//evil.example'])(
+    'a disguised link to another site opens Home: %s',
+    async (url) => {
+      await tap(url);
+      expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/`);
+    },
+  );
 
   it('never opens another site, whatever the notification carries', async () => {
     await tap('https://evil.example/');

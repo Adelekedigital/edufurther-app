@@ -18,6 +18,11 @@ describe('/sw.js', () => {
     const body = await res.text();
     expect(body).toContain("const BUILD = 'dpl_Abc123';");
     expect(body).not.toContain('__BUILD__');
+    // The app's own link check, lib/pwa/safePath.js, put in whole: one implementation.
+    expect(body).not.toContain('__SAFE_RETURN_TO__');
+    expect(body).toContain('function safeReturnTo(value');
+    expect(body).toContain('return safeReturnTo;');
+    expect(body).not.toMatch(/^export /m);
   });
 
   it('falls back to the commit, then a fixed value; never lets odd characters into the script', async () => {

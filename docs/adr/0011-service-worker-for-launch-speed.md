@@ -124,9 +124,18 @@ caching rules above are unchanged: the push half never touches a cache.
   an earlier notification about the same chat or session. `badge` (unread
   messages) sets the app icon, cleared at 0. An unreadable payload still shows
   a plain "EduFurther" notification: a silent push is penalised by browsers.
-- **Taps** open `url` as sent, but only as a path on this origin; anything
-  else (another site, `//host`, a non-path) opens Home. An open window is
-  brought forward and moved there; otherwise a new one opens.
+- **Taps** open `url` as sent, but only as a path on this origin, checked by
+  the app's one link check (`lib/pwa/safePath.js`, plain JavaScript, put into
+  the worker unchanged by `app/sw.js/route.ts`; the app imports the same file
+  as `safeReturnTo`). Anything else opens Home.
+  - **An open window of the app** that this worker controls is brought
+    forward and asked to show the screen itself (`ef-open`, answered by
+    `listenForOpenRequests` with the app's router). On iOS,
+    `WindowClient.navigate()` alone left the app on its last screen (owner,
+    2026-11-09).
+  - **No answer within 700 ms:** `navigate()`; failing that, a new window.
+  - **No window, or one this worker doesn't control:** a new window at once.
+    Browsers allow a tap to open or focus a window only for about a second.
 - **Subscribing** (`lib/api/data/push.ts`, `lib/utils/push.ts`): only where
   the Push API exists (an iPhone needs the Home Screen app), never in a
   Preview as user, and never when `/push/config` answers 503. The browser's
