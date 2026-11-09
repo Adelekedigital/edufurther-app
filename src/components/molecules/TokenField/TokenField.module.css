@@ -99,6 +99,14 @@
   color: var(--ink-400);
   cursor: not-allowed;
 }
+@media (max-width: 767px) {
+  /* Drawn at 40px on phones too; an invisible area reaches 44px, as IconButton's ring. */
+  .insert::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+  }
+}
 
 /* The value list. Fixed, placed by useListPosition (Select's layer). */
 .list {

@@ -108,9 +108,11 @@ export function TokenField({
   useLayoutEffect(() => {
     const next = nextCaret.current;
     const el = fieldRef.current;
-    // Only for the text it was set for: a parent that changed it otherwise wins.
-    if (!next || !el || next.text !== value) return;
+    if (!next || !el) return;
+    // Only for the very next text, and only if it's the one set: a parent that
+    // committed something else wins, and the caret never lands later by itself.
     nextCaret.current = null;
+    if (next.text !== value) return;
     el.focus();
     el.setSelectionRange(next.at, next.at);
     caret.current = next.at;

@@ -302,6 +302,33 @@ describe('TokenField', () => {
     expect(field()).toHaveAttribute('aria-invalid', 'true');
   });
 
+  it('an edit the parent replaced never pulls focus back later', async () => {
+    // A parent that turns every value into "{mentorName}" (e.g. a reset) and
+    // later, with focus elsewhere, sets the text the field once asked for.
+    function Reshape() {
+      const [v, setV] = useState('Hi {mentorName}');
+      return (
+        <>
+          <TokenField
+            id="r"
+            ariaLabel="Reshaped"
+            value={v}
+            onChange={() => setV('reset')}
+            values={VALUES}
+          />
+          <button onClick={() => setV('Hi ')}>Set</button>
+        </>
+      );
+    }
+    render(<Reshape />);
+    const f = screen.getByRole('textbox', { name: 'Reshaped' }) as HTMLTextAreaElement;
+    await userEvent.click(f);
+    f.setSelectionRange(15, 15);
+    await userEvent.keyboard('{Backspace}'); // asks for "Hi ", the parent sets "reset"
+    await userEvent.click(screen.getByRole('button', { name: 'Set' }));
+    expect(screen.getByRole('button', { name: 'Set' })).toHaveFocus();
+  });
+
   it('read only: no typing, no list, the button is disabled', async () => {
     render(<Host initial="Fixed" readOnly />);
     await userEvent.type(field(), ' /');
