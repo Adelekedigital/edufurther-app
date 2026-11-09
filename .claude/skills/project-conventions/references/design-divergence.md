@@ -1416,3 +1416,17 @@ Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch tar
 | The list `position:absolute` under the field, `z-index:41` | `position:fixed`, placed by Select's `useListPosition` (`{ max: 280, width: 340 }`), z-index 60 | One placement for every popup list: it flips above the field near the bottom, follows the phone keyboard and escapes a dialog's scroll box | — |
 | Placeholder `--ink-400`; focus by the browser's outline in `--blue-500` | `--ink-500` placeholder; the app's focus ring (`--focus-ring-*`) | Same as every field (rows above: placeholder contrast, one focus ring) | — |
 | (not drawn) an insert past `maxLength` | Refused: the text, focus and the open list stay as they were | `maxLength` is the hard max the server enforces | — |
+
+### Admin Emails — list and Values (`Admin Emails.dc.html` list and variables views, PRD 28 PR 5), 2026-11-09
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| A row is a `<button>` named "{Email}, {status}. Edit wording" | A link to `/admin/emails/{key}`, named by its content: name, trigger, who it goes to, status, last edit | It navigates to the editor’s own URL (a link opens in a new tab and shows its address); the label hid Goes to and Last edited from screen readers, and said "Edit wording" on read-only emails | — |
+| Native `<select>` filters; a bare `<input type="search">` | The shared FilterBar (Select) and SearchField `labelled="filter"` | PRD 25 fix 9: every dropdown is Select; one search field. The field keeps its × clear button (44px right padding) and is 44px tall with 16px text on phones, as every field | — |
+| The design's 27 draft rows, groups and value names | The backend's registry (`GET /admin/emails`), mocked from its real `TEMPLATE_GROUPS` and `LINES` until the routes ship | PRD 28 designer items 86–88 | backend routes ship (11 Nov) |
+| Error body "Check your connection and try again. Nothing you changed was lost." | "Check your connection and try again." | The list holds no edits, so the second sentence promised nothing real (ux-writer) | — |
+| Values note: "If a value is empty when an email sends, its fallback is used." | "If a value is empty in a subject, heading or button label, its fallback is used." | Fallbacks apply only in the three lines (PRD 28 rules, designer item 93) | — |
+| (not drawn) Values loading and error states | Skeleton rows; "We couldn’t load values" / "Check your connection and try again." / Try again, as the list's | Every view that fetches has all four states | design draws them |
+| (not drawn) a value with no fallback | "None: the email isn’t sent" | `code` has no fallback (PRD 28) | — |
+| (not drawn) no values at all | "No values yet. They show up here once engineering adds them." | Every view that fetches has an empty state | design draws it |
+| The page ships with the admin nav | Behind `NEXT_PUBLIC_ADMIN_EMAILS_ENABLED` (on in dev): off, no nav item and `/admin/emails` is not found | The backend routes and the editor aren’t live yet (PRD 28) | backend routes and PR 6 ship |

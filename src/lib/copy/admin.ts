@@ -1,5 +1,5 @@
 /**
- * The admin app (Admin PRD; Admin.dc.html). Shared by Mentors and Credits:
+ * The admin app (Admin PRD; Admin.dc.html). Shared by Mentors, Credits and Emails:
  * the page headers and the failed-action toast. Reviewed against the
  * ux-writer rules.
  */
@@ -13,6 +13,11 @@ export const ADMIN_PAGES = {
     title: 'Credits',
     // v1 shows the rules read-only (founder, 2026-10-26; PRD Q7).
     subtitle: 'Add session credits for a mentee, see every change and check the monthly rules.',
+  },
+  emails: {
+    title: 'Emails',
+    subtitle:
+      'Change what each email says without a release. Changes reach people on the next send.',
   },
 } as const;
 

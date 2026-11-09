@@ -244,6 +244,9 @@ export const keys = {
     users: (me: string, q: string, role: string) => ['admin', me, 'users', q, role] as const,
     creditLog: (me: string, type: string) => ['admin', me, 'credit-log', type] as const,
     creditRules: (me: string) => ['admin', me, 'credit-rules'] as const,
+    /** Admin Emails (PRD 28): the list and the values catalogue. */
+    emails: (me: string) => ['admin', me, 'emails', 'list'] as const,
+    emailValues: (me: string) => ['admin', me, 'emails', 'values'] as const,
   },
   /** Push notifications (push.ts): the server's key, and this device's state per account. */
   push: {
