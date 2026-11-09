@@ -1,0 +1,161 @@
+/* TokenField.dc.html. The textarea and the mirror under it must match box for
+   box (border, padding, font, line, wrapping), or the caret drifts off the text. */
+.field {
+  position: relative;
+  font-family: var(--font-ui);
+  color: var(--ink-900);
+}
+.box {
+  box-sizing: border-box;
+  min-height: var(--touch-target-min);
+  margin: 0;
+  padding: 11px var(--space-12) 11px var(--space-3);
+  border: var(--border-hairline) solid transparent;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-token-field);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mobile {
+  font-size: var(--text-p-md);
+}
+.mirror {
+  border-color: var(--ink-300);
+  background: var(--surface-card);
+}
+.invalid {
+  border-color: var(--red-500);
+}
+.readOnly {
+  background: var(--ink-50);
+}
+.input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: transparent;
+  caret-color: var(--ink-900);
+  resize: none;
+  overflow: hidden;
+}
+.input::selection {
+  background: color-mix(in srgb, var(--blue-500) 22%, transparent);
+  color: transparent;
+}
+.input::placeholder {
+  color: var(--ink-500);
+}
+.input:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+}
+.chip {
+  border-radius: var(--radius-xs);
+  background: var(--blue-50);
+  box-shadow: 0 0 0 2px var(--blue-50);
+  color: var(--blue-700);
+}
+.bad {
+  background: var(--red-50);
+  box-shadow: 0 0 0 2px var(--red-50);
+  color: var(--red-700);
+}
+/* Windows high contrast drops backgrounds: a chip keeps an outline. */
+@media (forced-colors: active) {
+  .chip {
+    outline: 1px solid CanvasText;
+  }
+}
+
+/* The { } button, inside the field's right edge. */
+.insert {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--button-h-medium);
+  height: var(--button-h-medium);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--blue-500);
+  cursor: pointer;
+}
+.insert:hover:not(:disabled) {
+  background: var(--blue-50);
+}
+.insert:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 0;
+}
+.insert:disabled {
+  color: var(--ink-400);
+  cursor: not-allowed;
+}
+@media (max-width: 767px) {
+  /* Drawn at 40px on phones too; an invisible area reaches 44px, as IconButton's ring. */
+  .insert::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+  }
+}
+
+/* The value list. Fixed, placed by useListPosition (Select's layer). */
+.list {
+  position: fixed;
+  z-index: 60;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-1);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  box-shadow:
+    var(--shadow-menu),
+    inset 0 0 0 1px var(--ink-200);
+}
+.hint {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.active {
+  background: var(--blue-50);
+}
+@media (forced-colors: active) {
+  .active {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+/* The list draws the value Tag 1px tighter (TokenField.dc.html). */
+.option .optionChip {
+  padding-block: 1px;
+}
+.sub {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.options {
+  display: flex;
+  flex-direction: column;
+}

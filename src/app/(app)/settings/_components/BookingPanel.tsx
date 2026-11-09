@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { SaveBar } from '@/components/molecules/SaveBar/SaveBar';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import {
   BookingSettings,
   type BookingSettingsValue,
@@ -19,7 +20,6 @@ import { resolveDefaults } from '@/lib/utils/sessionTypeDraft';
 import type { PanelHandle } from './ProfilePanel';
 
 /** How long "Changes saved" stays (the design's flash, as Profile's). */
-const TOAST_MS = 5000;
 
 const same = (a: BookingSettingsValue, b: BookingSettingsValue) =>
   a.requiresApproval === b.requiresApproval &&
@@ -61,16 +61,10 @@ export const BookingPanel = forwardRef<PanelHandle, { userId: string }>(function
   const cap = defaults.data?.maxWindowDays;
   if (draft && cap && draft.windowDays > cap) setDraft({ ...draft, windowDays: cap });
 
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useTimedToast<string>();
   // Each failed save: the same error twice is still said again (SaveBar errorKey).
   const [tries, setTries] = useState(0);
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   // The save bar goes when the form is clean again: focus it held moves to
   // the first card's heading rather than falling to the page (WCAG 2.4.3).
   const keepFocus = () => {

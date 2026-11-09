@@ -1,0 +1,84 @@
+/* Admin Emails.dc.html: one line's block in the fields card. */
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.label {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.spacer {
+  flex: 1;
+}
+.reset,
+.useNew,
+.keep {
+  min-height: var(--button-h-small);
+  padding: 0 var(--space-1);
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
+}
+.reset {
+  font-size: var(--text-p-xs);
+}
+.useNew,
+.keep {
+  padding: 0;
+}
+.useNew {
+  /* On the blue-50 box: blue-500 is about 4.2:1, so blue-700 (AA). */
+  color: var(--blue-700);
+}
+.reset:focus-visible,
+.useNew:focus-visible,
+.keep:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+/* The design's orange-800 is banned in product UI: the app's warning ink instead. */
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--warning-text);
+}
+.changed {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--blue-50);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-900);
+}
+.changedText {
+  margin: 0;
+}
+.changedText strong {
+  font-weight: var(--weight-semibold);
+}
+.changedActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+.help {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}

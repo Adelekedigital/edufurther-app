@@ -1,10 +1,4 @@
-/* Admin.dc.html Credits: the tab row, then the tab's body. */
-.tabs {
-  border-bottom: var(--border-hairline) solid var(--ink-200);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-}
+/* Admin.dc.html Credits: the tab body (Tabs draws its own row and line). */
 .body {
   display: flex;
   flex-wrap: wrap;

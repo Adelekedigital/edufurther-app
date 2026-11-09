@@ -1,13 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { SearchField } from '@/components/molecules/SearchField/SearchField';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { useAdminSummary } from '@/lib/api/data/admin';
 import {
   MENTOR_TABS,
@@ -23,6 +23,7 @@ import {
   isSelfPausedError,
   type MentorTab,
 } from '@/lib/api/data/adminMentors';
+import { viewStatus } from '@/lib/api/data/queryStatus';
 import { useViewer } from '@/lib/api/data/viewer';
 import { ADMIN_ACTION_FAILED, ADMIN_PAGES } from '@/lib/copy/admin';
 import {
@@ -42,14 +43,12 @@ import { MentorFilterBar } from './MentorFilterBar';
 import { filtersActive, NO_FILTERS, visibleMentors, type MentorFilters } from './mentorList';
 import { MentorSummaryCards } from './MentorSummaryCards';
 import { MentorTable, MentorTableSkeleton } from './MentorTable';
+import { AdminLoadError } from '../../_components/AdminLoadError';
 import styles from './AdminMentorsScreen.module.css';
 
 const panelOf = (t: MentorTab) => `admin-mentors-${t}`;
-const TOAST_MS = 4000;
 const SAY_SEARCH_MS = 600;
 type Toast = { text: string; tone: 'success' | 'error'; stamp: number };
-const status = (q: { isError: boolean; data: unknown }) =>
-  q.data !== undefined ? 'ready' : q.isError ? 'error' : 'loading';
 
 /**
  * /admin/mentors (Admin PRD "Mentors page"; Admin.dc.html mentorLayout=drawer).
@@ -70,7 +69,7 @@ export function AdminMentorsScreen() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [checked, setChecked] = useState<string[]>([]);
   const [dialog, setDialog] = useState<MentorDialog | null>(null);
-  const [toast, setToast] = useState<Toast | null>(null);
+  const [toast, setToast] = useTimedToast<Toast>(4000);
   const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
 
   const summary = useAdminSummary(adminId);
@@ -83,13 +82,6 @@ export function AdminMentorsScreen() {
   const pause = usePauseMentor();
   const resume = useResumeMentor();
   const bulk = useBulkApprove();
-
-  // The toast goes after a few seconds; Snackbar's own status region has read it out.
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
   const tableRef = useRef<HTMLDivElement>(null);
@@ -211,7 +203,7 @@ export function AdminMentorsScreen() {
     };
   });
 
-  const listStatus = status(list);
+  const listStatus = viewStatus(list);
   // An empty tab says so first, whatever is typed; then the filters' no-match
   // (they hide everything on their own), then the search's.
   const empty =
@@ -250,15 +242,13 @@ export function AdminMentorsScreen() {
         loading={summary.isPending}
         onOpen={setTab}
       />
-      <div className={styles.tabs}>
-        <Tabs
-          items={tabItems}
-          value={tab}
-          onChange={(v) => setTab(v as MentorTab)}
-          label={MENTOR_TABS_LABEL}
-          countStyle="text"
-        />
-      </div>
+      <Tabs
+        items={tabItems}
+        value={tab}
+        onChange={(v) => setTab(v as MentorTab)}
+        label={MENTOR_TABS_LABEL}
+        countStyle="text"
+      />
       <div
         id={panelOf(tab)}
         role="tabpanel"
@@ -290,24 +280,15 @@ export function AdminMentorsScreen() {
         <div ref={tableRef} tabIndex={-1} className={styles.region}>
           {listStatus === 'loading' && <MentorTableSkeleton label={MENTOR_TABLE.loading} />}
           {listStatus === 'error' && (
-            <div className={styles.stateCard}>
-              <EmptyState
-                illustration="forms"
-                size={120}
-                title={MENTOR_STATES.error.title}
-                description={MENTOR_STATES.error.body}
-                actions={
-                  <Button
-                    variant="secondary-outlined"
-                    size="medium"
-                    onClick={() => void list.refetch()}
-                    busy={list.isFetching}
-                  >
-                    {MENTOR_STATES.error.retry}
-                  </Button>
-                }
-              />
-            </div>
+            <AdminLoadError
+              framed
+              headingLevel={2}
+              title={MENTOR_STATES.error.title}
+              body={MENTOR_STATES.error.body}
+              retryLabel={MENTOR_STATES.error.retry}
+              onRetry={() => void list.refetch()}
+              retrying={list.isFetching}
+            />
           )}
           {listStatus === 'ready' &&
             (empty ? (
@@ -352,10 +333,10 @@ export function AdminMentorsScreen() {
           row={openRow}
           tab={tab}
           detail={detail.data}
-          detailStatus={status(detail)}
+          detailStatus={viewStatus(detail)}
           onRetry={() => void detail.refetch()}
           notes={notes.data}
-          notesStatus={status(notes)}
+          notesStatus={viewStatus(notes)}
           onRetryNotes={() => void notes.refetch()}
           onAddNote={canDecide ? (body) => addNote.mutateAsync(body) : undefined}
           canDecide={canDecide}

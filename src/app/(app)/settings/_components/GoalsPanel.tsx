@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SaveBar } from '@/components/molecules/SaveBar/SaveBar';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { MenteeGoalsForm } from '@/components/organisms/MenteeGoalsForm/MenteeGoalsForm';
 import { useCountries, useDegreeLevels } from '@/lib/api/data/catalog';
 import { savedOriginId, toGoalValues, useMenteeGoals, useSaveGoals } from '@/lib/api/data/goals';
@@ -28,7 +29,6 @@ import type { PanelHandle } from './ProfilePanel';
 import styles from './GoalsPanel.module.css';
 
 /** How long "Goals saved…" stays (the design's flash: 5s). */
-const TOAST_MS = 5000;
 
 const sameList = (a: string[], b: string[]) =>
   a.length === b.length && a.every((x, i) => x === b[i]);
@@ -97,7 +97,7 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
     }
   }
 
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useTimedToast<string>();
   // Move on each outcome, so the same words twice are heard again.
   const [toastStamp, setToastStamp] = useState(0);
   const [tries, setTries] = useState(0);
@@ -113,12 +113,6 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
       alive.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // The save bar goes when the form is clean again: focus it held moves to
   // the first card's heading rather than falling to the page (WCAG 2.4.3).

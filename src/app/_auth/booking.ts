@@ -1,5 +1,6 @@
 import type { PendingBooking } from '@/lib/config/auth';
 import { BOOKING_TOKEN as TOKEN, ISO_INSTANT } from '@/lib/utils/guestBooking';
+import { safeDecode } from '@/lib/utils/text';
 
 const BASE = 'https://edufurther.invalid';
 const PROFILE = /^\/mentors\/([^/]+)$/;
@@ -25,12 +26,8 @@ export function bookingFromNext(next: string | null): PendingBooking | null {
   const url = sameSite(next);
   const raw = url && PROFILE.exec(url.pathname)?.[1];
   if (!url || !raw) return null;
-  let handle: string;
-  try {
-    handle = decodeURIComponent(raw);
-  } catch {
-    return null; // a malformed escape: not a link we made
-  }
+  const handle = safeDecode(raw);
+  if (handle === null) return null; // a malformed escape: not a link we made
   const sid = url.searchParams.get('book');
   const time = url.searchParams.get('at');
   if (!TOKEN.test(handle) || !sid || !TOKEN.test(sid) || !time || !ISO_INSTANT.test(time)) {

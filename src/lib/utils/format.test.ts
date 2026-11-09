@@ -1,5 +1,5 @@
 import { REVIEW_COPY } from '@/lib/copy/profile';
-import { formatShortDate } from './format';
+import { formatShortDate, timeAgo } from './format';
 import { newestFirst } from './reviewable';
 
 describe('formatShortDate', () => {
@@ -47,5 +47,19 @@ describe('REVIEW_COPY.dueBody', () => {
     expect(REVIEW_COPY.dueBody(null, 'UTC')).toBe(
       'Your review helps other mentees choose, and takes about a minute.',
     );
+  });
+});
+
+describe('timeAgo', () => {
+  const now = new Date('2026-11-09T12:00:00Z');
+  it.each([
+    ['2026-11-09T11:59:40Z', 'just now'],
+    ['2026-11-09T11:58:00Z', '2 minutes ago'],
+    ['2026-11-09T11:59:00Z', '1 minute ago'],
+    ['2026-11-09T10:30:00Z', '1 hour ago'],
+    ['2026-11-06T12:00:00Z', '3 days ago'],
+    ['not a date', 'just now'],
+  ])('%s → %s', (at, want) => {
+    expect(timeAgo(at, now)).toBe(want);
   });
 });

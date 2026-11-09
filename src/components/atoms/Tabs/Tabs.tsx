@@ -17,6 +17,9 @@ export type TabItem = {
    * count without this is a number nobody can hear.
    */
   countLabel?: string;
+  /** A dot after the label (a pill tab with unsaved work); `markLabel` is read with the tab. */
+  marked?: boolean;
+  markLabel?: string;
 };
 
 type TabsProps = {
@@ -32,15 +35,34 @@ type TabsProps = {
    * name, read as seen ("Reviews (0)"), so `countLabel` isn't used.
    */
   countStyle?: 'pill' | 'text';
+  /**
+   * `line`: the page's tab row. `pill`: rounded tabs side by side, a choice
+   * within a screen (DS `variant="pill"`; Admin Emails' "Who gets it").
+   */
+  variant?: 'line' | 'pill';
   className?: string;
 };
 
+/** The tab's name when the count pill or the mark adds words to its label. */
+function nameOf(it: TabItem, countStyle: 'pill' | 'text'): string | undefined {
+  const extra = [countStyle === 'pill' && it.countLabel, it.marked && it.markLabel].filter(Boolean);
+  return extra.length ? [it.label, ...extra].join(', ') : undefined;
+}
+
 /**
- * DS Tabs, `variant="line"` (_ds_bundle.js components/navigation/Tabs.jsx).
+ * DS Tabs, `variant="line"` or `"pill"` (_ds_bundle.js components/navigation/Tabs.jsx).
  * WAI-ARIA tabs with automatic activation: one tab stop; arrows, Home and End
  * move and select. Home/End are ours — the DS handles only the arrows.
  */
-export function Tabs({ items, value, onChange, label, countStyle = 'pill', className }: TabsProps) {
+export function Tabs({
+  items,
+  value,
+  onChange,
+  label,
+  countStyle = 'pill',
+  variant = 'line',
+  className,
+}: TabsProps) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const select = (i: number) => {
     const it = items[(i + items.length) % items.length]!;
@@ -63,7 +85,11 @@ export function Tabs({ items, value, onChange, label, countStyle = 'pill', class
     select(to);
   };
   return (
-    <div role="tablist" aria-label={label} className={cx(styles.list, className)}>
+    <div
+      role="tablist"
+      aria-label={label}
+      className={cx(styles.list, variant === 'pill' && styles.pills, className)}
+    >
       {items.map((it, i) => {
         const on = it.value === value;
         return (
@@ -77,9 +103,7 @@ export function Tabs({ items, value, onChange, label, countStyle = 'pill', class
             id={`${it.panelId}-tab`}
             aria-selected={on}
             aria-controls={it.panelId}
-            aria-label={
-              countStyle === 'pill' && it.countLabel ? `${it.label}, ${it.countLabel}` : undefined
-            }
+            aria-label={nameOf(it, countStyle)}
             tabIndex={on ? 0 : -1}
             className={cx(styles.tab, on && styles.on)}
             onClick={() => onChange(it.value)}
@@ -95,6 +119,7 @@ export function Tabs({ items, value, onChange, label, countStyle = 'pill', class
                 ) : (
                   ` (${it.count})`
                 ))}
+              {it.marked && <span aria-hidden="true" className={styles.mark} />}
             </span>
           </button>
         );

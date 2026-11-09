@@ -1,16 +1,4 @@
-/* Admin.dc.html list states: listError and skelRows. */
-.state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-4);
-}
-.framed {
-  padding: var(--space-8) var(--space-5);
-  border: var(--border-hairline) solid var(--ink-200);
-  border-radius: var(--radius-xl);
-  background: var(--surface-card);
-}
+/* Admin.dc.html list states: skelRows (the error is AdminLoadError). */
 .skelRow {
   display: flex;
   align-items: center;

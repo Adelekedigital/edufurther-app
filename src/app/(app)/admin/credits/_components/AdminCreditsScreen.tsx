@@ -5,6 +5,7 @@ import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { SideDrawer } from '@/components/templates/SideDrawer/SideDrawer';
 import {
   useAddCredits,
@@ -31,7 +32,6 @@ import { MenteeHeader, PanelBody } from './MenteeCreditsPanel';
 import styles from './AdminCreditsScreen.module.css';
 
 type Tab = 'add' | 'log' | 'rules';
-const TOAST_MS = 5000;
 const panelId = (t: Tab) => `admin-credits-${t}`;
 
 const statusOf = (q: { isLoading: boolean; isError: boolean }) =>
@@ -54,19 +54,13 @@ export function AdminCreditsScreen() {
   const [reason, setReason] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [logType, setLogType] = useState<CreditLogType>('all');
-  const [toast, setToast] = useState<{ text: string; ok: boolean; stamp: number } | null>(null);
+  const [toast, setToast] = useTimedToast<{ text: string; ok: boolean; stamp: number }>();
 
   const found = useAdminMentees(tab === 'add' ? adminId : null, q);
   const credits = useMenteeCredits(adminId, picked?.id ?? null);
   const log = useCreditLog(tab === 'log' ? adminId : null, logType);
   const rules = useCreditRules(tab === 'rules' ? adminId : null);
   const add = useAddCredits();
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   const pick = (id: string, name: string) => {
     setPicked({ id, name });
@@ -125,9 +119,7 @@ export function AdminCreditsScreen() {
   return (
     <>
       <PageHeader {...ADMIN_PAGES.credits} />
-      <div className={styles.tabs}>
-        <Tabs label={CREDITS_TABS.label} items={items} value={tab} onChange={changeTab} />
-      </div>
+      <Tabs label={CREDITS_TABS.label} items={items} value={tab} onChange={changeTab} />
 
       <TabPanel id={panelId('add')} active={tab === 'add'} className={styles.body}>
         <FindMenteeCard

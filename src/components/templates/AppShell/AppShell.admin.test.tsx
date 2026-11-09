@@ -10,16 +10,26 @@ const hrefs = (i: 0 | 1) =>
     .map((a) => a.getAttribute('href'));
 
 describe('AppShell: the admin app (Admin PRD, Access)', () => {
-  it('admin nav is Mentors and Credits, on the rail and the phone tabs', () => {
+  it('admin nav is Mentors, Credits and Emails, on the rail and the phone tabs', () => {
+    render(
+      <AppShell active="Mentors" nav="admin" chrome="member" offline={false} adminEmails>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(hrefs(0)).toEqual(['/', '/admin/mentors', '/admin/credits', '/admin/emails']);
+    expect(hrefs(1)).toEqual(['/admin/mentors', '/admin/credits', '/admin/emails']);
+    expect(screen.queryByRole('link', { name: /Team calls/ })).toBeNull();
+    expect(nav(0).getByRole('link', { name: 'Mentors' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('Emails is hidden with the flag off (ADMIN_EMAILS_LIVE)', () => {
     render(
       <AppShell active="Mentors" nav="admin" chrome="member" offline={false}>
         <p>Page</p>
       </AppShell>,
     );
     expect(hrefs(0)).toEqual(['/', '/admin/mentors', '/admin/credits']);
-    expect(hrefs(1)).toEqual(['/admin/mentors', '/admin/credits']);
-    expect(screen.queryByRole('link', { name: /Team calls/ })).toBeNull();
-    expect(nav(0).getByRole('link', { name: 'Mentors' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('link', { name: /Emails/ })).toBeNull();
   });
 
   it('the Mentors badge counts applications waiting, "9+" above nine', () => {

@@ -156,3 +156,12 @@
   font-weight: var(--weight-semibold);
   line-height: inherit;
 }
+
+/* Admin Emails.dc.html / TokenField.dc.html: a value's name, e.g. mentorName. */
+.value {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--blue-50);
+  color: var(--blue-700);
+  font-weight: var(--weight-semibold);
+}

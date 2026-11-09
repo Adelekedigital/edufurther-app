@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { SocialLinksCard } from '@/components/organisms/SocialLinksCard/SocialLinksCard';
 import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
 import { useMyLinks, useRemoveSocial, useSaveSocial, type SocialRow } from '@/lib/api/data/links';
@@ -9,7 +10,6 @@ import { SOCIAL_LINKS_COPY as C } from '@/lib/copy/socialLinks';
 import { markLabel } from '@/lib/utils/socialLinks';
 
 /** How long a toast stays (the design's flash: 5s). */
-const TOAST_MS = 5000;
 
 /**
  * Settings › Social links for a mentor (Mentor Settings.dc.html `isSocial`,
@@ -23,15 +23,9 @@ export function LinksPanel({ userId }: { userId: string }) {
   const [saveTries, setSaveTries] = useState(0);
   const [pending, setPending] = useState<SocialRow | null>(null);
 
-  const [toast, setToast] = useState<{ text: string; at: number } | null>(null);
+  const [toast, setToast] = useTimedToast<{ text: string; at: number }>();
   const said = useRef(0);
   const say = (text: string) => setToast({ text, at: ++said.current });
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
-
   // The control that had focus may be gone (a removed row, the closed form):
   // focus "Add link", else the heading, rather than the page (WCAG 2.4.3).
   const heading = useRef<HTMLHeadingElement>(null);

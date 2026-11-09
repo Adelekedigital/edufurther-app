@@ -66,13 +66,20 @@ const MENTOR_NAV: NavItem[] = [
   { label: 'Settings', href: '/settings', icon: 'settings', group: 'setup' },
 ];
 /**
- * The admin app (design AppShell role=admin): Mentors and Credits. Team calls
- * waits for its own PRD (founder, 2026-10-26).
+ * The admin app (design AppShell role=admin): Mentors, Credits and Emails
+ * (PRD 28). Team calls waits for its own PRD (founder, 2026-10-26).
  */
 const ADMIN_NAV: NavItem[] = [
   { label: 'Mentors', href: '/admin/mentors', icon: 'groups', group: 'daily' },
   { label: 'Credits', href: '/admin/credits', icon: 'toll', group: 'daily' },
 ];
+/** Admin Emails (PRD 28), after Credits while it's on (`adminEmails`). */
+const EMAILS_ITEM: NavItem = {
+  label: 'Emails',
+  href: '/admin/emails',
+  icon: 'mail',
+  group: 'daily',
+};
 /** `unknown`: signed in, role not known yet — no items rather than the wrong set. */
 const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, admin: ADMIN_NAV, unknown: [] as NavItem[] };
 /**
@@ -99,7 +106,7 @@ function withMessages(items: NavItem[]): NavItem[] {
 const PRIMARY_TABS = {
   mentee: ['Home', 'Explore', 'Bookings'],
   mentor: ['Home', 'Calendar', 'Bookings'],
-  admin: ['Mentors', 'Credits'],
+  admin: ['Mentors', 'Credits', 'Emails'],
   unknown: [] as string[],
 };
 /**
@@ -138,6 +145,8 @@ type AppShellProps = {
   adminEntry?: boolean;
   /** Messages is on (MESSAGES_LIVE): its nav item shows. */
   messages?: boolean;
+  /** Admin Emails is on (ADMIN_EMAILS_LIVE): the admin nav shows Emails. */
+  adminEmails?: boolean;
   /**
    * guest: public header (Log in / Get started), no navigation.
    * member: rail / tabs and the account menu.
@@ -178,6 +187,7 @@ export function AppShell({
   nav = 'mentee',
   adminEntry = false,
   messages = false,
+  adminEmails = false,
   chrome,
   account,
   access,
@@ -261,9 +271,8 @@ export function AppShell({
     lockReturn.current.focus();
     lockReturn.current = null;
   }, [lock]);
-  const items = (messages ? withMessages(NAV[nav]) : NAV[nav]).map((n) =>
-    shownItem(n, access, counts),
-  );
+  const base = nav === 'admin' && adminEmails ? [...ADMIN_NAV, EMAILS_ITEM] : NAV[nav];
+  const items = (messages ? withMessages(base) : base).map((n) => shownItem(n, access, counts));
   const primary = PRIMARY_TABS[nav];
   // In the design's pick order: mentor tabs read Home, Calendar, Bookings.
   const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));

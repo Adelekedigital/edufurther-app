@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { EducationList } from '@/components/organisms/EducationList/EducationList';
 import { DeleteEntryConfirm } from '@/components/templates/DeleteEntryConfirm/DeleteEntryConfirm';
 import { useEducationEdit, useOwnEducation } from '@/lib/api/data/profileEntries';
@@ -12,7 +13,6 @@ import type { EducationEntry } from '@/types/mentor';
 import { EducationEditor } from '@/app/_profile/EducationEditor';
 
 /** How long a toast stays (the design's flash: 5s). */
-const TOAST_MS = 5000;
 
 const year = (date: string | null) => date?.slice(0, 4) || null;
 
@@ -37,18 +37,12 @@ export function EducationPanel({ userId }: { userId: string }) {
   const [editing, setEditing] = useState<{ id: string | null } | null>(null);
   // Kept as opened: the row leaves the list before the confirm closes.
   const [deleting, setDeleting] = useState<EducationRow | null>(null);
-  const [toast, setToast] = useState<{ text: string; at: number } | null>(null);
+  const [toast, setToast] = useTimedToast<{ text: string; at: number }>();
   const heading = useRef<HTMLHeadingElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
   // Where focus goes if the control that had it is gone: after an add, the
   // header's Add (the empty state's is gone); after a delete, the heading.
   const [refocus, setRefocus] = useState<{ to: 'add' | 'heading'; at: number } | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // The control that opened the modal may be gone (a deleted row, the empty
   // state's Add): focus something near it rather than nowhere.

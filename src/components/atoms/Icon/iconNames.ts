@@ -39,6 +39,7 @@ export const ICON_NAMES = [
   'cloud_done',
   'cloud_off',
   'content_copy',
+  'data_object',
   'date_range',
   'delete',
   'description',
