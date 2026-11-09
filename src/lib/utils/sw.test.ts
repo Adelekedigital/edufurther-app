@@ -65,7 +65,7 @@ let scope: {
   navigator: { setAppBadge: Fn; clearAppBadge: Fn };
 };
 /** The app's open windows, as clients.matchAll answers. */
-let windows: { url: string; focus: Fn }[];
+let windows: { url: string; focus: Fn; postMessage?: Fn; navigate?: Fn }[];
 
 function boot() {
   cacheMap = new Map();
@@ -337,12 +337,58 @@ describe('sw.js: a tap on a notification', () => {
     expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/sessions/s1`);
   });
 
-  it('brings an open window forward and moves it to the url', async () => {
-    const navigate = vi.fn().mockResolvedValue(undefined);
-    windows.push({ url: `${ORIGIN}/home`, focus: vi.fn().mockResolvedValue({ navigate }) });
-    await tap('/bookings?tab=pending&booking=b1');
-    expect(navigate).toHaveBeenCalledWith(`${ORIGIN}/bookings?tab=pending&booking=b1`);
+  /** An open window: answers the "show this screen" request, or stays silent. */
+  const openWindow = (answers: boolean, navigate = vi.fn().mockResolvedValue(undefined)) => {
+    const asked: unknown[] = [];
+    const client = {
+      url: `${ORIGIN}/home`,
+      navigate,
+      postMessage: vi.fn((msg: unknown, [port]: MessagePort[]) => {
+        asked.push(msg);
+        if (answers) port!.postMessage('opened');
+      }),
+      focus: vi.fn(),
+    };
+    client.focus.mockResolvedValue(client);
+    windows.push(client as never);
+    return { client, asked, navigate };
+  };
+
+  it('an open app is asked to show the screen itself, and nothing else happens', async () => {
+    const w = openWindow(true);
+    await tap('/messages?with=u2');
+    expect(w.client.focus).toHaveBeenCalled();
+    expect(w.asked).toEqual([{ type: 'ef-open', url: '/messages?with=u2' }]);
+    expect(w.navigate).not.toHaveBeenCalled();
     expect(scope.clients.openWindow).not.toHaveBeenCalled();
+  });
+
+  it('an app that doesn’t answer is moved to the screen instead', async () => {
+    vi.useFakeTimers();
+    try {
+      const w = openWindow(false);
+      const done = tap('/bookings?tab=pending&booking=b1');
+      await vi.advanceTimersByTimeAsync(1500);
+      await done;
+      expect(w.navigate).toHaveBeenCalledWith(`${ORIGIN}/bookings?tab=pending&booking=b1`);
+      expect(scope.clients.openWindow).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('no answer and no way to move it: a new window at the screen', async () => {
+    vi.useFakeTimers();
+    try {
+      const w = openWindow(false);
+      (w.client as { navigate?: unknown }).navigate = undefined;
+      const done = tap('/sessions/s1');
+      await vi.advanceTimersByTimeAsync(1500);
+      await done;
+      expect(scope.clients.openWindow).toHaveBeenCalledWith(`${ORIGIN}/sessions/s1`);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('never opens another site, whatever the notification carries', async () => {

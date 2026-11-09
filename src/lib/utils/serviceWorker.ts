@@ -8,7 +8,33 @@
  * unregisters it from here.
  */
 
+import { safeReturnTo } from './safeReturnTo';
+
 export const SW_URL = '/sw.js';
+
+/** The worker's "show this screen" request after a notification tap (worker.js). */
+export const OPEN_MESSAGE = 'ef-open';
+
+/**
+ * Answers the worker's request to show a notification's screen: `open` moves
+ * there with the app's router, and the worker is told it's done, so it doesn't
+ * also navigate. Only a path on this site is ever opened (safeReturnTo, Home
+ * otherwise). Returns the way to stop listening.
+ */
+export function listenForOpenRequests(open: (path: string) => void): () => void {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return () => {};
+  const sw = navigator.serviceWorker;
+  const onMessage = (e: MessageEvent) => {
+    const d = e.data as { type?: unknown; url?: unknown } | null;
+    if (!d || d.type !== OPEN_MESSAGE || typeof d.url !== 'string') return;
+    open(safeReturnTo(d.url, '/'));
+    e.ports[0]?.postMessage('opened');
+  };
+  sw.addEventListener('message', onMessage);
+  // A tap that woke the app may have queued its request before this listened.
+  sw.startMessages?.();
+  return () => sw.removeEventListener('message', onMessage);
+}
 
 /** Production only: a worker in dev serves yesterday's code (pwa-offline). */
 export function serviceWorkerEnabled(): boolean {

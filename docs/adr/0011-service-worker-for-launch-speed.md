@@ -126,7 +126,11 @@ caching rules above are unchanged: the push half never touches a cache.
   a plain "EduFurther" notification: a silent push is penalised by browsers.
 - **Taps** open `url` as sent, but only as a path on this origin; anything
   else (another site, `//host`, a non-path) opens Home. An open window is
-  brought forward and moved there; otherwise a new one opens.
+  brought forward and asked to show the screen itself (`ef-open`, answered by
+  `listenForOpenRequests`, which routes with the app's router and checks the
+  path again). On iOS, `WindowClient.navigate()` alone left the app on its last
+  screen (owner, 2026-11-09). With no answer within 1.5 s, the worker uses
+  `navigate()`; with neither, it opens a new window.
 - **Subscribing** (`lib/api/data/push.ts`, `lib/utils/push.ts`): only where
   the Push API exists (an iPhone needs the Home Screen app), never in a
   Preview as user, and never when `/push/config` answers 503. The browser's

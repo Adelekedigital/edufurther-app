@@ -201,6 +201,37 @@ self.addEventListener('push', (event) => {
   );
 });
 
+/*
+ * A tap opens the notification's screen. An open window is asked to go
+ * there itself (OPEN_MESSAGE, answered by lib/utils/serviceWorker
+ * listenForOpenRequests): the app moves with its own router, which works on
+ * iOS, where WindowClient.navigate() is unreliable and the app would just come
+ * forward on its last screen. No answer within ACK_MS: navigate(), then a new
+ * window. The page checks the path again (safeReturnTo); this check is the
+ * worker's own, as the worker can't import the app's code.
+ */
+const OPEN_MESSAGE = 'ef-open';
+const ACK_MS = 1500;
+
+/** Asks an open window to show `path`; true once it says it has. */
+function askToOpen(client, path) {
+  return new Promise((resolve) => {
+    let timer;
+    try {
+      const channel = new MessageChannel();
+      timer = setTimeout(() => resolve(false), ACK_MS);
+      channel.port1.onmessage = () => {
+        clearTimeout(timer);
+        resolve(true);
+      };
+      client.postMessage({ type: OPEN_MESSAGE, url: path }, [channel.port2]);
+    } catch {
+      clearTimeout(timer);
+      resolve(false);
+    }
+  });
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const path = inAppUrl(event.notification.data && event.notification.data.url);
@@ -208,15 +239,18 @@ self.addEventListener('notificationclick', (event) => {
     (async () => {
       const target = new URL(path, self.location.origin).href;
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      // An open window of the app: bring it forward on the right screen.
+      // An open window of the app: bring it forward, then to the right screen.
       for (const client of windows) {
         if (new URL(client.url).origin !== self.location.origin) continue;
         try {
-          const focused = await client.focus();
-          if (client.url !== target && focused.navigate) await focused.navigate(target);
-          return;
+          const focused = (await client.focus()) || client;
+          if (await askToOpen(focused, path)) return;
+          if (focused.navigate) {
+            await focused.navigate(target);
+            return;
+          }
         } catch {
-          // Not navigable (not controlled yet): open a new one below.
+          // Not reachable or not navigable: try the next, then a new window.
         }
       }
       await self.clients.openWindow(target);

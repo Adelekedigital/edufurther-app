@@ -76,3 +76,57 @@ describe('PWA_HEADERS', () => {
     }
   });
 });
+
+describe('listenForOpenRequests (a notification tap with the app open)', () => {
+  /** A navigator.serviceWorker that can deliver a worker message. */
+  function workerChannel() {
+    const target = new EventTarget();
+    const startMessages = vi.fn();
+    Object.defineProperty(navigator, 'serviceWorker', {
+      value: Object.assign(target, { register, getRegistrations, startMessages }),
+      configurable: true,
+    });
+    const send = (data: unknown) => {
+      const reply = { postMessage: vi.fn() };
+      target.dispatchEvent(
+        new MessageEvent('message', { data, ports: [reply as unknown as MessagePort] }),
+      );
+      return reply;
+    };
+    return { send, startMessages };
+  }
+
+  it('opens the screen in the app, and tells the worker it has', async () => {
+    const { send, startMessages } = workerChannel();
+    const { listenForOpenRequests } = await load({});
+    const open = vi.fn();
+    listenForOpenRequests(open);
+    expect(startMessages).toHaveBeenCalled();
+    const reply = send({ type: 'ef-open', url: '/messages?with=u2' });
+    expect(open).toHaveBeenCalledWith('/messages?with=u2');
+    expect(reply.postMessage).toHaveBeenCalledWith('opened');
+  });
+
+  it('never opens another site: Home instead', async () => {
+    const { send } = workerChannel();
+    const { listenForOpenRequests } = await load({});
+    const open = vi.fn();
+    listenForOpenRequests(open);
+    send({ type: 'ef-open', url: '//evil.example/x' });
+    send({ type: 'ef-open', url: 'https://evil.example/' });
+    expect(open.mock.calls).toEqual([['/'], ['/']]);
+  });
+
+  it('ignores any other message, and stops when asked', async () => {
+    const { send } = workerChannel();
+    const { listenForOpenRequests } = await load({});
+    const open = vi.fn();
+    const stop = listenForOpenRequests(open);
+    const reply = send({ type: 'something-else', url: '/x' });
+    expect(open).not.toHaveBeenCalled();
+    expect(reply.postMessage).not.toHaveBeenCalled();
+    stop();
+    send({ type: 'ef-open', url: '/sessions/s1' });
+    expect(open).not.toHaveBeenCalled();
+  });
+});
