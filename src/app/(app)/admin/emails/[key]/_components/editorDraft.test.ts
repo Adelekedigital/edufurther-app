@@ -1,5 +1,5 @@
 import { toEmailDetail, type EmailVariant } from '@/lib/api/data/adminEmails';
-import { mockEmailDetail, resetMockEmails } from '@/lib/api/mock/adminEmails';
+import { mockEmailDetail, mockEmailValues, resetMockEmails } from '@/lib/api/mock/adminEmails';
 import {
   asSent,
   draftLine,
@@ -99,4 +99,13 @@ it('Save sends every line of the variant with the version read, and Keep my edit
     },
     keepEdit: ['subject'],
   });
+});
+
+it('{sessionName} and {sessionTopic} are two values: both known in a session email', () => {
+  const e = email();
+  const v = e.variants[0]!;
+  const known = mockEmailValues().map((x) => x.name);
+  const draft = { heading: at(v, 'heading', '{sessionName}: {sessionTopic}') };
+  expect(lineErrors(e, v, draft, known).heading).toBeUndefined();
+  expect(asSent(v, '{sessionName}: {sessionTopic}')).toBe('CV review: My personal statement');
 });

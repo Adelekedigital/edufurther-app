@@ -45,6 +45,7 @@ const SESSION = [
   'sessionDate',
   'sessionTime',
   'sessionTimezone',
+  'sessionName',
   'sessionTopic',
 ];
 const L = (subject: string, heading: string, button: string): Line => ({
@@ -473,7 +474,9 @@ const VALUES: Record<string, [string, string, string | null]> = {
   sessionDate: ['Session date, in the recipient’s time zone', 'Tue, Nov 18', 'the scheduled date'],
   sessionTime: ['Start time, in the recipient’s time zone', '3:00 pm', 'the scheduled time'],
   sessionTimezone: ['The time zone those are shown in', 'WAT', 'your time zone'],
-  sessionTopic: ['What the session is about', 'CV review', 'your session'],
+  // Two values, as in the backend catalogue: the offering, and what this booking is about.
+  sessionName: ['The session’s name', 'CV review', 'your session'],
+  sessionTopic: ['What this booking is about', 'My personal statement', 'your session'],
   sessionDetail: ['What the mentee wants to discuss', 'My personal statement', 'your notes'],
   location: ['Where the session happens', 'Google Meet', 'online'],
   hours: ['Hours left to answer the request', '12', 'a few'],
