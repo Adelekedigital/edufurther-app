@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { SELECT_COPY, type SelectCopy } from '@/lib/copy/select';
 import { cx } from '@/lib/utils/cx';
+import { stopEscape } from '@/lib/utils/focus';
 import { Icon } from '../Icon/Icon';
 import { norm, typeaheadIndex } from './typeahead';
 import { useListPosition } from './useListPosition';
@@ -272,13 +273,6 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
   const move = (i: number) => {
     if (rows.length === 0) return;
     setActive(Math.max(0, Math.min(rows.length - 1, i)));
-  };
-
-  const stopEscape = (e: KeyboardEvent) => {
-    // Closes the list, not the dialog around it (useFocusTrap listens on document).
-    e.preventDefault();
-    e.stopPropagation();
-    e.nativeEvent.stopImmediatePropagation();
   };
 
   const onTypeahead = (key: string): boolean => {

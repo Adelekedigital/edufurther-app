@@ -1406,3 +1406,13 @@ Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch tar
 | (not drawn) the chat list's last-message preview | "Message hidden in preview" in the row's own type, no Reveal (the row is itself a button) | Reveal sits in the open chat | — |
 | (not drawn) a failed reveal | "We couldn’t reveal this. Try again." beside the buttons; "Revealing…" while it runs | Provisional, no design | design draws it |
 | Reveal shown to every admin | Only with the session's `can_reveal` | Backend: reveal is its own permission on the admin role levels | — |
+
+### TokenField — the shared value field (`TokenField.dc.html`, PRD 28 Admin Emails PR 4), 2026-11-09
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| `aria-expanded` on the textarea | On the { } button (`aria-haspopup="listbox"`); the textarea keeps `aria-autocomplete`, `aria-controls` and `aria-activedescendant` | A textarea's role is `textbox`, which doesn't take `aria-expanded`, and `role="combobox"` isn't allowed on a textarea (jsx-a11y, axe) | — |
+| The hint and no-match lines inside the `role="listbox"` | In the popup, outside the listbox; the listbox holds options only | A listbox may only own options (axe `aria-required-children`) | — |
+| The list `position:absolute` under the field, `z-index:41` | `position:fixed`, placed by Select's `useListPosition` (`{ max: 280, width: 340 }`), z-index 60 | One placement for every popup list: it flips above the field near the bottom, follows the phone keyboard and escapes a dialog's scroll box | — |
+| Placeholder `--ink-400`; focus by the browser's outline in `--blue-500` | `--ink-500` placeholder; the app's focus ring (`--focus-ring-*`) | Same as every field (rows above: placeholder contrast, one focus ring) | — |
+| (not drawn) an insert past `maxLength` | Refused: the text, focus and the open list stay as they were | `maxLength` is the hard max the server enforces | — |

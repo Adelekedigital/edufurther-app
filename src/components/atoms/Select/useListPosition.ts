@@ -17,6 +17,12 @@ const EDGE = 8;
 export type ListPlacement = { style: CSSProperties; above: boolean };
 /** The part of the layout viewport that is visible (above a phone's keyboard). */
 export type Visible = { top: number; height: number };
+/**
+ * Optional limits for a list that isn't a dropdown of the field (TokenField's
+ * value list): `max` replaces LIST_MAX, and `width` gives the list that width
+ * (capped by the screen) instead of at least the field's.
+ */
+export type ListSize = { max?: number; width?: number };
 
 /**
  * Where the open list sits: under the field, at least as wide as it, inside
@@ -30,19 +36,20 @@ export function placeList(
   vw: number,
   vh: number,
   visible: Visible = { top: 0, height: vh },
+  size: ListSize = {},
 ): ListPlacement {
+  const max = size.max ?? LIST_MAX;
   const below = visible.top + visible.height - field.bottom - GAP - EDGE;
   const aboveRoom = field.top - visible.top - GAP - EDGE;
-  const want = Math.min(listHeight || LIST_MAX, LIST_MAX);
+  const want = Math.min(listHeight || max, max);
   const above = below < want && aboveRoom > below;
   const room = Math.max(0, above ? aboveRoom : below);
-  const width = Math.min(field.width, vw - 2 * EDGE);
+  const width = Math.min(size.width ?? field.width, field.width, vw - 2 * EDGE);
   const left = Math.max(EDGE, Math.min(field.left, vw - EDGE - width));
   const style: CSSProperties = {
     left,
-    minWidth: width,
-    maxWidth: vw - left - EDGE,
-    maxHeight: Math.min(LIST_MAX, room),
+    ...(size.width != null ? { width } : { minWidth: width, maxWidth: vw - left - EDGE }),
+    maxHeight: Math.min(max, room),
     ...(above ? { bottom: vh - field.top + GAP } : { top: field.bottom + GAP }),
   };
   return { style, above };
@@ -67,11 +74,14 @@ export function useListPosition(
   /** Changes when the rows do, so a list that grows or shrinks is placed again. */
   contentKey: number,
   onOut: () => void,
+  size?: ListSize,
 ): ListPlacement | null {
   const [placement, setPlacement] = useState<ListPlacement | null>(null);
   const out = useRef(onOut);
+  const limits = useRef(size);
   useEffect(() => {
     out.current = onOut;
+    limits.current = size;
   });
   useLayoutEffect(() => {
     if (!open) return;
@@ -86,6 +96,7 @@ export function useListPosition(
           window.innerWidth,
           window.innerHeight,
           vv ? { top: vv.offsetTop, height: vv.height } : undefined,
+          limits.current,
         ),
       );
     };

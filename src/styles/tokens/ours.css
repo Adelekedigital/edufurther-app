@@ -93,6 +93,8 @@
   --button-h-small: 32px;
   /* The inline error icon's line (a 16px glyph on an 18px line, every .dc.html field error). */
   --lh-icon-inline: 18px;
+  /* TokenField.dc.html: the field and its chip mirror share a 20px line, so the caret lines up. */
+  --lh-token-field: 20px;
   /* A field's error line (every .dc.html field error draws red-600; --text-danger is red-500). */
   --text-field-error: var(--red-600);
 
