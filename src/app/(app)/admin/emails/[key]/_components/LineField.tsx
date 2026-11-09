@@ -49,6 +49,12 @@ export function LineField({
   const warnId = `${id}-warning`;
   const changedId = `${id}-default-changed`;
   const showWarning = !!warning && !error;
+  // These buttons go once pressed (the line is back to Default, or the notice
+  // is answered): focus moves to the line's field rather than the page.
+  const thenField = (act: () => void) => () => {
+    act();
+    requestAnimationFrame(() => document.getElementById(id)?.focus());
+  };
   // Everything said about the field is read with it.
   const describedBy = [error && errorId, showWarning && warnId, defaultChanged && changedId, helpId]
     .filter(Boolean)
@@ -64,7 +70,7 @@ export function LineField({
         </Badge>
         <span className={styles.spacer} />
         {edited && !readOnly && (
-          <button type="button" className={styles.reset} onClick={onReset}>
+          <button type="button" className={styles.reset} onClick={thenField(onReset)}>
             {C.reset}
           </button>
         )}
@@ -95,10 +101,18 @@ export function LineField({
             <strong>{C.defaultChanged.lead}</strong> {C.defaultChanged.body(defaultChanged.next)}
           </p>
           <span className={styles.changedActions}>
-            <button type="button" className={styles.useNew} onClick={defaultChanged.onUseNew}>
+            <button
+              type="button"
+              className={styles.useNew}
+              onClick={thenField(defaultChanged.onUseNew)}
+            >
               {C.defaultChanged.useNew}
             </button>
-            <button type="button" className={styles.keep} onClick={defaultChanged.onKeep}>
+            <button
+              type="button"
+              className={styles.keep}
+              onClick={thenField(defaultChanged.onKeep)}
+            >
               {C.defaultChanged.keep}
             </button>
           </span>

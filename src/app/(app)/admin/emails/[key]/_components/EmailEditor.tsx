@@ -271,6 +271,19 @@ export function EmailEditor({ email, known, save, saving, onReload }: Props) {
             );
           })}
         </div>
+        {/* Every tab names a panel that exists: the closed variants' are empty and hidden. */}
+        {multi &&
+          email.variants
+            .filter((v) => v.id !== variant.id)
+            .map((v) => (
+              <div
+                key={v.id}
+                id={panelOf(v.id)}
+                role="tabpanel"
+                aria-labelledby={`${panelOf(v.id)}-tab`}
+                hidden
+              />
+            ))}
         <EmailPreview
           subject={sent('subject')}
           heading={sent('heading')}

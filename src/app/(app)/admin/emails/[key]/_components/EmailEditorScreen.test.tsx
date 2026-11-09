@@ -202,6 +202,24 @@ describe('Edit an email', () => {
     expect(field('Heading')).toHaveValue('Mentee words');
   });
 
+  it('every variant tab controls a panel that exists', async () => {
+    await open();
+    for (const tab of screen.getAllByRole('tab'))
+      expect(document.getElementById(tab.getAttribute('aria-controls')!)).not.toBeNull();
+  });
+
+  it('a button that goes once pressed hands focus to its field', async () => {
+    await open();
+    await userEvent.click(screen.getByRole('button', { name: 'Reset to default' }));
+    await waitFor(() => expect(field('Subject')).toHaveFocus());
+  });
+
+  it('Keep my edit hands focus to its field', async () => {
+    await open('credits_expiring');
+    await userEvent.click(screen.getByRole('button', { name: 'Keep my edit' }));
+    await waitFor(() => expect(field('Subject')).toHaveFocus());
+  });
+
   it('Reset to default puts the default in as an unsaved change', async () => {
     await open();
     await userEvent.click(screen.getByRole('button', { name: 'Reset to default' }));
