@@ -24,10 +24,10 @@ export const admin = (over: object = {}): Viewer =>
     ...over,
   }) as Viewer;
 
-/** What the client returns: `data` on success, the problem's `type` as `error` on a failure. */
+/** What the client returns: `data` on success, the whole problem body as `error` on a failure. */
 export const res = (data: unknown, status = 200) => ({
-  data,
-  error: status >= 400 ? { type: (data as { type?: string } | null)?.type } : undefined,
+  data: status >= 400 ? undefined : data,
+  error: status >= 400 ? (data ?? {}) : undefined,
   response: new Response(null, { status }),
 });
 

@@ -1,0 +1,94 @@
+/* Admin Emails.dc.html "2. Edit an email". */
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: 1280px;
+  /* Room under the last field for the save bar. */
+  padding-bottom: var(--space-16);
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.back {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--button-h-small);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.back:hover {
+  color: var(--blue-700);
+}
+.back:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+.title {
+  margin: 0;
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: var(--ls-h6);
+  font-weight: var(--weight-semibold);
+}
+.meta {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-700);
+}
+.variants {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.variantLabel {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+.body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+.conflict {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--warning-subtle);
+  color: var(--warning-text);
+  font-size: var(--text-p-sm);
+}
+.conflictText {
+  flex: 1;
+  min-width: 220px;
+}
+.fields {
+  flex: 1 1 460px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}

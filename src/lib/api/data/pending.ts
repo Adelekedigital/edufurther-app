@@ -17,11 +17,13 @@ export type PendingIncomplete = { missing?: unknown };
 export type PendingResponses = {
   'GET /api/v1/admin/emails': { data: WireEmailSummary[]; next_cursor: null };
   'GET /api/v1/admin/email-values': { data: WireEmailValue[] };
+  'GET /api/v1/admin/emails/{key}': WireEmailDetail;
+  'PUT /api/v1/admin/emails/{key}/variants/{variant}': WireEmailDetail;
 };
 
 /** The generated client without its path types, for the calls above only. */
 export const untyped = api as unknown as Record<
-  'GET',
+  'GET' | 'PUT',
   (path: string, init?: unknown) => Promise<{ data?: unknown; error?: unknown; response: Response }>
 >;
 
@@ -54,4 +56,53 @@ export type WireEmailValue = {
   fallback: string | null;
   /** Email names, in registry order. */
   used_in: string[];
+};
+
+export type WireLineKey = 'subject' | 'heading' | 'button';
+
+/** One editable line of one variant. `version` 0: no override (the default sends). */
+export type WireEmailLine = {
+  default_text: string;
+  /** What sends now: the override, else the default. */
+  text: string;
+  edited: boolean;
+  version: number;
+  /** The code default moved since this line was edited. */
+  default_changed: boolean;
+  new_default: string | null;
+};
+
+export type WireEmailVariant = {
+  /** `default`, `mentor`, `mentee`, `admins`, or a case (`one_message`…). */
+  id: string;
+  label: string;
+  /** Value name → sample value, for the preview and the as-sent count. */
+  sample: Record<string, string>;
+  sample_recipient: { name: string; email: string };
+  lines: Partial<Record<WireLineKey, WireEmailLine>>;
+};
+
+/** GET /admin/emails/{key}, and what a save returns. */
+export type WireEmailDetail = WireEmailSummary & {
+  /** How many other emails share its template. */
+  siblings: number;
+  values: Omit<WireEmailValue, 'used_in'>[];
+  variants: WireEmailVariant[];
+};
+
+/** PUT /admin/emails/{key}/variants/{variant}. */
+export type WireEmailSave = {
+  lines: Partial<Record<WireLineKey, { text: string; version: number }>>;
+  keep_edit?: WireLineKey[];
+};
+
+/** 409 /problems/email-line-conflict: who saved first. */
+export type WireEmailConflict = { updated_by_name: string; updated_at: string };
+
+/** 422 /problems/email-line-invalid. */
+export type WireEmailLineError = {
+  line: WireLineKey;
+  code: 'empty' | 'unknown_value' | 'value_not_sent' | 'too_long';
+  value?: string;
+  suggestion?: string;
 };

@@ -12,7 +12,8 @@ type Props = {
   retrying?: boolean;
   /** Admin.dc.html draws `forms`; Admin Emails.dc.html `inbox`. */
   illustration?: Illustration;
-  headingLevel?: 2 | 3;
+  /** 1 when it is the whole page (an email that failed to load). */
+  headingLevel?: 1 | 2 | 3;
   /** In its own card, where the list was. */
   framed?: boolean;
 };

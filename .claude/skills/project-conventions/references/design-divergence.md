@@ -1430,3 +1430,19 @@ Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch tar
 | (not drawn) a value with no fallback | "None: the email isn’t sent" | `code` has no fallback (PRD 28) | — |
 | (not drawn) no values at all | "No values yet. They show up here once engineering adds them." | Every view that fetches has an empty state | design draws it |
 | The page ships with the admin nav | Behind `NEXT_PUBLIC_ADMIN_EMAILS_ENABLED` (on in dev): off, no nav item and `/admin/emails` is not found | The backend routes and the editor aren’t live yet (PRD 28) | backend routes and PR 6 ship |
+
+### Admin Emails — Edit an email (`Admin Emails.dc.html` edit view, PRD 28 PR 6), 2026-11-09
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| A white save bar, sticky in the page and always shown ("No changes yet.", both buttons off) | The app's shared `SaveBar`, shown while the open variant has changes; "Fix N lines before saving." is its error line, "Saving…" its pending label | One save bar for every screen (owner, 9 Nov: "Remember the rule of DRY") | design aligns the file |
+| Length warnings in `--orange-800` | `--warning-text` with the warning icon | Orange is banned in product UI | — |
+| Field errors in `--red-500` | The shared `FieldError` (`--text-field-error`, red-600, with its icon) | One field error app-wide | — |
+| The selected pill and "Use the new default" in `--blue-500` on `--blue-50` | `--blue-700` | blue-500 on blue-50 is about 4.2:1, under AA (axe) | DS raises the contrast |
+| The conflict bar's literal `#fef6e7` / `--yellow-900` | `--warning-subtle` / `--warning-text` (the same values, as tokens) | No raw hex in components | — |
+| Errors say "Pick one from Insert value." | "…from Insert a value." | The button is "Insert a value" (designer item 90) | — |
+| "Keep my edit" only hides the notice | It's an unsaved change: Save records `keep_edit` and the notice stops for good | PRD 28 rules 8 (designer item 92) | — |
+| The "All emails" link drops unsaved changes | The app's leave guard asks "Discard your changes?" (in-app links), the browser asks on reload or close | `useLeaveGuard` on every form with unsaved work (PRD Q3, designer item 94) | — |
+| (not drawn) loading, not found, failed load | Skeleton; "We couldn’t find that email" with All emails; the shared admin load error with Try again | Every view that fetches has all four states | design draws them |
+| Read-only fields keep "Type text, or / for a value"; an empty button draws in the preview | No placeholder when read only; no button until it has words | A Not set up email has nothing to type and no wording yet | — |
+| `TokenField mobile` under 1024px | The same (16px text under 1024px) | As drawn (`mobile={{ narrow }}`) | — |

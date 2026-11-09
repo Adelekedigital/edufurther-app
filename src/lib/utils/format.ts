@@ -177,3 +177,16 @@ export function fileSize(bytes: number): string {
   const kb = bytes / 1024;
   return kb < 1024 ? `${Math.round(kb)} KB` : `${(kb / 1024).toFixed(1)} MB`;
 }
+
+/** "just now", "2 minutes ago", "1 hour ago", "3 days ago": how long since an instant. */
+export function timeAgo(isoInstant: string, now = new Date()): string {
+  const mins = Math.floor((now.getTime() - new Date(isoInstant).getTime()) / 60_000);
+  if (!Number.isFinite(mins) || mins < 1) return 'just now';
+  const [n, unit] =
+    mins < 60
+      ? [mins, 'minute']
+      : mins < 1440
+        ? [Math.floor(mins / 60), 'hour']
+        : [Math.floor(mins / 1440), 'day'];
+  return `${n} ${unit}${n === 1 ? '' : 's'} ago`;
+}

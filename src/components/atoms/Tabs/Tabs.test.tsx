@@ -100,4 +100,44 @@ describe('Tabs', () => {
     );
     expect(screen.getByRole('tab', { name: 'Reviews' })).toBeInTheDocument();
   });
+
+  it('variant pill: the same tabs, drawn as pills', () => {
+    render(
+      <Tabs
+        variant="pill"
+        label="Who gets it"
+        value="mentee"
+        onChange={() => {}}
+        items={[
+          { value: 'mentee', label: 'To the mentee', panelId: 'p-mentee' },
+          { value: 'mentor', label: 'To the mentor', panelId: 'p-mentor' },
+        ]}
+      />,
+    );
+    expect(screen.getByRole('tablist', { name: 'Who gets it' }).className).toMatch(/pills/);
+    expect(screen.getByRole('tab', { name: 'To the mentee', selected: true })).toBeInTheDocument();
+  });
+
+  it('a marked tab draws a dot and says why in its name', () => {
+    render(
+      <Tabs
+        variant="pill"
+        label="Who gets it"
+        value="mentee"
+        onChange={() => {}}
+        items={[
+          { value: 'mentee', label: 'To the mentee', panelId: 'p-mentee' },
+          {
+            value: 'mentor',
+            label: 'To the mentor',
+            panelId: 'p-mentor',
+            marked: true,
+            markLabel: 'unsaved changes',
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByRole('tab', { name: 'To the mentor, unsaved changes' })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'To the mentee' })).not.toHaveAttribute('aria-label');
+  });
 });

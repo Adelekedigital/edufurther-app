@@ -1,4 +1,15 @@
-import type { WireEmailRecipient, WireEmailSummary, WireEmailValue } from '@/lib/api/data/pending';
+import type {
+  WireEmailDetail,
+  WireEmailLine,
+  WireEmailLineError,
+  WireEmailRecipient,
+  WireEmailSave,
+  WireEmailSummary,
+  WireEmailValue,
+  WireLineKey,
+} from '@/lib/api/data/pending';
+import { checkLine, LINE_KEYS } from '@/lib/utils/emailLines';
+import type { ErrorStatus, MockResult, ProblemBody } from './respond';
 
 /**
  * MOCK of the Admin Emails registry (PRD 28). PENDING BACKEND.
@@ -59,9 +70,9 @@ const shared = (group: string, group_name: string, emails: Seed[]): MockEmail[] 
   }));
 
 /** An email with its own template: a group of one, Not set up, wording still in Loops. */
-const ownTemplate = (e: Omit<Seed, 'variants'> & { variants?: Variant[] }): MockEmail => ({
+const ownTemplate = (e: Omit<Seed, 'variants'>): MockEmail => ({
   ...e,
-  variants: e.variants ?? one(null),
+  variants: one(null),
   group: e.key,
   group_name: e.name,
   template_name: e.key,
@@ -435,10 +446,6 @@ export const MOCK_EMAILS: MockEmail[] = [
     trigger: 'A mentor submits an application',
     recipients: ['mentor', 'admins'],
     values: ['recipientName', 'recipientFirstName', 'mentorName'],
-    variants: [
-      { id: 'mentor', label: 'To the mentor', lines: null },
-      { id: 'admins', label: 'To admins', lines: null },
-    ],
   }),
   ownTemplate({
     key: 'mentor_return_reminder',
@@ -453,11 +460,6 @@ export const MOCK_EMAILS: MockEmail[] = [
     trigger: 'Someone asks for a code to log in or sign up',
     recipients: ['mentor', 'mentee'],
     values: ['code'],
-    // PRD 28 Q1: two variants, subject and heading only, until designer item 91 settles.
-    variants: [
-      { id: 'log_in', label: 'To log in', lines: null },
-      { id: 'sign_up', label: 'To sign up', lines: null },
-    ],
   }),
 ];
 
@@ -514,4 +516,161 @@ export function mockEmailValues(): WireEmailValue[] {
     fallback,
     used_in: MOCK_EMAILS.filter((e) => e.values.includes(name)).map((e) => e.name),
   }));
+}
+
+// ---- One email and saving it (PRD 28 "How: API") -----------------------------
+
+/** An admin's text for one line: what the edit history and the 409 check read. */
+type Override = { text: string; version: number; defaultAtEdit: string; by: string; at: string };
+const overrides = new Map<string, Override>();
+const slot = (key: string, variant: string, line: WireLineKey) => `${key}:${variant}:${line}`;
+
+/** The seeds: an edited subject, and one whose default moved since (`defaultChanged`). */
+function seed() {
+  overrides.clear();
+  overrides.set(slot('session_booked', 'mentee', 'subject'), {
+    text: 'Your session with {mentorName} is confirmed',
+    version: 2,
+    defaultAtEdit: 'Your session with {mentorName} is booked',
+    by: 'Ada Okeke',
+    at: daysAgo(3),
+  });
+  overrides.set(slot('credits_expiring', 'default', 'subject'), {
+    text: 'Use your {creditCount} credits before they expire',
+    version: 1,
+    defaultAtEdit: 'Your credits run out this month',
+    by: 'Chidi Eze',
+    at: daysAgo(12),
+  });
+}
+seed();
+/** Tests: back to the seeds. */
+export const resetMockEmails = seed;
+
+const ADMIN_FULL_NAME = 'Ada Okeke';
+
+const findEmail = (key: string) => MOCK_EMAILS.find((e) => e.key === key);
+
+function lastEdited(key: string): MockEmail['last_edited'] {
+  let newest: Override | null = null;
+  for (const [k, o] of overrides)
+    if (k.startsWith(`${key}:`) && (!newest || o.at > newest.at)) newest = o;
+  return newest ? { admin_name: newest.by, at: newest.at } : (findEmail(key)?.last_edited ?? null);
+}
+
+function line(key: string, variant: Variant, l: WireLineKey): WireEmailLine {
+  const def = variant.lines?.[l] ?? '';
+  const o = overrides.get(slot(key, variant.id, l));
+  return {
+    default_text: def,
+    text: o?.text ?? def,
+    edited: !!o,
+    version: o?.version ?? 0,
+    default_changed: !!o && o.defaultAtEdit !== def,
+    new_default: o && o.defaultAtEdit !== def ? def : null,
+  };
+}
+
+function sampleFor(e: MockEmail, variant: Variant) {
+  const toMentor =
+    variant.id === 'mentor' || (variant.id === 'default' && !e.recipients.includes('mentee'));
+  const person = toMentor
+    ? { name: 'Tunde Bakare', first: 'Tunde', email: 'tunde.bakare@example.com' }
+    : { name: 'Amara Okafor', first: 'Amara', email: 'amara.okafor@example.com' };
+  const sample: Record<string, string> = {};
+  for (const v of e.values) sample[v] = VALUES[v]?.[1] ?? v;
+  if (e.values.includes('recipientName')) sample.recipientName = person.name;
+  if (e.values.includes('recipientFirstName')) sample.recipientFirstName = person.first;
+  if (variant.id === 'one_message' && e.values.includes('unreadCount')) sample.unreadCount = '1';
+  return { sample, sample_recipient: { name: person.name, email: person.email } };
+}
+
+export function mockEmailDetail(key: string): WireEmailDetail | null {
+  const e = findEmail(key);
+  if (!e) return null;
+  const summary = mockEmailList().find((x) => x.key === key)!;
+  return {
+    ...summary,
+    last_edited: lastEdited(key),
+    siblings: MOCK_EMAILS.filter((x) => x.group === e.group && x.key !== key).length,
+    values: e.values.map((name) => {
+      const [meaning, example, fallback] = VALUES[name] ?? [name, '', null];
+      return { name, meaning, example, fallback };
+    }),
+    variants: e.variants.map((v) => ({
+      id: v.id,
+      label: v.label || e.name,
+      ...sampleFor(e, v),
+      lines: Object.fromEntries(LINE_KEYS.map((l) => [l, line(key, v, l)])),
+    })),
+  };
+}
+
+type SaveResult = MockResult<WireEmailDetail, 200>;
+const refuse = (status: ErrorStatus, problem: ProblemBody): SaveResult => ({
+  ok: false,
+  status,
+  problem,
+});
+
+/** PUT …/variants/{variant}: every rule checked, then all lines written or none. */
+export function mockSaveEmailVariant(
+  key: string,
+  variantId: string,
+  body: WireEmailSave,
+): SaveResult {
+  const e = findEmail(key);
+  const variant = e?.variants.find((v) => v.id === variantId);
+  if (!e || !variant)
+    return refuse(404, { type: '/problems/email-not-found', title: 'Email not found' });
+  if (!e.live)
+    return refuse(423, { type: '/problems/email-not-set-up', title: 'Email not set up' });
+  const known = Object.keys(VALUES);
+  const errors: WireEmailLineError[] = [];
+  for (const l of LINE_KEYS) {
+    const sent = body.lines[l];
+    if (!sent) continue;
+    const err = checkLine(sent.text, l, known, e.values);
+    if (err) errors.push({ line: l, ...err });
+  }
+  if (errors.length)
+    return refuse(422, {
+      type: '/problems/email-line-invalid',
+      title: 'Email line invalid',
+      errors,
+    });
+  for (const l of LINE_KEYS) {
+    const sent = body.lines[l];
+    const o = overrides.get(slot(key, variantId, l));
+    if (sent && sent.version !== (o?.version ?? 0))
+      return refuse(409, {
+        type: '/problems/email-line-conflict',
+        title: 'Email line conflict',
+        updated_by_name: o?.by ?? 'Chidi Eze',
+        updated_at: o?.at ?? new Date().toISOString(),
+      });
+  }
+  const at = new Date().toISOString();
+  for (const l of LINE_KEYS) {
+    const sent = body.lines[l];
+    if (!sent) continue;
+    const def = variant.lines?.[l] ?? '';
+    const k = slot(key, variantId, l);
+    const o = overrides.get(k);
+    const keep = body.keep_edit?.includes(l) ?? false;
+    // Saved as exactly the default: no override, the badge goes back to Default.
+    if (sent.text === def) {
+      overrides.delete(k);
+      continue;
+    }
+    if (o && o.text === sent.text && !keep) continue;
+    overrides.set(k, {
+      text: sent.text,
+      version: (o?.version ?? 0) + 1,
+      defaultAtEdit: def,
+      by: ADMIN_FULL_NAME,
+      at,
+    });
+  }
+  return { ok: true, status: 200, body: mockEmailDetail(key)! };
 }
