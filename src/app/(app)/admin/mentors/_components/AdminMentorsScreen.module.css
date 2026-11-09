@@ -9,12 +9,6 @@
   flex: 0 1 320px;
   min-width: 220px;
 }
-/* The tab row scrolls sideways rather than wrapping (design overflow-x auto). */
-.tabs {
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-}
 .panel {
   display: flex;
   flex-direction: column;

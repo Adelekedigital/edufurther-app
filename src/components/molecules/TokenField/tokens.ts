@@ -1,4 +1,4 @@
-import { norm } from '@/components/atoms/Select/typeahead';
+import { norm } from '@/lib/utils/text';
 
 /** A value the field may hold, written `{name}` in the text. */
 export type TokenValue = { name: string; meaning?: string; example?: string };

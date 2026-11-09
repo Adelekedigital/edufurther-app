@@ -125,9 +125,7 @@ export function AdminCreditsScreen() {
   return (
     <>
       <PageHeader {...ADMIN_PAGES.credits} />
-      <div className={styles.tabs}>
-        <Tabs label={CREDITS_TABS.label} items={items} value={tab} onChange={changeTab} />
-      </div>
+      <Tabs label={CREDITS_TABS.label} items={items} value={tab} onChange={changeTab} />
 
       <TabPanel id={panelId('add')} active={tab === 'add'} className={styles.body}>
         <FindMenteeCard

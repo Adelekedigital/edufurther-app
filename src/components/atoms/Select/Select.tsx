@@ -14,7 +14,8 @@ import { SELECT_COPY, type SelectCopy } from '@/lib/copy/select';
 import { cx } from '@/lib/utils/cx';
 import { stopEscape } from '@/lib/utils/focus';
 import { Icon } from '../Icon/Icon';
-import { norm, typeaheadIndex } from './typeahead';
+import { norm } from '@/lib/utils/text';
+import { typeaheadIndex } from './typeahead';
 import { useListPosition } from './useListPosition';
 import styles from './Select.module.css';
 

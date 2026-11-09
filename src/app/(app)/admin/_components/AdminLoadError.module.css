@@ -1,0 +1,13 @@
+/* Admin.dc.html / Admin Emails.dc.html listError: the state, then Try again. */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+.framed {
+  padding: var(--space-8) var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}

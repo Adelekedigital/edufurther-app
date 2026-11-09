@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render } from '@testing-library/react';
 import type { Viewer } from '@/types/mentor';
+import { res } from '../../_test/adminHarness';
+
+export { admin, renderScreen, res } from '../../_test/adminHarness';
 
 /**
- * The Mentors screen's test harness: a signed-in admin, and the generated
- * client answered from the in-app mock store (lib/api/mock/adminMentors).
+ * The Mentors screen's test harness: the shared admin pieces, and the
+ * generated client answered from the in-app mock store (lib/api/mock/adminMentors).
  * Each test file mocks `@/lib/api/data/http` and `viewer` with these.
  */
 export const h = {
@@ -13,28 +13,6 @@ export const h = {
   GET: vi.fn(),
   POST: vi.fn(),
 };
-
-export const admin = (over: object = {}): Viewer =>
-  ({
-    kind: 'member',
-    id: 'admin-1',
-    firstName: 'Ada',
-    initials: 'AO',
-    isMentee: true,
-    isApprovedMentor: false,
-    isMentor: false,
-    completedSessions: 0,
-    timeZone: 'UTC',
-    isAdmin: true,
-    adminRole: 'super_admin',
-    ...over,
-  }) as Viewer;
-
-export const res = (data: unknown, status = 200) => ({
-  data,
-  error: status >= 400 ? { type: (data as { type?: string } | null)?.type } : undefined,
-  response: new Response(null, { status }),
-});
 
 /** GET answered from the mock store; tests override per path. */
 export async function serveFromStore(overrides: Record<string, () => unknown> = {}) {
@@ -51,9 +29,4 @@ export async function serveFromStore(overrides: Record<string, () => unknown> = 
       return res({ data: store.mockNotes(p?.path?.user_id ?? ''), next_cursor: null });
     return res(null, 404);
   });
-}
-
-export function renderScreen(ui: ReactNode) {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }

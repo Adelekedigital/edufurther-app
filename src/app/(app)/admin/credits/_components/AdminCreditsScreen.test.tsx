@@ -1,7 +1,6 @@
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { admin, renderScreen as renderAdmin } from '../../_test/adminHarness';
 import {
   creditLog,
   creditRules,
@@ -49,13 +48,7 @@ vi.mock('@/lib/api/data/http', () => ({
   },
 }));
 
-const viewer = {
-  kind: 'member',
-  id: 'admin-1',
-  isAdmin: true,
-  adminRole: 'limited_access',
-  timeZone: 'Africa/Lagos',
-};
+const viewer = admin({ adminRole: 'limited_access', timeZone: 'Africa/Lagos' });
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
 
 let phone = false;
@@ -73,13 +66,7 @@ beforeEach(() => {
     }) as unknown as MediaQueryList;
 });
 
-function renderScreen() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const wrap = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-  );
-  return render(<AdminCreditsScreen />, { wrapper: wrap });
-}
+const renderScreen = () => renderAdmin(<AdminCreditsScreen />);
 
 async function pickAmara() {
   await userEvent.type(screen.getByRole('searchbox', { name: 'Find a mentee' }), 'amara');

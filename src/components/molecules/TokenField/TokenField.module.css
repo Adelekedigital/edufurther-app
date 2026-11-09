@@ -147,13 +147,9 @@
     outline-offset: -2px;
   }
 }
-.optionChip {
-  padding: 1px var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--blue-50);
-  color: var(--blue-700);
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
+/* The list draws the value Tag 1px tighter (TokenField.dc.html). */
+.option .optionChip {
+  padding-block: 1px;
 }
 .sub {
   font-size: var(--text-p-xs);

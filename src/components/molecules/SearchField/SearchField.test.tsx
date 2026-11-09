@@ -34,6 +34,20 @@ describe('SearchField', () => {
     expect(screen.queryByText('search')).toBeNull();
   });
 
+  it('labelled="filter": the label shows in the filter row look', () => {
+    render(
+      <SearchField
+        labelled="filter"
+        label="Search"
+        value=""
+        onChange={() => {}}
+        onClear={() => {}}
+      />,
+    );
+    expect(screen.getByRole('searchbox', { name: 'Search' })).toBeInTheDocument();
+    expect(screen.getByRole('search').className).toMatch(/filter/);
+  });
+
   it('radius sm reaches the field; without it the size keeps its own corners', () => {
     const { unmount } = render(<Host labelled radius="sm" />);
     expect(screen.getByRole('searchbox').className).toMatch(/radiusSm/);

@@ -1,4 +1,4 @@
-/* Admin.dc.html filter row: wrap, align end, gap space-3. */
+/* Admin.dc.html / Admin Emails.dc.html filter row: wrap, align end, gap space-3. */
 .bar {
   display: flex;
   flex-wrap: wrap;
@@ -6,19 +6,28 @@
   gap: var(--space-3);
 }
 .field {
-  flex: 0 1 200px;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
+}
+.fixed .field {
+  flex: 0 1 200px;
+}
+.fixed .select {
+  min-width: 160px;
+}
+.fill .field {
+  flex: 1 1 160px;
+}
+.lead {
+  flex: 2 1 260px;
   min-width: 0;
 }
 .label {
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
   color: var(--ink-600);
-}
-.select {
-  min-width: 160px;
 }
 .end {
   flex: 1 1 auto;
@@ -32,12 +41,12 @@
   font-size: var(--text-p-xs);
   color: var(--ink-600);
 }
-/* Phones: two filters a row (design fFlex 1 1 calc(50% - 8px)). */
+/* Phones: two filters a row (Admin.dc.html fFlex 1 1 calc(50% - 8px)). */
 @media (max-width: 767px) {
-  .field {
+  .fixed .field {
     flex: 1 1 calc(50% - var(--space-2));
   }
-  .select {
+  .fixed .select {
     min-width: 0;
   }
 }
