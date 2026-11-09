@@ -9,6 +9,7 @@ import { usePreview } from '@/lib/api/data/preview';
 import { previewStore } from '@/lib/api/data/previewStore';
 import { useSignOut } from '@/lib/api/data/auth';
 import { useUnreadTotal } from '@/lib/api/data/messages';
+import { ADMIN_EMAILS_LIVE } from '@/lib/config/adminEmails';
 import { MESSAGES_LIVE } from '@/lib/config/messages';
 import { LIST_COPY } from '@/lib/copy/messages';
 import { useViewer } from '@/lib/api/data/viewer';
@@ -161,6 +162,8 @@ export function useAppShell() {
     onPreview: member?.canPreviewAsUser && !previewing ? previewStore.open : undefined,
     /** Messages is on: the nav shows its item (AppShell `messages`). */
     messages: MESSAGES_LIVE,
+    /** Admin Emails is on: the admin nav shows its item (AppShell `adminEmails`). */
+    adminEmails: ADMIN_EMAILS_LIVE,
     /** Mentors can't book (product, 2026-09-29): "View profile" instead of Book. */
     canBook: canBookFor(viewer),
     access,

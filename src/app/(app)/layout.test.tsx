@@ -81,6 +81,8 @@ describe('activeFor', () => {
     // The admin app: its page under /admin, never Explore's /mentors.
     ['/admin/mentors', 'Mentors'],
     ['/admin/credits', 'Credits'],
+    ['/admin/emails', 'Emails'],
+    ['/admin/emails/session_booked', 'Emails'],
     ['/admin', ''],
   ])('maps %s to %s', (pathname, expected) => {
     expect(activeFor(pathname)).toBe(expected);

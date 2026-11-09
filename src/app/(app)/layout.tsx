@@ -34,7 +34,11 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
 };
 
 /** The admin app's pages, by their segment under `/admin`. */
-const ADMIN_ACTIVE: Record<string, string> = { mentors: 'Mentors', credits: 'Credits' };
+const ADMIN_ACTIVE: Record<string, string> = {
+  mentors: 'Mentors',
+  credits: 'Credits',
+  emails: 'Emails',
+};
 
 /** Home or Bookings: where a mentor with bookings may be asked about notifications. */
 export function onHomeOrBookings(pathname: string): boolean {
@@ -68,7 +72,8 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { chrome, account, nav, adminEntry, access, messages, onPreview, member } = useAppShell();
+  const { chrome, account, nav, adminEntry, access, messages, adminEmails, onPreview, member } =
+    useAppShell();
   const online = useOnline();
 
   return (
@@ -77,6 +82,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       nav={nav}
       adminEntry={adminEntry}
       messages={messages}
+      adminEmails={adminEmails}
       chrome={chrome}
       account={account}
       access={access}
