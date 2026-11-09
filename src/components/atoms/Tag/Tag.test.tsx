@@ -26,4 +26,9 @@ describe('Tag', () => {
     );
     expect(screen.getByText('Unsaved')).toHaveClass('tag', 'warning', 'rect');
   });
+
+  it('value: an email value’s name (Admin Emails, TokenField)', () => {
+    render(<Tag tone="value">mentorName</Tag>);
+    expect(screen.getByText('mentorName')).toHaveClass('tag', 'value');
+  });
 });

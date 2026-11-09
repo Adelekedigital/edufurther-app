@@ -27,6 +27,14 @@
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
 }
+/* `filter`: a filter row's label (Admin Emails.dc.html), like FilterBar's. */
+.filter {
+  gap: var(--space-1);
+}
+.filter .label {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
 @media (max-width: 767px) {
   .clear {
     right: 0;

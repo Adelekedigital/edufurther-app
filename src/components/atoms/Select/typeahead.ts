@@ -1,5 +1,4 @@
-/** Case- and accent-insensitive, so "cote" finds Côte d’Ivoire. */
-export const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+import { norm } from '@/lib/utils/text';
 
 /**
  * The row typing should jump to (WAI-ARIA select-only combobox): the next

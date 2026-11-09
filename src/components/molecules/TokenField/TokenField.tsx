@@ -9,6 +9,7 @@ import {
   type SyntheticEvent,
 } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Tag } from '@/components/atoms/Tag/Tag';
 import { useListPosition, type ListSize } from '@/components/atoms/Select/useListPosition';
 import { cx } from '@/lib/utils/cx';
 import { stopEscape } from '@/lib/utils/focus';
@@ -325,7 +326,9 @@ export function TokenField({
                   onMouseMove={() => i !== active && setMenu((m) => m && { ...m, active: i })}
                   onClick={() => pick(o.name)}
                 >
-                  <span className={styles.optionChip}>{o.name}</span>
+                  <Tag tone="value" className={styles.optionChip}>
+                    {o.name}
+                  </Tag>
                   {sub && <span className={styles.sub}>{sub}</span>}
                 </div>
               );

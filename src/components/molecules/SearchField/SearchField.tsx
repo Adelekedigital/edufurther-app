@@ -4,6 +4,7 @@ import { useId, useRef, type FormEvent } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { Input } from '@/components/atoms/Input/Input';
+import { cx } from '@/lib/utils/cx';
 import styles from './SearchField.module.css';
 
 type SearchFieldProps = {
@@ -18,9 +19,10 @@ type SearchFieldProps = {
   disabled?: boolean;
   /**
    * The label shown above the field, and no search glyph (Admin.dc.html
-   * "Find a mentee"). Default: the label is for screen readers, a glyph leads.
+   * "Find a mentee"). `filter`: the same, in a filter row's small label
+   * (Admin Emails.dc.html). Default: the label is for screen readers, a glyph leads.
    */
-  labelled?: boolean;
+  labelled?: boolean | 'filter';
   /** Passed to the Input: `sm` for the admin fields' 5px corners, `md` for Messages'. */
   radius?: 'sm' | 'md';
   /** 40px on desktop (Messages.dc.html list search); 44px on phones like every field. */
@@ -81,7 +83,10 @@ export function SearchField({
   return (
     <form
       role="search"
-      className={labelled ? styles.labelled : styles.field}
+      className={cx(
+        labelled ? styles.labelled : styles.field,
+        labelled === 'filter' && styles.filter,
+      )}
       onSubmit={handleSubmit}
     >
       <label htmlFor={id} className={labelled ? styles.label : 'sr-only'}>

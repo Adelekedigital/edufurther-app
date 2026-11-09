@@ -22,6 +22,8 @@ type TagProps = {
    * fact     — 24px grey chip: a session type's length, notice, topics.
    * outline  — a round, hairline-bordered name on white: the invite landing's
    *            "Our mentors studied at" schools (Invite Landing.dc.html).
+   * value    — an email value's name in blue (Admin Emails.dc.html Values tab,
+   *            TokenField's list).
    */
   tone:
     | 'on-photo'
@@ -39,7 +41,8 @@ type TagProps = {
     | 'progress'
     | 'area'
     | 'fact'
-    | 'outline';
+    | 'outline'
+    | 'value';
   /**
    * rect — the status chip as a rounded rectangle, semibold
    * (CollapsibleSection.dc.html chip): neutral / success / warning / danger.
