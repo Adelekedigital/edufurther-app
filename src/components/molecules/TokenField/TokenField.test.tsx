@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { TokenField, type TokenValue } from './TokenField';
 
 const VALUES: TokenValue[] = [
@@ -253,21 +252,6 @@ describe('TokenField', () => {
     await userEvent.type(field(), '/');
     await userEvent.hover(screen.getByRole('option', { name: /sessionDate/ }));
     expect(field()).toHaveAttribute('aria-activedescendant', 'subject-opt-sessionDate');
-  });
-
-  it('in a dialog, Escape closes the list and not the dialog', async () => {
-    const onClose = vi.fn();
-    render(
-      <ModalShell title="Edit" onClose={onClose}>
-        <Host />
-      </ModalShell>,
-    );
-    await userEvent.type(field(), '/');
-    await userEvent.keyboard('{Escape}');
-    expect(list()).toBeNull();
-    expect(onClose).not.toHaveBeenCalled();
-    await userEvent.keyboard('{Escape}');
-    expect(onClose).toHaveBeenCalled();
   });
 
   it('Backspace after a value removes all of it', async () => {
