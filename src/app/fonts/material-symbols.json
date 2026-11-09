@@ -33,6 +33,7 @@
     "cloud_done",
     "cloud_off",
     "content_copy",
+    "data_object",
     "date_range",
     "delete",
     "description",
@@ -166,5 +167,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "da446eecb4b1a6c940717954a84bd32a45187fad09f451ef9581200afab4922b"
+  "sha256": "9a39ae3850f0240046506fe554d43f24e89fc236ec28ffae5f72ad433054610b"
 }

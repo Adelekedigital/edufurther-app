@@ -316,6 +316,17 @@ describe('placeList', () => {
     // Scrolled visual viewport: room is counted from its top.
     expect(placeList(rect(300), 200, 390, 800, { top: 250, height: 400 }).above).toBe(false);
   });
+
+  it('size: a fixed width (never wider than the field) and its own max height', () => {
+    const wide = placeList(rect(100, 44, 20, 600), 600, 1280, 800, undefined, {
+      max: 280,
+      width: 340,
+    });
+    expect(wide.style).toMatchObject({ width: 340, maxHeight: 280 });
+    expect(wide.style.minWidth).toBeUndefined();
+    const narrow = placeList(rect(100, 44, 20, 300), 600, 1280, 800, undefined, { width: 340 });
+    expect(narrow.style).toMatchObject({ width: 300, maxHeight: LIST_MAX });
+  });
 });
 
 describe('outOfView', () => {
