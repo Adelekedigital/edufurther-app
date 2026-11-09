@@ -49,6 +49,37 @@
   gap: var(--space-2);
 }
 
+/* DS Tabs `variant="pill"` (_ds_bundle.js Tabs.jsx): rounded tabs, space-2
+   apart, no row line; the selected one blue-50 with blue-500 text, the rest
+   ringed in ink-300. */
+.pills {
+  gap: var(--space-2);
+  box-shadow: none;
+}
+.pills .tab {
+  flex-direction: row;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: none;
+  border-radius: var(--radius-md);
+  box-shadow: inset 0 0 0 1px var(--ink-300);
+  color: var(--ink-700);
+}
+.pills .tab:hover {
+  background: var(--ink-50);
+  color: var(--ink-700);
+}
+.pills .on,
+.pills .on:hover {
+  background: var(--blue-50);
+  box-shadow: none;
+  /* DIVERGENCE: the DS's blue-500 on blue-50 is about 4.2:1; blue-700 passes AA. */
+  color: var(--blue-700);
+}
+.pills .tab:focus-visible {
+  outline-offset: 0;
+}
+
 /* A kept panel while another tab shows: out of view and of the accessibility
    tree. `hidden` must win over any page rule that sets the panel's display,
    however specific: the one place !important is the right tool. */
@@ -71,4 +102,12 @@
   background: var(--ink-100);
   color: var(--ink-500);
   font-size: 10px;
+}
+
+/* A tab with something waiting (Admin Emails: another variant's unsaved work). */
+.mark {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--blue-500);
 }
