@@ -18,12 +18,29 @@ export function buildId(): string {
   return raw.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40) || 'local';
 }
 
+/** lib/pwa/safePath.js without its export line: plain script for the worker. */
+function linkCheck(dir: string): string {
+  return readFileSync(join(dir, 'safePath.js'), 'utf8').replace(/^export .*$/m, '');
+}
+
 export function workerSource(): string {
   const dir = join(process.cwd(), 'src/lib/pwa');
   if (process.env.NEXT_PUBLIC_SERVICE_WORKER === 'off') {
     return readFileSync(join(dir, 'killWorker.js'), 'utf8');
   }
-  return readFileSync(join(dir, 'worker.js'), 'utf8').replace("'__BUILD__'", `'${buildId()}'`);
+  return (
+    readFileSync(join(dir, 'worker.js'), 'utf8')
+      .replace("'__BUILD__'", `'${buildId()}'`)
+      // The app's one link check, lib/pwa/safePath.js, as it is (no build step):
+      // its own scope, so its names can't meet the worker's.
+      .replace(
+        '__SAFE_RETURN_TO__',
+        () => `(() => {
+${linkCheck(dir)}
+return safeReturnTo;
+})()`,
+      )
+  );
 }
 
 export function GET() {

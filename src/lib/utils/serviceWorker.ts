@@ -8,7 +8,37 @@
  * unregisters it from here.
  */
 
+import { safeReturnTo } from './safeReturnTo';
+
 export const SW_URL = '/sw.js';
+
+/** The worker's "show this screen" request after a notification tap (worker.js). */
+export const OPEN_MESSAGE = 'ef-open';
+
+/**
+ * Answers the worker's request to show a notification's screen: `open` moves
+ * there with the app's router, and the worker is told it's done, so it doesn't
+ * also navigate. Only a path on this site is ever opened (safeReturnTo, Home
+ * otherwise). Returns the way to stop listening.
+ */
+export function listenForOpenRequests(open: (path: string) => void): () => void {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return () => {};
+  const sw = navigator.serviceWorker;
+  const onMessage = (e: MessageEvent) => {
+    const d = e.data as { type?: unknown; url?: unknown } | null;
+    if (!d || d.type !== OPEN_MESSAGE || typeof d.url !== 'string') return;
+    // Only from a service worker (this container hears nothing else, but be plain).
+    if (typeof ServiceWorker !== 'undefined' && !(e.source instanceof ServiceWorker)) return;
+    // Answered first, so the worker never also navigates while the app moves.
+    e.ports[0]?.postMessage('opened');
+    open(safeReturnTo(d.url, '/'));
+  };
+  sw.addEventListener('message', onMessage);
+  // Lets queued worker messages in now rather than after load. A request sent
+  // before this listened is lost; the worker then moves the window itself.
+  sw.startMessages?.();
+  return () => sw.removeEventListener('message', onMessage);
+}
 
 /** Production only: a worker in dev serves yesterday's code (pwa-offline). */
 export function serviceWorkerEnabled(): boolean {
