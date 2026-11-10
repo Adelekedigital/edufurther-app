@@ -26,7 +26,12 @@ export function TabState({
 }) {
   if (status === 'loading') {
     return (
-      <div className={styles.loading} aria-busy="true" aria-label={ANALYTICS_STATES.loading} role="status">
+      <div
+        className={styles.loading}
+        aria-busy="true"
+        aria-label={ANALYTICS_STATES.loading}
+        role="status"
+      >
         {Array.from({ length: 6 }, (_, i) => (
           <Skeleton key={i} height="140px" radius="xl" />
         ))}

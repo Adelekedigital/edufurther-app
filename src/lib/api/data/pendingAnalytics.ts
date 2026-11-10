@@ -17,10 +17,7 @@ export type WireAnalyticsWindow = {
 };
 
 export type WireAlertKey =
-  | 'login_code_failed'
-  | 'no_booking_requests'
-  | 'no_signups'
-  | 'delivery_failed';
+  'login_code_failed' | 'no_booking_requests' | 'no_signups' | 'delivery_failed';
 
 export type WireAnalyticsAlert = {
   key: WireAlertKey;

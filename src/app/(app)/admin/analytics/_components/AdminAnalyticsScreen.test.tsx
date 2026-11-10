@@ -49,7 +49,9 @@ function serve(over: Partial<Record<string, (q: Query) => unknown>> = {}) {
   });
 }
 const calls = (section: string) =>
-  h.GET.mock.calls.filter(([p]) => p === `/api/v1/admin/analytics/${section}`).map(([, i]) => queryOf(i));
+  h.GET.mock.calls
+    .filter(([p]) => p === `/api/v1/admin/analytics/${section}`)
+    .map(([, i]) => queryOf(i));
 
 beforeEach(() => {
   h.GET.mockReset();
@@ -78,7 +80,9 @@ describe('Admin Analytics: the page', () => {
     await userEvent.click(screen.getByRole('radio', { name: '7 days' }));
     await waitFor(() => expect(calls('credits')).toContainEqual({ window: '7d', compare: 'true' }));
     await userEvent.click(screen.getByRole('checkbox', { name: 'Compare with previous period' }));
-    await waitFor(() => expect(calls('credits')).toContainEqual({ window: '7d', compare: 'false' }));
+    await waitFor(() =>
+      expect(calls('credits')).toContainEqual({ window: '7d', compare: 'false' }),
+    );
   });
 
   it('Custom opens Choose dates; nothing changes until a day is applied', async () => {
@@ -142,12 +146,12 @@ describe('Admin Analytics: states', () => {
   it('an error offers Try again, which loads the tab', async () => {
     let fail = true;
     serve({
-      credits: (q) =>
-        fail ? res({}, 500) : res(mockSection('credits', mockWindow(q)!, false)),
+      credits: (q) => (fail ? res({}, 500) : res(mockSection('credits', mockWindow(q)!, false))),
     });
     renderScreen(<AdminAnalyticsScreen />);
+    // A 5xx is retried once before the error shows.
     expect(
-      await screen.findByRole('heading', { name: 'We couldn’t load analytics' }),
+      await screen.findByRole('heading', { name: 'We couldn’t load analytics' }, { timeout: 4000 }),
     ).toBeInTheDocument();
     fail = false;
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -161,12 +165,20 @@ describe('Admin Analytics: states', () => {
         return res({
           ...d,
           flow: { granted: 0, spent: 0, refunded: 0, expired: 0 },
-          by_source: d.by_source.map((r) => ({ ...r, granted: 0, spent: 0, refunded: 0, expired: 0 })),
+          by_source: d.by_source.map((r) => ({
+            ...r,
+            granted: 0,
+            spent: 0,
+            refunded: 0,
+            expired: 0,
+          })),
         });
       },
     });
     renderScreen(<AdminAnalyticsScreen />);
-    expect(await screen.findByRole('heading', { name: 'No data for this period' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'No data for this period' }),
+    ).toBeInTheDocument();
   });
 
   it('a firing alert shows on the tab, and its link opens the sign-up funnel', async () => {
@@ -188,7 +200,7 @@ describe('Admin Analytics: Credits', () => {
     expect(within(section).getAllByText(/of granted$/)).toHaveLength(2);
     const table = within(section).getByRole('table', { name: 'Credits by source' });
     const rows = within(table).getAllByRole('row');
-    expect(rows.map((r) => within(r).getAllByRole(/cell|columnheader/)[0]!.textContent)).toEqual([
+    expect(rows.map((r) => r.firstElementChild?.textContent)).toEqual([
       'Source',
       'Monthly',
       'Level-ups',

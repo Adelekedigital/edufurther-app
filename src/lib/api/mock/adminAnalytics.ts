@@ -82,18 +82,31 @@ function overview(c: Ctx): WireOverview {
   const unit = c.days <= 14 ? 'day' : 'week';
   const n = unit === 'day' ? c.days : Math.ceil(c.days / 7);
   const base = unit === 'day' ? 6 : 42;
-  const wobble = [0.07, -0.09, 0.14, -0.05, 0.12, 0.02, -0.07, 0.09, 0.05, -0.02, 0.14, 0.07, -0.05];
+  const wobble = [
+    0.07, -0.09, 0.14, -0.05, 0.12, 0.02, -0.07, 0.09, 0.05, -0.02, 0.14, 0.07, -0.05,
+  ];
   const series = Array.from({ length: n }, (_, i) => {
     const value = Math.round(base * (1 + (i * 0.35) / n) + base * wobble[i % 13]!);
     return {
       start: iso(Date.parse(c.window.from) + i * (unit === 'day' ? 1 : 7) * DAY),
       value,
-      previous: c.compare ? Math.max(0, Math.round(value * 0.88 + [2, 1, -3, 4, -2][i % 5]!)) : null,
+      previous: c.compare
+        ? Math.max(0, Math.round(value * 0.88 + [2, 1, -3, 4, -2][i % 5]!))
+        : null,
     };
   });
   const spark = (seed: number, up: boolean) =>
-    Array.from({ length: 8 }, (_, i) => 20 + (up ? i * 1.6 : -i * 0.6) + [3, -2, 4, -3, 2, -1, 3, 0][(i + seed) % 8]!);
-  const rate = (key: WireOverview['features'][number]['key'], v: number, p: number | null, contribution: number | null, i: number) => ({
+    Array.from(
+      { length: 8 },
+      (_, i) => 20 + (up ? i * 1.6 : -i * 0.6) + [3, -2, 4, -3, 2, -1, 3, 0][(i + seed) % 8]!,
+    );
+  const rate = (
+    key: WireOverview['features'][number]['key'],
+    v: number,
+    p: number | null,
+    contribution: number | null,
+    i: number,
+  ) => ({
     key,
     value: { value: v, previous: c.compare ? p : null },
     spark: spark(i, p === null || v >= p),
@@ -188,7 +201,13 @@ function supply(c: Ctx): WireSupply {
 }
 
 function credits(c: Ctx): WireCredits {
-  const row = (source: WireCredits['by_source'][number]['source'], g: number, s: number, r: number, e: number) => ({
+  const row = (
+    source: WireCredits['by_source'][number]['source'],
+    g: number,
+    s: number,
+    r: number,
+    e: number,
+  ) => ({
     source,
     granted: scale(c, g),
     spent: scale(c, s),

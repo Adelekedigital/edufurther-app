@@ -27,11 +27,7 @@ import type {
 
 export type AnalyticsTab = 'overview' | 'sessions' | 'supply' | 'credits' | 'growth' | 'funnels';
 export type FunnelName =
-  | 'signup'
-  | 'booking'
-  | 'mentee_activation'
-  | 'mentor_activation'
-  | 'mentor_application';
+  'signup' | 'booking' | 'mentee_activation' | 'mentor_activation' | 'mentor_application';
 
 /** A PRD 30 alert, newest first; `link` opens the view that explains it. */
 export type AnalyticsAlert = {
@@ -267,10 +263,16 @@ function useSection<K extends SectionName>(
 }
 
 /** GET /admin/analytics/overview. `adminId` null: not an admin yet, no call. */
-export const useAnalyticsOverview = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
-  useSection('overview', adminId, w, compare);
-export const useAnalyticsSessions = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
-  useSection('sessions', adminId, w, compare);
+export const useAnalyticsOverview = (
+  adminId: string | null,
+  w: AnalyticsWindow,
+  compare: boolean,
+) => useSection('overview', adminId, w, compare);
+export const useAnalyticsSessions = (
+  adminId: string | null,
+  w: AnalyticsWindow,
+  compare: boolean,
+) => useSection('sessions', adminId, w, compare);
 export const useAnalyticsSupply = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
   useSection('supply', adminId, w, compare);
 export const useAnalyticsCredits = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
@@ -315,7 +317,11 @@ export function useAnalyticsFunnel(
 export type Behaviour = WireBehaviour;
 
 /** GET /admin/analytics/behaviour: the event cards. */
-export function useAnalyticsBehaviour(adminId: string | null, w: AnalyticsWindow, compare: boolean) {
+export function useAnalyticsBehaviour(
+  adminId: string | null,
+  w: AnalyticsWindow,
+  compare: boolean,
+) {
   return useQuery({
     queryKey: keys.admin.analytics(adminId ?? 'none', 'behaviour', windowKey(w), compare),
     queryFn: async ({ signal }): Promise<Behaviour> => {

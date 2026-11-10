@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { isMockFunnel, mockFunnel, mockWindow, type MockQuery } from '@/lib/api/mock/adminAnalytics';
+import {
+  isMockFunnel,
+  mockFunnel,
+  mockWindow,
+  type MockQuery,
+} from '@/lib/api/mock/adminAnalytics';
 import { pendingOk, problem } from '@/lib/api/mock/respond';
 
 /**
@@ -17,5 +22,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ name: st
   if (process.env.MOCK_POSTHOG_DOWN === '1') {
     return problem(503, { type: '/problems/analytics-upstream', title: 'PostHog unavailable' });
   }
-  return pendingOk('GET /api/v1/admin/analytics/funnels/{name}', mockFunnel(name, sp.get('by') ?? 'all', c));
+  return pendingOk(
+    'GET /api/v1/admin/analytics/funnels/{name}',
+    mockFunnel(name, sp.get('by') ?? 'all', c),
+  );
 }

@@ -3,7 +3,12 @@
  * string on the page, so each tab reads the same words. Drafts from the
  * design and the PRD, checked against the ux-writer rules.
  */
-import type { AnalyticsTab, CreditSource, FunnelName, StageKey } from '@/lib/api/data/adminAnalytics';
+import type {
+  AnalyticsTab,
+  CreditSource,
+  FunnelName,
+  StageKey,
+} from '@/lib/api/data/adminAnalytics';
 import type { WireFeatureKey } from '@/lib/api/data/pendingAnalytics';
 import { STAGE_LABELS } from '@/lib/utils/sessionTypeDraft';
 
@@ -47,7 +52,11 @@ export const SOURCE_BADGE = { db: 'Database', posthog: 'PostHog' } as const;
 
 /** What an alert's link says, by where it goes. */
 export const alertLinkLabel = (tab: AnalyticsTab) =>
-  tab === 'funnels' ? 'See the sign-up funnel' : tab === 'sessions' ? 'See sessions' : 'See details';
+  tab === 'funnels'
+    ? 'See the sign-up funnel'
+    : tab === 'sessions'
+      ? 'See sessions'
+      : 'See details';
 
 // ---- Overview ---------------------------------------------------------------
 
@@ -160,7 +169,12 @@ export const SESSIONS = {
 export const SUPPLY = {
   heading: 'Mentor supply',
   cohortHeading: 'From application to bookable',
-  cohort: { applied: 'Applied', approved: 'Approved', listed: 'Listed', bookable: 'Bookable (now)' },
+  cohort: {
+    applied: 'Applied',
+    approved: 'Approved',
+    listed: 'Listed',
+    bookable: 'Bookable (now)',
+  },
   cohortNote: (days: string | null, unlisted: number) =>
     `${days === null ? '' : `Median time in review: ${days} days. `}Unlisted this period: ${unlisted}. Bookable = listed with a free slot in 14 days.`,
   placesHeading: 'Demand and supply by destination',
@@ -189,7 +203,13 @@ export const CREDITS = {
   ofGranted: (pct: string) => `${pct} of granted`,
   tableHeading: 'What happens to credits, by where they came from',
   tableLabel: 'Credits by source',
-  columns: { source: 'Source', granted: 'Granted', spent: 'Spent', refunded: 'Refunded', expired: 'Expired' },
+  columns: {
+    source: 'Source',
+    granted: 'Granted',
+    spent: 'Spent',
+    refunded: 'Refunded',
+    expired: 'Expired',
+  },
 } as const;
 
 /** Credit lot sources, in the table's order (backend decision 308). */
@@ -214,7 +234,12 @@ export const GROWTH = {
   completedSession: 'Completed a session',
   splitNote: 'Source and channel are written once at sign-up. Migrated users are left out.',
   splitEmpty: 'Source and channel aren’t recorded yet. They start with the new sign-up tracking.',
-  sources: { invite: 'Invite', direct: 'Direct', campaign: 'Campaign', referral_site: 'Referral site' } as Record<string, string>,
+  sources: {
+    invite: 'Invite',
+    direct: 'Direct',
+    campaign: 'Campaign',
+    referral_site: 'Referral site',
+  } as Record<string, string>,
   channels: {
     linkedin: 'LinkedIn',
     whatsapp: 'WhatsApp',
@@ -231,7 +256,8 @@ export const GROWTH = {
     firstBooking: 'First booking',
     firstCompleted: 'First completed',
   },
-  invitesCost: (n: string) => `Credit cost per invited member who completed a session: ${n} credits.`,
+  invitesCost: (n: string) =>
+    `Credit cost per invited member who completed a session: ${n} credits.`,
   topInviter: (name: string, n: number) => `Top inviter: ${name} (${n} joined).`,
   monthsHeading: 'New sign-ups per month, all roles',
   monthTip: (month: string, n: number, soFar: boolean) =>
@@ -242,7 +268,8 @@ export const GROWTH = {
   mixHeading: (by: 'topic' | 'stage') => `Completed sessions by ${by}`,
   topic: 'Topic',
   stage: 'Stage',
-  mixTip: (label: string, n: number, total: number) => `${label}: ${n} of ${total} completed sessions`,
+  mixTip: (label: string, n: number, total: number) =>
+    `${label}: ${n} of ${total} completed sessions`,
   topicNote:
     'Topics come from the session’s “What does this session help with?”. A session can cover more than one topic, so shares add up to more than 100%.',
   stageNote:

@@ -93,9 +93,6 @@ export function AdminAnalyticsScreen() {
           />
         }
       />
-      {alerts.map((a) => (
-        <AlertBanner key={a.key} alert={a} onOpen={go} />
-      ))}
       <Tabs
         label={ANALYTICS_PAGE.tabsLabel}
         items={items}
@@ -103,6 +100,11 @@ export function AdminAnalyticsScreen() {
         onChange={(t) => go({ tab: t as AnalyticsTab })}
       />
       <TabPanel id={panelId(tab)} active className={styles.panel}>
+        {/* In the panel, not above the tabs: it arrives with the tab's data, so
+            there it lands with the content instead of pushing the page down (CLS). */}
+        {alerts.map((a) => (
+          <AlertBanner key={a.key} alert={a} onOpen={go} />
+        ))}
         {tab === 'credits' && (
           <TabState
             status={viewStatus(credits)}

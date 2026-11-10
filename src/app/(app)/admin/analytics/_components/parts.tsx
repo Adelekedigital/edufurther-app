@@ -115,7 +115,14 @@ export function ChangeText({
   className?: string;
 }) {
   return (
-    <span className={cx(styles.change, styles[change.tone], size === 'sm' && styles.changeSm, className)}>
+    <span
+      className={cx(
+        styles.change,
+        styles[change.tone],
+        size === 'sm' && styles.changeSm,
+        className,
+      )}
+    >
       {arrow && <Icon name={change.icon} size={size === 'sm' ? 18 : 14} />}
       {change.text}
       {suffix && ` · ${suffix}`}
@@ -175,7 +182,9 @@ export function BarRows({
       {rows.map((r) => (
         <div key={r.key} className={styles.barRow}>
           <span className={styles.barLabel}>{r.label}</span>
-          <span className={cx(styles.track, track === 'ink-100' ? styles.track100 : styles.track50)}>
+          <span
+            className={cx(styles.track, track === 'ink-100' ? styles.track100 : styles.track50)}
+          >
             <span
               title={r.tip}
               className={cx(styles.bar, r.muted && styles.barMuted)}

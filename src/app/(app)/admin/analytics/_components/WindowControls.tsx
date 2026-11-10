@@ -37,6 +37,7 @@ export function WindowControls({
       <SegmentedControl<Choice>
         look="track"
         size="lg"
+        layout="hug"
         label={ANALYTICS_PAGE.windowLabel}
         options={options}
         value={w.kind}
