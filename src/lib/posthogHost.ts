@@ -1,11 +1,12 @@
 /**
  * Server-only: where `/ingest` goes (PRD 30, first-party path). The browser
- * only ever talks to this app; next.config.ts rewrites `/ingest/:path*` to
- * POSTHOG_HOST and `/ingest/static/:path*` to its assets host. The region is
+ * only ever talks to this app; src/proxy.ts forwards `/ingest/…` to
+ * POSTHOG_HOST and `/ingest/static/…` to its assets host, stripped of this
+ * site's cookies. next.config.ts calls it so a bad value fails the build. The region is
  * decided later, so nothing here names one: POSTHOG_HOST is the ingestion
  * origin (e.g. `https://eu.i.posthog.com`), and POSTHOG_ASSETS_HOST the
  * assets origin, derived for PostHog Cloud's `<region>.i.posthog.com` when
- * unset. Unset POSTHOG_HOST: no rewrite, so `/ingest` 404s and nothing loads.
+ * unset. Unset POSTHOG_HOST: `/ingest` 404s and nothing loads.
  * Relative imports only: next.config.ts loads it outside the `@/` alias.
  */
 
@@ -33,14 +34,4 @@ export function posthogHosts(
   // PostHog Cloud: https://eu.i.posthog.com → https://eu-assets.i.posthog.com
   const cloud = /^https:\/\/([a-z0-9-]+)\.i\.posthog\.com$/.exec(api);
   return { api, assets: cloud ? `https://${cloud[1]}-assets.i.posthog.com` : api };
-}
-
-/** The rewrites for next.config.ts; none without a host. Static first: the more specific path wins. */
-export function posthogRewrites(env?: Record<string, string | undefined>) {
-  const hosts = posthogHosts(env);
-  if (!hosts) return [];
-  return [
-    { source: '/ingest/static/:path*', destination: `${hosts.assets}/static/:path*` },
-    { source: '/ingest/:path*', destination: `${hosts.api}/:path*` },
-  ];
 }

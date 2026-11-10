@@ -6,6 +6,7 @@ import {
 } from '@/lib/vendor/supabase/server';
 import { isEnterPath } from '@/lib/utils/sessionEnter';
 import { PROXY_SECRET_HEADER, backendOrigin, proxySecret } from '@/lib/backend';
+import { posthogHosts } from '@/lib/posthogHost';
 import {
   CHOSE_EXPLORE_COOKIE,
   choseExplore,
@@ -34,17 +35,44 @@ function forwardToBackend(request: NextRequest): NextResponse {
 }
 
 /**
- * PRD 30: `/ingest` is rewritten to PostHog (next.config.ts). Same-origin, so
- * the browser attaches this site's cookies (the Supabase session among them):
- * they and any credentials are removed here, so the vendor gets none of them.
- * The body is never read (vercel.json skipMiddlewareRequestBody).
+ * PRD 30: `/ingest` is PostHog's first-party path, forwarded from here (not a
+ * next.config rewrite) so this is the only way to the vendor. Same-origin, so
+ * the browser attaches this site's cookies (the Supabase session among them)
+ * and the page's address: those, any credentials and the origin-lock header
+ * are removed before it leaves. The prefix matches in any case: Next's routing
+ * would, and a case it missed would skip the stripping. `/ingest/static/…` is
+ * PostHog's assets host. No POSTHOG_HOST: 404, nothing loads. The body is
+ * never read (vercel.json skipMiddlewareRequestBody).
  */
-export const STRIPPED_FOR_ANALYTICS = ['cookie', 'authorization', PROXY_SECRET_HEADER];
+export const STRIPPED_FOR_ANALYTICS = ['cookie', 'authorization', 'referer', PROXY_SECRET_HEADER];
+
+const INGEST = /^\/ingest(?=\/|$)/i;
+
+export function isIngestPath(path: string): boolean {
+  return INGEST.test(path);
+}
 
 function toAnalytics(request: NextRequest): NextResponse {
+  const hosts = posthogHosts();
+  if (!hosts) return new NextResponse(null, { status: 404 });
   const headers = new Headers(request.headers);
   for (const h of STRIPPED_FOR_ANALYTICS) headers.delete(h);
-  return NextResponse.next({ request: { headers } });
+  const { pathname, search } = request.nextUrl;
+  const rest = pathname.replace(INGEST, '') || '/';
+  const origin = /^\/static\//i.test(rest) ? hosts.assets : hosts.api;
+  return NextResponse.rewrite(new URL(`${rest}${search}`, origin), { request: { headers } });
+}
+
+/**
+ * `skipTrailingSlashRedirect` (next.config) keeps PostHog's `/ingest/e/`
+ * intact; every other path gets the redirect Next would have made, so
+ * `/explore/` and `/sessions/{id}/enter/` still land on their page.
+ */
+function withoutTrailingSlash(request: NextRequest): NextResponse | null {
+  const { pathname, search } = request.nextUrl;
+  if (pathname === '/' || !pathname.endsWith('/')) return null;
+  const to = new URL(`${pathname.replace(/\/+$/, '') || '/'}${search}`, request.url);
+  return NextResponse.redirect(to, 308);
 }
 
 /**
@@ -56,8 +84,10 @@ function toAnalytics(request: NextRequest): NextResponse {
  */
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  if (isIngestPath(path)) return toAnalytics(request);
+  const slash = withoutTrailingSlash(request);
+  if (slash) return slash;
   if (path === '/api/v1' || path.startsWith('/api/v1/')) return forwardToBackend(request);
-  if (path === '/ingest' || path.startsWith('/ingest/')) return toAnalytics(request);
   return refreshSessionCookies(request, ({ userId, accessToken }) => {
     // A mentor landing on Explore goes home before any of it is drawn (owner,
     // 2026-11-01; lib/utils/landingHint). Only for the user just verified.
@@ -92,11 +122,12 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Pages (not the mock API, Next assets, app icons and splash screens, or static
-  // files), the proxied API, and analytics (PRD 30: only to strip cookies
-  // before the /ingest rewrite, static files included).
+  // files), the proxied API, and analytics (PRD 30): /ingest in any case,
+  // dotted paths (PostHog's static files) included.
   matcher: [
-    '/((?!api/|ingest/|_next/|brand/|pwa-icon/|pwa-splash/|favicon.ico|manifest.webmanifest|.*\\..*).*)',
+    '/((?!api/|_next/|brand/|pwa-icon/|pwa-splash/|favicon.ico|manifest.webmanifest|.*\\..*).*)',
     '/api/v1/:path*',
-    '/ingest/:path*',
+    '/:ingest([iI][nN][gG][eE][sS][tT])',
+    '/:ingest([iI][nN][gG][eE][sS][tT])/:path*',
   ],
 };

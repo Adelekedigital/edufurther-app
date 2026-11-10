@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 import { backendOrigin, proxySecret } from './src/lib/backend';
-import { posthogRewrites } from './src/lib/posthogHost';
+import { posthogHosts } from './src/lib/posthogHost';
 import { PWA_HEADERS, SECURITY_HEADERS } from './src/lib/securityHeaders';
 
 /**
@@ -13,8 +13,9 @@ import { PWA_HEADERS, SECURITY_HEADERS } from './src/lib/securityHeaders';
  */
 backendOrigin();
 proxySecret();
-// Checked here too: a malformed POSTHOG_HOST fails the build.
-const analyticsRewrites = posthogRewrites();
+// Checked here too: a malformed POSTHOG_HOST fails the build. /ingest is
+// forwarded by src/proxy.ts (PRD 30), never by a config rewrite.
+posthogHosts();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -40,13 +41,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [...SECURITY_HEADERS, ...PWA_HEADERS];
   },
-  // PRD 30: PostHog through this origin (`/ingest`), so the browser never
-  // calls the vendor's host. src/proxy.ts strips cookies and credentials from
-  // these requests first: a rewrite would otherwise forward the session cookie.
-  async rewrites() {
-    return analyticsRewrites;
-  },
-  // PostHog's endpoints end in a slash (`/ingest/e/`); Next's redirect would drop it.
+  // PostHog's endpoints end in a slash (`/ingest/e/`); Next's redirect would
+  // drop it. src/proxy.ts makes that redirect itself for every other page.
   skipTrailingSlashRedirect: true,
 };
 

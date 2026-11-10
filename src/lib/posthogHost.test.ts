@@ -1,9 +1,8 @@
-import { posthogHosts, posthogRewrites } from './posthogHost';
+import { posthogHosts } from './posthogHost';
 
 describe('posthogHosts', () => {
-  it('nothing without POSTHOG_HOST: no rewrite, nothing loads', () => {
+  it('nothing without POSTHOG_HOST: nothing loads', () => {
     expect(posthogHosts({})).toBeNull();
-    expect(posthogRewrites({})).toEqual([]);
   });
 
   it('derives the assets host for PostHog Cloud in any region', () => {
@@ -28,15 +27,5 @@ describe('posthogHosts', () => {
     expect(posthogHosts({ POSTHOG_HOST: 'http://localhost:9999' })?.api).toBe(
       'http://localhost:9999',
     );
-  });
-
-  it('rewrites static first, then the rest', () => {
-    expect(posthogRewrites({ POSTHOG_HOST: 'https://us.i.posthog.com' })).toEqual([
-      {
-        source: '/ingest/static/:path*',
-        destination: 'https://us-assets.i.posthog.com/static/:path*',
-      },
-      { source: '/ingest/:path*', destination: 'https://us.i.posthog.com/:path*' },
-    ]);
   });
 });

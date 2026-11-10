@@ -271,25 +271,68 @@ describe('proxy: a mentor landing on Explore goes home before any of it is drawn
 });
 
 describe('proxy: /ingest goes to PostHog without this site’s cookies (PRD 30)', () => {
-  it('drops the cookie, credentials and the origin-lock header, and skips the session check', async () => {
+  const secretHeaders = {
+    cookie: 'sb-x-auth-token=secret; ef_consent=v.1.1',
+    authorization: 'Bearer tok',
+    referer: 'https://app.test/invite/abc?viewAs=a@b.c',
+    'x-edufurther-proxy-secret': 'nope',
+    'content-type': 'text/plain',
+  };
+  const send = (path: string) =>
+    proxy(new NextRequest(`https://app.test${path}`, { method: 'POST', headers: secretHeaders }));
+
+  beforeEach(() => {
+    vi.stubEnv('POSTHOG_HOST', 'https://eu.i.posthog.com');
     getClaims.mockClear();
-    const res = await proxy(
-      new NextRequest('https://app.test/ingest/e/', {
-        method: 'POST',
-        headers: {
-          cookie: 'sb-x-auth-token=secret; ef_consent=v.1.1',
-          authorization: 'Bearer tok',
-          'x-edufurther-proxy-secret': 'nope',
-          'content-type': 'text/plain',
-        },
-      }),
-    );
-    const overridden = res.headers.get('x-middleware-override-headers') ?? '';
-    expect(overridden.split(',')).not.toContain('cookie');
-    expect(overridden.split(',')).not.toContain('authorization');
-    expect(overridden.split(',')).not.toContain('x-edufurther-proxy-secret');
-    expect(forwarded(res, 'content-type')).toBe('text/plain');
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it.each([
+    ['/ingest/e/?ip=1', 'https://eu.i.posthog.com/e/?ip=1'],
+    ['/INGEST/e/', 'https://eu.i.posthog.com/e/'],
+    ['/Ingest/flags/?v=2', 'https://eu.i.posthog.com/flags/?v=2'],
+    ['/ingest/static/a.js', 'https://eu-assets.i.posthog.com/static/a.js'],
+    ['/Ingest/static/a.js', 'https://eu-assets.i.posthog.com/static/a.js'],
+  ])('%s goes to %s with no cookie, credentials, referer or secret', async (path, to) => {
+    const res = await send(path);
+    expect(res.headers.get('x-middleware-rewrite')).toBe(to);
+    const overridden = (res.headers.get('x-middleware-override-headers') ?? '').split(',');
+    for (const h of ['cookie', 'authorization', 'referer', 'x-edufurther-proxy-secret'])
+      expect(overridden, h).not.toContain(h);
     expect(forwarded(res, 'cookie')).toBeNull();
+    expect(forwarded(res, 'referer')).toBeNull();
+    expect(forwarded(res, 'content-type')).toBe('text/plain');
     expect(getClaims).not.toHaveBeenCalled();
+  });
+
+  it('a path that only starts with the word is a page, not PostHog', async () => {
+    getClaims.mockResolvedValue({ data: { claims: null }, error: null });
+    const res = await proxy(new NextRequest('https://app.test/ingestion'));
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+
+  it('no POSTHOG_HOST: 404, nothing forwarded', async () => {
+    vi.stubEnv('POSTHOG_HOST', '');
+    const res = await send('/ingest/e/');
+    expect(res.status).toBe(404);
+    expect(res.headers.get('x-middleware-rewrite')).toBeNull();
+  });
+});
+
+describe('proxy: the trailing-slash redirect Next no longer makes (skipTrailingSlashRedirect)', () => {
+  it.each([
+    ['/explore/', 'https://app.test/explore'],
+    ['/sessions/b1/enter/?x=1', 'https://app.test/sessions/b1/enter?x=1'],
+    ['/api/v1/me/', 'https://app.test/api/v1/me'],
+  ])('%s → 308 %s', async (path, to) => {
+    const res = await proxy(new NextRequest(`https://app.test${path}`));
+    expect(res.status).toBe(308);
+    expect(res.headers.get('location')).toBe(to);
+  });
+
+  it('/ stays', async () => {
+    getClaims.mockResolvedValue({ data: { claims: null }, error: null });
+    const res = await proxy(new NextRequest('https://app.test/'));
+    expect(res.status).not.toBe(308);
   });
 });

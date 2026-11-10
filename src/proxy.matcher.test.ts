@@ -48,7 +48,15 @@ describe('proxy matcher: the PWA files never pay for a session check', () => {
 
 describe('proxy matcher: analytics (PRD 30)', () => {
   it('every /ingest request reaches the proxy to lose its cookies, static files included', () => {
-    for (const url of ['/ingest/e/', '/ingest/flags/?v=2', '/ingest/static/recorder.js']) {
+    for (const url of [
+      '/ingest',
+      '/ingest/e/',
+      '/ingest/flags/?v=2',
+      '/ingest/static/recorder.js',
+      '/INGEST/e/',
+      '/Ingest/static/a.js',
+      '/iNgEsT/static/lazy.v2.js',
+    ]) {
       expect(runs(url), url).toBe(true);
     }
   });
