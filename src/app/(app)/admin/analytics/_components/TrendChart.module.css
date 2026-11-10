@@ -1,0 +1,78 @@
+/* Admin Analytics.dc.html North Star trend. */
+.trend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.plot {
+  display: flex;
+  gap: var(--space-2);
+}
+.axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 24px;
+  height: 140px;
+  padding: var(--space-1) 0;
+  font-size: var(--text-p-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-500);
+  text-align: right;
+}
+.svg {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  height: 140px;
+}
+.grid {
+  stroke: var(--ink-100);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.prev,
+.cur {
+  fill: none;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.prev {
+  stroke: var(--ink-400);
+  stroke-dasharray: 4 4;
+}
+.cur {
+  stroke: var(--blue-500);
+}
+.hit {
+  fill: transparent;
+}
+.ends {
+  display: flex;
+  justify-content: space-between;
+  padding-left: var(--space-8);
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: var(--text-p-xs);
+  color: var(--ink-700);
+}
+.key {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.swatchCur {
+  width: var(--space-4);
+  height: 2px;
+  background: var(--blue-500);
+}
+.swatchPrev {
+  width: var(--space-4);
+  height: 0;
+  border-top: 2px dashed var(--ink-400);
+}

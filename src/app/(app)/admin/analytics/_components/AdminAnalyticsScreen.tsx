@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
@@ -20,16 +20,43 @@ import {
 } from '@/lib/api/data/adminAnalytics';
 import { viewStatus } from '@/lib/api/data/queryStatus';
 import { useViewer } from '@/lib/api/data/viewer';
-import { alertLinkLabel, ANALYTICS_PAGE, ANALYTICS_TABS } from '@/lib/copy/adminAnalytics';
-import { DEFAULT_WINDOW, type AnalyticsWindow } from '@/lib/utils/analytics';
+import {
+  alertLinkLabel,
+  ANALYTICS_PAGE,
+  ANALYTICS_TABS,
+  FUNNEL_COPY,
+} from '@/lib/copy/adminAnalytics';
+import { DEFAULT_WINDOW, windowLabel, type AnalyticsWindow } from '@/lib/utils/analytics';
 import { todayIn } from '@/lib/utils/calendar';
 import { CreditsTab, isCreditsEmpty } from './CreditsTab';
 import { DateRangeDialog } from './DateRangeDialog';
+import { GrowthTab, isGrowthEmpty } from './GrowthTab';
+import { isOverviewEmpty, OverviewTab } from './OverviewTab';
+import { isSessionsEmpty, SessionsTab } from './SessionsTab';
+import { isSupplyEmpty, SupplyTab } from './SupplyTab';
 import { TabState } from './TabState';
 import { WindowControls } from './WindowControls';
 import styles from './AdminAnalyticsScreen.module.css';
 
 const panelId = (t: AnalyticsTab) => `admin-analytics-${t}`;
+
+/** A database tab: its four states around its content. */
+function section<D>(
+  q: { data: D | undefined; isError: boolean; isFetching: boolean; refetch: () => unknown },
+  isEmpty: (d: D) => boolean,
+  render: (d: D) => ReactNode,
+) {
+  return (
+    <TabState
+      status={viewStatus(q)}
+      empty={q.data !== undefined && isEmpty(q.data)}
+      onRetry={() => void q.refetch()}
+      retrying={q.isFetching}
+    >
+      {() => render(q.data as D)}
+    </TabState>
+  );
+}
 
 /**
  * /admin/analytics (PRD 31; Admin Analytics.dc.html, direction 1a). The only
@@ -48,14 +75,16 @@ export function AdminAnalyticsScreen() {
   const tab: AnalyticsTab = isAnalyticsTab(raw) ? raw : 'overview';
   const rawFunnel = params.get('funnel');
   const funnel: FunnelName = isFunnelName(rawFunnel) ? rawFunnel : 'signup';
-  const by = params.get('by') ?? 'all';
+  // A breakdown the funnel doesn't offer is never asked for: it reads as the whole audience.
+  const rawBy = params.get('by');
+  const by = FUNNEL_COPY[funnel].by.some(([v]) => v === rawBy) ? rawBy! : 'all';
 
   const [win, setWin] = useState<AnalyticsWindow>(DEFAULT_WINDOW);
   const [compare, setCompare] = useState(true);
   const [picking, setPicking] = useState(false);
   const today = todayIn('UTC');
 
-  // Only the open tab asks; Behaviour reads the alerts from Overview.
+  // Only the open tab asks; Behavior reads the alerts from Overview.
   const on = (...tabs: AnalyticsTab[]) => (tabs.includes(tab) ? adminId : null);
   const overview = useAnalyticsOverview(on('overview', 'funnels'), win, compare);
   const sessions = useAnalyticsSessions(on('sessions'), win, compare);
@@ -124,16 +153,21 @@ export function AdminAnalyticsScreen() {
             {a.body}
           </Notice>
         ))}
-        {tab === 'credits' && (
-          <TabState
-            status={viewStatus(credits)}
-            empty={!!credits.data && isCreditsEmpty(credits.data)}
-            onRetry={() => void credits.refetch()}
-            retrying={credits.isFetching}
-          >
-            {() => <CreditsTab data={credits.data!} />}
-          </TabState>
-        )}
+        {tab === 'overview' &&
+          section(overview, isOverviewEmpty, (d) => (
+            <OverviewTab
+              data={d}
+              compare={compare}
+              windowLabel={windowLabel(win)}
+              onOpen={(t) => go({ tab: t })}
+            />
+          ))}
+        {tab === 'sessions' &&
+          section(sessions, isSessionsEmpty, (d) => <SessionsTab data={d} compare={compare} />)}
+        {tab === 'supply' && section(supply, isSupplyEmpty, (d) => <SupplyTab data={d} />)}
+        {tab === 'credits' && section(credits, isCreditsEmpty, (d) => <CreditsTab data={d} />)}
+        {tab === 'growth' &&
+          section(growth, isGrowthEmpty, (d) => <GrowthTab data={d} compare={compare} />)}
       </TabPanel>
       <p className={styles.footer}>{ANALYTICS_PAGE.footer}</p>
       {picking && (
