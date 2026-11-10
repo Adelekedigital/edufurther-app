@@ -1,0 +1,136 @@
+import type { CaptureResult, PostHog, PostHogConfig } from 'posthog-js';
+import type { PersonProperties } from '@/lib/analytics/events';
+import { scrubProperties } from '@/lib/analytics/scrub';
+import type { Sink } from '@/lib/analytics/track';
+
+/**
+ * PostHog enters the app here and nowhere else (checkBoundaries.vendorSeams).
+ * It is loaded with a dynamic import, only once analytics may run (flag on,
+ * key set, not a preview), so it is never in the first page's JavaScript.
+ *
+ * Consent (PRD 30): `cookieless_mode: 'on_reject'` with opted out by default,
+ * so before an answer and after a decline PostHog counts without cookies or
+ * storage (a server-side hash, no identify, no replay). Accept opts in:
+ * persistence, identify, and replay where the app turns it on. Typed events
+ * only: autocapture, page views, page leaves, heatmaps, dead and rage clicks,
+ * exceptions, web vitals, surveys, tours and experiments are all off.
+ */
+
+/** Marks a part of the page replay never records (intake answers, message dialogs). */
+export const NO_REPLAY_ATTR = 'data-no-replay';
+
+export type VendorMode = 'cookieless' | 'identified';
+
+export type VendorAnalytics = {
+  /** Events go here in either mode; identify only lands once identified. */
+  sink: Sink;
+  setMode: (mode: VendorMode) => void;
+  /** Replay on this route; only ever on while identified. */
+  setReplay: (on: boolean) => void;
+};
+
+/** Every address property scrubbed before it leaves (no query string, no invite code). */
+export function beforeSend(event: CaptureResult | null): CaptureResult | null {
+  if (!event) return null;
+  return {
+    ...event,
+    properties: scrubProperties(event.properties ?? {}),
+    ...(event.$set ? { $set: scrubProperties(event.$set) } : {}),
+    ...(event.$set_once ? { $set_once: scrubProperties(event.$set_once) } : {}),
+  };
+}
+
+export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
+  return {
+    api_host: apiHost,
+    cookieless_mode: 'on_reject',
+    opt_out_capturing_by_default: true,
+    person_profiles: 'identified_only',
+    autocapture: false,
+    capture_pageview: false,
+    capture_pageleave: false,
+    capture_dead_clicks: false,
+    capture_heatmaps: false,
+    rageclick: false,
+    capture_exceptions: false,
+    capture_performance: false,
+    disable_surveys: true,
+    disable_product_tours: true,
+    disable_conversations: true,
+    disable_web_experiments: true,
+    // Off until the app starts it on an allowed route, after Accept.
+    disable_session_recording: true,
+    session_recording: {
+      maskAllInputs: true,
+      blockSelector: `[${NO_REPLAY_ATTR}]`,
+      recordHeaders: false,
+      recordBody: false,
+    },
+    before_send: beforeSend,
+  };
+}
+
+/** Wraps a started PostHog in our interface: the app never calls the SDK itself. */
+export function wrap(ph: PostHog): VendorAnalytics {
+  // An earlier visit's Accept is kept in PostHog's own storage: start from it,
+  // so a decline given since (here or on the landing site) still resets.
+  let mode: VendorMode =
+    ph.get_explicit_consent_status() === 'granted' ? 'identified' : 'cookieless';
+  let replaying = false;
+  const stopReplay = () => {
+    if (!replaying) return;
+    replaying = false;
+    ph.stopSessionRecording();
+  };
+  return {
+    sink: {
+      capture: (event, props) => {
+        ph.capture(event, props);
+      },
+      identify: (userId: string, props: PersonProperties) => {
+        // Cookieless: no identifier may be stored or linked.
+        if (mode === 'identified') ph.identify(userId, props);
+      },
+      reset: () => {
+        stopReplay();
+        ph.reset();
+        // reset() returns PostHog to its default (opted out); keep an accepted answer.
+        if (mode === 'identified') ph.opt_in_capturing({ captureEventName: false });
+      },
+    },
+    setMode: (next) => {
+      if (next === mode) return;
+      mode = next;
+      if (next === 'identified') {
+        ph.opt_in_capturing({ captureEventName: false });
+      } else {
+        // Withdrawn in this session: replay stops, the id goes, and back to
+        // the default (opted out, so cookieless) with nothing stored.
+        stopReplay();
+        ph.reset();
+      }
+    },
+    setReplay: (on) => {
+      if (on && mode === 'identified' && !replaying) {
+        replaying = true;
+        ph.startSessionRecording();
+      } else if (!on) stopReplay();
+    },
+  };
+}
+
+let loading: Promise<VendorAnalytics> | null = null;
+
+/** Loads and starts PostHog once per page; later calls get the same instance. */
+export function loadAnalytics(key: string, apiHost: string): Promise<VendorAnalytics> {
+  loading ??= import('posthog-js').then(({ default: posthog }) => {
+    posthog.init(key, vendorConfig(apiHost));
+    return wrap(posthog);
+  });
+  return loading;
+}
+
+/** Tests only. */
+export function resetVendorForTests() {
+  loading = null;
+}
