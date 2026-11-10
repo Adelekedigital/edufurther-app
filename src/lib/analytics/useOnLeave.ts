@@ -5,8 +5,8 @@ import { useLatest } from '@/lib/utils/useLatest';
 
 /**
  * Runs `onLeave` once, when the component really goes: unmounted (closed,
- * navigated away in the app) or the page hidden for good (tab closed, a full
- * navigation). For a funnel's `_abandoned` event: `onLeave` reads the latest
+ * navigated away in the app) or the page hidden (tab closed, a full
+ * navigation). A page restored from the back/forward cache can leave again. For a funnel's `_abandoned` event: `onLeave` reads the latest
  * render and decides whether there is anything to send.
  *
  * React StrictMode (dev) unmounts and remounts every effect once: the unmount
@@ -26,9 +26,16 @@ export function useOnLeave(onLeave: () => void) {
       st.left = true;
       latest.current();
     };
+    // Back from the back/forward cache: the page (and this component) lives
+    // again, so leaving it later counts.
+    const back = (e: PageTransitionEvent) => {
+      if (e.persisted) st.left = false;
+    };
     window.addEventListener('pagehide', leave);
+    window.addEventListener('pageshow', back);
     return () => {
       window.removeEventListener('pagehide', leave);
+      window.removeEventListener('pageshow', back);
       // A remount before this runs (StrictMode) bumped the count: not a leave.
       queueMicrotask(() => {
         if (st.generation === mine) leave();

@@ -133,6 +133,8 @@ export function useOnboardingFlow() {
   // matches after it are no longer onboarding. Leaving with a step still to
   // save (closed, navigated away) abandons it, once.
   const completedHere = useRef(false);
+  // Each step counts once per visit: a Back and a second save don't count again.
+  const stepsCounted = useRef(new Set<Step>());
   useOnLeave(() => {
     if (!form || completedHere.current || form.step === 'matches') return;
     track('onboarding_abandoned', { role: 'mentee', step: form.step });
@@ -191,8 +193,11 @@ export function useOnboardingFlow() {
       else if (from === 'plans')
         await save.save({ step: 'plans', needIds: form.needIds, plans: form.plans });
       else return [];
-      track('onboarding_step_completed', { role: 'mentee', step: from });
-      if (from === 'plans') {
+      if (!stepsCounted.current.has(from)) {
+        stepsCounted.current.add(from);
+        track('onboarding_step_completed', { role: 'mentee', step: from });
+      }
+      if (from === 'plans' && !completedHere.current) {
         completedHere.current = true;
         track('onboarding_completed', { role: 'mentee' });
       }

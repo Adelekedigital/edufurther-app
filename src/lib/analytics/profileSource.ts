@@ -10,7 +10,14 @@ import type { ProfileViewSource } from './events';
  * `direct` (or `invite_link`, from the URL).
  */
 
-type Noted = { handle: string; source: ProfileViewSource };
+type Noted = { handle: string; source: ProfileViewSource; at: number };
+
+/**
+ * A note is for the navigation its click started: older than this, it was
+ * never taken (a link that didn't navigate, a profile that failed to load)
+ * and a later visit is not its.
+ */
+export const NOTE_TTL_MS = 10_000;
 
 let noted: Noted | null = null;
 
@@ -31,7 +38,7 @@ function profileOf(href: string | null | undefined): string | null {
 /** A link to a profile is being followed from `source`. Anything else is ignored. */
 export function noteProfileSource(source: ProfileViewSource, href: string | null | undefined) {
   const handle = profileOf(href);
-  if (handle) noted = { handle, source };
+  if (handle) noted = { handle, source, at: Date.now() };
 }
 
 /**
@@ -60,13 +67,13 @@ const INVITE_PARAMS = ['ref', 'invite'];
 
 /**
  * The source of this visit to `handle`, taken once: what the link noted when
- * it was for this profile, else `invite_link` when the URL carries an invite
+ * it was for this profile and recent, else `invite_link` when the URL carries an invite
  * or referral, else `direct`. Whatever was noted is cleared either way.
  */
 export function takeProfileSource(handle: string, search: URLSearchParams): ProfileViewSource {
   const n = noted;
   noted = null;
-  if (n && n.handle === handle) return n.source;
+  if (n && n.handle === handle && Date.now() - n.at <= NOTE_TTL_MS) return n.source;
   return INVITE_PARAMS.some((p) => search.has(p)) ? 'invite_link' : 'direct';
 }
 

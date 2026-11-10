@@ -683,4 +683,16 @@ describe('OnboardingScreen: the onboarding funnel (PRD 30)', () => {
     render(<OnboardingScreen />);
     expect(launcher.entryPoint).toBe('onboarding_guest');
   });
+
+  it('a step saved again after Back counts once', async () => {
+    render(<OnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /Find a program/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(tracked('onboarding_step_completed')).toEqual([
+      ['onboarding_step_completed', { role: 'mentee', step: 'help' }],
+    ]);
+  });
 });

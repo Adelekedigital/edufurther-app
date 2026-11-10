@@ -43,4 +43,28 @@ describe('useOnLeave', () => {
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });
+
+  it('a page back from the back/forward cache can leave again', async () => {
+    const onLeave = vi.fn();
+    const { unmount } = render(<Leaving onLeave={onLeave} />);
+    window.dispatchEvent(new Event('pagehide'));
+    const restored = new Event('pageshow') as PageTransitionEvent;
+    Object.defineProperty(restored, 'persisted', { value: true });
+    window.dispatchEvent(restored);
+    unmount();
+    await settle();
+    expect(onLeave).toHaveBeenCalledTimes(2);
+  });
+
+  it('an ordinary page show (not from the cache) changes nothing', async () => {
+    const onLeave = vi.fn();
+    const { unmount } = render(<Leaving onLeave={onLeave} />);
+    window.dispatchEvent(new Event('pagehide'));
+    const shown = new Event('pageshow') as PageTransitionEvent;
+    Object.defineProperty(shown, 'persisted', { value: false });
+    window.dispatchEvent(shown);
+    unmount();
+    await settle();
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
 });

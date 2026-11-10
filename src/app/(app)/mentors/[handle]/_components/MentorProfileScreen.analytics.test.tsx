@@ -41,7 +41,10 @@ vi.mock('@/lib/api/data/booking', async () =>
   (await import('./profileScreen.harness')).mocks.booking(),
 );
 
-vi.mock('@/lib/analytics/track', () => ({ track: vi.fn() }));
+vi.mock('@/lib/analytics/track', async (orig) => ({
+  ...(await orig<typeof import('@/lib/analytics/track')>()),
+  track: vi.fn(),
+}));
 
 const views = () => vi.mocked(track).mock.calls.filter(([e]) => e === 'mentor_profile_viewed');
 

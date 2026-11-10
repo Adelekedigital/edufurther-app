@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import {
+  NOTE_TTL_MS,
   noteProfileSource,
   profileLinkSource,
   resetProfileSourceForTests,
@@ -60,5 +61,19 @@ describe('profileSource: where a profile visit came from', () => {
     expect(takeProfileSource('ada', none)).toBe('similar_mentors');
     fireEvent.click(screen.getByText('Bo'));
     expect(takeProfileSource('bo', none)).toBe('direct');
+  });
+
+  it('a note goes stale: a later visit to that profile is direct', () => {
+    vi.useFakeTimers();
+    try {
+      noteProfileSource('explore', '/mentors/chidi');
+      vi.advanceTimersByTime(NOTE_TTL_MS + 1);
+      expect(takeProfileSource('chidi', none)).toBe('direct');
+      noteProfileSource('explore', '/mentors/chidi');
+      vi.advanceTimersByTime(NOTE_TTL_MS - 1);
+      expect(takeProfileSource('chidi', none)).toBe('explore');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
