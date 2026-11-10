@@ -316,9 +316,19 @@ describe('the window is open', () => {
     await userEvent.click(join);
     expect(open).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
-    // PRD 30: once per press, minutes from the start (early is negative).
+    // PRD 30: once per press, minutes before the start (4 early is +4).
     expect(track.mock.calls).toEqual([
-      ['session_join_clicked', { session_id: 'b1', minutes_from_start: -4 }],
+      ['session_join_clicked', { session_id: 'b1', minutes_from_start: 4 }],
+    ]);
+  });
+
+  it('a late Join counts negative minutes before the start', () => {
+    renderAt('17:06:00');
+    const join = screen.getByRole('link', { name: 'Join session (opens in a new tab)' });
+    join.addEventListener('click', (e) => e.preventDefault());
+    act(() => join.click());
+    expect(track.mock.calls).toEqual([
+      ['session_join_clicked', { session_id: 'b1', minutes_from_start: -6 }],
     ]);
   });
 });

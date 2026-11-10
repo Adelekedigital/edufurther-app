@@ -110,9 +110,12 @@ function enterProblemText(
   }
 }
 
-/** Whole minutes from the scheduled start to now: negative when early (PRD 30). */
-export const minutesFromStart = (startsAt: string, now = Date.now()) =>
-  Math.round((now - Date.parse(startsAt)) / 60_000);
+/**
+ * Whole minutes before the scheduled start (start − click): 3 min early is +3,
+ * late is negative (backend decision, 10 Nov: its card reads "minutes before").
+ */
+export const minutesBeforeStart = (startsAt: string, now = Date.now()) =>
+  Math.round((Date.parse(startsAt) - now) / 60_000);
 
 /** "Having a problem? Contact support": the card's last row, on the session and on a failed load. */
 function SupportRow({ href }: { href: string }) {
@@ -401,7 +404,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
         setProblem(null);
         track('session_join_clicked', {
           session_id: id,
-          minutes_from_start: minutesFromStart(b.startsAt),
+          minutes_from_start: minutesBeforeStart(b.startsAt),
         });
       },
       // Only rendered once the session has loaded, which is in the browser.
