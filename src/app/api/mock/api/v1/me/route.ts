@@ -88,8 +88,6 @@ export async function GET(req: Request) {
     awards: [],
     mentee_completed_sessions: 0,
     mentee_cancel_refund_hours: 12,
-    // Backend #635: published as required in the response; the mock viewer is not migrated.
-    is_migrated: false,
     email_verified_at: '2026-10-17T09:05:00Z',
     booking_counts: { as_mentee: { awaiting_mentor: 1, upcoming: 2 }, as_mentor: null },
     goal: mockGoal(MOCK_VIEWER_ID),
