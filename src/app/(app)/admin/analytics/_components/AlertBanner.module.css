@@ -1,0 +1,43 @@
+/* Admin Analytics.dc.html alert banner. */
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--red-50);
+  color: var(--red-700);
+  font-size: var(--text-p-sm);
+}
+.text {
+  flex: 1;
+  min-width: 220px;
+}
+.title {
+  font-weight: var(--weight-semibold);
+}
+.link {
+  min-height: var(--space-8);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--red-700);
+}
+.link:hover {
+  text-decoration: underline;
+}
+.link:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+@media (max-width: 767px) {
+  .link {
+    min-height: var(--touch-target-min);
+  }
+}

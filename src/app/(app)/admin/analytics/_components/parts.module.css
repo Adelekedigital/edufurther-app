@@ -1,0 +1,164 @@
+/* Admin Analytics.dc.html: values from the design's inline styles. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.sectionTitle {
+  margin: 0;
+  font-size: var(--text-p-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.panelHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.panelHeadStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.panelTitle {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.hint {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.note {
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+
+.twoCol {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+@media (min-width: 1024px) {
+  .twoCol {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* The auto-fit grid of figure cards (Credits' flow, Growth's sign-ups). */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--space-3);
+}
+
+.change {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+}
+.changeSm {
+  font-size: var(--text-p-sm);
+}
+.good {
+  color: var(--green-700);
+}
+.bad {
+  color: var(--red-500);
+}
+.flat {
+  color: var(--ink-600);
+}
+
+.bars {
+  display: flex;
+  flex-direction: column;
+}
+.barsSm {
+  gap: var(--space-2);
+}
+.barsMd {
+  gap: var(--space-3);
+}
+.barRow {
+  display: grid;
+  grid-template-columns: var(--bar-label) 1fr var(--bar-value);
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-p-xs);
+}
+.barLabel {
+  min-width: 0;
+  color: var(--ink-700);
+}
+.track {
+  height: var(--bar-h);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+}
+.track50 {
+  background: var(--ink-50);
+}
+.track100 {
+  background: var(--ink-100);
+}
+.bar {
+  display: block;
+  height: var(--bar-h);
+  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  background: var(--blue-500);
+}
+.barMuted {
+  background: var(--ink-400);
+}
+.barValue {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+}
+.tr {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: var(--text-p-xs);
+}
+.th {
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+.td {
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+.firstCell {
+  min-width: 0;
+  font-weight: var(--weight-semibold);
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}

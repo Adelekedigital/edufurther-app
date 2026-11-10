@@ -1,0 +1,22 @@
+/* Admin Analytics.dc.html header controls: they wrap under the title on phones. */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+.compare {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-9);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
+  cursor: pointer;
+}
+@media (max-width: 767px) {
+  .compare {
+    min-height: var(--touch-target-min);
+  }
+}

@@ -1,0 +1,21 @@
+/* Admin Analytics.dc.html: header, banner, tabs and the tab's body, space-6 apart. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 1280px;
+  min-width: 0;
+}
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  min-width: 0;
+}
+.footer {
+  margin: 0;
+  padding-top: var(--space-2);
+  border-top: var(--border-hairline) solid var(--ink-100);
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}

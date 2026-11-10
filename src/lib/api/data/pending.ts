@@ -10,11 +10,12 @@
  * with that session on 9 Nov).
  */
 import { api } from './http';
+import type { PendingAnalyticsResponses } from './pendingAnalytics';
 
 /** #3: the completion refusal names what is missing. */
 export type PendingIncomplete = { missing?: unknown };
 
-export type PendingResponses = {
+export type PendingResponses = PendingAnalyticsResponses & {
   'GET /api/v1/admin/emails': { data: WireEmailSummary[]; next_cursor: null };
   'GET /api/v1/admin/email-values': { data: WireEmailValue[] };
   'GET /api/v1/admin/emails/{key}': WireEmailDetail;
