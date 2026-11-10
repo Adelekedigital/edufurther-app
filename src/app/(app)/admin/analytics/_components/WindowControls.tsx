@@ -37,9 +37,10 @@ export function WindowControls({
   // open the picker. A click, Enter or Space on it does.
   const arrowing = useRef(false);
   const onKeyDownCapture = (e: KeyboardEvent) => {
-    arrowing.current = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(
-      e.key,
-    );
+    // Only keys on the window's own radios: a key on Compare must not leak into the next click.
+    const onRadio = (e.target as HTMLElement).getAttribute('role') === 'radio';
+    arrowing.current =
+      onRadio && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key);
   };
   const pick = (v: Choice) => {
     const byArrow = arrowing.current;

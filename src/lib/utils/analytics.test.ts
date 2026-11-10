@@ -4,7 +4,6 @@ import {
   customLabel,
   daysBetween,
   formatReplyHours,
-  formatMaybe,
   formatRate,
   nextDraft,
   windowDays,
@@ -96,11 +95,9 @@ describe('changeOf', () => {
 });
 
 describe('formats', () => {
-  it('reads rates, hours and unknowns', () => {
+  it('reads rates and hours', () => {
     expect(formatRate(84)).toBe('84%');
     expect(formatRate(6.83)).toBe('6.8%');
     expect(formatReplyHours(6.24)).toBe('6.2 h');
-    expect(formatMaybe(null)).toBe('—');
-    expect(formatMaybe(1840)).toBe('1,840');
   });
 });

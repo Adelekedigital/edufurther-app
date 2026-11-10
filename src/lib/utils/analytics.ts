@@ -126,9 +126,5 @@ export const formatRate = (n: number) => `${trim(n)}%`;
 /** Hours to one decimal: "6.2 h" (Median time to reply). */
 export const formatReplyHours = (n: number) => `${n.toFixed(1)} h`;
 
-/** A count; "—" when not known (PostHog down). */
-export const formatMaybe = (n: number | null, f: (n: number) => string = formatCount) =>
-  n === null ? '—' : f(n);
-
 /** A share of a whole as a whole percent: 0 when the whole is 0. */
 export const shareOf = (part: number, whole: number) => (whole > 0 ? (part / whole) * 100 : 0);

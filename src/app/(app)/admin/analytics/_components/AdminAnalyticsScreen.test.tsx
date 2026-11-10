@@ -142,6 +142,16 @@ describe('Admin Analytics: what loads, and the keyboard', () => {
     expect([...asked]).toEqual(['/api/v1/admin/analytics/credits']);
   });
 
+  it('a key pressed on Compare never swallows the next click on Custom', async () => {
+    serve();
+    renderScreen(<AdminAnalyticsScreen />);
+    await screen.findByRole('heading', { level: 2, name: 'Credits' });
+    screen.getByRole('checkbox', { name: 'Compare with previous period' }).focus();
+    await userEvent.keyboard('{ArrowRight}');
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    expect(await screen.findByRole('dialog', { name: 'Choose dates' })).toBeInTheDocument();
+  });
+
   it('arrowing over Custom selects nothing and opens nothing; Enter opens the picker', async () => {
     serve();
     renderScreen(<AdminAnalyticsScreen />);
