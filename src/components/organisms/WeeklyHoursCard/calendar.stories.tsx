@@ -76,6 +76,25 @@ export const MonthBlocking: Story = {
   },
 };
 
+/** A reporting range (Admin Analytics' "Choose dates"): back to min's month, nothing after max. */
+export const MonthPastRange: Story = {
+  render: function Render() {
+    const [sel, setSel] = useState(['2026-11-03', '2026-11-04', '2026-11-05']);
+    return (
+      <div style={{ maxWidth: 340 }}>
+        <MonthPicker
+          today="2026-11-09"
+          min="2024-06-01"
+          max="2026-11-09"
+          selected={sel}
+          selectedLabel={null}
+          onPick={(d) => setSel([d])}
+        />
+      </div>
+    );
+  },
+};
+
 export const Status: Story = {
   render: () => (
     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>

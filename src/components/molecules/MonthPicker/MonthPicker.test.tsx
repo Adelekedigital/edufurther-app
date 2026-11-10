@@ -234,3 +234,64 @@ describe('MonthPicker, a day picker over open times (SuggestTime.dc.html dayPick
     expect(screen.getByRole('grid', { name: 'October 2026' })).toBeInTheDocument();
   });
 });
+
+describe('MonthPicker, a reporting range (min in the past, max today)', () => {
+  const range = (initialMonth?: string) => (
+    <MonthPicker
+      today="2026-11-09"
+      min="2024-06-01"
+      max="2026-11-09"
+      initialMonth={initialMonth}
+      selectedLabel={null}
+      onPick={() => {}}
+    />
+  );
+
+  it('opens on today’s month, pages back, and stops at max’s month', async () => {
+    const user = userEvent.setup();
+    render(range());
+    expect(screen.getByRole('grid', { name: 'November 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next month' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Previous month' }));
+    expect(screen.getByRole('grid', { name: 'October 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next month' })).toBeEnabled();
+  });
+
+  it('days after max can be reached but not picked', async () => {
+    const user = userEvent.setup();
+    const onPick = vi.fn();
+    render(<MonthPicker today="2026-11-09" min="2024-06-01" max="2026-11-09" onPick={onPick} />);
+    const later = screen.getByRole('button', { name: 'Tuesday, November 10' });
+    expect(later).toHaveAttribute('aria-disabled', 'true');
+    await user.click(later);
+    expect(onPick).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Monday, November 9' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
+  });
+
+  it('opens on an earlier month, and stops at min’s month', () => {
+    render(range('2024-06-15'));
+    expect(screen.getByRole('grid', { name: 'June 2024' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
+  });
+
+  it('a month outside min..max opens on the nearest end', () => {
+    const { unmount } = render(range('2023-01-01'));
+    expect(screen.getByRole('grid', { name: 'June 2024' })).toBeInTheDocument();
+    unmount();
+    render(range('2027-03-01'));
+    expect(screen.getByRole('grid', { name: 'November 2026' })).toBeInTheDocument();
+  });
+
+  it('the arrow keys stop at max', async () => {
+    const user = userEvent.setup();
+    render(range());
+    screen.getByRole('button', { name: 'Monday, November 9' }).focus();
+    await user.keyboard('{PageDown}');
+    expect(screen.getByRole('grid', { name: 'November 2026' })).toBeInTheDocument();
+    await user.keyboard('{PageUp}');
+    expect(screen.getByRole('grid', { name: 'October 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Friday, October 9' })).toHaveFocus();
+  });
+});

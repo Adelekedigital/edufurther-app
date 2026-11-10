@@ -181,6 +181,20 @@ describe('monthCells', () => {
     expect(days(cells)[0]).toMatchObject({ iso: '2026-10-01', weekday: 4, today: true });
   });
 
+  it('reads days before min and after max as past', () => {
+    const d = days(
+      monthCells({
+        month: '2026-11-01',
+        today: '2026-11-09',
+        min: '2026-11-03',
+        max: '2026-11-09',
+        selected: [],
+        booked: [],
+      }),
+    );
+    expect(d.filter((c) => !c.past).map((c) => c.day)).toEqual([3, 4, 5, 6, 7, 8, 9]);
+  });
+
   it('joins a blocked run within a week only', () => {
     const d = days(
       monthCells({
