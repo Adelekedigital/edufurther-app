@@ -5,7 +5,7 @@ import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Input } from '@/components/atoms/Input/Input';
 import { Spinner } from '@/components/atoms/Spinner/Spinner';
-import { AiField, type AssistMode } from '@/components/molecules/AiField/AiField';
+import { AiField, type AiChange, type AssistMode } from '@/components/molecules/AiField/AiField';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import { Notice } from '@/components/molecules/Notice/Notice';
@@ -45,6 +45,7 @@ type AboutStepProps = {
   aboutDrafted: boolean;
   onAbout: (text: string, drafted: boolean) => void;
   onAssist: (mode: AssistMode, text: string) => Promise<string>;
+  onAiChange?: (change: AiChange) => void;
   /** The first draft is on its way (on arrival with an empty About). */
   drafting: boolean;
   draftFailed: boolean;
@@ -67,6 +68,7 @@ export function AboutStep({
   aboutDrafted,
   onAbout,
   onAssist,
+  onAiChange,
   drafting,
   draftFailed,
   errors,
@@ -170,6 +172,7 @@ export function AboutStep({
               hint={C.aboutHint}
               placeholder={C.aboutPlaceholder}
               onAssist={onAssist}
+              onAiChange={onAiChange}
             />
             {draftFailed && (
               <Notice tone="info" live={false}>

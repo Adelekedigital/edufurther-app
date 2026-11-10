@@ -153,6 +153,7 @@ export function MentorOnboardingScreen() {
               aboutDrafted={a.aboutDrafted}
               onAbout={f.setAbout}
               onAssist={f.assist}
+              onAiChange={f.onAiChange}
               drafting={f.drafting}
               draftFailed={f.draftFailed}
               errors={f.gaps}
