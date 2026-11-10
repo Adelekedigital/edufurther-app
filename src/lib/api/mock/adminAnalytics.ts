@@ -33,7 +33,9 @@ export function mockWindow(
   let to: string;
   if (q.from || q.to) {
     if (!q.from || !q.to || q.window) return null;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(q.from) || !/^\d{4}-\d{2}-\d{2}$/.test(q.to)) return null;
+    // A real calendar date: 2025-02-31 doesn't round-trip.
+    const real = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d) && iso(Date.parse(d)) === d;
+    if (!real(q.from) || !real(q.to)) return null;
     if (q.from > q.to || q.from < '2024-06-01' || q.to > today) return null;
     ({ from, to } = q as { from: string; to: string });
   } else {

@@ -133,6 +133,29 @@ describe('Admin Analytics: the page', () => {
   });
 });
 
+describe('Admin Analytics: what loads, and the keyboard', () => {
+  it('only the open tab asks', async () => {
+    serve();
+    renderScreen(<AdminAnalyticsScreen />);
+    await screen.findByRole('heading', { level: 2, name: 'Credits' });
+    const asked = new Set(h.GET.mock.calls.map(([p]) => p));
+    expect([...asked]).toEqual(['/api/v1/admin/analytics/credits']);
+  });
+
+  it('arrowing over Custom selects nothing and opens nothing; Enter opens the picker', async () => {
+    serve();
+    renderScreen(<AdminAnalyticsScreen />);
+    await screen.findByRole('heading', { level: 2, name: 'Credits' });
+    await userEvent.click(screen.getByRole('radio', { name: '90 days' }));
+    await userEvent.keyboard('{ArrowRight}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('radio', { name: '90 days' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Custom' })).toHaveFocus();
+    await userEvent.keyboard('{Enter}');
+    expect(await screen.findByRole('dialog', { name: 'Choose dates' })).toBeInTheDocument();
+  });
+});
+
 describe('Admin Analytics: states', () => {
   it('loading says so while the tab is on its way', async () => {
     h.GET.mockImplementation(() => new Promise(() => {}));
@@ -179,6 +202,44 @@ describe('Admin Analytics: states', () => {
     expect(
       await screen.findByRole('heading', { name: 'No data for this period' }),
     ).toBeInTheDocument();
+  });
+
+  it('several alerts show newest first, each link named by the view it opens', async () => {
+    serve({
+      credits: (q) => {
+        const d = mockSection('credits', mockWindow(q)!, false);
+        return res({
+          ...d,
+          alerts: [
+            {
+              key: 'no_booking_requests',
+              title: 'No booking requests',
+              body: 'No booking requests in the last 24 hours.',
+              link: { tab: 'sessions' },
+              raised_at: '2026-11-08T06:00:00Z',
+            },
+            {
+              key: 'login_code_failed',
+              title: 'Log-in codes failing',
+              body: '12% of log-in attempts failed yesterday (alert at 10%).',
+              link: { tab: 'funnels', funnel: 'signup', by: 'migrated' },
+              raised_at: '2026-11-09T06:00:00Z',
+            },
+          ],
+        });
+      },
+    });
+    renderScreen(<AdminAnalyticsScreen />);
+    await screen.findByRole('heading', { level: 2, name: 'Credits' });
+    const alerts = screen.getAllByRole('alert');
+    expect(alerts[0]).toHaveTextContent('Log-in codes failing:');
+    expect(within(alerts[1]!).getByRole('button', { name: 'See sessions' })).toBeInTheDocument();
+    await userEvent.click(
+      within(alerts[0]!).getByRole('button', { name: 'See the sign-up funnel' }),
+    );
+    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?tab=funnels&by=migrated', {
+      scroll: false,
+    });
   });
 
   it('a firing alert shows on the tab, and its link opens the sign-up funnel', async () => {

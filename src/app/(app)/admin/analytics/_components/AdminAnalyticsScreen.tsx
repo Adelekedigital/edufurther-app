@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
+import { Notice } from '@/components/molecules/Notice/Notice';
 import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import {
   isAnalyticsTab,
@@ -19,10 +20,9 @@ import {
 } from '@/lib/api/data/adminAnalytics';
 import { viewStatus } from '@/lib/api/data/queryStatus';
 import { useViewer } from '@/lib/api/data/viewer';
-import { ANALYTICS_PAGE, ANALYTICS_TABS } from '@/lib/copy/adminAnalytics';
+import { alertLinkLabel, ANALYTICS_PAGE, ANALYTICS_TABS } from '@/lib/copy/adminAnalytics';
 import { DEFAULT_WINDOW, type AnalyticsWindow } from '@/lib/utils/analytics';
 import { todayIn } from '@/lib/utils/calendar';
-import { AlertBanner } from './AlertBanner';
 import { CreditsTab, isCreditsEmpty } from './CreditsTab';
 import { DateRangeDialog } from './DateRangeDialog';
 import { TabState } from './TabState';
@@ -63,7 +63,11 @@ export function AdminAnalyticsScreen() {
   const credits = useAnalyticsCredits(on('credits'), win, compare);
   const growth = useAnalyticsGrowth(on('growth'), win, compare);
   const current = { overview, sessions, supply, credits, growth, funnels: overview }[tab];
-  const alerts: AnalyticsAlert[] = current.data?.alerts ?? [];
+  // The last alerts known stay up while another tab or window loads, so a
+  // banner isn't announced again, or its focused link lost, on every move.
+  const lastAlerts = useRef<AnalyticsAlert[]>([]);
+  if (current.data) lastAlerts.current = current.data.alerts;
+  const alerts = current.data?.alerts ?? lastAlerts.current;
 
   const go = (next: { tab: AnalyticsTab; funnel?: FunnelName; by?: string }) => {
     const q = new URLSearchParams();
@@ -103,7 +107,21 @@ export function AdminAnalyticsScreen() {
         {/* In the panel, not above the tabs: it arrives with the tab's data, so
             there it lands with the content instead of pushing the page down (CLS). */}
         {alerts.map((a) => (
-          <AlertBanner key={a.key} alert={a} onOpen={go} />
+          <Notice
+            key={a.key}
+            tone="alert"
+            icon="error"
+            title={`${a.title}:`}
+            action={
+              a.link && (
+                <button type="button" className={styles.alertLink} onClick={() => go(a.link!)}>
+                  {alertLinkLabel(a.link)}
+                </button>
+              )
+            }
+          >
+            {a.body}
+          </Notice>
         ))}
         {tab === 'credits' && (
           <TabState

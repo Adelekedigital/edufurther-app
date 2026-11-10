@@ -53,6 +53,8 @@ describe('AppShell: the admin app (Admin PRD, Access)', () => {
       '/admin/emails',
     ]);
     expect(hrefs(1)).toEqual(['/admin/analytics', '/admin/mentors', '/admin/credits']);
+    // Emails is the fourth item: on phones it moves to More.
+    expect(nav(1).getByRole('button', { name: /More/ })).toBeInTheDocument();
     expect(nav(0).getByRole('link', { name: 'Analytics' })).toHaveAttribute('aria-current', 'page');
   });
 

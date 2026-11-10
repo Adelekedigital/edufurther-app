@@ -65,10 +65,11 @@ const toAlert = (a: WireAnalyticsAlert): AnalyticsAlert => ({
       : null,
 });
 
+/** Newest first (PRD 31: one banner per alert). */
 const toHead = (w: { window: { from: string; to: string }; alerts: WireAnalyticsAlert[] }) => ({
   from: w.window.from,
   to: w.window.to,
-  alerts: w.alerts.map(toAlert),
+  alerts: [...w.alerts].sort((a, b) => b.raised_at.localeCompare(a.raised_at)).map(toAlert),
 });
 
 // ---- Sections ---------------------------------------------------------------
@@ -111,7 +112,14 @@ export type Sessions = AnalyticsHead & {
     reviewRate: Metric;
     reports: Metric;
   };
-  outcomes: WireSessions['outcomes'];
+  outcomes: {
+    requests: number;
+    completed: number;
+    cancelled: number;
+    expired: number;
+    noShow: number;
+    declined: number;
+  };
   topNoShowReason: { reason: WireNoShowReason; share: number } | null;
   guardrails: { noShowRate: Metric; requestExpiryRate: Metric; creditExpiryRate: Metric };
 };
@@ -128,7 +136,14 @@ export const toSessions = (w: WireSessions): Sessions => ({
     reviewRate: w.kpis.review_rate,
     reports: w.kpis.reports,
   },
-  outcomes: w.outcomes,
+  outcomes: {
+    requests: w.outcomes.requests,
+    completed: w.outcomes.completed,
+    cancelled: w.outcomes.cancelled,
+    expired: w.outcomes.expired,
+    noShow: w.outcomes.no_show,
+    declined: w.outcomes.declined,
+  },
   topNoShowReason: w.top_no_show_reason,
   guardrails: {
     noShowRate: w.guardrails.no_show_rate,
@@ -233,6 +248,9 @@ const MAPPERS = {
   growth: toGrowth,
 } as const;
 
+/** Back on a tab within a minute: no new read (the server caches PostHog for 10). */
+const STALE = 60_000;
+
 type SectionName = keyof WireSections;
 type SectionOf<K extends SectionName> = ReturnType<(typeof MAPPERS)[K]>;
 
@@ -258,6 +276,7 @@ function useSection<K extends SectionName>(
       );
     },
     enabled: adminId !== null,
+    staleTime: STALE,
     retry: retryOnce,
   });
 }
@@ -286,7 +305,7 @@ export const ANALYTICS_UPSTREAM = '/problems/analytics-upstream';
 
 /** PostHog isn't answering: Behaviour shows its notice, the database cards still load. */
 export const isUpstreamDown = (e: unknown) =>
-  e instanceof ApiError && (e.type === ANALYTICS_UPSTREAM || e.status === 503);
+  e instanceof ApiError && e.type === ANALYTICS_UPSTREAM;
 
 export type Funnel = WireFunnel['steps'];
 
@@ -309,6 +328,7 @@ export function useAnalyticsFunnel(
       return (data as WireFunnel).steps;
     },
     enabled: adminId !== null,
+    staleTime: STALE,
     // A PostHog outage won't clear on an immediate retry.
     retry: (n, e) => !isUpstreamDown(e) && retryOnce(n, e),
   });
@@ -333,6 +353,7 @@ export function useAnalyticsBehaviour(
       return data as WireBehaviour;
     },
     enabled: adminId !== null,
+    staleTime: STALE,
     retry: (n, e) => !isUpstreamDown(e) && retryOnce(n, e),
   });
 }

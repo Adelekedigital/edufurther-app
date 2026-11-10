@@ -26,9 +26,6 @@
 .lg .danger {
   color: var(--red-700);
 }
-.lg .trend {
-  text-wrap: pretty;
-}
 /* Admin Analytics.dc.html KPI tile: padding space-4, rows 2px apart, a regular
    ink-600 label, a bold H6 figure, a semibold change line. */
 .sm {
@@ -118,7 +115,11 @@
 }
 .note {
   font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
   color: var(--ink-600);
+}
+.lg .note {
+  text-wrap: pretty;
 }
 .positive {
   color: var(--green-700);

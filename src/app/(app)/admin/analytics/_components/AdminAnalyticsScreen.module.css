@@ -19,3 +19,27 @@
   font-size: var(--text-p-xs);
   color: var(--ink-500);
 }
+/* The alert banner's link (Admin Analytics.dc.html): red-700 text, no ground. */
+.alertLink {
+  min-height: var(--space-8);
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  color: var(--red-700);
+}
+.alertLink:hover {
+  text-decoration: underline;
+}
+.alertLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
+@media (max-width: 767px) {
+  .alertLink {
+    min-height: var(--touch-target-min);
+  }
+}

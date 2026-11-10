@@ -11,6 +11,13 @@ export function formatRating(r: number): string {
   return r.toFixed(1);
 }
 
+/** The real minus sign (U+2212), never a hyphen: the designs' "−1" / "−0.4". */
+export const MINUS = '−';
+
+/** A signed change: "+3", "−0.9 pts". `body` is the magnitude as shown, without a sign. */
+export const signed = (n: number, body: string) =>
+  n > 0 ? `+${body}` : n < 0 ? `${MINUS}${body}` : body;
+
 /** A whole-number count with thousands separators: 7320 → "7,320". */
 export function formatCount(n: number): string {
   return Math.round(n).toLocaleString('en-US');

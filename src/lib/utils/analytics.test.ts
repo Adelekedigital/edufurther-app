@@ -3,7 +3,7 @@ import {
   changeOf,
   customLabel,
   daysBetween,
-  formatHours,
+  formatReplyHours,
   formatMaybe,
   formatRate,
   nextDraft,
@@ -62,7 +62,7 @@ describe('changeOf', () => {
       tone: 'good',
       icon: 'arrow_upward',
     });
-    expect(changeOf({ value: 90, previous: 100 }, 'count')?.text).toBe('-10.0%');
+    expect(changeOf({ value: 90, previous: 100 }, 'count')?.text).toBe('−10.0%');
   });
 
   it('shows rates in points and colours by whether up is good', () => {
@@ -81,6 +81,7 @@ describe('changeOf', () => {
       icon: 'arrow_upward',
     });
     expect(changeOf({ value: 5, previous: 0 }, 'count')?.text).toBe('+5');
+    expect(changeOf({ value: 81, previous: 84 }, 'rate')?.text).toBe('−3 pts');
   });
 
   it('reads "No change" when flat, and nothing without a previous', () => {
@@ -98,7 +99,7 @@ describe('formats', () => {
   it('reads rates, hours and unknowns', () => {
     expect(formatRate(84)).toBe('84%');
     expect(formatRate(6.83)).toBe('6.8%');
-    expect(formatHours(6.24)).toBe('6.2 h');
+    expect(formatReplyHours(6.24)).toBe('6.2 h');
     expect(formatMaybe(null)).toBe('—');
     expect(formatMaybe(1840)).toBe('1,840');
   });

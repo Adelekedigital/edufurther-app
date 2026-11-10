@@ -3,7 +3,8 @@
  * previous period, and how each kind of number reads. Pure; every tab uses
  * these so a rate reads the same everywhere.
  */
-import { formatCount } from './format';
+import { formatCount, formatDay, signed } from './format';
+import { addDays } from './slots';
 
 export type WindowKey = '7d' | '30d' | '90d';
 
@@ -18,12 +19,7 @@ export const ANALYTICS_MIN_DAY = '2024-06-01';
 const PRESET_DAYS: Record<WindowKey, number> = { '7d': 7, '30d': 30, '90d': 90 };
 
 /** "Nov 3", for a UTC calendar date. */
-export const shortDate = (iso: string) =>
-  new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    timeZone: 'UTC',
-  });
+const shortDate = (iso: string) => formatDay(iso).date;
 
 /** The window as query params: the preset, or `from` and `to` (the same date twice for one day). */
 export function windowParams(w: AnalyticsWindow, compare: boolean): Record<string, string> {
@@ -70,10 +66,8 @@ export function nextDraft(
 /** Every day from `from` to `to`, inclusive (the picker's selected band). */
 export function daysBetween(from: string, to: string): string[] {
   const out: string[] = [];
-  for (let t = Date.parse(`${from}T00:00:00Z`); t <= Date.parse(`${to}T00:00:00Z`); t += 864e5) {
-    out.push(new Date(t).toISOString().slice(0, 10));
-    if (out.length > 1000) break;
-  }
+  // Capped well past the longest range the picker allows (from 2024-06-01).
+  for (let d = from; d <= to && out.length < 5000; d = addDays(d, 1)) out.push(d);
   return out;
 }
 
@@ -94,7 +88,6 @@ export type Change = {
 const one = (n: number) => Math.round(n * 10) / 10;
 /** At most one decimal, a whole number without ".0": 6.8, 84. */
 const trim = (n: number) => String(one(n));
-const signed = (n: number, s: string) => `${n > 0 ? '+' : ''}${s}`;
 
 /**
  * The change against the previous period, or null when there is none to show
@@ -110,13 +103,13 @@ export function changeOf(m: Metric, kind: ChangeKind, upIsGood = true): Change |
   let text: string;
   if (kind === 'rate') {
     shown = one(diff);
-    text = signed(shown, `${trim(shown)} pts`);
+    text = signed(shown, `${trim(Math.abs(shown))} pts`);
   } else if (kind === 'abs' || m.previous === 0) {
     shown = Math.round(diff);
-    text = signed(shown, formatCount(shown));
+    text = signed(shown, formatCount(Math.abs(shown)));
   } else {
     shown = one((diff / m.previous) * 100);
-    text = signed(shown, `${shown.toFixed(1)}%`);
+    text = signed(shown, `${Math.abs(shown).toFixed(1)}%`);
   }
   if (shown === 0) return { text: 'No change', tone: 'flat', icon: 'remove' };
   const up = shown > 0;
@@ -130,8 +123,8 @@ export function changeOf(m: Metric, kind: ChangeKind, upIsGood = true): Change |
 /** A rate as shown: "84%", "6.8%". */
 export const formatRate = (n: number) => `${trim(n)}%`;
 
-/** Hours to one decimal: "6.2 h". */
-export const formatHours = (n: number) => `${n.toFixed(1)} h`;
+/** Hours to one decimal: "6.2 h" (Median time to reply). */
+export const formatReplyHours = (n: number) => `${n.toFixed(1)} h`;
 
 /** A count; "—" when not known (PostHog down). */
 export const formatMaybe = (n: number | null, f: (n: number) => string = formatCount) =>

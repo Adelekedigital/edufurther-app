@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, type KeyboardEvent } from 'react';
 import { Checkbox } from '@/components/atoms/Checkbox/Checkbox';
 import { SegmentedControl } from '@/components/molecules/SegmentedControl/SegmentedControl';
 import { ANALYTICS_PAGE } from '@/lib/copy/adminAnalytics';
@@ -32,8 +33,22 @@ export function WindowControls({
     { value: '90d', label: ANALYTICS_PAGE.windows['90d'] },
     { value: 'custom', label: customLabel(w) },
   ];
+  // Arrow keys select as they move (radio group): passing over Custom must not
+  // open the picker. A click, Enter or Space on it does.
+  const arrowing = useRef(false);
+  const onKeyDownCapture = (e: KeyboardEvent) => {
+    arrowing.current = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(
+      e.key,
+    );
+  };
+  const pick = (v: Choice) => {
+    const byArrow = arrowing.current;
+    arrowing.current = false;
+    if (v !== 'custom') onWindow({ kind: v });
+    else if (!byArrow) onCustom();
+  };
   return (
-    <div className={styles.controls}>
+    <div className={styles.controls} onKeyDownCapture={onKeyDownCapture}>
       <SegmentedControl<Choice>
         look="track"
         size="lg"
@@ -41,7 +56,7 @@ export function WindowControls({
         label={ANALYTICS_PAGE.windowLabel}
         options={options}
         value={w.kind}
-        onChange={(v) => (v === 'custom' ? onCustom() : onWindow({ kind: v }))}
+        onChange={pick}
       />
       <label className={styles.compare}>
         <Checkbox size={18} checked={compare} onChange={(e) => onCompare(e.target.checked)} />

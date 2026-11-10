@@ -143,48 +143,31 @@ export type BarRow = {
 };
 
 /**
- * Rows of label, bar and value (How requests end, From application to
- * bookable, Members from invites, Completed sessions by topic, the funnels).
- * Each design use differs only in its column widths, bar height and track.
+ * Rows of label, bar and value. The design draws five sets, differing only in
+ * column widths, bar height and track; each is a variant here (parts.module.css):
+ * outcomes (How requests end), cohort (From application to bookable), invites
+ * (Members from invites), mix (Completed sessions by topic or stage), funnel.
  */
 export function BarRows({
   rows,
-  labelWidth,
-  valueWidth,
-  barHeight,
-  track = 'ink-50',
-  gap = 'sm',
+  variant,
   label,
 }: {
   rows: BarRow[];
-  /** The label column: a px width, or a CSS track such as `minmax(120px,200px)`. */
-  labelWidth: string;
-  valueWidth: string;
-  barHeight: 8 | 12 | 16 | 20 | 28;
-  track?: 'ink-50' | 'ink-100';
-  /** Rows 8px apart (the funnel) or the panel's own 12px. */
-  gap?: 'sm' | 'md';
+  variant: 'outcomes' | 'cohort' | 'invites' | 'mix' | 'funnel';
   /** With a label the rows are one image, read by this text (a funnel). */
   label?: string;
 }) {
-  const vars = {
-    '--bar-label': labelWidth,
-    '--bar-value': valueWidth,
-    '--bar-h': `${barHeight}px`,
-  } as CSSProperties;
   return (
     <div
-      className={cx(styles.bars, gap === 'sm' ? styles.barsSm : styles.barsMd)}
-      style={vars}
+      className={cx(styles.bars, styles[variant])}
       role={label ? 'img' : undefined}
       aria-label={label}
     >
       {rows.map((r) => (
         <div key={r.key} className={styles.barRow}>
           <span className={styles.barLabel}>{r.label}</span>
-          <span
-            className={cx(styles.track, track === 'ink-100' ? styles.track100 : styles.track50)}
-          >
+          <span className={styles.track}>
             <span
               title={r.tip}
               className={cx(styles.bar, r.muted && styles.barMuted)}

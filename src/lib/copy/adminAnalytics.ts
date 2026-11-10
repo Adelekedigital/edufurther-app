@@ -50,11 +50,11 @@ export const ANALYTICS_STATES = {
 
 export const SOURCE_BADGE = { db: 'Database', posthog: 'PostHog' } as const;
 
-/** What an alert's link says, by where it goes. */
-export const alertLinkLabel = (tab: AnalyticsTab) =>
-  tab === 'funnels'
-    ? 'See the sign-up funnel'
-    : tab === 'sessions'
+/** What an alert's link says, by the view it opens. */
+export const alertLinkLabel = (link: { tab: AnalyticsTab; funnel?: FunnelName }) =>
+  link.tab === 'funnels'
+    ? `See the ${FUNNEL_COPY[link.funnel ?? 'signup'].label.toLowerCase()} funnel`
+    : link.tab === 'sessions'
       ? 'See sessions'
       : 'See details';
 
@@ -148,7 +148,7 @@ export const SESSIONS = {
     completed: 'Completed',
     cancelled: 'Cancelled',
     expired: 'Expired',
-    no_show: 'No-show',
+    noShow: 'No-show',
     declined: 'Declined',
   },
   outcomeTip: (label: string, pct: string, n: string) => `${label}: ${pct} of requests (${n})`,

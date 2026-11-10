@@ -17,6 +17,22 @@
 .neutral .icon {
   color: var(--ink-600);
 }
+.alert {
+  flex-wrap: wrap;
+  background: var(--red-50);
+  color: var(--red-700);
+  font-size: var(--text-p-sm);
+  line-height: normal;
+}
+.alert .text {
+  min-width: 220px;
+}
+.alert .text strong {
+  font-weight: var(--weight-semibold);
+}
+.alert .icon {
+  flex: none;
+}
 .info {
   background: var(--surface-info-subtle);
 }
