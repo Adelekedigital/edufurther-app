@@ -12,10 +12,42 @@ import { routeTemplate } from '@/lib/analytics/route';
  * - 401: an ended session, which the auth middleware renews or signs out;
  * - the analytics ingest path, so a failing collector can't report itself;
  * - an aborted call (a query cancelled on unmount): nothing failed.
+ *
+ * Known gap: the auth middleware's retry after a refreshed 401 is its own
+ * fetch; a network error there throws out of its onResponse, past this one,
+ * and isn't counted. A failed answer to the retry is counted.
  */
 
-/** Problem types are short slugs; anything else is reported as the status alone. */
-const SLUG = /^[a-z0-9][a-z0-9-]{0,63}$/;
+/**
+ * Problem types are short slugs. Only our backend's problem types reach this
+ * client, so anything else (or longer) is reported as the status alone.
+ */
+const SLUG = /^[a-z0-9][a-z0-9-]{0,39}$/;
+
+/**
+ * One event per (route, bucket, kind) a minute at most: a query's retry, a
+ * 30 s poll or a refetch storm failing the same way is one signal, not dozens.
+ */
+export const DEDUPE_MS = 60_000;
+const lastSent = new Map<string, number>();
+
+function send(props: {
+  route: string;
+  status_bucket: '4xx' | '5xx' | 'network';
+  kind: string;
+}): void {
+  const key = `${props.route}|${props.status_bucket}|${props.kind}`;
+  const now = Date.now();
+  const last = lastSent.get(key);
+  if (last !== undefined && now - last < DEDUPE_MS) return;
+  lastSent.set(key, now);
+  track('request_failed', props);
+}
+
+/** Tests only: forget what was sent. */
+export function resetRequestFailedForTests(): void {
+  lastSent.clear();
+}
 
 type Problem = { type?: unknown };
 
@@ -53,7 +85,7 @@ export function createRequestFailedMiddleware(): Middleware {
       if (s < 400 || s === 401 || isIngest(request.url)) return response;
       const route = currentRoute();
       if (route === null) return response;
-      track('request_failed', {
+      send({
         route,
         status_bucket: s >= 500 ? '5xx' : '4xx',
         kind: await kindOf(response),
@@ -68,7 +100,7 @@ export function createRequestFailedMiddleware(): Middleware {
       if (request.signal?.aborted && name !== 'TimeoutError') return;
       const route = currentRoute();
       if (route === null) return;
-      track('request_failed', { route, status_bucket: 'network', kind: 'network' });
+      send({ route, status_bucket: 'network', kind: 'network' });
     },
   };
 }

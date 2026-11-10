@@ -1,4 +1,8 @@
-import { createRequestFailedMiddleware } from './requestFailedMiddleware';
+import {
+  createRequestFailedMiddleware,
+  DEDUPE_MS,
+  resetRequestFailedForTests,
+} from './requestFailedMiddleware';
 
 const track = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/analytics/track', () => ({ track }));
@@ -18,6 +22,7 @@ const at = (path: string) => window.history.replaceState(null, '', path);
 
 beforeEach(() => {
   track.mockClear();
+  resetRequestFailedForTests();
   at('/');
 });
 
@@ -102,5 +107,40 @@ describe('request_failed', () => {
     expect(track).not.toHaveBeenCalled();
     fail(mw, new Request('https://app.test/api/v1/me'), new DOMException('t', 'TimeoutError'));
     expect(track).toHaveBeenCalledOnce();
+  });
+});
+
+describe('request_failed: one per key a minute', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('a poll failing every 30 s sends once per 60 s, per (route, bucket, kind)', async () => {
+    vi.useFakeTimers({ now: new Date('2026-11-10T10:00:00Z') });
+    at('/messages');
+    const mw = createRequestFailedMiddleware();
+    const poll = () =>
+      answer(mw, 'https://app.test/api/v1/me/messages', problem(503, '/problems/unavailable'));
+    for (let i = 0; i < 5; i++) {
+      await poll();
+      vi.advanceTimersByTime(30_000);
+    }
+    // 0 s, 60 s, 120 s: three in two and a half minutes, not five.
+    expect(track).toHaveBeenCalledTimes(3);
+    // Another kind on the same route is its own signal.
+    await answer(mw, 'https://app.test/api/v1/me', problem(503, '/problems/other'));
+    expect(track).toHaveBeenCalledTimes(4);
+    expect(DEDUPE_MS).toBe(60_000);
+  });
+
+  it('a slug longer than 40 characters is reported as the status', async () => {
+    await answer(
+      createRequestFailedMiddleware(),
+      '/api/v1/me',
+      problem(409, `/problems/${'a'.repeat(41)}`),
+    );
+    expect(track).toHaveBeenCalledWith('request_failed', {
+      route: '/',
+      status_bucket: '4xx',
+      kind: 'http_409',
+    });
   });
 });
