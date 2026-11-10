@@ -1,0 +1,163 @@
+/* Admin Analytics.dc.html Overview: values from the design's inline styles. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+}
+.cardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.titles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+.star {
+  color: var(--blue-500);
+}
+.heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+}
+.muted {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.valueRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+.value {
+  font-size: var(--text-h3);
+  line-height: 1;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.subs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-hairline) solid var(--ink-100);
+}
+.sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.subValue {
+  font-size: var(--text-p-lg);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.featuresHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-3);
+}
+.feature {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  color: var(--ink-900);
+}
+.feature:hover {
+  border-color: var(--blue-500);
+}
+.feature:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.featureHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.featureName {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.def {
+  min-height: var(--space-9);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.featureFoot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.featureFigure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.featureValue {
+  font-size: var(--text-h5);
+  line-height: 1.1;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.spark {
+  width: 96px;
+  height: var(--space-8);
+  flex: none;
+}
+.spark path {
+  fill: none;
+  stroke: var(--blue-500);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.feeds {
+  padding-top: var(--space-2);
+  border-top: var(--border-hairline) solid var(--ink-100);
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}

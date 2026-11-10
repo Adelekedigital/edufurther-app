@@ -3,7 +3,7 @@ import type { Credits } from '@/lib/api/data/adminAnalytics';
 import { CREDIT_SOURCES, CREDITS } from '@/lib/copy/adminAnalytics';
 import { formatRate, shareOf } from '@/lib/utils/analytics';
 import { formatCount } from '@/lib/utils/format';
-import { cardGrid, DataTable, Panel, Section } from './parts';
+import { cardGrid, cellStrong, DataTable, Panel, Section } from './parts';
 
 /** Nothing moved in the window: no credit granted, spent, refunded or expired. */
 export const isCreditsEmpty = (d: Credits) =>
@@ -56,7 +56,9 @@ export function CreditsTab({ data }: { data: Credits }) {
               formatCount(r.spent),
               formatCount(r.refunded),
               // Expired is a share of that source's own grants.
-              pctOf(r.expired, r.granted),
+              <span key="e" className={cellStrong}>
+                {pctOf(r.expired, r.granted)}
+              </span>,
             ],
           }))}
         />
