@@ -118,9 +118,7 @@ export function AdminAnalyticsScreen() {
   const alertKeys = alerts.map((a) => a.key).join(',');
   const [said, setSaid] = useState({ keys: '', n: 0 });
   if (alertKeys !== said.keys) setSaid({ keys: alertKeys, n: said.n + 1 });
-  const alertNews = alertKeys
-    ? { text: `${ALERTS.count(alerts.length)} firing`, id: said.n }
-    : null;
+  const alertNews = alertKeys ? { text: ALERTS.firing(alerts.length), id: said.n } : null;
 
   const go = (next: { tab: AnalyticsTab; funnel?: FunnelName; by?: string }) => {
     const q = new URLSearchParams();

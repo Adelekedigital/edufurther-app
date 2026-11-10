@@ -77,6 +77,40 @@ describe('AlertsButton', () => {
     expect(screen.getByRole('button', { name: '1 alert' })).toHaveFocus();
   });
 
+  it('alerts clearing while the list is open: it stays shut when the next one fires', async () => {
+    const { rerender } = render(<AlertsButton alerts={[alert()]} onOpen={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
+    rerender(<AlertsButton alerts={[]} onOpen={vi.fn()} />);
+    expect(screen.queryByRole('button')).toBeNull();
+    rerender(<AlertsButton alerts={[alert()]} onOpen={vi.fn()} />);
+    expect(screen.getByRole('button', { name: '1 alert' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    );
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('a click outside leaves focus where it landed, not on the count', async () => {
+    render(
+      <>
+        <AlertsButton alerts={[alert()]} onOpen={vi.fn()} />
+        <input aria-label="elsewhere" />
+      </>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
+    await userEvent.click(screen.getByRole('textbox', { name: 'elsewhere' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'elsewhere' })).toHaveFocus();
+  });
+
+  it('Shift+Tab back to the count keeps the list open', async () => {
+    render(<AlertsButton alerts={[alert()]} onOpen={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
+    await userEvent.tab({ shift: true });
+    expect(screen.getByRole('button', { name: '1 alert' })).toHaveFocus();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
   it('an alert without a link keeps its words and has no button', async () => {
     render(<AlertsButton alerts={[alert({ link: null })]} onOpen={vi.fn()} />);
     await userEvent.click(screen.getByRole('button', { name: '1 alert' }));

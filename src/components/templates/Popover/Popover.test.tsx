@@ -52,6 +52,8 @@ describe('Popover', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Open' }));
     const sheet = screen.getByRole('dialog', { name: 'Alerts' });
     expect(sheet).toHaveAttribute('aria-modal', 'true');
+    // The trigger's aria-controls points at the sheet on phones too.
+    expect(sheet).toHaveAttribute('id', 'p');
     await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('dialog')).toBeNull();
   });

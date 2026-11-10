@@ -24,6 +24,8 @@ export function AlertsButton({
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
+  // Every alert cleared while the list was open: it stays closed when the next one fires.
+  if (alerts.length === 0 && open) setOpen(false);
   if (alerts.length === 0) return null;
   return (
     <span className={styles.root}>

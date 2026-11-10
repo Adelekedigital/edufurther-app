@@ -53,13 +53,15 @@ export const NO_DATA = 'No data';
 
 export const SOURCE_BADGE = { db: 'Database', posthog: 'PostHog' } as const;
 
-/** What an alert's link says, by the view it opens. */
 /** The alerts beside the title (owner, 10 Nov: replaces the banner). */
 export const ALERTS = {
   heading: 'Alerts',
   count: (n: number) => (n === 1 ? '1 alert' : `${n} alerts`),
+  /** Said once when a new set fires: the count beside the title is quiet. */
+  firing: (n: number) => `${n === 1 ? '1 alert' : `${n} alerts`} firing`,
 } as const;
 
+/** What an alert's link says, by the view it opens. */
 export const alertLinkLabel = (link: { tab: AnalyticsTab; funnel?: FunnelName }) =>
   link.tab === 'funnels'
     ? `See the ${FUNNEL_COPY[link.funnel ?? 'signup'].label.toLowerCase()} funnel`
