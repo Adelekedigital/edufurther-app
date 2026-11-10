@@ -1,0 +1,13 @@
+/* Admin Analytics.dc.html states: six 140px skeleton cards; the empty state in a frame. */
+.loading {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.empty {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-8) var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+}

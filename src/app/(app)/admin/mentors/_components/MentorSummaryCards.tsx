@@ -67,7 +67,7 @@ export function MentorSummaryCards({
           label={c.label}
           value={String(c.value)}
           valueTone={c.red ? 'danger' : undefined}
-          trend={c.note ? { text: c.note, tone: 'neutral' } : undefined}
+          note={c.note ?? undefined}
           onClick={() => onOpen(c.tab)}
           ariaLabel={MENTOR_CARDS.aria(c.label, c.value, MENTOR_TAB_LABELS[c.tab])}
         />
