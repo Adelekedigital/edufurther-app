@@ -5,11 +5,10 @@ import {
   mockWindow,
   type MockQuery,
 } from '@/lib/api/mock/adminAnalytics';
-import { pendingOk, problem } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /**
- * MOCK of GET /api/v1/admin/analytics/funnels/{name}?by= (PRD 31, PENDING
- * BACKEND). ENABLE_MOCK_API=1 only. MOCK_POSTHOG_DOWN=1 answers the PostHog 503.
+ * MOCK of GET /api/v1/admin/analytics/funnels/{name}?by= (PRD 31, backend #633). ENABLE_MOCK_API=1 only. MOCK_POSTHOG_DOWN=1 answers the PostHog 503.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ name: string }> }) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
@@ -22,8 +21,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ name: st
   if (process.env.MOCK_POSTHOG_DOWN === '1') {
     return problem(503, { type: '/problems/analytics-upstream', title: 'PostHog unavailable' });
   }
-  return pendingOk(
-    'GET /api/v1/admin/analytics/funnels/{name}',
+  return ok(
+    '/api/v1/admin/analytics/funnels/{name}',
+    'get',
     mockFunnel(name, sp.get('by') ?? 'all', c),
   );
 }

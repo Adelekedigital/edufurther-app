@@ -6,11 +6,11 @@ import {
   mockWindow,
   type MockQuery,
 } from '@/lib/api/mock/adminAnalytics';
-import { ok, pendingOk, problem } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/admin/analytics/{overview|sessions|supply|credits|growth}
- * and /behaviour (PRD 31; behaviour PENDING BACKEND). ENABLE_MOCK_API=1 only.
+ * and /behaviour (PRD 31). ENABLE_MOCK_API=1 only.
  * MOCK_POSTHOG_DOWN=1 answers Behaviour with the PostHog 503.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ section: string }> }) {
@@ -24,7 +24,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ section:
     if (process.env.MOCK_POSTHOG_DOWN === '1') {
       return problem(503, { type: '/problems/analytics-upstream', title: 'PostHog unavailable' });
     }
-    return pendingOk('GET /api/v1/admin/analytics/behaviour', mockBehaviour(c));
+    return ok('/api/v1/admin/analytics/behaviour', 'get', mockBehaviour(c));
   }
   if (!isMockSection(section)) return problem(404, { title: 'Not found' });
   switch (section) {
