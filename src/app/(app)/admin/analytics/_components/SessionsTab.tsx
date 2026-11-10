@@ -1,6 +1,6 @@
 import { KpiCard } from '@/components/molecules/KpiCard/KpiCard';
 import type { Sessions } from '@/lib/api/data/adminAnalytics';
-import { SESSIONS, NO_DATA } from '@/lib/copy/adminAnalytics';
+import { SESSIONS } from '@/lib/copy/adminAnalytics';
 import { MISSED_REASON_COPY } from '@/lib/copy/session';
 import {
   changeWhen,
@@ -10,7 +10,7 @@ import {
   type ChangeKind,
 } from '@/lib/utils/analytics';
 import { formatCount, formatRating } from '@/lib/utils/format';
-import { BarRows, ChangeText, kpiTrend, Panel, Section, TwoCol } from './parts';
+import { BarRows, ChangeText, kpiTrend, orNoData, Panel, Section, TwoCol } from './parts';
 import styles from './SessionsTab.module.css';
 
 /**
@@ -117,9 +117,7 @@ export function SessionsTab({ data, compare }: { data: Sessions; compare: boolea
                     />
                   )}
                 </span>
-                <span className={styles.guardValue}>
-                  {m.value === null ? NO_DATA : formatRate(m.value)}
-                </span>
+                <span className={styles.guardValue}>{orNoData(m.value, formatRate)}</span>
               </div>
             );
           })}
