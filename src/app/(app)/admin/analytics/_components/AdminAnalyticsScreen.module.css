@@ -1,4 +1,4 @@
-/* Admin Analytics.dc.html: header, banner, tabs and the tab's body, space-6 apart. */
+/* Admin Analytics.dc.html: header, tabs and the tab's body, space-6 apart. */
 .screen {
   display: flex;
   flex-direction: column;
@@ -18,28 +18,4 @@
   border-top: var(--border-hairline) solid var(--ink-100);
   font-size: var(--text-p-xs);
   color: var(--ink-500);
-}
-/* The alert banner's link (Admin Analytics.dc.html): red-700 text, no ground. */
-.alertLink {
-  min-height: var(--space-8);
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  font: inherit;
-  font-weight: var(--weight-semibold);
-  color: var(--red-700);
-}
-.alertLink:hover {
-  text-decoration: underline;
-}
-.alertLink:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-  border-radius: var(--radius-xs);
-}
-@media (max-width: 767px) {
-  .alertLink {
-    min-height: var(--touch-target-min);
-  }
 }

@@ -58,8 +58,15 @@ export function mockWindow(
   };
 }
 
-/** The alert the mock raises, so the banner can be seen in dev. */
+/** The alerts the mock raises, newest first, so the count and its list can be seen in dev. */
 const ALERTS: WireAnalyticsAlert[] = [
+  {
+    key: 'no_booking_requests',
+    title: 'No booking requests',
+    body: 'No one has asked for a session in the last 24 hours.',
+    link: { tab: 'sessions' },
+    raised_at: '2026-11-09T07:00:00Z',
+  },
   {
     key: 'no_signups',
     title: 'No sign-ups',

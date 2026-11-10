@@ -8,6 +8,8 @@ import styles from './BottomSheet.module.css';
 
 type BottomSheetProps = {
   title: string;
+  /** For a trigger's `aria-controls`. */
+  id?: string;
   onClose: () => void;
   children: ReactNode;
 };
@@ -19,7 +21,7 @@ type BottomSheetProps = {
  * ModalShell. Focus in, Tab kept inside, Escape, scroll lock and focus back
  * are `useFocusTrap`'s.
  */
-export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
+export function BottomSheet({ title, id, onClose, children }: BottomSheetProps) {
   const titleId = useId();
   const ref = useRef<HTMLDivElement>(null);
   useFocusTrap(ref, onClose);
@@ -29,6 +31,7 @@ export function BottomSheet({ title, onClose, children }: BottomSheetProps) {
       <div className={styles.overlay} aria-hidden onClick={onClose} />
       <div
         ref={ref}
+        id={id}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
