@@ -94,6 +94,50 @@ describe('BehaviourTab: the funnel', () => {
     ]);
   });
 
+  it('a step nothing tracks reads No data with no bar, and no drop into or out of it', () => {
+    const rows = funnelRows([
+      { key: 'a', label: 'A', value: 100, previous: null },
+      { key: 'b', label: 'B', value: null, previous: null },
+      { key: 'c', label: 'C', value: 40, previous: null },
+      { key: 'd', label: 'D', value: 30, previous: null },
+    ]);
+    expect(rows.map((r) => [r.count, r.width, r.drop])).toEqual([
+      ['100', 100, 'Start'],
+      ['No data', 0, ''],
+      ['40', 40, ''],
+      ['30', 30, '25% dropped'],
+    ]);
+  });
+
+  it('a 0 before an untracked step, and two untracked steps in a row', () => {
+    const zeroThenNull = funnelRows([
+      { key: 'a', label: 'A', value: 100, previous: null },
+      { key: 'b', label: 'B', value: 0, previous: null },
+      { key: 'c', label: 'C', value: null, previous: null },
+      { key: 'd', label: 'D', value: 10, previous: null },
+    ]);
+    expect(zeroThenNull.map((r) => r.drop)).toEqual(['Start', '100% dropped', '', '']);
+    const twoNulls = funnelRows([
+      { key: 'a', label: 'A', value: 100, previous: null },
+      { key: 'b', label: 'B', value: null, previous: null },
+      { key: 'c', label: 'C', value: null, previous: null },
+      { key: 'd', label: 'D', value: 20, previous: null },
+    ]);
+    expect(twoNulls.map((r) => [r.count, r.width, r.drop])).toEqual([
+      ['100', 100, 'Start'],
+      ['No data', 0, ''],
+      ['No data', 0, ''],
+      ['20', 20, ''],
+    ]);
+  });
+
+  it('a funnel whose first step nothing tracks reads as empty, in its card', () => {
+    renderTab({
+      funnelQuery: ready([{ key: 'a', label: 'A', value: null, previous: null }]),
+    });
+    expect(screen.getByRole('heading', { name: 'No data for this period' })).toBeInTheDocument();
+  });
+
   it('a funnel that failed offers Try again in its card, not the PostHog notice', async () => {
     const funnelQuery = failed<never>(new ApiError(500));
     renderTab({ funnelQuery });
@@ -121,6 +165,33 @@ describe('BehaviourTab: event cards and replays', () => {
     expect(screen.getByText('Median click before start').nextSibling).toHaveTextContent('3 min');
     expect(screen.getByText('Push allowed').nextSibling).toHaveTextContent('47% of members');
     expect(screen.getByText('/bookings')).toBeInTheDocument();
+  });
+
+  it('names every profile-view source in our words, most first', () => {
+    renderTab();
+    expect(screen.getByText('Invite link').nextSibling).toHaveTextContent('14%');
+    expect(screen.getByText('Explore').nextSibling).toHaveTextContent('46%');
+  });
+
+  it('a rate with nothing to divide by reads No data, never 0%', () => {
+    const b = toBehaviour(mockBehaviour(c));
+    renderTab({
+      eventsQuery: ready({
+        ...b,
+        login: { ...b.login, failedRate: null },
+        app: { ...b.app, pushAllowedRate: null },
+        profileViewsBySource: [{ source: 'similar_mentors', share: null }],
+      }),
+    });
+    expect(screen.getByText('Codes failed').nextSibling).toHaveTextContent('No data');
+    expect(screen.getByText('Push allowed').nextSibling).toHaveTextContent(/^No data$/);
+    expect(screen.getByText('Similar mentors').nextSibling).toHaveTextContent('No data');
+  });
+
+  it('no replay list set: no link', () => {
+    renderTab({ eventsQuery: ready({ ...toBehaviour(mockBehaviour(c)), replaysUrl: null }) });
+    expect(screen.queryByRole('link', { name: /Open replays/ })).toBeNull();
+    expect(safeReplayUrl(null)).toBeNull();
   });
 
   it('opens an https replay list in a new tab', () => {
