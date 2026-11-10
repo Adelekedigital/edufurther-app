@@ -43,14 +43,18 @@ const queryOf = (init: unknown) =>
     string
   >;
 
+/** The funnel the typed client asked for: `{name}` travels as a path parameter. */
+const funnelOf = (init: unknown) =>
+  (init as { params?: { path?: { name?: string } } })?.params?.path?.name;
+const FUNNEL = '/api/v1/admin/analytics/funnels/{name}';
+
 function serve() {
   h.GET.mockImplementation(async (path: string, init: unknown) => {
     const q = queryOf(init);
     const c = mockWindow(q as MockQuery)!;
     if (path === '/api/v1/admin/analytics/overview') return res(mockSection('overview', c, false));
     if (path === '/api/v1/admin/analytics/behaviour') return res(mockBehaviour(c));
-    const m = path.match(/^\/api\/v1\/admin\/analytics\/funnels\/(\w+)$/);
-    if (m) return res(mockFunnel(m[1]!, q.by ?? 'all', c));
+    if (path === FUNNEL) return res(mockFunnel(funnelOf(init)!, q.by ?? 'all', c));
     return res(null, 404);
   });
 }
@@ -66,8 +70,8 @@ describe('Admin Analytics: Behaviour', () => {
     serve();
     renderScreen(<AdminAnalyticsScreen />);
     await screen.findByRole('img', { name: /^Booking funnel:/ });
-    const funnelCalls = h.GET.mock.calls.filter(([p]) => String(p).includes('/funnels/'));
-    expect(funnelCalls[0]![0]).toBe('/api/v1/admin/analytics/funnels/booking');
+    const funnelCalls = h.GET.mock.calls.filter(([p]) => p === FUNNEL);
+    expect(funnelOf(funnelCalls[0]![1])).toBe('booking');
     expect(queryOf(funnelCalls[0]![1])).toEqual({ window: '30d', compare: 'false', by: 'explore' });
     expect(screen.getByRole('combobox', { name: 'Started from' })).toHaveTextContent('Explore');
   });
@@ -77,7 +81,7 @@ describe('Admin Analytics: Behaviour', () => {
     serve();
     renderScreen(<AdminAnalyticsScreen />);
     await screen.findByRole('img', { name: /^Mentor activation funnel:/ });
-    const call = h.GET.mock.calls.find(([p]) => String(p).includes('/funnels/'))!;
+    const call = h.GET.mock.calls.find(([p]) => p === FUNNEL)!;
     expect(queryOf(call[1]).by).toBe('all');
     expect(screen.getByRole('combobox', { name: 'Break down by' })).toHaveTextContent(
       'All mentors',
@@ -98,8 +102,10 @@ describe('Admin Analytics: Behaviour', () => {
     );
     await waitFor(() =>
       expect(h.GET).toHaveBeenCalledWith(
-        '/api/v1/admin/analytics/funnels/mentee_activation',
-        expect.anything(),
+        FUNNEL,
+        expect.objectContaining({
+          params: expect.objectContaining({ path: { name: 'mentee_activation' } }),
+        }),
       ),
     );
   });
