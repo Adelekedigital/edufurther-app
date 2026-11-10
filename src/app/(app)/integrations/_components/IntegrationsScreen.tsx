@@ -32,6 +32,7 @@ import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/Me
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { IntegrationsSkeleton } from './IntegrationsSkeleton';
 import { useCalendarConnect } from '@/app/_shell/useCalendarConnect';
+import { track } from '@/lib/analytics/track';
 import styles from './IntegrationsScreen.module.css';
 
 /** PROVISIONAL — Integrations.dc.html draws no gate (docs/handoff/integrations-design-request.md). */
@@ -145,6 +146,7 @@ export function IntegrationsScreen() {
         // Resolves after the mutation has invalidated and refetched, so the
         // server's value is already on screen when the dialog closes.
         await saveFn({ provider: next, customUrl: null });
+        track('conferencing_connected', {});
         setSwitchTo(null);
         announce(`Saved. Sessions now run on ${NAMES[next]}.`);
       } catch (e) {

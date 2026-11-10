@@ -35,7 +35,11 @@ vi.mock('@/lib/api/data/calendarConnection', async () =>
   (await import('./calendarScreen.harness')).mocks.calendarConnection(),
 );
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
+
 beforeEach(resetCalendar);
+beforeEach(() => track.mockClear());
 
 const openConfirm = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(screen.getByRole('button', { name: 'Change video for sessions' }));
@@ -88,6 +92,7 @@ describe('CalendarScreen: video for sessions', () => {
     await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
     expect(announced()).toContain('Your video setting is saved.');
     expect(screen.getByRole('button', { name: 'Change video for sessions' })).toHaveFocus();
+    expect(track.mock.calls).toEqual([['conferencing_connected', {}]]);
   });
 
   it('a failed switch keeps the confirm open with its error', async () => {

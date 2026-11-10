@@ -13,6 +13,9 @@ import {
   viewers,
 } from '@/app/_shell/lockedPage.harness';
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
+
 vi.mock('next/navigation', () => ({
   usePathname: () => '/integrations',
   useRouter: () => ({ push: vi.fn() }),
@@ -141,6 +144,7 @@ beforeEach(() => {
   registerFn.mockReset().mockResolvedValue(undefined);
   registerPending = false;
   registerError = null;
+  track.mockClear();
 });
 
 describe('IntegrationsScreen', () => {
@@ -215,6 +219,8 @@ describe('IntegrationsScreen', () => {
         'Saved. Sessions now run on Google Meet.',
       ),
     );
+    // PRD 30's activation step, once, on the save's success.
+    expect(track.mock.calls).toEqual([['conferencing_connected', {}]]);
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument());
   });
 
@@ -253,6 +259,7 @@ describe('IntegrationsScreen', () => {
       ),
     );
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(track).not.toHaveBeenCalled();
     // Nothing moved: the radio is still on the server's value.
     expect(screen.getByRole('radio', { name: /EduFurther video/ })).toBeChecked();
   });
