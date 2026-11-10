@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Card } from '@/components/atoms/Card/Card';
@@ -12,6 +12,7 @@ import { useInviteLink, useInviteLookup } from '@/lib/api/data/invite';
 import { SCHOOLS_MIN, useMentorSchools } from '@/lib/api/data/mentorSchools';
 import { useViewer } from '@/lib/api/data/viewer';
 import { INVITE_LANDING_COPY as COPY } from '@/lib/copy/invite';
+import { track } from '@/lib/analytics/track';
 import { clearInviteCode, rememberInviteCode } from '@/lib/utils/inviteCode';
 import { personCover } from '@/lib/utils/person';
 import { useHydrated } from '@/lib/utils/useHydrated';
@@ -53,6 +54,16 @@ export function InviteLanding({ code }: { code: string }) {
       if (!rememberInviteCode(code)) clearInviteCode();
     } else if (remember === 'clear') clearInviteCode();
   }, [remember, code]);
+
+  // invite_viewed (PRD 30): once per visit, when the invite resolves to who
+  // sent it. Nothing about the invite goes with it, never the code.
+  const resolved = view.kind === 'welcome';
+  const viewed = useRef(false);
+  useEffect(() => {
+    if (!resolved || viewed.current) return;
+    viewed.current = true;
+    track('invite_viewed', {});
+  }, [resolved]);
 
   const to = view.kind === 'redirect' ? view.to : null;
   useEffect(() => {

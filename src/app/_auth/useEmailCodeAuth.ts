@@ -138,6 +138,7 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
     }
     verifyingNow.current = false;
     const expired = Date.now() - sentAt.current >= CODE_LIFETIME_MS;
+    // is_migrated: knownMigrated() once PR 3 lands
     track('login_code_failed', { reason: failReason(r.reason, expired) });
     if (!mounted.current) return;
     setVerifying(false);

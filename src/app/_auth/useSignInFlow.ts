@@ -26,6 +26,7 @@ import { useOnline } from '@/lib/utils/useOnline';
 import { accountHome, signInOutcome, type Outcome } from './outcome';
 import { loadAccount, toAccount } from './account';
 import { useEmailCodeAuth } from './useEmailCodeAuth';
+import { useSignupStarted } from './useSignupStarted';
 
 export { CODE_LIFETIME_MS, RESEND_WAIT_MS } from './useEmailCodeAuth';
 
@@ -410,13 +411,10 @@ export function useSignInFlow({
     })();
   }, [session.status, next, router, setEmail]);
 
-  // The sign-up funnel's first step (PRD 30): the first try on /signup, by
-  // email or Google, once per visit. The page's role, as the visitor chose it.
-  const signupStarted = useRef(false);
+  // The sign-up funnel's first step (PRD 30), on /signup only: the page's role.
+  const signupStarted = useSignupStarted(role);
   const startSignup = () => {
-    if (mode !== 'signup' || signupStarted.current) return;
-    signupStarted.current = true;
-    track('signup_started', { role });
+    if (mode === 'signup') signupStarted();
   };
 
   const onSendCode = async () => {

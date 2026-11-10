@@ -48,8 +48,12 @@ export type AnalyticsEvents = {
   onboarding_completed: { role: Role };
   onboarding_abandoned: { role: Role; step: string };
 
-  /** An invite link was opened. */
-  invite_viewed: { referrer_user_id: string };
+  /**
+   * An invite link was opened and the invite resolved. No referrer id: who
+   * invited whom lives in Postgres; signup_source=invite comes from
+   * acquisition (decided 10 Nov).
+   */
+  invite_viewed: Record<string, never>;
 
   // Explore: where is demand unmet, and what sends people to profiles?
   mentor_search_performed: { query_length: number; filter_count: number; result_count: number };
