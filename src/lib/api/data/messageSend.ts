@@ -53,6 +53,11 @@ function settle(withId: string, msg: Message) {
       ? cur
       : { ...cur, items: inTimeOrder([...cur.items, msg]) },
   );
+  // The status read holds no items: once a message is stored, the chat has history,
+  // so a reopened SendMessage never reads it as a first message again.
+  qc.setQueryData<Thread>(keys.messages.threadStatus(me, withId), (cur) =>
+    cur ? { ...cur, hasMore: true } : cur,
+  );
   void qc.invalidateQueries({ queryKey: keys.messages.chats(me) });
 }
 
@@ -66,7 +71,7 @@ function isFirst(withId: string): boolean {
   const { qc, me } = ctx;
   const thread =
     qc.getQueryData<Thread>(keys.messages.thread(me, withId)) ??
-    qc.getQueryData<Thread>([...keys.messages.thread(me, withId), 'status']);
+    qc.getQueryData<Thread>(keys.messages.threadStatus(me, withId));
   if (thread) return thread.items.length === 0 && !thread.hasMore;
   const chats = qc.getQueryData<Chats>(keys.messages.chats(me));
   return !!chats && !chats.rows.some((r) => r.person.id === withId && r.last);
@@ -90,9 +95,9 @@ async function post(item: OutboxItem): Promise<boolean> {
     });
     if (!response.ok || !data) throw apiError(response.status, error, response);
     update(item.clientId, null);
-    // PRD 30's messaging North Star. Ids only, never the text. The chat is
-    // keyed by the other person (`/me/messages/{user_id}`): their id is it.
-    track('message_sent', { conversation_id: item.to, is_first_in_conversation: isFirst(item.to) });
+    // PRD 30's messaging North Star: whether it opened the chat, nothing else
+    // (no ids, never the text).
+    track('message_sent', { is_first_in_conversation: isFirst(item.to) });
     settle(item.to, toMessage(data));
     // A message sent: the one-time notifications ask may follow (lib/utils/push).
     notePushMoment('message');

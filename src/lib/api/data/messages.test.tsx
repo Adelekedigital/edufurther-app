@@ -561,23 +561,24 @@ describe('the outbox: message_sent (PRD 30)', () => {
     return result;
   };
 
-  it('ids only, never the text: the first in an empty chat, then not first', async () => {
+  it('no ids, never the text: the first in an empty chat, then not first', async () => {
     qc.setQueryData(THREAD, toThreadLike());
     stored();
     await send('Hello there');
     await send('Second');
     expect(sent()).toEqual([
-      { conversation_id: 'u-1', is_first_in_conversation: true },
-      { conversation_id: 'u-1', is_first_in_conversation: false },
+      { is_first_in_conversation: true },
+      { is_first_in_conversation: false },
     ]);
     expect(JSON.stringify(track.mock.calls)).not.toContain('Hello');
+    expect(JSON.stringify(track.mock.calls)).not.toContain('u-1');
   });
 
   it('a chat with history, or one with more to load, is not first', async () => {
     qc.setQueryData(THREAD, { ...toThreadLike(), hasMore: true });
     stored();
     await send();
-    expect(sent()).toEqual([{ conversation_id: 'u-1', is_first_in_conversation: false }]);
+    expect(sent()).toEqual([{ is_first_in_conversation: false }]);
   });
 
   it('SendMessage’s status read counts as the thread; the chat list is the fallback', async () => {
@@ -590,10 +591,19 @@ describe('the outbox: message_sent (PRD 30)', () => {
     expect(sent().map((p) => p.is_first_in_conversation)).toEqual([true, true]);
   });
 
+  it('SendMessage reopened after a send: its status read is no longer an empty chat', async () => {
+    stored();
+    qc.setQueryData([...THREAD, 'status'], toThreadLike());
+    await send();
+    // Closed and opened again: the same cached status read, no thread loaded.
+    await send();
+    expect(sent().map((p) => p.is_first_in_conversation)).toEqual([true, false]);
+  });
+
   it('nothing read: not first', async () => {
     stored();
     await send();
-    expect(sent()).toEqual([{ conversation_id: 'u-1', is_first_in_conversation: false }]);
+    expect(sent()).toEqual([{ is_first_in_conversation: false }]);
   });
 
   it('only a stored message counts: a refusal sends nothing, its retry once', async () => {

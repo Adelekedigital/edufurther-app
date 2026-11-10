@@ -344,7 +344,7 @@ export function useChatStatus(withId: string | null): Remote<Thread> {
   const { me } = useMe();
   const enabled = !!me && !!withId;
   const query = useQuery({
-    queryKey: [...keys.messages.thread(me ?? 'none', withId ?? ''), 'status'],
+    queryKey: keys.messages.threadStatus(me ?? 'none', withId ?? ''),
     enabled,
     queryFn: ({ signal }) => readThread(withId!, { limit: 0 }, signal),
     retry: retryOnce,
