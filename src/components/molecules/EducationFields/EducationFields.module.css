@@ -28,17 +28,6 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
-.box {
-  flex: none;
-  width: 20px;
-  height: 20px;
-  margin: 0;
-  accent-color: var(--blue-500);
-  cursor: pointer;
-}
-.box:focus-visible {
-  outline: none;
-}
 .currentText {
   display: flex;
   flex-direction: column;

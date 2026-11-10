@@ -27,13 +27,16 @@ type Common = {
    * arriving later doesn't push everything below the card down (CLS).
    */
   trendPending?: boolean;
+  /** A plain line under the figure, not a trend (Admin Analytics.dc.html Credits: "56% of granted"). */
+  note?: string;
   /** Colours the figure: warning (amber) or danger (red), as the Missed tile does. */
   valueTone?: 'warning' | 'danger';
   /**
    * lg: the admin summary card (Admin.dc.html `mKpis`): roomier, a bold
-   * figure, a regular label. Default: the dashboards' card.
+   * figure, a regular label. sm: Admin Analytics.dc.html's KPI tile, tight
+   * rows and an H6 figure. Default: the dashboards' card.
    */
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 };
 
@@ -78,14 +81,14 @@ export function KpiCard(props: KpiCardProps) {
         type="button"
         onClick={props.onClick}
         aria-label={props.ariaLabel}
-        className={cx(styles.card, size === 'lg' && styles.lg, styles.action, className)}
+        className={cx(styles.card, size !== 'md' && styles[size], styles.action, className)}
       >
         <Figure {...props} row="span" />
       </button>
     );
   }
   return (
-    <div className={cx(styles.card, size === 'lg' && styles.lg, className)}>
+    <div className={cx(styles.card, size !== 'md' && styles[size], className)}>
       <Figure {...props} row="div" />
     </div>
   );
@@ -99,6 +102,7 @@ function Figure({
   trend,
   trendPending,
   link,
+  note,
   valueTone,
   row: Row,
 }: KpiCardProps & { row: 'span' | 'div' }) {
@@ -138,6 +142,7 @@ function Figure({
           {trend.text}
         </span>
       )}
+      {note && <span className={styles.note}>{note}</span>}
       {link &&
         ('href' in link ? (
           <Link href={link.href} prefetch={false} className={styles.link}>

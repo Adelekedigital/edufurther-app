@@ -6,13 +6,14 @@ import type {
   WireEmailSave,
   WireEmailSummary,
   WireEmailValue,
+  WireEmailVariant,
   WireLineKey,
-} from '@/lib/api/data/pending';
+} from '@/lib/api/data/adminEmails';
 import { checkLine, LINE_KEYS } from '@/lib/utils/emailLines';
 import type { ErrorStatus, MockResult, ProblemBody } from './respond';
 
 /**
- * MOCK of the Admin Emails registry (PRD 28). PENDING BACKEND.
+ * MOCK of the Admin Emails registry (PRD 28), typed by the published spec.
  *
  * Seeded from the backend's real registry on development (9 Nov 2026):
  * `TEMPLATE_GROUPS` and the default `LINES` in `domain/email_lines.py`, and the
@@ -45,6 +46,7 @@ const SESSION = [
   'sessionDate',
   'sessionTime',
   'sessionTimezone',
+  'sessionName',
   'sessionTopic',
 ];
 const L = (subject: string, heading: string, button: string): Line => ({
@@ -463,17 +465,19 @@ export const MOCK_EMAILS: MockEmail[] = [
   }),
 ];
 
-/** [meaning, example, fallback]. `code` has no fallback. */
+/** [meaning, example, fallback], as the backend catalogue (domain/email_values.py) words them. `code` has no fallback. */
 const VALUES: Record<string, [string, string, string | null]> = {
   recipientName: ['Full name of the person getting the email', 'Amara Okafor', 'there'],
   recipientFirstName: ['First name of the person getting the email', 'Amara', 'there'],
   mentorName: ['The mentor’s full name', 'Tunde Bakare', 'your mentor'],
   menteeName: ['The mentee’s full name', 'Amara Okafor', 'your mentee'],
   attendee: ['The other person in the session', 'Tunde Bakare', 'your mentor'],
-  sessionDate: ['Session date, in the recipient’s time zone', 'Tue, Nov 18', 'the scheduled date'],
-  sessionTime: ['Start time, in the recipient’s time zone', '3:00 pm', 'the scheduled time'],
-  sessionTimezone: ['The time zone those are shown in', 'WAT', 'your time zone'],
-  sessionTopic: ['What the session is about', 'CV review', 'your session'],
+  sessionDate: ['The booking’s date, in the reader’s zone', 'Fri 20 Nov 2026', 'the day'],
+  sessionTime: ['The booking’s start time, in the reader’s zone', '3:00 PM', 'the time'],
+  sessionTimezone: ['The reader’s time zone, as a code', 'WAT', 'your time zone'],
+  // Two values, as in the backend catalogue: the offering, and what this booking is about.
+  sessionName: ['The session’s name', 'CV review', 'your session'],
+  sessionTopic: ['What this booking is about', 'My personal statement', 'your session'],
   sessionDetail: ['What the mentee wants to discuss', 'My personal statement', 'your notes'],
   location: ['Where the session happens', 'Google Meet', 'online'],
   hours: ['Hours left to answer the request', '12', 'a few'],
@@ -482,9 +486,9 @@ const VALUES: Record<string, [string, string, string | null]> = {
   reasonTitle: ['The reason, in words', 'Schedule conflict', 'a change of plans'],
   reasonMessage: ['What the person wrote', 'Sorry, I’m traveling that week', 'no message'],
   cancelInitiator: ['Who canceled: the mentor or the mentee', 'Tunde', 'someone'],
-  suggestedDate: ['The suggested date, in the mentee’s time zone', 'Wed, Nov 19', 'a new date'],
-  suggestedTime: ['The suggested time, in the mentee’s time zone', '4:00 pm', 'a new time'],
-  holdUntilTime: ['When the held time is released', '6:00 pm', 'soon'],
+  suggestedDate: ['The suggested time’s date', 'Sat 21 Nov 2026', 'the day'],
+  suggestedTime: ['The suggested start time', '4:00 PM', 'the time'],
+  holdUntilTime: ['When the suggested time is released', '5:30 PM', 'soon'],
   creditCount: ['Credits in this change', '3', 'new'],
   repliesName: ['Who sent the unread messages', 'Tunde', 'Someone'],
   unreadCount: ['How many messages are unread', '2', 'new'],
@@ -601,8 +605,32 @@ export function mockEmailDetail(key: string): WireEmailDetail | null {
       id: v.id,
       label: v.label || e.name,
       ...sampleFor(e, v),
-      lines: Object.fromEntries(LINE_KEYS.map((l) => [l, line(key, v, l)])),
+      lines: Object.fromEntries(
+        LINE_KEYS.map((l) => [l, line(key, v, l)]),
+      ) as WireEmailVariant['lines'],
     })),
+  };
+}
+
+/**
+ * A save as the editor sends it: all three lines with the version read, the
+ * given ones changed. For tests and seeding.
+ */
+export function mockSaveBody(
+  key: string,
+  variantId: string,
+  changed: Partial<Record<WireLineKey, string | { text: string; version: number }>>,
+  keepEdit?: WireLineKey[],
+): WireEmailSave {
+  const read = mockEmailDetail(key)?.variants.find((v) => v.id === variantId)?.lines;
+  const one = (l: WireLineKey) => {
+    const c = changed[l];
+    if (c && typeof c === 'object') return c;
+    return { text: c ?? read?.[l].text ?? '', version: read?.[l].version ?? 0 };
+  };
+  return {
+    lines: { subject: one('subject'), heading: one('heading'), button: one('button') },
+    ...(keepEdit ? { keep_edit: keepEdit } : {}),
   };
 }
 
@@ -629,7 +657,6 @@ export function mockSaveEmailVariant(
   const errors: WireEmailLineError[] = [];
   for (const l of LINE_KEYS) {
     const sent = body.lines[l];
-    if (!sent) continue;
     const err = checkLine(sent.text, l, known, e.values);
     if (err) errors.push({ line: l, ...err });
   }
@@ -642,7 +669,7 @@ export function mockSaveEmailVariant(
   for (const l of LINE_KEYS) {
     const sent = body.lines[l];
     const o = overrides.get(slot(key, variantId, l));
-    if (sent && sent.version !== (o?.version ?? 0))
+    if (sent.version !== (o?.version ?? 0))
       return refuse(409, {
         type: '/problems/email-line-conflict',
         title: 'Email line conflict',
@@ -653,7 +680,6 @@ export function mockSaveEmailVariant(
   const at = new Date().toISOString();
   for (const l of LINE_KEYS) {
     const sent = body.lines[l];
-    if (!sent) continue;
     const def = variant.lines?.[l] ?? '';
     const k = slot(key, variantId, l);
     const o = overrides.get(k);

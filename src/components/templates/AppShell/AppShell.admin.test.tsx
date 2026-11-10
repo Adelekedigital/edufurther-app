@@ -32,6 +32,32 @@ describe('AppShell: the admin app (Admin PRD, Access)', () => {
     expect(screen.queryByRole('link', { name: /Emails/ })).toBeNull();
   });
 
+  it('Analytics leads the admin nav while it is on; Emails moves to More on phones', () => {
+    render(
+      <AppShell
+        active="Analytics"
+        nav="admin"
+        chrome="member"
+        offline={false}
+        adminEmails
+        adminAnalytics
+      >
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(hrefs(0)).toEqual([
+      '/',
+      '/admin/analytics',
+      '/admin/mentors',
+      '/admin/credits',
+      '/admin/emails',
+    ]);
+    expect(hrefs(1)).toEqual(['/admin/analytics', '/admin/mentors', '/admin/credits']);
+    // Emails is the fourth item: on phones it moves to More.
+    expect(nav(1).getByRole('button', { name: /More/ })).toBeInTheDocument();
+    expect(nav(0).getByRole('link', { name: 'Analytics' })).toHaveAttribute('aria-current', 'page');
+  });
+
   it('the Mentors badge counts applications waiting, "9+" above nine', () => {
     render(
       <AppShell

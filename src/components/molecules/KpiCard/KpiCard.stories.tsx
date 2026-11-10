@@ -66,7 +66,7 @@ export const SummaryButtons: Story = {
         label="Applications waiting"
         value="4"
         valueTone="danger"
-        trend={{ text: 'Longest wait 7 days', tone: 'neutral' }}
+        note="Longest wait 7 days"
         onClick={fn()}
         ariaLabel="Applications waiting: 4. Open Applications"
       />
@@ -74,7 +74,7 @@ export const SummaryButtons: Story = {
         size="lg"
         label="Approved mentors"
         value="6"
-        trend={{ text: 'Average show-up 84%', tone: 'neutral' }}
+        note="Average show-up 84%"
         onClick={fn()}
         ariaLabel="Approved mentors: 6. Open Approved"
       />
@@ -82,7 +82,7 @@ export const SummaryButtons: Story = {
         size="lg"
         label="At risk"
         value="0"
-        trend={{ text: 'Show-up rate under 50%', tone: 'neutral' }}
+        note="Show-up rate under 50%"
         onClick={fn()}
         ariaLabel="At risk: 0. Open Approved"
       />

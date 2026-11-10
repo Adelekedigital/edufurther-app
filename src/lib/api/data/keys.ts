@@ -248,6 +248,11 @@ export const keys = {
     emails: (me: string) => ['admin', me, 'emails', 'list'] as const,
     email: (me: string, key: string) => ['admin', me, 'emails', 'detail', key] as const,
     emailValues: (me: string) => ['admin', me, 'emails', 'values'] as const,
+    /** Admin Analytics (PRD 31): one tab's numbers for a window. */
+    analytics: (me: string, section: string, window: string, compare: boolean) =>
+      ['admin', me, 'analytics', section, window, compare] as const,
+    analyticsFunnel: (me: string, name: string, by: string, window: string, compare: boolean) =>
+      ['admin', me, 'analytics', 'funnel', name, by, window, compare] as const,
   },
   /** Push notifications (push.ts): the server's key, and this device's state per account. */
   push: {

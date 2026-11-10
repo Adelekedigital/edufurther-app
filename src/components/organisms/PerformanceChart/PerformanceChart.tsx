@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { SegmentedControl } from '@/components/molecules/SegmentedControl/SegmentedControl';
 import { cx } from '@/lib/utils/cx';
 import { buildChartModel, type ChartRange, type ChartSeries } from './model';
 import styles from './PerformanceChart.module.css';
@@ -115,8 +116,6 @@ export function PerformanceChart({
   const [narrow, setNarrow] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const rootRef = useRef<HTMLElement>(null);
-  const radiosRef = useRef<HTMLDivElement>(null);
-  const typesRef = useRef<HTMLDivElement>(null);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const narrowRef = useRef(false);
@@ -127,7 +126,7 @@ export function PerformanceChart({
   const showSwitch = chartSwitch === 'show';
   // Before any pick: bars for short ranges, a line for a year+ (the trend view).
   const longRange = range.startsWith('y') || (ranges.find((r) => r.key === range)?.n ?? 6) >= 12;
-  const effectiveVariant = showSwitch ? chartType ?? (longRange ? 'line' : 'bar') : variant;
+  const effectiveVariant = showSwitch ? (chartType ?? (longRange ? 'line' : 'bar')) : variant;
 
   // The clock, read once and passed into the pure model so it owns the year
   // picker's cap (the backend's queryable range) and stays unit-testable.
@@ -148,7 +147,20 @@ export function PerformanceChart({
         narrow,
         mobileLegend,
       }),
-    [series, months, ranges, effectiveVariant, range, hidden, hover, title, yUnit, currentYear, narrow, mobileLegend],
+    [
+      series,
+      months,
+      ranges,
+      effectiveVariant,
+      range,
+      hidden,
+      hover,
+      title,
+      yUnit,
+      currentYear,
+      narrow,
+      mobileLegend,
+    ],
   );
 
   // Track the card width. ResizeObserver, not a media query: the card narrows
@@ -239,41 +251,6 @@ export function PerformanceChart({
     persistChartType(t);
     setHover(-1);
   };
-  // Radiogroup roving focus for the bar/line switch (mirrors the range switch).
-  const onTypeKey = (e: React.KeyboardEvent) => {
-    const cur = Math.max(
-      0,
-      CHART_TYPES.findIndex((t) => t.key === effectiveVariant),
-    );
-    let next = -1;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (cur + 1) % CHART_TYPES.length;
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp')
-      next = (cur - 1 + CHART_TYPES.length) % CHART_TYPES.length;
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = CHART_TYPES.length - 1;
-    if (next < 0) return;
-    e.preventDefault();
-    pickType(CHART_TYPES[next]!.key);
-    typesRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
-  };
-
-  const anyRangeOn = m.rangeButtons.some((r) => r.on);
-  const onRangeKey = (e: React.KeyboardEvent) => {
-    const keys = m.rangeButtons.map((r) => r.key);
-    const cur = Math.max(0, m.rangeButtons.findIndex((r) => r.on));
-    let next = -1;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (cur + 1) % keys.length;
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (cur - 1 + keys.length) % keys.length;
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = keys.length - 1;
-    if (next < 0) return;
-    e.preventDefault();
-    setRange(keys[next]!);
-    setHover(-1);
-    const radios = radiosRef.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]');
-    radios?.[next]?.focus();
-  };
-
   return (
     <section ref={rootRef} className={styles.card}>
       <div className={styles.header}>
@@ -285,76 +262,54 @@ export function PerformanceChart({
         </div>
         <div className={cx(styles.ctrlRow, narrow && styles.ctrlRowNarrow)}>
           {showSwitch && (
-            <div
-              ref={typesRef}
-              role="radiogroup"
-              aria-label="Chart type"
+            <SegmentedControl
+              look="track"
+              size="sm"
+              label="Chart type"
+              value={effectiveVariant}
+              onChange={pickType}
+              options={CHART_TYPES.map((t) => ({
+                value: t.key,
+                label: t.label,
+                icon: t.icon,
+                iconOnly: true,
+              }))}
               className={styles.types}
-              onKeyDown={onTypeKey}
-            >
-              {CHART_TYPES.map((t) => {
-                const on = effectiveVariant === t.key;
-                return (
-                  <button
-                    key={t.key}
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    aria-label={t.label}
-                    title={t.label}
-                    tabIndex={on ? 0 : -1}
-                    className={cx(styles.type, on && styles.typeOn)}
-                    onClick={() => pickType(t.key)}
-                  >
-                    <Icon name={t.icon} size={18} />
-                  </button>
-                );
-              })}
-            </div>
+            />
           )}
-          <div className={styles.rangeWrap}>
-            <div
-              ref={radiosRef}
-              role="radiogroup"
-              aria-label="Time range"
-              className={styles.radios}
-              onKeyDown={onRangeKey}
-            >
-              {m.rangeButtons.map((r, idx) => (
-                <button
-                  key={r.key}
-                  type="button"
-                  role="radio"
-                  aria-checked={r.on}
-                  tabIndex={r.on || (!anyRangeOn && idx === 0) ? 0 : -1}
-                  className={cx(styles.range, r.on && styles.rangeOn)}
-                  onClick={() => {
-                    setRange(r.key);
+          <SegmentedControl
+            look="track"
+            size="sm"
+            label="Time range"
+            layout={narrow ? 'fill' : 'hug'}
+            className={styles.rangeWrap}
+            // A year shown: no preset is picked, and the first keeps the tab stop.
+            value={m.rangeButtons.find((r) => r.on)?.key ?? ''}
+            onChange={(key) => {
+              setRange(key);
+              setHover(-1);
+            }}
+            options={m.rangeButtons.map((r) => ({ value: r.key, label: r.label }))}
+            trailing={
+              // No picker when the mentor has no year the backend can query (only
+              // stale data entirely outside the range), so it's never an empty box.
+              m.yearOptions.length > 0 && (
+                <Select
+                  aria-label="Show a year"
+                  variant="segment"
+                  value={m.yearValue}
+                  onChange={(e) => {
+                    setRange(e.target.value ? `y${e.target.value}` : '12m');
                     setHover(-1);
                   }}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-            {/* No picker when the mentor has no year the backend can query (only
-                stale data entirely outside the range), so it's never an empty box. */}
-            {m.yearOptions.length > 0 && (
-              <Select
-                aria-label="Show a year"
-                variant="segment"
-                value={m.yearValue}
-                onChange={(e) => {
-                  setRange(e.target.value ? `y${e.target.value}` : '12m');
-                  setHover(-1);
-                }}
-                options={[
-                  { value: '', label: 'Year' },
-                  ...m.yearOptions.map((yr) => ({ value: yr, label: yr })),
-                ]}
-              />
-            )}
-          </div>
+                  options={[
+                    { value: '', label: 'Year' },
+                    ...m.yearOptions.map((yr) => ({ value: yr, label: yr })),
+                  ]}
+                />
+              )
+            }
+          />
         </div>
       </div>
 
@@ -434,14 +389,38 @@ export function PerformanceChart({
           >
             <svg viewBox="0 0 600 262" role="img" aria-label={m.aria} className={styles.svg}>
               {m.grid.map((g, k) => (
-                <line key={`g${k}`} x1={28} x2={600} y1={g.y} y2={g.y} stroke="var(--ink-100)" strokeWidth={1} />
+                <line
+                  key={`g${k}`}
+                  x1={28}
+                  x2={600}
+                  y1={g.y}
+                  y2={g.y}
+                  stroke="var(--ink-100)"
+                  strokeWidth={1}
+                />
               ))}
               <line x1={28} x2={600} y1={210} y2={210} stroke="var(--ink-300)" strokeWidth={1} />
               {m.cols.map((c) => (
-                <rect key={`hov${c.index}`} x={c.hx} y={0} width={c.hw} height={210} rx={6} fill={c.hoverFill} />
+                <rect
+                  key={`hov${c.index}`}
+                  x={c.hx}
+                  y={0}
+                  width={c.hw}
+                  height={210}
+                  rx={6}
+                  fill={c.hoverFill}
+                />
               ))}
               {m.rects.map((r, k) => (
-                <rect key={`r${k}`} x={r.x} y={r.y} width={r.w} height={r.h} rx={r.rx} fill={r.fill} />
+                <rect
+                  key={`r${k}`}
+                  x={r.x}
+                  y={r.y}
+                  width={r.w}
+                  height={r.h}
+                  rx={r.rx}
+                  fill={r.fill}
+                />
               ))}
               {m.lines.map((ln, k) => (
                 <polyline
@@ -455,10 +434,26 @@ export function PerformanceChart({
                 />
               ))}
               {m.dots.map((d, k) => (
-                <circle key={`d${k}`} cx={d.x} cy={d.y} r={4} fill="var(--white)" stroke={d.color} strokeWidth={2} />
+                <circle
+                  key={`d${k}`}
+                  cx={d.x}
+                  cy={d.y}
+                  r={4}
+                  fill="var(--white)"
+                  stroke={d.color}
+                  strokeWidth={2}
+                />
               ))}
               {m.yearMarks.map((ym, k) => (
-                <line key={`y${k}`} x1={ym.x} x2={ym.x} y1={214} y2={258} stroke="var(--ink-200)" strokeWidth={1} />
+                <line
+                  key={`y${k}`}
+                  x1={ym.x}
+                  x2={ym.x}
+                  y1={214}
+                  y2={258}
+                  stroke="var(--ink-200)"
+                  strokeWidth={1}
+                />
               ))}
               {m.cols.map((c) => (
                 // Focusable, so the month's figures reach keyboard + screen
@@ -509,7 +504,9 @@ export function PerformanceChart({
 
             {m.allHidden && (
               <div className={styles.allHidden}>
-                <span className={styles.allHiddenPill}>Turn on a status above to see it on the chart.</span>
+                <span className={styles.allHiddenPill}>
+                  Turn on a status above to see it on the chart.
+                </span>
               </div>
             )}
             {m.tooltip.show && (
@@ -528,7 +525,12 @@ export function PerformanceChart({
         </>
       ) : (
         <div className={styles.emptyWrap}>
-          <EmptyState illustration="dashboard" title={m.empty.title} description={m.empty.body} size={120} />
+          <EmptyState
+            illustration="dashboard"
+            title={m.empty.title}
+            description={m.empty.body}
+            size={120}
+          />
           {m.empty.canWiden && (
             <Button variant="secondary-outlined" size="small" onClick={() => setRange('12m')}>
               View last 12 months

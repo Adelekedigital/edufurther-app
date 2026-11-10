@@ -91,6 +91,11 @@
   --button-h-large: 48px;
   --button-h-medium: 40px;
   --button-h-small: 32px;
+  /* SegmentedControl look="track" segment heights: PerformanceChart.dc.html 28px,
+     Admin Analytics.dc.html toggles 32px and time window 36px. */
+  --segment-h-sm: 28px;
+  --segment-h-md: 32px;
+  --segment-h-lg: 36px;
   /* The inline error icon's line (a 16px glyph on an 18px line, every .dc.html field error). */
   --lh-icon-inline: 18px;
   /* TokenField.dc.html: the field and its chip mirror share a 20px line, so the caret lines up. */

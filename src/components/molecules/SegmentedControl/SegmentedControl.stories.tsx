@@ -40,4 +40,53 @@ export const Segmented: Story = {
   },
 };
 
+/** look="track": Admin Analytics.dc.html (lg window, md toggle) and PerformanceChart.dc.html (sm). */
+export const Track: Story = {
+  render: function Render() {
+    const [win, setWin] = useState<'7d' | '30d' | '90d' | 'custom'>('30d');
+    const [by, setBy] = useState<'country' | 'school'>('country');
+    const [type, setType] = useState<'bar' | 'line'>('bar');
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
+        <SegmentedControl
+          look="track"
+          size="lg"
+          layout="hug"
+          label="Time window"
+          value={win}
+          onChange={setWin}
+          options={[
+            { value: '7d', label: '7 days' },
+            { value: '30d', label: '30 days' },
+            { value: '90d', label: '90 days' },
+            { value: 'custom', label: 'Custom' },
+          ]}
+        />
+        <SegmentedControl
+          look="track"
+          layout="hug"
+          label="Group by"
+          value={by}
+          onChange={setBy}
+          options={[
+            { value: 'country', label: 'Country' },
+            { value: 'school', label: 'School' },
+          ]}
+        />
+        <SegmentedControl
+          look="track"
+          size="sm"
+          label="Chart type"
+          value={type}
+          onChange={setType}
+          options={[
+            { value: 'bar', label: 'Bar chart', icon: 'bar_chart', iconOnly: true },
+            { value: 'line', label: 'Line chart', icon: 'show_chart', iconOnly: true },
+          ]}
+        />
+      </div>
+    );
+  },
+};
+
 /** Session Types.dc.html "When can mentees book this?". */

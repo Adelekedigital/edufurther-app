@@ -51,13 +51,6 @@
   margin: -6px 0;
   cursor: pointer;
 }
-.check input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  accent-color: var(--blue-500);
-  cursor: pointer;
-}
 .headCheck .check {
   margin: 0;
   height: auto;

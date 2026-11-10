@@ -26,8 +26,25 @@
 .lg .danger {
   color: var(--red-700);
 }
-.lg .trend {
-  text-wrap: pretty;
+/* Admin Analytics.dc.html KPI tile: padding space-4, rows 2px apart, a regular
+   ink-600 label, a bold H6 figure, a semibold change line. */
+.sm {
+  gap: 2px;
+}
+.sm .label {
+  font-weight: var(--weight-regular);
+  color: var(--ink-600);
+}
+.sm .value {
+  font-family: var(--font-ui);
+  font-size: var(--text-h6);
+  line-height: var(--lh-h6);
+  letter-spacing: normal;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.sm .trend {
+  font-weight: var(--weight-semibold);
 }
 /* The card as one button: drawn the same, with the design's hover border. */
 .action {
@@ -95,6 +112,14 @@
   gap: var(--space-1);
   font-size: var(--text-p-xs);
   line-height: var(--lh-p);
+}
+.note {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.lg .note {
+  text-wrap: pretty;
 }
 .positive {
   color: var(--green-700);

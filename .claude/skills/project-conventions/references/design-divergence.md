@@ -1423,7 +1423,7 @@ Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch tar
 | --- | --- | --- | --- |
 | A row is a `<button>` named "{Email}, {status}. Edit wording" | A link to `/admin/emails/{key}`, named by its content: name, trigger, who it goes to, status, last edit | It navigates to the editor’s own URL (a link opens in a new tab and shows its address); the label hid Goes to and Last edited from screen readers, and said "Edit wording" on read-only emails | — |
 | Native `<select>` filters; a bare `<input type="search">` | The shared FilterBar (Select) and SearchField `labelled="filter"` | PRD 25 fix 9: every dropdown is Select; one search field. The field keeps its × clear button (44px right padding) and is 44px tall with 16px text on phones, as every field | — |
-| The design's 27 draft rows, groups and value names | The backend's registry (`GET /admin/emails`), mocked from its real `TEMPLATE_GROUPS` and `LINES` until the routes ship | PRD 28 designer items 86–88 | backend routes ship (11 Nov) |
+| The design's 27 draft rows, groups and value names | The backend's registry (`GET /admin/emails`, on the typed client since backend decision 321, 10 Nov) | PRD 28 designer items 86–88 | the registry's names change |
 | Error body "Check your connection and try again. Nothing you changed was lost." | "Check your connection and try again." | The list holds no edits, so the second sentence promised nothing real (ux-writer) | — |
 | Values note: "If a value is empty when an email sends, its fallback is used." | "If a value is empty in a subject, heading or button label, its fallback is used." | Fallbacks apply only in the three lines (PRD 28 rules, designer item 93) | — |
 | (not drawn) Values loading and error states | Skeleton rows; "We couldn’t load values" / "Check your connection and try again." / Try again, as the list's | Every view that fetches has all four states | design draws them |
@@ -1446,3 +1446,12 @@ Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch tar
 | (not drawn) loading, not found, failed load | Skeleton; "We couldn’t find that email" with All emails; the shared admin load error with Try again | Every view that fetches has all four states | design draws them |
 | Read-only fields keep "Type text, or / for a value"; an empty button draws in the preview | No placeholder when read only; no button until it has words | A Not set up email has nothing to type and no wording yet | — |
 | `TokenField mobile` under 1024px | The same (16px text under 1024px) | As drawn (`mobile={{ narrow }}`) | — |
+
+### Admin Analytics — page shell and Credits (`Admin Analytics.dc.html` 1a, PRD 31 PR 6), 2026-11-09
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| The alert banner sits between the header and the tabs | First in the tab's panel, under the tabs | Alerts come with each tab's data; above the tabs the banner pushed the whole page down when it arrived (CLS 0.156 at 390px, over the 0.1 budget) | alerts load before the tab's data |
+| Loading, error and empty replace the tabs | The tabs stay; the state fills the tab's panel | PRD 31 states are per tab, and a tab row that vanishes while a tab loads moves everything under it | — |
+| Credits rows Monthly, Starter, Referral, Admin; Granted note "Monthly, starter, referral, admin" | Monthly, Level-ups, Admin, Refunds, Carried over; "Monthly, level-ups, admin and carried over" | Backend decision 308: no starter or referral grants exist; a finished onboarding or a qualifying invite raises the credit level (edufurtherbe-24, 9 Nov) | — |
+| The page ships with the admin nav | Behind `NEXT_PUBLIC_ADMIN_ANALYTICS_ENABLED`: off, no nav item and `/admin/analytics` is not found | Founder, 9 Nov: all at once, once PRD 30's tracking and the routes are live | PRD 30 PRs 1–6 and backend PRs 1–5 ship |
