@@ -144,6 +144,50 @@ describe('AlertsButton', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 
+  it('alerts clearing with the list shut and focus on the count send it to the fallback', async () => {
+    const Page = ({ alerts }: { alerts: AnalyticsAlert[] }) => (
+      <>
+        <AlertsButton
+          alerts={alerts}
+          onOpen={vi.fn()}
+          fallbackFocus={() => document.getElementById('tab')}
+        />
+        <button id="tab" type="button">
+          Overview
+        </button>
+      </>
+    );
+    const { rerender } = render(<Page alerts={[alert()]} />);
+    // Opened and closed with Escape: focus is back on the count.
+    await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('button', { name: '1 alert' })).toHaveFocus();
+    rerender(<Page alerts={[]} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Overview' })).toHaveFocus());
+  });
+
+  it('alerts clearing while focus is elsewhere leave it there', async () => {
+    const Page = ({ alerts }: { alerts: AnalyticsAlert[] }) => (
+      <>
+        <AlertsButton
+          alerts={alerts}
+          onOpen={vi.fn()}
+          fallbackFocus={() => document.getElementById('tab')}
+        />
+        <button id="tab" type="button">
+          Overview
+        </button>
+        <input aria-label="search" />
+      </>
+    );
+    const { rerender } = render(<Page alerts={[alert()]} />);
+    await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
+    await userEvent.click(screen.getByRole('textbox', { name: 'search' }));
+    rerender(<Page alerts={[]} />);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(screen.getByRole('textbox', { name: 'search' })).toHaveFocus();
+  });
+
   it('an alert without a link keeps its words and has no button', async () => {
     render(<AlertsButton alerts={[alert({ link: null })]} onOpen={vi.fn()} />);
     await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
