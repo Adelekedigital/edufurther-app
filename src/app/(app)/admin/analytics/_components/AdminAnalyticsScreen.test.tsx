@@ -241,24 +241,39 @@ describe('Admin Analytics: states', () => {
     });
     renderScreen(<AdminAnalyticsScreen />);
     await screen.findByRole('heading', { level: 2, name: 'Credits' });
-    const alerts = screen.getAllByRole('alert');
-    expect(alerts[0]).toHaveTextContent('Log-in codes failing:');
-    expect(within(alerts[1]!).getByRole('button', { name: 'See sessions' })).toBeInTheDocument();
+    // A count beside the title, said once; no banner in the page.
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByText('2 alerts firing')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '2 alerts' }));
+    const items = within(screen.getByRole('dialog', { name: 'Alerts' })).getAllByRole('listitem');
+    expect(items[0]).toHaveTextContent('Log-in codes failing');
+    expect(within(items[1]!).getByRole('button', { name: 'See sessions' })).toBeInTheDocument();
     await userEvent.click(
-      within(alerts[0]!).getByRole('button', { name: 'See the sign-up funnel' }),
+      within(items[0]!).getByRole('button', { name: 'See the sign-up funnel' }),
     );
     expect(replace).toHaveBeenLastCalledWith('/admin/analytics?tab=funnels&by=migrated', {
       scroll: false,
     });
+    // The list closes (focus going back to the count is AlertsButton's test).
+    expect(screen.queryByRole('dialog', { name: 'Alerts' })).toBeNull();
   });
 
-  it('a firing alert shows on the tab, and its link opens the sign-up funnel', async () => {
+  it('the mock alerts open from the count, and a link opens the sign-up funnel', async () => {
     serve({ credits: (q) => res(mockSection('credits', mockWindow(q)!, true)) });
     renderScreen(<AdminAnalyticsScreen />);
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('No sign-ups: No one has signed up in the last 24 hours.');
-    await userEvent.click(within(alert).getByRole('button', { name: 'See the sign-up funnel' }));
+    await userEvent.click(await screen.findByRole('button', { name: '2 alerts' }));
+    const list = screen.getByRole('dialog', { name: 'Alerts' });
+    expect(list).toHaveTextContent('No sign-ups');
+    expect(list).toHaveTextContent('No one has signed up in the last 24 hours.');
+    await userEvent.click(within(list).getByRole('button', { name: 'See the sign-up funnel' }));
     expect(replace).toHaveBeenLastCalledWith('/admin/analytics?tab=funnels', { scroll: false });
+  });
+
+  it('with no alerts there is no count', async () => {
+    serve();
+    renderScreen(<AdminAnalyticsScreen />);
+    await screen.findByRole('heading', { level: 2, name: 'Credits' });
+    expect(screen.queryByRole('button', { name: /alerts?$/ })).toBeNull();
   });
 });
 

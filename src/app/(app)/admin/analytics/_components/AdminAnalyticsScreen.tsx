@@ -4,7 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
-import { Notice } from '@/components/molecules/Notice/Notice';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import {
   isAnalyticsTab,
@@ -22,16 +22,12 @@ import {
 } from '@/lib/api/data/adminAnalytics';
 import { viewStatus } from '@/lib/api/data/queryStatus';
 import { useViewer } from '@/lib/api/data/viewer';
-import {
-  alertLinkLabel,
-  ANALYTICS_PAGE,
-  ANALYTICS_TABS,
-  FUNNEL_COPY,
-} from '@/lib/copy/adminAnalytics';
+import { ALERTS, ANALYTICS_PAGE, ANALYTICS_TABS, FUNNEL_COPY } from '@/lib/copy/adminAnalytics';
 import { DEFAULT_WINDOW, windowLabel, type AnalyticsWindow } from '@/lib/utils/analytics';
 import { todayIn } from '@/lib/utils/calendar';
 import { BehaviourTab, type TabQuery } from './BehaviourTab';
 import { CreditsTab, isCreditsEmpty } from './CreditsTab';
+import { AlertsButton } from './AlertsButton';
 import { DateRangeDialog } from './DateRangeDialog';
 import { GrowthTab, isGrowthEmpty } from './GrowthTab';
 import { isOverviewEmpty, OverviewTab } from './OverviewTab';
@@ -112,12 +108,19 @@ export function AdminAnalyticsScreen() {
   const funnelQ = useAnalyticsFunnel(on('funnels'), funnel, by, win);
   const events = useAnalyticsBehaviour(on('funnels'), win);
   const current = { overview, sessions, supply, credits, growth, funnels: overview }[tab];
-  // The last alerts known stay up while another tab or window loads, so a
-  // banner isn't announced again, or its focused link lost, on every move.
+  // The last alerts known stay up while another tab or window loads, so the
+  // count doesn't blink, or the open list close, on every move.
   const fresh = current.data?.alerts;
   const [lastAlerts, setLastAlerts] = useState<AnalyticsAlert[]>([]);
   if (fresh && fresh !== lastAlerts) setLastAlerts(fresh);
   const alerts = fresh ?? lastAlerts;
+  // The count is quiet beside the title, so a new set of alerts is said once.
+  const alertKeys = alerts.map((a) => a.key).join(',');
+  const [said, setSaid] = useState({ keys: '', n: 0 });
+  if (alertKeys !== said.keys) setSaid({ keys: alertKeys, n: said.n + 1 });
+  const alertNews = alertKeys
+    ? { text: `${ALERTS.count(alerts.length)} firing`, id: said.n }
+    : null;
 
   const go = (next: { tab: AnalyticsTab; funnel?: FunnelName; by?: string }) => {
     const q = new URLSearchParams();
@@ -136,6 +139,7 @@ export function AdminAnalyticsScreen() {
     <div className={styles.screen}>
       <PageHeader
         title={ANALYTICS_PAGE.title}
+        titleAside={<AlertsButton alerts={alerts} onOpen={go} />}
         subtitle={ANALYTICS_PAGE.subtitle}
         actions={
           <WindowControls
@@ -147,6 +151,7 @@ export function AdminAnalyticsScreen() {
           />
         }
       />
+      <LiveRegion message={alertNews} />
       <Tabs
         label={ANALYTICS_PAGE.tabsLabel}
         items={items}
@@ -154,25 +159,6 @@ export function AdminAnalyticsScreen() {
         onChange={(t) => go({ tab: t as AnalyticsTab })}
       />
       <TabPanel id={panelId(tab)} active className={styles.panel}>
-        {/* In the panel, not above the tabs: it arrives with the tab's data, so
-            there it lands with the content instead of pushing the page down (CLS). */}
-        {alerts.map((a) => (
-          <Notice
-            key={a.key}
-            tone="alert"
-            icon="error"
-            title={`${a.title}:`}
-            action={
-              a.link && (
-                <button type="button" className={styles.alertLink} onClick={() => go(a.link!)}>
-                  {alertLinkLabel(a.link)}
-                </button>
-              )
-            }
-          >
-            {a.body}
-          </Notice>
-        ))}
         {tab === 'overview' &&
           section(overview, isOverviewEmpty, (d) => (
             <OverviewTab

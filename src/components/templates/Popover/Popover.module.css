@@ -1,0 +1,36 @@
+/* Admin Analytics.dc.html alerts popover: under its button, 360px, the menu card's look. */
+.panel {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: 360px;
+  max-width: calc(100vw - var(--space-8));
+  max-height: min(480px, 70vh);
+  overflow-y: auto;
+  padding-top: var(--space-1);
+  border: var(--border-hairline) solid var(--ink-100);
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  box-shadow: var(--shadow-popover);
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+.panel[data-align='end'] {
+  left: auto;
+  right: 0;
+}
+.panel:focus {
+  outline: none;
+}
+
+.title {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border-bottom: var(--border-hairline) solid var(--ink-100);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
