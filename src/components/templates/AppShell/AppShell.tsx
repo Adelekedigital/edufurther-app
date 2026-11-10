@@ -80,6 +80,13 @@ const EMAILS_ITEM: NavItem = {
   icon: 'mail',
   group: 'daily',
 };
+/** Admin Analytics (PRD 31), first in the admin nav while it's on (`adminAnalytics`). */
+const ANALYTICS_ITEM: NavItem = {
+  label: 'Analytics',
+  href: '/admin/analytics',
+  icon: 'monitoring',
+  group: 'daily',
+};
 /** `unknown`: signed in, role not known yet — no items rather than the wrong set. */
 const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, admin: ADMIN_NAV, unknown: [] as NavItem[] };
 /**
@@ -106,9 +113,10 @@ function withMessages(items: NavItem[]): NavItem[] {
 const PRIMARY_TABS = {
   mentee: ['Home', 'Explore', 'Bookings'],
   mentor: ['Home', 'Calendar', 'Bookings'],
-  admin: ['Mentors', 'Credits', 'Emails'],
   unknown: [] as string[],
 };
+/** Admin phone tabs: the first three admin items in nav order (design `pick`), the rest in More. */
+const ADMIN_TABS = 3;
 /**
  * The way into the admin app from the member app, for platform admins only
  * (design `showAdmin`): the rail's foot under a divider, and on phones the More
@@ -147,6 +155,8 @@ type AppShellProps = {
   messages?: boolean;
   /** Admin Emails is on (ADMIN_EMAILS_LIVE): the admin nav shows Emails. */
   adminEmails?: boolean;
+  /** Admin Analytics is on (ADMIN_ANALYTICS_LIVE): the admin nav leads with Analytics. */
+  adminAnalytics?: boolean;
   /**
    * guest: public header (Log in / Get started), no navigation.
    * member: rail / tabs and the account menu.
@@ -188,6 +198,7 @@ export function AppShell({
   adminEntry = false,
   messages = false,
   adminEmails = false,
+  adminAnalytics = false,
   chrome,
   account,
   access,
@@ -271,9 +282,17 @@ export function AppShell({
     lockReturn.current.focus();
     lockReturn.current = null;
   }, [lock]);
-  const base = nav === 'admin' && adminEmails ? [...ADMIN_NAV, EMAILS_ITEM] : NAV[nav];
+  const base =
+    nav === 'admin'
+      ? [
+          ...(adminAnalytics ? [ANALYTICS_ITEM] : []),
+          ...ADMIN_NAV,
+          ...(adminEmails ? [EMAILS_ITEM] : []),
+        ]
+      : NAV[nav];
   const items = (messages ? withMessages(base) : base).map((n) => shownItem(n, access, counts));
-  const primary = PRIMARY_TABS[nav];
+  const primary =
+    nav === 'admin' ? items.slice(0, ADMIN_TABS).map((n) => n.label) : PRIMARY_TABS[nav];
   // In the design's pick order: mentor tabs read Home, Calendar, Bookings.
   const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));
   const extra = items.filter((n) => !primary.includes(n.label));

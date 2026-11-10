@@ -80,6 +80,28 @@ describe('KpiCard', () => {
   });
 });
 
+describe('KpiCard sm (Admin Analytics tile) and a note', () => {
+  it('draws the compact tile with its change line', () => {
+    render(
+      <KpiCard
+        size="sm"
+        label="Requests"
+        value="302"
+        trend={{ text: '+7.5%', tone: 'positive' }}
+      />,
+    );
+    expect(screen.getByText('302').closest('div')?.parentElement).toHaveClass('sm');
+    expect(screen.getByText('+7.5%')).toHaveClass('positive');
+  });
+
+  it('a note is a plain line under the figure, not a trend', () => {
+    render(<KpiCard size="sm" label="Spent" value="271" note="56% of granted" />);
+    const note = screen.getByText('56% of granted');
+    expect(note).toHaveClass('note');
+    expect(note).not.toHaveClass('trend');
+  });
+});
+
 describe('KpiCard as a button (admin summary)', () => {
   it('is one named button that runs onClick', async () => {
     const onClick = vi.fn();
@@ -89,7 +111,7 @@ describe('KpiCard as a button (admin summary)', () => {
         label="At risk"
         value="1"
         valueTone="danger"
-        trend={{ text: 'Show-up rate under 50%', tone: 'neutral' }}
+        note="Show-up rate under 50%"
         onClick={onClick}
         ariaLabel="At risk: 1. Open Approved"
       />,

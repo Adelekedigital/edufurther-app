@@ -5,15 +5,17 @@
  * The phase A mock answers these shapes (respond.ts `pendingOk`).
  *
  * Now: the onboarding completion's `409` body (the spec types it empty; the
- * codes are `components['schemas']['OnboardingRequirement']`). No pending calls.
+ * codes are `components['schemas']['OnboardingRequirement']`), and Admin
+ * Analytics (`pendingAnalytics.ts`).
  */
 import { api } from './http';
+import type { PendingAnalyticsResponses } from './pendingAnalytics';
 
 /** #3: the completion refusal names what is missing. */
 export type PendingIncomplete = { missing?: unknown };
 
-/** "METHOD path" → its success body, for each call above. */
-export type PendingResponses = Record<never, never>;
+/** "METHOD path" → its success body, for each pending call. */
+export type PendingResponses = PendingAnalyticsResponses;
 
 /** The generated client without its path types, for the calls above only. */
 export const untyped = api as unknown as Record<

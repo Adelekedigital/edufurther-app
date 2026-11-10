@@ -3,7 +3,7 @@
 import type { KpiTrend } from '@/components/molecules/KpiCard/KpiCard';
 import type { Booking } from '@/types/booking';
 import type { AppError, Remote } from '@/types/mentor';
-import { formatCount, formatRating } from '@/lib/utils/format';
+import { formatCount, formatRating, MINUS } from '@/lib/utils/format';
 import { useUpcomingBookings } from './bookings';
 import { useCalendarConnection } from './calendarConnection';
 import { useMentorStats, type StatBlock } from './mentorStats';
@@ -252,8 +252,6 @@ export function deriveKpis(i: KpiInputs): Kpi[] {
   ];
 }
 
-// The real minus sign (U+2212), not a hyphen — the design's "−1" / "−0.4".
-const MINUS = '−';
 
 /**
  * A signed count or duration delta as a KPI trend line. `unit` is placed before
