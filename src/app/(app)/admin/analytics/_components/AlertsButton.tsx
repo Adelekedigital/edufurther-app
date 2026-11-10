@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Popover } from '@/components/templates/Popover/Popover';
 import type { AnalyticsAlert } from '@/lib/api/data/adminAnalytics';
@@ -29,16 +29,15 @@ export function AlertsButton({
   const id = useId();
   const gone = alerts.length === 0;
 
-  // Whether focus is on the count or in its list (React focus events bubble
-  // through the phone sheet's portal too), so its going away can't drop it.
-  const focusHere = useRef(false);
+  // Set as the count leaves the page, if focus was on it or in its list.
+  const leftWithFocus = useRef(false);
   const fallback = useRef(fallbackFocus);
   useEffect(() => {
     fallback.current = fallbackFocus;
   }, [fallbackFocus]);
   useEffect(() => {
-    if (!gone || !focusHere.current) return;
-    focusHere.current = false;
+    if (!gone || !leftWithFocus.current) return;
+    leftWithFocus.current = false;
     // After the list's own cleanups, which hand focus to the count that just left.
     const t = setTimeout(() => {
       const now = document.activeElement;
@@ -51,17 +50,8 @@ export function AlertsButton({
   if (gone && open) setOpen(false);
   if (gone) return null;
   return (
-    <span
-      className={styles.root}
-      onFocus={() => {
-        focusHere.current = true;
-      }}
-      onBlur={(e) => {
-        const to = e.relatedTarget as Node | null;
-        // No target: the window lost focus, or the focused node is leaving with the count.
-        if (to && !e.currentTarget.contains(to)) focusHere.current = false;
-      }}
-    >
+    <span className={styles.root} data-alerts={id}>
+      <LeaveWatch id={id} onLeave={(had) => (leftWithFocus.current = had)} />
       <button
         ref={trigger}
         type="button"
@@ -104,4 +94,29 @@ export function AlertsButton({
       )}
     </span>
   );
+}
+
+/**
+ * Says, as the count leaves the page, whether focus was on it or in its list.
+ * A layout cleanup runs before the nodes are removed, so it can ask where focus
+ * is; a blur can't tell (Chrome fires one on removal, like any other leaving).
+ * Found by attribute and id, not refs: React detaches those before this runs.
+ */
+function LeaveWatch({ id, onLeave }: { id: string; onLeave: (hadFocus: boolean) => void }) {
+  const report = useRef(onLeave);
+  useLayoutEffect(() => {
+    report.current = onLeave;
+  });
+  useLayoutEffect(() => {
+    report.current(false);
+    return () => {
+      const now = document.activeElement;
+      // The phone sheet is portalled out of the count's box: found by its id.
+      const inside =
+        !!now &&
+        (!!now.closest(`[data-alerts="${id}"]`) || !!document.getElementById(id)?.contains(now));
+      report.current(inside);
+    };
+  }, [id]);
+  return null;
 }

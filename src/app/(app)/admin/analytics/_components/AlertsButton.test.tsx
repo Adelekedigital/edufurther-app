@@ -188,6 +188,30 @@ describe('AlertsButton', () => {
     expect(screen.getByRole('textbox', { name: 'search' })).toHaveFocus();
   });
 
+  it('focus left for nothing focusable: a later clear does not pull it to the fallback', async () => {
+    const Page = ({ alerts }: { alerts: AnalyticsAlert[] }) => (
+      <>
+        <AlertsButton
+          alerts={alerts}
+          onOpen={vi.fn()}
+          fallbackFocus={() => document.getElementById('tab')}
+        />
+        <button id="tab" type="button">
+          Overview
+        </button>
+        <p>plain text</p>
+      </>
+    );
+    const { rerender } = render(<Page alerts={[alert()]} />);
+    const count = screen.getByRole('button', { name: '1 alert' });
+    count.focus();
+    await userEvent.click(screen.getByText('plain text'));
+    expect(count).not.toHaveFocus();
+    rerender(<Page alerts={[]} />);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(screen.getByRole('button', { name: 'Overview' })).not.toHaveFocus();
+  });
+
   it('an alert without a link keeps its words and has no button', async () => {
     render(<AlertsButton alerts={[alert({ link: null })]} onOpen={vi.fn()} />);
     await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
