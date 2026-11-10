@@ -18,6 +18,8 @@ import {
 import type { WireChatPerson, WireMessage, WireThread } from './messages';
 import { previewStore, resetPreviewStoreForTests } from './previewStore';
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
 const GET = vi.fn();
 const POST = vi.fn();
 vi.mock('./http', () => ({
@@ -97,6 +99,7 @@ beforeEach(() => {
   GET.mockReset();
   POST.mockReset();
   resetOutbox();
+  track.mockClear();
 });
 
 describe('mappers', () => {
@@ -539,5 +542,69 @@ describe('the outbox', () => {
     act(() => result.current.send.discard(result.current.box[0]!.clientId));
     expect(result.current.box).toHaveLength(1);
     online.mockRestore();
+  });
+});
+
+describe('the outbox: message_sent (PRD 30)', () => {
+  const THREAD = ['messages', 'me-1', 'thread', 'u-1'];
+  const sent = () => track.mock.calls.filter(([e]) => e === 'message_sent').map(([, p]) => p);
+  const stored = () =>
+    POST.mockImplementation(async (_p: string, init: { body: { client_id: string } }) => ({
+      data: wireMsg(`m-${init.body.client_id}`, { mine: true, client_id: init.body.client_id }),
+      response: res(201),
+    }));
+  const send = async (body = 'Hi') => {
+    const { result } = renderHook(() => useSendMessage(), { wrapper });
+    await act(async () => {
+      await result.current.send({ to: 'u-1', body, file: null });
+    });
+    return result;
+  };
+
+  it('ids only, never the text: the first in an empty chat, then not first', async () => {
+    qc.setQueryData(THREAD, toThreadLike());
+    stored();
+    await send('Hello there');
+    await send('Second');
+    expect(sent()).toEqual([
+      { conversation_id: 'u-1', is_first_in_conversation: true },
+      { conversation_id: 'u-1', is_first_in_conversation: false },
+    ]);
+    expect(JSON.stringify(track.mock.calls)).not.toContain('Hello');
+  });
+
+  it('a chat with history, or one with more to load, is not first', async () => {
+    qc.setQueryData(THREAD, { ...toThreadLike(), hasMore: true });
+    stored();
+    await send();
+    expect(sent()).toEqual([{ conversation_id: 'u-1', is_first_in_conversation: false }]);
+  });
+
+  it('SendMessage’s status read counts as the thread; the chat list is the fallback', async () => {
+    stored();
+    qc.setQueryData([...THREAD, 'status'], toThreadLike());
+    await send();
+    qc.removeQueries({ queryKey: THREAD });
+    qc.setQueryData(['messages', 'me-1', 'chats'], { rows: [], totalUnread: 0 });
+    await send();
+    expect(sent().map((p) => p.is_first_in_conversation)).toEqual([true, true]);
+  });
+
+  it('nothing read: not first', async () => {
+    stored();
+    await send();
+    expect(sent()).toEqual([{ conversation_id: 'u-1', is_first_in_conversation: false }]);
+  });
+
+  it('only a stored message counts: a refusal sends nothing, its retry once', async () => {
+    POST.mockResolvedValueOnce({ data: undefined, error: {}, response: res(500) });
+    const result = await send();
+    expect(sent()).toEqual([]);
+    stored();
+    const clientId = POST.mock.calls[0]![1].body.client_id as string;
+    await act(async () => {
+      await result.current.retry(clientId);
+    });
+    expect(sent()).toHaveLength(1);
   });
 });
