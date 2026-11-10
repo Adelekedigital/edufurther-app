@@ -86,5 +86,15 @@ describe('OverviewTab', () => {
     expect(
       isOverviewEmpty({ ...quiet, features: quiet.features.map((f) => ({ ...f, value: null })) }),
     ).toBe(true);
+    // A real 0% (no listed mentor free) is a number, not an absence.
+    expect(
+      isOverviewEmpty({
+        ...quiet,
+        features: quiet.features.map((f) => ({
+          ...f,
+          value: f.key === 'mentor_supply' ? { value: 0, previous: null } : null,
+        })),
+      }),
+    ).toBe(false);
   });
 });

@@ -19,7 +19,7 @@ export const isOverviewEmpty = (d: Overview) =>
   d.northStar.series.every((p) => p.value === 0) &&
   !d.subTracks.uniqueMentees.value &&
   !d.subTracks.mentorsDelivered.value &&
-  d.features.every((f) => !f.value?.value);
+  d.features.every((f) => f.value?.value == null);
 
 /**
  * Overview (Admin Analytics.dc.html `show.overview`): the platform North
@@ -65,7 +65,9 @@ export function OverviewTab({
           <span className={styles.muted}>{windowLabel}</span>
         </div>
         <div className={styles.valueRow}>
-          <span className={styles.value}>{formatCount(ns.completed.value ?? 0)}</span>
+          <span className={styles.value}>
+            {ns.completed.value === null ? NO_DATA : formatCount(ns.completed.value)}
+          </span>
           {nsChange && (
             <>
               <ChangeText change={nsChange} arrow size="sm" />
