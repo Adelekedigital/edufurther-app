@@ -19,6 +19,10 @@ import { SessionJoinScreen } from './SessionJoinScreen';
 // The lobby through its phases: before the window, open, during and after the call,
 // and back from the entry route. Shares sessionJoin.harness with SessionJoinScreen.test.tsx.
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
+beforeEach(() => track.mockClear());
+
 // The setup lock's flags, switchable per test (lockedPage.harness).
 vi.mock('@/lib/config/auth', async (orig) =>
   (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
@@ -312,6 +316,10 @@ describe('the window is open', () => {
     await userEvent.click(join);
     expect(open).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
+    // PRD 30: once per press, minutes from the start (early is negative).
+    expect(track.mock.calls).toEqual([
+      ['session_join_clicked', { session_id: 'b1', minutes_from_start: -4 }],
+    ]);
   });
 });
 
@@ -333,6 +341,7 @@ describe('back from the entry route (?enter=)', () => {
       screen.getAllByRole('status').filter((el) => el.textContent?.includes(text)),
     ).toHaveLength(1);
     expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(track.mock.calls).toEqual([['session_join_failed', { session_id: 'b1' }]]);
   });
 
   it('closed: says the rule, as the page does', () => {
@@ -382,6 +391,7 @@ describe('back from the entry route (?enter=)', () => {
     renderAt('16:56:00');
     expect(replace).toHaveBeenCalledWith('/sessions/b1?x=1', { scroll: false });
     expect(screen.queryByText(/Try again in a moment/)).not.toBeInTheDocument();
+    expect(track).not.toHaveBeenCalled();
   });
 
   it('nothing to say, and nothing replaced, without the parameter', () => {
@@ -411,6 +421,11 @@ describe('back from the entry route (?enter=)', () => {
     expect(again).toHaveTextContent('We couldn’t join you. Try again in a moment.');
     expect(again).not.toBe(first);
     expect(h.search.get('enter')).toBeNull();
+    // Each return is one failure, never one per render.
+    expect(track.mock.calls).toEqual([
+      ['session_join_failed', { session_id: 'b1' }],
+      ['session_join_failed', { session_id: 'b1' }],
+    ]);
   });
 
   it('following Join drops the line', () => {

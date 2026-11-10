@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -79,6 +79,7 @@ import {
   lobbyWhen,
   PHASE_ANNOUNCEMENT,
 } from './lobbyModel';
+import { track } from '@/lib/analytics/track';
 import styles from './SessionJoinScreen.module.css';
 
 const BACK = { href: '/bookings', label: 'Go to Bookings' };
@@ -108,6 +109,10 @@ function enterProblemText(
       return 'We couldn’t join you. Try again in a moment.';
   }
 }
+
+/** Whole minutes from the scheduled start to now: negative when early (PRD 30). */
+export const minutesFromStart = (startsAt: string, now = Date.now()) =>
+  Math.round((now - Date.parse(startsAt)) / 60_000);
 
 /** "Having a problem? Contact support": the card's last row, on the session and on a failed load. */
 function SupportRow({ href }: { href: string }) {
@@ -234,6 +239,16 @@ export function SessionJoinScreen({ id }: { id: string }) {
     setSaid((last) => ({ text, id: (last?.id ?? 0) + 1 }));
   }
   if (problem && problem.at !== lobbyAt) setProblem(null);
+  // PRD 30: the entry route sent the browser back without the call. Once per
+  // return (the parameter goes right after), not per render or Strict Mode run.
+  const failedSent = useRef<string | null>(null);
+  useEffect(() => {
+    if (heard === null) failedSent.current = null;
+    else if (failedSent.current !== heard) {
+      failedSent.current = heard;
+      track('session_join_failed', { session_id: id });
+    }
+  }, [heard, id]);
   // Not while leaving for Bookings: that replace drops the parameter too, and
   // two replaces racing can leave the page on its skeleton.
   const settledEnter =
@@ -382,7 +397,13 @@ export function SessionJoinScreen({ id }: { id: string }) {
       now,
       timeZone,
       enterHref: enterPath(id),
-      onFollow: () => setProblem(null),
+      onFollow: () => {
+        setProblem(null);
+        track('session_join_clicked', {
+          session_id: id,
+          minutes_from_start: minutesFromStart(b.startsAt),
+        });
+      },
       // Only rendered once the session has loaded, which is in the browser.
       pageUrl: new URL(`/sessions/${encodeURIComponent(id)}`, window.location.origin).toString(),
       onCancel: canCancel(b, now)
