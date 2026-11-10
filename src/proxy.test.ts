@@ -269,3 +269,27 @@ describe('proxy: a mentor landing on Explore goes home before any of it is drawn
     expect(evil.headers.get('location')).toBeNull();
   });
 });
+
+describe('proxy: /ingest goes to PostHog without this site’s cookies (PRD 30)', () => {
+  it('drops the cookie, credentials and the origin-lock header, and skips the session check', async () => {
+    getClaims.mockClear();
+    const res = await proxy(
+      new NextRequest('https://app.test/ingest/e/', {
+        method: 'POST',
+        headers: {
+          cookie: 'sb-x-auth-token=secret; ef_consent=v.1.1',
+          authorization: 'Bearer tok',
+          'x-edufurther-proxy-secret': 'nope',
+          'content-type': 'text/plain',
+        },
+      }),
+    );
+    const overridden = res.headers.get('x-middleware-override-headers') ?? '';
+    expect(overridden.split(',')).not.toContain('cookie');
+    expect(overridden.split(',')).not.toContain('authorization');
+    expect(overridden.split(',')).not.toContain('x-edufurther-proxy-secret');
+    expect(forwarded(res, 'content-type')).toBe('text/plain');
+    expect(forwarded(res, 'cookie')).toBeNull();
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+});

@@ -34,6 +34,20 @@ function forwardToBackend(request: NextRequest): NextResponse {
 }
 
 /**
+ * PRD 30: `/ingest` is rewritten to PostHog (next.config.ts). Same-origin, so
+ * the browser attaches this site's cookies (the Supabase session among them):
+ * they and any credentials are removed here, so the vendor gets none of them.
+ * The body is never read (vercel.json skipMiddlewareRequestBody).
+ */
+export const STRIPPED_FOR_ANALYTICS = ['cookie', 'authorization', PROXY_SECRET_HEADER];
+
+function toAnalytics(request: NextRequest): NextResponse {
+  const headers = new Headers(request.headers);
+  for (const h of STRIPPED_FOR_ANALYTICS) headers.delete(h);
+  return NextResponse.next({ request: { headers } });
+}
+
+/**
  * Next 16 proxy (formerly middleware): forwards the API (above), and keeps the
  * Supabase session cookie fresh on page navigations, so a returning visitor's
  * token is valid before the page calls the API, and tells the render who is
@@ -43,6 +57,7 @@ function forwardToBackend(request: NextRequest): NextResponse {
 export function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (path === '/api/v1' || path.startsWith('/api/v1/')) return forwardToBackend(request);
+  if (path === '/ingest' || path.startsWith('/ingest/')) return toAnalytics(request);
   return refreshSessionCookies(request, ({ userId, accessToken }) => {
     // A mentor landing on Explore goes home before any of it is drawn (owner,
     // 2026-11-01; lib/utils/landingHint). Only for the user just verified.
@@ -77,9 +92,11 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   // Pages (not the mock API, Next assets, app icons and splash screens, or static
-  // files), and the proxied API.
+  // files), the proxied API, and analytics (PRD 30: only to strip cookies
+  // before the /ingest rewrite, static files included).
   matcher: [
-    '/((?!api/|_next/|brand/|pwa-icon/|pwa-splash/|favicon.ico|manifest.webmanifest|.*\\..*).*)',
+    '/((?!api/|ingest/|_next/|brand/|pwa-icon/|pwa-splash/|favicon.ico|manifest.webmanifest|.*\\..*).*)',
     '/api/v1/:path*',
+    '/ingest/:path*',
   ],
 };
