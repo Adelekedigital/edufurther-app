@@ -15,6 +15,9 @@ import styles from './AiField.module.css';
 
 export type AssistMode = 'draft' | 'improve';
 
+/** An AI change landing in the box, or Undo taking it back: the owner decides what it means. */
+export type AiChange = { kind: 'applied'; mode: AssistMode } | { kind: 'undone' };
+
 type AiFieldProps = {
   /** Visible label (AiField.dc.html defaults it to "About"). */
   label: string;
@@ -40,6 +43,8 @@ type AiFieldProps = {
   describedBy?: string;
   /** While an AI call runs: the form around it holds its Save. */
   onBusyChange?: (busy: boolean) => void;
+  /** Each AI change and each Undo of one (the owner's analytics; PRD 30 `writing_assist_used`). */
+  onAiChange?: (change: AiChange) => void;
   textareaProps?: Pick<TextareaHTMLAttributes<HTMLTextAreaElement>, 'onKeyDown'>;
 };
 
@@ -83,6 +88,7 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
     describedBy,
     textareaProps,
     onBusyChange,
+    onAiChange,
   },
   ref,
 ) {
@@ -141,6 +147,7 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
       setPrev(value);
       setBase(out);
       emit(out, out);
+      onAiChange?.({ kind: 'applied', mode });
       setSaid(mode === 'draft' ? LABELS.drafted : LABELS.improved);
       refocus();
     } catch (e) {
@@ -158,6 +165,7 @@ export const AiField = forwardRef<HTMLTextAreaElement, AiFieldProps>(function Ai
     setBase(null);
     setStatus('');
     emit(back, null);
+    onAiChange?.({ kind: 'undone' });
     setSaid(LABELS.restored);
     refocus();
   };

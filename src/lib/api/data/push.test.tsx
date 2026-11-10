@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { forgetPushForSignOut, usePushNotifications } from './push';
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
 const GET = vi.fn();
 const POST = vi.fn();
 const DELETE = vi.fn();
@@ -62,6 +64,7 @@ beforeEach(() => {
   subscribeDevice.mockReset();
   setAppBadge.mockReset();
   requestPermission.mockReset();
+  track.mockClear();
   Object.assign(device, { supported: true, permission: 'default', sub: null, previewing: false });
   vi.stubGlobal('Notification', { requestPermission, permission: 'default' });
 });
@@ -148,6 +151,21 @@ describe('usePushNotifications', () => {
       body: { endpoint: ENDPOINT, keys: { p256dh: 'p', auth: 'a' }, expirationTime: null },
     });
     expect(result.current.failure).toBeNull();
+    // PRD 30 push reach: a new grant, once.
+    expect(track.mock.calls).toEqual([['push_permission_granted', {}]]);
+  });
+
+  it('a permission granted before this tap is no new grant', async () => {
+    server(ok({ vapid_public_key: 'k' }));
+    vi.stubGlobal('Notification', { requestPermission, permission: 'granted' });
+    requestPermission.mockResolvedValue('granted');
+    subscribeDevice.mockRejectedValue(new Error('stop here'));
+    const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.state).toBe('off'));
+    act(() => result.current.turnOn());
+    await waitFor(() => expect(result.current.busy).toBe(false));
+    expect(requestPermission).toHaveBeenCalledTimes(1);
+    expect(track).not.toHaveBeenCalled();
   });
 
   it('turnOn refused by the browser: blocked, nothing subscribed', async () => {
@@ -159,6 +177,7 @@ describe('usePushNotifications', () => {
     await waitFor(() => expect(result.current.failure).toBe('blocked'));
     expect(subscribeDevice).not.toHaveBeenCalled();
     expect(POST).not.toHaveBeenCalled();
+    expect(track).not.toHaveBeenCalled();
   });
 
   it('closing the prompt without an answer is not "blocked": still off, switch kept', async () => {

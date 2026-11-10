@@ -33,6 +33,7 @@ import { SAVE_COPY } from '@/lib/copy/settings';
 import { coverVars, topicIcon } from '@/lib/utils/cover';
 import { personCover } from '@/lib/utils/person';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import { useAssistOutcome } from '@/app/_shell/useAssistOutcome';
 import { checkFullName, NAME_PROBLEM_COPY, tidyName } from '@/lib/utils/name';
 import { useRequiredFields } from '@/lib/utils/useRequiredFields';
 import type { MentorProfileValues } from '@/types/mentorSettings';
@@ -79,6 +80,7 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
     const [query, setQuery] = useState('');
     const search = useLanguageSearch(query, query.trim() !== '');
     const { assist } = useWritingAssist('mentor_about');
+    const assistOutcome = useAssistOutcome('mentor_about');
 
     // `base` is what's saved; `draft` is the form. The server's values come in
     // whenever nothing is unsaved (a refetch must not wipe an edit), with one
@@ -119,6 +121,7 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
     const discard = () => {
       if (base) setDraft(base);
       setPromptVersion(null);
+      assistOutcome.discarded();
       required.reset();
       saving.reset();
       setWaitDraft(false);
@@ -145,6 +148,8 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
         // What landed is saved; only the rest stays unsaved. The name as
         // sent (tidied), so a retry doesn't send it again.
         if (e instanceof MentorProfileSaveError && e.saved.length) {
+          // The About travels with the details.
+          if (e.saved.includes('details')) assistOutcome.accepted();
           setBase(withSaved(base, after, e.saved));
           setSuperseded(version);
           setDraft((d) => (d ? { ...d, name: after.name } : d));
@@ -153,6 +158,7 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
         return false;
       }
       keepFocus();
+      assistOutcome.accepted();
       setSuperseded(version);
       setBase(after);
       setDraft(after);
@@ -269,6 +275,7 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
             return out.text;
           }}
           onAssistBusy={setAssistBusy}
+          onAiChange={assistOutcome.onAiChange}
           preview={
             <>
               <div className={styles.previewHead}>

@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider, onlineManager } from '@tanstack/react
 import { renderHook } from '@testing-library/react';
 import { useSaveConferencing } from './conferencing';
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
 const PATCH = vi.fn();
 vi.mock('./http', () => ({ api: { PATCH: (...a: unknown[]) => PATCH(...a) } }));
 
@@ -13,6 +15,7 @@ describe('useSaveConferencing', () => {
   );
   beforeEach(() => {
     PATCH.mockReset();
+    track.mockClear();
     qc = new QueryClient();
   });
 
@@ -29,6 +32,11 @@ describe('useSaveConferencing', () => {
     });
     const keys = invalidate.mock.calls.map((c) => JSON.stringify(c[0]!.queryKey));
     expect(keys).toEqual(expect.arrayContaining(['["calendar","video","m1"]']));
+    // PRD 30: one conferencing_connected per successful save, whichever screen.
+    expect(track.mock.calls).toEqual([
+      ['conferencing_connected', {}],
+      ['conferencing_connected', {}],
+    ]);
   });
 
   it('offline, fails at once with the offline copy', async () => {
@@ -58,5 +66,6 @@ describe('useSaveConferencing', () => {
         message: 'We couldn’t save your video setting. Try again.',
       },
     );
+    expect(track).not.toHaveBeenCalled();
   });
 });

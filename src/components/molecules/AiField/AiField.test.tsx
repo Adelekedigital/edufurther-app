@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AiField, type AssistMode } from './AiField';
+import { AiField, type AiChange, type AssistMode } from './AiField';
 
 function Harness({
   initial = '',
   drafted = false,
   onAssist,
   draftNote,
+  onAiChange,
 }: {
   initial?: string;
   drafted?: boolean;
   onAssist?: (mode: AssistMode, text: string) => Promise<string>;
   draftNote?: string;
+  onAiChange?: (change: AiChange) => void;
 }) {
   const [text, setText] = useState(initial);
   const [isDraft, setIsDraft] = useState(drafted);
@@ -30,6 +32,7 @@ function Harness({
         hint="Lead with the path you’ve walked."
         onAssist={onAssist}
         draftNote={draftNote}
+        onAiChange={onAiChange}
       />
       <output data-testid="drafted">{String(isDraft)}</output>
     </>
@@ -150,5 +153,35 @@ describe('AiField', () => {
     await user.type(box(), ' More');
     expect(screen.queryByRole('button', { name: 'Undo' })).toBeNull();
     expect(box()).toHaveValue('My text. More');
+  });
+});
+
+describe('AiField: onAiChange (the owner counts outcomes, PRD 30)', () => {
+  it('tells each AI change with its mode, and Undo', async () => {
+    const user = userEvent.setup();
+    const onAiChange = vi.fn();
+    const onAssist = vi.fn().mockResolvedValueOnce('A draft.').mockResolvedValueOnce('Better.');
+    render(<Harness onAssist={onAssist} onAiChange={onAiChange} />);
+    await user.click(screen.getByRole('button', { name: 'Write a draft' }));
+    expect(onAiChange).toHaveBeenLastCalledWith({ kind: 'applied', mode: 'draft' });
+    await user.type(box(), '!');
+    await user.click(screen.getByRole('button', { name: 'Improve' }));
+    expect(onAiChange).toHaveBeenLastCalledWith({ kind: 'applied', mode: 'improve' });
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(onAiChange).toHaveBeenLastCalledWith({ kind: 'undone' });
+    expect(onAiChange).toHaveBeenCalledTimes(3);
+  });
+
+  it('says nothing for an improve that changed nothing, or a failed call', async () => {
+    const user = userEvent.setup();
+    const onAiChange = vi.fn();
+    const onAssist = vi
+      .fn()
+      .mockResolvedValueOnce('Mine.')
+      .mockRejectedValueOnce(new Error('Writing help isn’t available right now.'));
+    render(<Harness initial="Mine." onAssist={onAssist} onAiChange={onAiChange} />);
+    await user.click(screen.getByRole('button', { name: 'Improve' }));
+    await user.click(screen.getByRole('button', { name: 'Improve' }));
+    expect(onAiChange).not.toHaveBeenCalled();
   });
 });

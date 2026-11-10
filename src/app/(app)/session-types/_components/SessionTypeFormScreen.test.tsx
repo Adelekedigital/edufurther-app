@@ -67,6 +67,8 @@ vi.mock('@/lib/api/data/mentors', () => ({
   }),
 }));
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
 const create = vi.fn();
 let defaultsMock: unknown;
 const READY = {
@@ -137,6 +139,7 @@ beforeEach(() => {
   resetFlags();
   create.mockReset();
   createError = null;
+  track.mockClear();
   defaultsMock = READY;
   videoMock = VIDEO_DEFAULT;
   expertise = { status: 'ready', slugs: ['document-preparation', 'school-selection'] };
@@ -274,6 +277,7 @@ describe('SessionTypeFormScreen', () => {
     expect(body.questions).toHaveLength(2);
     expect(windows).toEqual([]);
     expect(screen.getByRole('dialog', { name: 'Session published' })).toBeInTheDocument();
+    expect(track.mock.calls).toEqual([['session_type_created', {}]]);
   });
 
   it('a name the server refuses sends the mentor back to step 1, on the field', async () => {
@@ -293,6 +297,7 @@ describe('SessionTypeFormScreen', () => {
     // Filled but refused: focus goes to it, and "required fields" would be untrue.
     expect(screen.getByRole('textbox', { name: 'Session name' })).toHaveFocus();
     expect(screen.queryByText('Fill in the required fields to continue.')).toBeNull();
+    expect(track).not.toHaveBeenCalled();
   });
 
   it('delete a question confirms first', async () => {
