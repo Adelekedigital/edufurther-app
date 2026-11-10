@@ -94,7 +94,7 @@ export function savePayload(v: EmailVariant, draft: Draft, kept: readonly LineKe
         l,
         { text: textOf(v, draft, l), version: draft[l]?.version ?? v.lines[l]!.version },
       ]),
-    ) as Partial<Record<LineKey, { text: string; version: number }>>,
+    ) as Record<LineKey, { text: string; version: number }>,
     keepEdit: [...kept],
   };
 }
