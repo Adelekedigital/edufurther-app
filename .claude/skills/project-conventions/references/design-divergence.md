@@ -1451,7 +1451,6 @@ Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch tar
 
 | Design says | We do | Why | Revisit when |
 | --- | --- | --- | --- |
-| The alert banner sits between the header and the tabs | First in the tab's panel, under the tabs | Alerts come with each tab's data; above the tabs the banner pushed the whole page down when it arrived (CLS 0.156 at 390px, over the 0.1 budget) | alerts load before the tab's data |
 | Loading, error and empty replace the tabs | The tabs stay; the state fills the tab's panel | PRD 31 states are per tab, and a tab row that vanishes while a tab loads moves everything under it | — |
 | Credits rows Monthly, Starter, Referral, Admin; Granted note "Monthly, starter, referral, admin" | Monthly, Level-ups, Admin, Refunds, Carried over; "Monthly, level-ups, admin and carried over" | Backend decision 308: no starter or referral grants exist; a finished onboarding or a qualifying invite raises the credit level (edufurtherbe-24, 9 Nov) | — |
 | The page ships with the admin nav | Behind `NEXT_PUBLIC_ADMIN_ANALYTICS_ENABLED`: off, no nav item and `/admin/analytics` is not found | Founder, 9 Nov: all at once, once PRD 30's tracking and the routes are live | PRD 30 PRs 1–6 and backend PRs 1–5 ship |
