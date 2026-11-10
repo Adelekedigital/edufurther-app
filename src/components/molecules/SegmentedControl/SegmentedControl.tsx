@@ -14,7 +14,28 @@ export type Segment<V extends string> = {
   iconOnly?: boolean;
 };
 
-type SegmentedControlProps<V extends string> = {
+type SegmentedControlProps<V extends string> = CommonProps<V> &
+  (
+    | {
+        /** outline: bordered segments, the pick filled blue (Session Types.dc.html). */
+        look?: 'outline';
+        size?: never;
+        trailing?: never;
+      }
+    | {
+        /** track: a grey track, the pick a white raised segment (PerformanceChart.dc.html, Admin Analytics.dc.html). */
+        look: 'track';
+        /**
+         * sm 28px (PerformanceChart, segments touch), md 32px (Admin Analytics'
+         * toggles, the default), lg 36px (Admin Analytics' time window).
+         */
+        size?: 'sm' | 'md' | 'lg';
+        /** A control sharing the track after the radios (PerformanceChart's year Select). */
+        trailing?: ReactNode;
+      }
+  );
+
+type CommonProps<V extends string> = {
   options: Segment<V>[];
   value: V;
   onChange: (value: V) => void;
@@ -25,19 +46,6 @@ type SegmentedControlProps<V extends string> = {
    * wide as its label, with its icon (Answer type).
    */
   layout?: 'fill' | 'hug';
-  /**
-   * outline: bordered segments, the pick filled blue (Session Types.dc.html).
-   * track: a grey track, the pick a white raised segment (PerformanceChart.dc.html,
-   * Admin Analytics.dc.html).
-   */
-  look?: 'outline' | 'track';
-  /**
-   * Track only: sm 28px (PerformanceChart, segments touch), md 32px (Admin
-   * Analytics' toggles), lg 36px (Admin Analytics' time window).
-   */
-  size?: 'sm' | 'md' | 'lg';
-  /** Track only: a control sharing the track after the radios (PerformanceChart's year Select). */
-  trailing?: ReactNode;
   /** Width of the whole control; the design draws Price at 200px. */
   width?: number;
   className?: string;
@@ -53,21 +61,12 @@ type SegmentedControlProps<V extends string> = {
  * PerformanceChart and Admin Analytics on the grey track). WAI-ARIA radio
  * group: one tab stop, arrows move and select, Home/End jump.
  */
-export function SegmentedControl<V extends string>({
-  options,
-  value,
-  onChange,
-  label,
-  layout = 'fill',
-  look = 'outline',
-  size = 'md',
-  trailing,
-  width,
-  className,
-  disabled,
-}: SegmentedControlProps<V>) {
+export function SegmentedControl<V extends string>(props: SegmentedControlProps<V>) {
+  const { options, value, onChange, label, layout = 'fill', width, className, disabled } = props;
+  const track = props.look === 'track';
+  const size = (track && props.size) || 'md';
+  const trailing = track ? props.trailing : null;
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  const track = look === 'track';
   // Nothing selected (or a value that isn't offered): the first segment takes
   // the tab stop, so the group is still reachable by keyboard.
   const stop = Math.max(

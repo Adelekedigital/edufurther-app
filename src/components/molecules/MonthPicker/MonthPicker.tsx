@@ -118,8 +118,10 @@ export function MonthPicker({
 }: MonthPickerProps) {
   // Months shown, as offsets from today's: back to min's month only when min
   // is earlier than today (a reporting range); forward to max's, else open.
-  const lo = min && min < today ? monthsBetween(today, min) : 0;
-  const hi = max ? Math.max(lo, monthsBetween(today, max)) : Infinity;
+  // A max before today's month pulls the floor down to it, so max's month shows.
+  const maxAt = max ? monthsBetween(today, max) : Infinity;
+  const lo = Math.min(min && min < today ? monthsBetween(today, min) : 0, maxAt);
+  const hi = Math.max(lo, maxAt);
   const clamp = (o: number) => Math.min(hi, Math.max(lo, o));
   const [offset, setOffset] = useState(() =>
     clamp(initialMonth ? monthsBetween(today, initialMonth) : 0),
@@ -200,12 +202,14 @@ export function MonthPicker({
         <span id={headingId} className={styles.month} aria-live="polite">
           {monthLabel(month)}
         </span>
+        {/* aria-disabled, not disabled: a button that disables itself while
+            focused would drop focus to the page. At an end a press does nothing. */}
         <div className={styles.nav}>
           <button
             type="button"
             className={styles.navBtn}
             aria-label="Previous month"
-            disabled={offset <= lo}
+            aria-disabled={offset <= lo || undefined}
             onClick={() => setOffset((o) => clamp(o - 1))}
           >
             <Icon name="chevron_left" size={20} />
@@ -214,7 +218,7 @@ export function MonthPicker({
             type="button"
             className={styles.navBtn}
             aria-label="Next month"
-            disabled={offset >= hi}
+            aria-disabled={offset >= hi || undefined}
             onClick={() => setOffset((o) => clamp(o + 1))}
           >
             <Icon name="chevron_right" size={20} />

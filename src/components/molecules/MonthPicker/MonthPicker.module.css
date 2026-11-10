@@ -34,10 +34,10 @@
   cursor: pointer;
   color: var(--ink-900);
 }
-.navBtn:hover:not(:disabled) {
+.navBtn:hover:not([aria-disabled='true']) {
   background: var(--ink-50);
 }
-.navBtn:disabled {
+.navBtn[aria-disabled='true'] {
   color: var(--ink-300);
   cursor: default;
 }

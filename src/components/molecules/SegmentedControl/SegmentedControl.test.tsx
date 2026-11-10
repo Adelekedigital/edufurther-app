@@ -82,6 +82,25 @@ describe('SegmentedControl', () => {
     expect(onChange).toHaveBeenCalledWith('line');
   });
 
+  it('size and trailing exist only on the track look (type check)', () => {
+    const base = {
+      label: 'Price',
+      value: 'free' as const,
+      onChange: () => {},
+      options: [{ value: 'free' as const, label: 'Free' }],
+    };
+    render(
+      <>
+        {/* @ts-expect-error size is track-only */}
+        <SegmentedControl {...base} size="lg" />
+        {/* @ts-expect-error trailing is track-only */}
+        <SegmentedControl {...base} look="outline" trailing={<span />} />
+        <SegmentedControl {...base} look="track" size="lg" trailing={<span />} />
+      </>,
+    );
+    expect(screen.getAllByRole('radiogroup', { name: 'Price' })).toHaveLength(3);
+  });
+
   it('track look keeps the keyboard model', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

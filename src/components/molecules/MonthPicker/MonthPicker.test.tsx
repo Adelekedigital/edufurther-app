@@ -56,11 +56,25 @@ describe('MonthPicker, read-only (Month at a glance)', () => {
   it('pages forward and back, never before this month', async () => {
     const user = userEvent.setup();
     render(<MonthPicker readOnly today="2026-12-20" />);
-    expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
+    const prev = screen.getByRole('button', { name: 'Previous month' });
+    expect(prev).toHaveAttribute('aria-disabled', 'true');
+    await user.click(prev);
+    expect(screen.getByRole('table', { name: 'December 2026' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next month' }));
     expect(screen.getByRole('table', { name: 'January 2027' })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Previous month' }));
+    await user.click(prev);
     expect(screen.getByRole('table', { name: 'December 2026' })).toBeInTheDocument();
+  });
+
+  it('keeps focus on Previous when it reaches the first month', async () => {
+    const user = userEvent.setup();
+    render(<MonthPicker readOnly today="2026-12-20" />);
+    await user.click(screen.getByRole('button', { name: 'Next month' }));
+    const prev = screen.getByRole('button', { name: 'Previous month' });
+    prev.focus();
+    await user.keyboard('{Enter}');
+    expect(prev).toHaveAttribute('aria-disabled', 'true');
+    expect(prev).toHaveFocus();
   });
 });
 
@@ -69,7 +83,9 @@ describe('MonthPicker, pickable', () => {
     const user = userEvent.setup();
     const onPick = vi.fn();
     render(<MonthPicker today="2026-10-29" onPick={onPick} />);
-    // Previous month is off this month, so: Next month, then the days.
+    // Previous month (off this month, but focusable: aria-disabled), Next month, then the days.
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Previous month' })).toHaveFocus();
     await user.tab();
     await user.tab();
     expect(screen.getByRole('button', { name: /Thursday, October 29/ })).toHaveFocus();
@@ -251,10 +267,33 @@ describe('MonthPicker, a reporting range (min in the past, max today)', () => {
     const user = userEvent.setup();
     render(range());
     expect(screen.getByRole('grid', { name: 'November 2026' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next month' })).toBeDisabled();
+    const next = screen.getByRole('button', { name: 'Next month' });
+    expect(next).toHaveAttribute('aria-disabled', 'true');
+    await user.click(next);
+    expect(screen.getByRole('grid', { name: 'November 2026' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Previous month' }));
     expect(screen.getByRole('grid', { name: 'October 2026' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Next month' })).toBeEnabled();
+    expect(next).not.toHaveAttribute('aria-disabled');
+  });
+
+  it('keeps focus on Next when it reaches max’s month', async () => {
+    const user = userEvent.setup();
+    render(range('2026-10-01'));
+    const next = screen.getByRole('button', { name: 'Next month' });
+    next.focus();
+    await user.keyboard('{Enter}');
+    expect(screen.getByRole('grid', { name: 'November 2026' })).toBeInTheDocument();
+    expect(next).toHaveAttribute('aria-disabled', 'true');
+    expect(next).toHaveFocus();
+  });
+
+  it('max before today’s month, no min: opens on max’s month and stays there', () => {
+    render(<MonthPicker today="2026-11-09" max="2026-09-30" onPick={() => {}} />);
+    expect(screen.getByRole('grid', { name: 'September 2026' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next month' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('days after max can be reached but not picked', async () => {
@@ -273,7 +312,10 @@ describe('MonthPicker, a reporting range (min in the past, max today)', () => {
   it('opens on an earlier month, and stops at min’s month', () => {
     render(range('2024-06-15'));
     expect(screen.getByRole('grid', { name: 'June 2024' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Previous month' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Previous month' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
   });
 
   it('a month outside min..max opens on the nearest end', () => {
