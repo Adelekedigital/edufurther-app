@@ -5,7 +5,6 @@ import { windowKey, windowParams, type AnalyticsWindow, type Metric } from '@/li
 import { ApiError, apiError, retryOnce } from './errors';
 import { keys } from './keys';
 import { api } from './http';
-import { untyped } from './pending';
 import type {
   WireAlertKey,
   WireAnalyticsAlert,
@@ -17,15 +16,15 @@ import type {
   WireGrowth,
   WireNoShowReason,
   WireOverview,
+  WireProfileViewSource,
   WireSections,
   WireSessions,
   WireStageKey,
   WireSupply,
 } from './pendingAnalytics';
 
-// Admin Analytics (PRD 31). Every section (backend #609, #614, #618) is on the
-// generated client; funnels and Behaviour go through `untyped` until their
-// routes are in the published spec (PRD 30, PostHog).
+// Admin Analytics (PRD 31): every route is on the generated client (backend
+// #609, #614, #618 for the database tabs; #633 for funnels and Behaviour).
 
 export type AnalyticsTab = 'overview' | 'sessions' | 'supply' | 'credits' | 'growth' | 'funnels';
 export type FunnelName =
@@ -263,23 +262,13 @@ type SectionOf<K extends SectionName> = ReturnType<(typeof MAPPERS)[K]>;
 /** The query string, as both clients take it. */
 const query = (w: AnalyticsWindow, compare: boolean) => windowParams(w, compare);
 
-/** Sections in the published spec; the rest are PENDING BACKEND. */
-const PUBLISHED = ['overview', 'sessions', 'supply', 'credits', 'growth'] as const;
-type Published = (typeof PUBLISHED)[number];
-const isPublished = (s: SectionName): s is Published =>
-  (PUBLISHED as readonly string[]).includes(s);
-
-function getSection(
+const getSection = (
   section: SectionName,
   w: AnalyticsWindow,
   compare: boolean,
   signal: AbortSignal,
-) {
-  const init = { params: { query: query(w, compare) }, signal };
-  return isPublished(section)
-    ? api.GET(`/api/v1/admin/analytics/${section}`, init)
-    : untyped.GET(`/api/v1/admin/analytics/${section}`, init);
-}
+) =>
+  api.GET(`/api/v1/admin/analytics/${section}`, { params: { query: query(w, compare) }, signal });
 
 function useSection<K extends SectionName>(
   section: K,
@@ -348,13 +337,13 @@ export function useAnalyticsFunnel(
   return useQuery({
     queryKey: keys.admin.analyticsFunnel(adminId ?? 'none', name, by, windowKey(w)),
     queryFn: async ({ signal }): Promise<Funnel> => {
-      const { data, error, response } = await untyped.GET(
-        `/api/v1/admin/analytics/funnels/${name}`,
+      const { data, error, response } = await api.GET('/api/v1/admin/analytics/funnels/{name}', {
         // The previous period isn't shown on a funnel: not asked for.
-        { params: { query: { ...query(w, false), by } }, signal },
-      );
+        params: { path: { name }, query: { ...query(w, false), by } },
+        signal,
+      });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return (data as WireFunnel).steps;
+      return data.steps;
     },
     enabled: adminId !== null,
     staleTime: STALE,
@@ -362,16 +351,16 @@ export function useAnalyticsFunnel(
   });
 }
 
-/** The event cards' numbers (rates are percentages). */
+/** The event cards' numbers: rates are percentages, null with nothing to divide by. */
 export type Behaviour = {
-  login: { attempts: number; failedRate: number; failedMigratedRate: number };
-  search: { searches: number; noResultRate: number; profileViews: number };
-  profileViewsBySource: { source: string; label: string; share: number }[];
+  login: { attempts: number; failedRate: number | null; failedMigratedRate: number | null };
+  search: { searches: number; noResultRate: number | null; profileViews: number };
+  profileViewsBySource: { source: WireProfileViewSource; share: number | null }[];
   joining: { clicked: number; failed: number; medianMinutesBefore: number | null };
-  writingAssist: { used: number; acceptedRate: number; discardedRate: number };
-  app: { installed: number; pushAllowedRate: number };
+  writingAssist: { used: number; acceptedRate: number | null; discardedRate: number | null };
+  app: { installed: number; pushAllowedRate: number | null };
   errorsByScreen: { route: string; count: number }[];
-  replaysUrl: string;
+  replaysUrl: string | null;
 };
 
 export const toBehaviour = (w: WireBehaviour): Behaviour => ({
@@ -407,12 +396,12 @@ export function useAnalyticsBehaviour(adminId: string | null, w: AnalyticsWindow
     queryKey: keys.admin.analytics(adminId ?? 'none', 'behaviour', windowKey(w), false),
     queryFn: async ({ signal }): Promise<Behaviour> => {
       // The event cards show no change: the previous period isn't asked for.
-      const { data, error, response } = await untyped.GET('/api/v1/admin/analytics/behaviour', {
+      const { data, error, response } = await api.GET('/api/v1/admin/analytics/behaviour', {
         params: { query: query(w, false) },
         signal,
       });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return toBehaviour(data as WireBehaviour);
+      return toBehaviour(data);
     },
     enabled: adminId !== null,
     staleTime: STALE,
