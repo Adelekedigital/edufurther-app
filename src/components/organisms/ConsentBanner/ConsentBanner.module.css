@@ -64,9 +64,11 @@
   gap: var(--space-3);
 }
 
-/* Phones: the buttons share the card's width under the text, half each. */
+/* Phones: the buttons share the card's width under the text, half each, and
+   the card sits above the app's 56px tab bar (AppShell .tabs) so no tab hides. */
 @media (max-width: 767px) {
   .banner {
+    bottom: calc(var(--space-14) + var(--space-2) + env(safe-area-inset-bottom));
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-4);
