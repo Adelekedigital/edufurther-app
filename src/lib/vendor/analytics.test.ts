@@ -6,8 +6,11 @@ const ph = vi.hoisted(() => ({
   identify: vi.fn(),
   reset: vi.fn(),
   opt_in_capturing: vi.fn(),
+  opt_out_capturing: vi.fn(),
   startSessionRecording: vi.fn(),
   stopSessionRecording: vi.fn(),
+  persistence: { remove: vi.fn() },
+  sessionPersistence: { remove: vi.fn() },
   status: 'pending' as 'granted' | 'denied' | 'pending',
   get_explicit_consent_status() {
     return this.status;
@@ -82,6 +85,9 @@ describe('the PostHog seam', () => {
     v.setMode('cookieless');
     expect(ph.stopSessionRecording).toHaveBeenCalled();
     expect(ph.reset).toHaveBeenCalled();
+    expect(ph.opt_out_capturing).toHaveBeenCalled();
+    expect(ph.persistence.remove).toHaveBeenCalled();
+    expect(ph.sessionPersistence.remove).toHaveBeenCalled();
     v.sink.identify('u1', { role: 'mentee' });
     expect(ph.identify).not.toHaveBeenCalled();
   });
@@ -91,6 +97,12 @@ describe('the PostHog seam', () => {
     const v = await loadAnalytics('k', '/ingest');
     v.setMode('cookieless');
     expect(ph.reset).toHaveBeenCalledTimes(1);
+  });
+
+  it('log-out while cookieless writes nothing', async () => {
+    const v = await loadAnalytics('k', '/ingest');
+    v.sink.reset();
+    expect(ph.reset).not.toHaveBeenCalled();
   });
 
   it('log-out resets and keeps an accepted answer', async () => {

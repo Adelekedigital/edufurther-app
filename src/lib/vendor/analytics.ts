@@ -92,10 +92,12 @@ export function wrap(ph: PostHog): VendorAnalytics {
         if (mode === 'identified') ph.identify(userId, props);
       },
       reset: () => {
+        // Cookieless has no id on the device to reset (and a reset would write one).
+        if (mode !== 'identified') return;
         stopReplay();
         ph.reset();
-        // reset() returns PostHog to its default (opted out); keep an accepted answer.
-        if (mode === 'identified') ph.opt_in_capturing({ captureEventName: false });
+        // reset() returns PostHog to its default (opted out); keep the accepted answer.
+        ph.opt_in_capturing({ captureEventName: false });
       },
     },
     setMode: (next) => {
@@ -108,6 +110,13 @@ export function wrap(ph: PostHog): VendorAnalytics {
         // the default (opted out, so cookieless) with nothing stored.
         stopReplay();
         ph.reset();
+        // reset() mints a fresh id and keeps storing it: opting out switches
+        // PostHog to cookieless (storage off), then its cookie and storage go,
+        // so a withdrawal leaves no identifier on the device. Only the
+        // vendor's own "declined" marker stays.
+        ph.opt_out_capturing();
+        ph.persistence?.remove();
+        ph.sessionPersistence?.remove();
       }
     },
     setReplay: (on) => {
