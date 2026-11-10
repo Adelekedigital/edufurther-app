@@ -49,24 +49,24 @@ export function cookieDomain(host: string): string | null {
   return h === 'edufurther.org' || h.endsWith('.edufurther.org') ? '.edufurther.org' : null;
 }
 
-export function readConsentCookie(): ConsentAnswer | null {
+function readCookie(name: string): string | null {
   try {
     for (const part of document.cookie.split(';')) {
       const [k, ...v] = part.trim().split('=');
-      if (k === CONSENT_COOKIE) return parseConsent(v.join('='));
+      if (k === name) return v.join('=');
     }
   } catch {
-    // Cookies off: unanswered.
+    // Cookies off: nothing.
   }
   return null;
 }
 
-export function writeConsentCookie(a: ConsentAnswer): void {
+function writeCookie(name: string, value: string): void {
   try {
     const domain = cookieDomain(window.location.hostname);
     const secure = window.location.protocol === 'https:';
     document.cookie = [
-      `${CONSENT_COOKIE}=${formatConsent(a)}`,
+      `${name}=${value}`,
       'Path=/',
       `Max-Age=${MAX_AGE_S}`,
       'SameSite=Lax',
@@ -74,16 +74,51 @@ export function writeConsentCookie(a: ConsentAnswer): void {
       ...(secure ? ['Secure'] : []),
     ].join('; ');
   } catch {
-    // Cookies off: the answer holds for this page only (the store has it).
+    // Cookies off: held for this page only.
   }
+}
+
+/** The device's answer. A time ahead of this device's clock is read as now. */
+export function readConsentCookie(now = Date.now()): ConsentAnswer | null {
+  const a = parseConsent(readCookie(CONSENT_COOKIE));
+  return a && { ...a, answeredAt: Math.min(a.answeredAt, now) };
+}
+
+export function writeConsentCookie(a: ConsentAnswer): void {
+  writeCookie(CONSENT_COOKIE, formatConsent(a));
+}
+
+/**
+ * The last log-out on this device (PRD 30, shared device): an answer given
+ * before it was someone else's, so it counts as unanswered (the banner asks
+ * again, nothing is sent to the next account). Only a time, beside the answer.
+ */
+export const SIGNED_OUT_COOKIE = 'ef_consent_out';
+
+export function markSignedOut(now = Date.now()): void {
+  writeCookie(SIGNED_OUT_COOKIE, String(Math.floor(now / 1000)));
+}
+
+export function readSignedOut(now = Date.now()): number | null {
+  const raw = readCookie(SIGNED_OUT_COOKIE);
+  if (!raw || !/^\d{1,12}$/.test(raw)) return null;
+  return Math.min(Number(raw) * 1000, now);
+}
+
+/** The device's answer, unless it predates the last log-out here. */
+export function stillValid(
+  a: ConsentAnswer | null,
+  signedOutAt: number | null,
+): ConsentAnswer | null {
+  return a && (signedOutAt === null || a.answeredAt > signedOutAt) ? a : null;
 }
 
 /** The account's stored answer (`/me` analytics_consent), as an answer. */
 export function fromServer(
-  c: { granted: boolean; version: string; answered_at: string } | null | undefined,
+  c: { granted: boolean; version: string; answeredAt: string } | null | undefined,
 ): ConsentAnswer | null {
   if (!c) return null;
-  const at = Date.parse(c.answered_at);
+  const at = Date.parse(c.answeredAt);
   return { granted: c.granted, version: c.version, answeredAt: Number.isNaN(at) ? 0 : at };
 }
 
@@ -103,4 +138,23 @@ export function reconcile(
   if (c && (!s || c.answeredAt > s.answeredAt))
     return { answer: c, push: !s || s.granted !== c.granted, write: false };
   return { answer: s, push: false, write: !c || c.granted !== s!.granted };
+}
+
+/**
+ * The answer in force, for the analytics root and Settings alike: one given
+ * on this page wins; otherwise the device's (unless it predates the last
+ * log-out here) and, for a member, the account's, newest first.
+ */
+export function effectiveConsent(i: {
+  stored: ConsentAnswer | null;
+  here: boolean;
+  signedOutAt: number | null;
+  /** A member's `/me` answer; undefined for a guest. */
+  server?: { granted: boolean; version: string; answeredAt: string } | null;
+  member: boolean;
+}): { answer: ConsentAnswer | null; push: boolean; write: boolean } {
+  if (i.here) return { answer: i.stored, push: false, write: false };
+  const device = stillValid(i.stored, i.signedOutAt);
+  if (!i.member) return { answer: device, push: false, write: false };
+  return reconcile(device, fromServer(i.server));
 }

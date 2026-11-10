@@ -33,16 +33,15 @@ describe('the flag and consent matrix', () => {
 });
 
 describe('replayAllowed', () => {
-  it.each([
-    '/onboarding',
-    '/onboarding/mentee',
-    '/onboarding/mentor',
-    '/explore',
-    '/mentors/ada-o',
-  ])('records %s', (p) => expect(replayAllowed(p)).toBe(true));
+  it.each(['/onboarding', '/onboarding/mentee', '/onboarding/mentor'])('records %s', (p) =>
+    expect(replayAllowed(p)).toBe(true),
+  );
 
   it.each([
     '/messages',
+    '/explore',
+    '/mentors/ada-o',
+    '/onboardingx',
     '/settings',
     '/bookings',
     '/sessions/1',

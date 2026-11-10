@@ -53,7 +53,13 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     completedSessions: me.mentee_completed_sessions,
     primaryRole: me.primary_role ?? undefined,
     isMigrated: me.is_migrated,
-    analyticsConsent: me.analytics_consent ?? null,
+    analyticsConsent: me.analytics_consent
+      ? {
+          granted: me.analytics_consent.granted,
+          version: me.analytics_consent.version,
+          answeredAt: me.analytics_consent.answered_at,
+        }
+      : null,
     createdAt: me.created_at,
     credits: me.credits ? toCredits(me.credits) : null,
     avatarUrl: me.profile?.avatar_url ?? null,

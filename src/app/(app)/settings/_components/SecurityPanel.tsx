@@ -11,7 +11,8 @@ import { markAccountDeleted, useSignOut } from '@/lib/api/data/auth';
 import { usePushNotifications } from '@/lib/api/data/push';
 import { useAnalyticsConsent } from '@/lib/api/data/analyticsConsent';
 import { usePreview } from '@/lib/api/data/preview';
-import { isCurrent } from '@/lib/analytics/consent';
+import { effectiveConsent, isCurrent, readSignedOut } from '@/lib/analytics/consent';
+import { useViewer } from '@/lib/api/data/viewer';
 import { CONSENT_BANNER_LIVE } from '@/lib/config/analytics';
 import { useMenteeProfile } from '@/lib/api/data/settings';
 import { SETTINGS_COPY } from '@/lib/copy/settings';
@@ -37,6 +38,16 @@ export function SecurityPanel({
   const deleting = useDeleteAccount();
   const push = usePushNotifications(userId);
   const consent = useAnalyticsConsent(userId);
+  const viewer = useViewer();
+  // The same answer the analytics root acts on (AnalyticsRoot).
+  const [signedOutAt] = useState(() => readSignedOut());
+  const shown = effectiveConsent({
+    stored: consent.answer,
+    here: consent.here,
+    signedOutAt,
+    server: viewer.kind === 'member' ? viewer.analyticsConsent : undefined,
+    member: viewer.kind === 'member',
+  }).answer;
   const previewing = usePreview().sessionId !== null;
   const signOut = useSignOut('/login?deleted=1', markAccountDeleted);
   const [open, setOpen] = useState(false);
@@ -94,7 +105,7 @@ export function SecurityPanel({
       analytics={
         CONSENT_BANNER_LIVE && !previewing
           ? {
-              granted: isCurrent(consent.answer) && consent.answer.granted,
+              granted: isCurrent(shown) && shown.granted,
               busy: consent.busy,
               onChange: (on) => void consent.choose(on),
             }

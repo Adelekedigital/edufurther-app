@@ -1,14 +1,19 @@
 'use client';
 
 import { useCallback, useState, useSyncExternalStore } from 'react';
+import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import type { ConsentAnswer } from '@/lib/analytics/consent';
+import { fromServer, type ConsentAnswer } from '@/lib/analytics/consent';
 import { consentStore } from '@/lib/analytics/consentStore';
 import type { Acquisition } from '@/lib/analytics/acquisition';
 import { api } from './http';
+import { keys } from './keys';
 import { isPreviewing } from './previewStore';
 
 type AcquisitionRead = components['schemas']['AcquisitionRead'];
+
+/** Where the account came from, as POST /me/acquisition records it (the domain's name for it). */
+export type SignupRead = AcquisitionRead;
 
 /**
  * The account's half of PRD 30: the consent answer
@@ -18,16 +23,30 @@ type AcquisitionRead = components['schemas']['AcquisitionRead'];
  * sent in a preview: the admin didn't answer for the person they're viewing.
  */
 
-/** Stores the answer on the account. False when it didn't land; the cookie still holds it and the next visit retries. */
-export async function saveConsent(a: ConsentAnswer): Promise<boolean> {
-  if (isPreviewing()) return false;
+/**
+ * Stores the answer on the account and returns it as stored (the server's
+ * `answered_at`), or null when it didn't land: the cookie still holds it and
+ * the next visit retries. The cookie takes the server's time (one clock for
+ * every later comparison) and the cached /me is refetched.
+ */
+export async function saveConsent(
+  a: ConsentAnswer,
+  qc?: QueryClient,
+): Promise<ConsentAnswer | null> {
+  if (isPreviewing()) return null;
   try {
-    const { response } = await api.PUT('/api/v1/me/consents/analytics', {
+    const { data, response } = await api.PUT('/api/v1/me/consents/analytics', {
       body: { granted: a.granted, version: a.version },
     });
-    return response.ok;
+    if (!response.ok) return null;
+    const stored = data
+      ? fromServer({ granted: data.granted, version: data.version, answeredAt: data.answered_at })
+      : null;
+    if (stored) consentStore.confirm(stored);
+    void qc?.invalidateQueries({ queryKey: keys.viewer.all });
+    return stored ?? a;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -57,7 +76,7 @@ function toAcquisitionRead(v: unknown): AcquisitionRead | null {
 
 export type AcquisitionResult =
   /** Recorded now (201) or already there (200); `read` when the answer carried it. */
-  { ok: true; read: AcquisitionRead | null } | { ok: false };
+  { ok: true; read: SignupRead | null } | { ok: false };
 
 /**
  * Sends the held arrival, once per account (the server keeps the first: 201,
@@ -88,11 +107,12 @@ export async function recordAcquisition(held: Acquisition | null): Promise<Acqui
  * a way to answer. A member's answer is stored on the account too.
  */
 export function useAnalyticsConsent(memberId: string | null) {
-  const answer = useSyncExternalStore(
+  const { answer, here } = useSyncExternalStore(
     consentStore.subscribe,
-    consentStore.get,
-    consentStore.getServer,
+    consentStore.snapshot,
+    consentStore.snapshotServer,
   );
+  const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const choose = useCallback(
     async (granted: boolean) => {
@@ -101,12 +121,13 @@ export function useAnalyticsConsent(memberId: string | null) {
       if (!memberId) return;
       setBusy(true);
       try {
-        await saveConsent(a);
+        await saveConsent(a, qc);
       } finally {
         setBusy(false);
       }
     },
-    [memberId],
+    [memberId, qc],
   );
-  return { answer, choose, busy };
+  /** `here`: answered on this page, which wins over any stored answer until it reloads. */
+  return { answer, here, choose, busy };
 }

@@ -1,4 +1,9 @@
 import {
+  SIGNED_OUT_COOKIE,
+  effectiveConsent,
+  markSignedOut,
+  readSignedOut,
+  stillValid,
   CONSENT_COOKIE,
   CONSENT_VERSION,
   cookieDomain,
@@ -18,6 +23,7 @@ const no = (t = 100) => ({ granted: false, version: CONSENT_VERSION, answeredAt:
 
 afterEach(() => {
   document.cookie = `${CONSENT_COOKIE}=; Path=/; Max-Age=0`;
+  document.cookie = `${SIGNED_OUT_COOKIE}=; Path=/; Max-Age=0`;
   resetConsentStoreForTests();
 });
 
@@ -77,7 +83,7 @@ describe('reading and writing the cookie', () => {
     expect(a).toEqual(yes(1700000000));
     expect(heard).toHaveBeenCalledTimes(1);
     expect(readConsentCookie()).toEqual(a);
-    expect(consentStore.getServer()).toBeNull();
+    expect(consentStore.snapshotServer().answer).toBeNull();
   });
 });
 
@@ -114,10 +120,86 @@ describe('reconcile: the newest answer wins', () => {
   });
 
   it('reads the account answer from /me', () => {
-    expect(
-      fromServer({ granted: true, version: 'v', answered_at: '1970-01-01T00:01:40Z' }),
-    ).toEqual({ granted: true, version: 'v', answeredAt: 100_000 });
+    expect(fromServer({ granted: true, version: 'v', answeredAt: '1970-01-01T00:01:40Z' })).toEqual(
+      { granted: true, version: 'v', answeredAt: 100_000 },
+    );
     expect(fromServer(null)).toBeNull();
     expect(fromServer(undefined)).toBeNull();
+  });
+});
+
+describe('clocks', () => {
+  it('a device time ahead of this clock is read as now', () => {
+    writeConsentCookie(yes(9_000_000_000));
+    expect(readConsentCookie(at(1000))?.answeredAt).toBe(at(1000));
+  });
+});
+
+describe('an answer given on this page', () => {
+  it('wins over a newer account answer, whatever the clocks say', () => {
+    const r = effectiveConsent({
+      stored: no(100),
+      here: true,
+      signedOutAt: null,
+      server: { granted: true, version: CONSENT_VERSION, answeredAt: '2100-01-01T00:00:00Z' },
+      member: true,
+    });
+    expect(r).toEqual({ answer: no(100), push: false, write: false });
+  });
+
+  it('is kept when the server confirms it with its own time, and not when they changed their mind', () => {
+    consentStore.answer(false, at(100));
+    consentStore.confirm(no(90));
+    expect(consentStore.snapshot()).toEqual({ answer: no(90), here: true });
+    consentStore.confirm(yes(95));
+    expect(consentStore.get()).toEqual(no(90));
+  });
+
+  it('is not replaced by adopting the account answer', () => {
+    consentStore.answer(false, at(100));
+    consentStore.adopt(yes(200));
+    expect(consentStore.get()).toEqual(no(100));
+  });
+});
+
+describe('shared device: the last log-out', () => {
+  it('is kept in its own cookie, never ahead of now', () => {
+    expect(readSignedOut()).toBeNull();
+    markSignedOut(at(500));
+    expect(readSignedOut(at(1000))).toBe(at(500));
+    expect(readSignedOut(at(400))).toBe(at(400));
+  });
+
+  it('a device answer from before it is unanswered for the next person', () => {
+    expect(stillValid(yes(100), at(200))).toBeNull();
+    expect(stillValid(yes(300), at(200))).toEqual(yes(300));
+    expect(stillValid(yes(100), null)).toEqual(yes(100));
+    // A new account: the banner asks, nothing is pushed.
+    expect(
+      effectiveConsent({
+        stored: yes(100),
+        here: false,
+        signedOutAt: at(200),
+        server: null,
+        member: true,
+      }),
+    ).toEqual({ answer: null, push: false, write: false });
+    // A guest after the log-out: asked again too.
+    expect(
+      effectiveConsent({ stored: yes(100), here: false, signedOutAt: at(200), member: false })
+        .answer,
+    ).toBeNull();
+  });
+
+  it('the same person signing back in keeps the answer on their account', () => {
+    const r = effectiveConsent({
+      stored: yes(100),
+      here: false,
+      signedOutAt: at(200),
+      server: { granted: true, version: CONSENT_VERSION, answeredAt: '1970-01-01T00:01:40Z' },
+      member: true,
+    });
+    expect(r.answer).toEqual(yes(100));
+    expect(r.push).toBe(false);
   });
 });

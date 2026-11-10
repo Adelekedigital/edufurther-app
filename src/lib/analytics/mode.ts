@@ -33,15 +33,11 @@ export function bannerShown(i: Omit<ModeInputs, 'keySet'>): boolean {
 }
 
 /**
- * Replay runs only on onboarding and booking surfaces (PRD 30): the
- * onboarding flows, and Explore and mentor profiles, where the booking modal
- * opens. Never Messages; intake answers and message dialogs on these routes
- * are blocked inside the recording (`data-no-replay`, lib/vendor/analytics).
+ * Replay by route only on the onboarding flows (PRD 30); booking records only
+ * while its modal is open (`setReplayScope('booking')`, lib/analytics/track).
+ * Never Messages. Intake answers, message dialogs, private files, photos and
+ * the account menu are blocked inside a recording (`data-no-replay`).
  */
-const REPLAY_PREFIXES = ['/onboarding', '/explore', '/mentors/'];
-
 export function replayAllowed(path: string): boolean {
-  return REPLAY_PREFIXES.some((p) =>
-    p.endsWith('/') ? path.startsWith(p) : path === p || path.startsWith(`${p}/`),
-  );
+  return path === '/onboarding' || path.startsWith('/onboarding/');
 }

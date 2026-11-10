@@ -254,7 +254,7 @@ export type Viewer =
        * The account's answer to analytics cookies (`/me` analytics_consent):
        * null until answered, absent when not known (the mock viewers).
        */
-      analyticsConsent?: { granted: boolean; version: string; answered_at: string } | null;
+      analyticsConsent?: { granted: boolean; version: string; answeredAt: string } | null;
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
       /** When the account was made (`/me` created_at). Absent: not known. */

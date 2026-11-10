@@ -2,13 +2,19 @@ import {
   acquisitionSent,
   cleanUtm,
   markAcquisitionSent,
+  forgetAcquisitionSent,
   readArrival,
   rememberArrival,
+  resetAcquisitionForTests,
+  setAcquisitionPersistence,
   storedAcquisition,
 } from './acquisition';
 
 const HOST = 'app.edufurther.org';
-beforeEach(() => localStorage.clear());
+beforeEach(() => {
+  localStorage.clear();
+  resetAcquisitionForTests();
+});
 
 describe('cleanUtm: UTM values are untrusted', () => {
   it('keeps a plain value, lower-cased', () => {
@@ -77,7 +83,7 @@ describe('holding the arrival', () => {
     });
   });
 
-  it('expires after 30 days, and drops a tampered value', () => {
+  it('expires after 30 days, and drops a tampered value kept from an earlier visit', () => {
     rememberArrival({ source: 'campaign' }, 0);
     expect(storedAcquisition(31 * 24 * 60 * 60_000)).toBeNull();
     localStorage.setItem(
@@ -89,6 +95,36 @@ describe('holding the arrival', () => {
     expect(storedAcquisition(1)).toBeNull();
     localStorage.setItem('ef-acquisition', '{not json');
     expect(storedAcquisition(1)).toBeNull();
+  });
+
+  it('writes nothing to the device before Accept', () => {
+    rememberArrival({ source: 'campaign', channel: 'linkedin' });
+    markAcquisitionSent('u1');
+    rememberArrival({ source: 'invite', referral_code: 'abc' });
+    expect(localStorage.length).toBe(0);
+    expect(acquisitionSent('u1')).toBe(true);
+    expect(storedAcquisition()).toEqual({ source: 'invite', referral_code: 'abc' });
+  });
+
+  it('once identified, memory goes to the device; a withdrawal removes it again', () => {
+    rememberArrival({ source: 'campaign', channel: 'linkedin' });
+    setAcquisitionPersistence(true);
+    expect(JSON.parse(localStorage.getItem('ef-acquisition')!)).toMatchObject({
+      source: 'campaign',
+      channel: 'linkedin',
+    });
+    markAcquisitionSent('u1');
+    expect(localStorage.getItem('ef-acquisition-sent')).toBe('["u1"]');
+    setAcquisitionPersistence(false);
+    expect(localStorage.getItem('ef-acquisition')).toBeNull();
+    expect(localStorage.getItem('ef-acquisition-sent')).toBeNull();
+  });
+
+  it('log-out forgets who was sent', () => {
+    setAcquisitionPersistence(true);
+    markAcquisitionSent('u1');
+    forgetAcquisitionSent();
+    expect(acquisitionSent('u1')).toBe(false);
   });
 
   it('once sent, the arrival goes and the account is remembered', () => {

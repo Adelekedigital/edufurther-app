@@ -1,14 +1,19 @@
 import { isInviteCode } from '@/lib/utils/inviteCode';
 
 /**
- * Where a visitor came from (PRD 30, Acquisition): read on arrival, held on
- * this device until they are signed in, then sent once to
+ * Where a visitor came from (PRD 30, Acquisition): read on arrival, held
+ * until they are signed in, then sent once to
  * POST /api/v1/me/acquisition (lib/api/data/analyticsConsent). It is the
  * account's attribution, not a tracking identifier: no id, no referrer URL.
  *
  * Every value comes from a link, so none is trusted: a UTM value keeps only
  * letters, digits, `_`, `.` and `-`, at most 64 characters, lower-cased, or is
  * dropped; an invite code must pass the backend's own test (`isInviteCode`).
+ *
+ * Nothing is written to the device before Accept (owner, 2026-11-10): the
+ * arrival and the "already sent" list stay in memory (an arrival is lost if
+ * the visitor leaves before signing in, accepted), and go to localStorage only
+ * once identified (`setAcquisitionPersistence`).
  */
 
 export type Acquisition = {
@@ -72,25 +77,51 @@ export function readArrival(
 
 type Stored = Acquisition & { at: number };
 
-export function storedAcquisition(now = Date.now()): Acquisition | null {
+let memory: Stored | null = null;
+const sentHere = new Set<string>();
+let persist = false;
+
+function fresh(v: Partial<Stored> | null, now: number): Acquisition | null {
+  const ok = typeof v?.at === 'number' && now - v.at >= 0 && now - v.at < TTL_MS;
+  const source = v?.source;
+  if (!ok || (source !== 'invite' && source !== 'campaign' && source !== 'referral_site'))
+    return null;
+  const channel = cleanUtm(v?.channel);
+  const code = v?.referral_code;
+  return {
+    source,
+    ...(channel ? { channel } : {}),
+    ...(isInviteCode(code) ? { referral_code: code } : {}),
+  };
+}
+
+function readStored(now: number): Acquisition | null {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
-    const v = JSON.parse(raw) as Partial<Stored> | null;
-    const fresh = typeof v?.at === 'number' && now - v.at >= 0 && now - v.at < TTL_MS;
-    const source = v?.source;
-    if (fresh && (source === 'invite' || source === 'campaign' || source === 'referral_site')) {
-      return {
-        source,
-        ...(cleanUtm(v?.channel) ? { channel: cleanUtm(v?.channel) } : {}),
-        ...(isInviteCode(v?.referral_code) ? { referral_code: v.referral_code } : {}),
-      };
-    }
-    localStorage.removeItem(KEY);
+    const held = fresh(JSON.parse(raw) as Partial<Stored> | null, now);
+    if (!held) localStorage.removeItem(KEY);
+    return held;
   } catch {
     // Storage off or not ours: nothing held.
+    return null;
   }
-  return null;
+}
+
+function writeStored(v: Stored) {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(v));
+  } catch {
+    // Storage off: memory only.
+  }
+}
+
+/** The held arrival: this page's, else one kept from an earlier identified visit. */
+export function storedAcquisition(now = Date.now()): Acquisition | null {
+  const inMemory = fresh(memory, now);
+  if (inMemory) return inMemory;
+  memory = null;
+  return readStored(now);
 }
 
 /**
@@ -105,11 +136,8 @@ export function rememberArrival(a: Acquisition, now = Date.now()): void {
     if (held.referral_code || !a.referral_code) return;
     next = { ...held, source: 'invite', referral_code: a.referral_code };
   }
-  try {
-    localStorage.setItem(KEY, JSON.stringify({ ...next, at: now }));
-  } catch {
-    // Storage off: the account is recorded as a direct visit.
-  }
+  memory = { ...next, at: now };
+  if (persist) writeStored(memory);
 }
 
 function sentList(): string[] {
@@ -123,16 +151,60 @@ function sentList(): string[] {
 
 /** This device already sent this account's arrival (or the server already had one). */
 export function acquisitionSent(userId: string): boolean {
-  return sentList().includes(userId);
+  return sentHere.has(userId) || sentList().includes(userId);
 }
 
 /** Sent: the held arrival is dropped and the account remembered, so it is never sent again here. */
 export function markAcquisitionSent(userId: string): void {
+  sentHere.add(userId);
+  memory = null;
   try {
+    localStorage.removeItem(KEY);
+    if (!persist) return;
     const list = [userId, ...sentList().filter((x) => x !== userId)].slice(0, MAX_SENT);
     localStorage.setItem(SENT_KEY, JSON.stringify(list));
-    localStorage.removeItem(KEY);
   } catch {
     // Storage off: the server's write-once answers 200 to a repeat.
   }
+}
+
+/**
+ * Identified (after Accept): what memory holds goes to the device too, so a
+ * sign-up days later still carries it. Off again (a withdrawal): what was
+ * written goes; memory keeps this page's.
+ */
+export function setAcquisitionPersistence(on: boolean): void {
+  if (persist === on) return;
+  persist = on;
+  try {
+    if (on) {
+      if (memory) writeStored(memory);
+      if (sentHere.size) {
+        const list = [...sentHere, ...sentList().filter((x) => !sentHere.has(x))];
+        localStorage.setItem(SENT_KEY, JSON.stringify(list.slice(0, MAX_SENT)));
+      }
+    } else {
+      localStorage.removeItem(KEY);
+      localStorage.removeItem(SENT_KEY);
+    }
+  } catch {
+    // Storage off: nothing to move.
+  }
+}
+
+/** Log-out: nothing about who was here stays on the device. */
+export function forgetAcquisitionSent(): void {
+  sentHere.clear();
+  try {
+    localStorage.removeItem(SENT_KEY);
+  } catch {
+    // Nothing to clear.
+  }
+}
+
+/** Tests only. */
+export function resetAcquisitionForTests(): void {
+  memory = null;
+  sentHere.clear();
+  persist = false;
 }
