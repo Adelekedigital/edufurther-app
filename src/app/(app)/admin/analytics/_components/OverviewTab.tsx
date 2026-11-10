@@ -1,10 +1,10 @@
 import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { AnalyticsTab, Overview } from '@/lib/api/data/adminAnalytics';
-import { FEATURES, OVERVIEW, NO_DATA } from '@/lib/copy/adminAnalytics';
+import { FEATURES, OVERVIEW } from '@/lib/copy/adminAnalytics';
 import { changeWhen, formatRate } from '@/lib/utils/analytics';
 import { formatCount } from '@/lib/utils/format';
-import { ChangeText, SourceBadge } from './parts';
+import { ChangeText, orNoData, SourceBadge } from './parts';
 import { TrendChart } from './TrendChart';
 import { sparkPath } from './trendModel';
 import styles from './OverviewTab.module.css';
@@ -65,9 +65,7 @@ export function OverviewTab({
           <span className={styles.muted}>{windowLabel}</span>
         </div>
         <div className={styles.valueRow}>
-          <span className={styles.value}>
-            {ns.completed.value === null ? NO_DATA : formatCount(ns.completed.value)}
-          </span>
+          <span className={styles.value}>{orNoData(ns.completed.value, formatCount)}</span>
           {nsChange && (
             <>
               <ChangeText change={nsChange} arrow size="sm" />
@@ -84,9 +82,7 @@ export function OverviewTab({
             return (
               <div key={s.key} className={styles.sub}>
                 <span className={styles.muted}>{OVERVIEW.subTracks[s.key]}</span>
-                <span className={styles.subValue}>
-                  {s.m.value === null ? NO_DATA : s.f(s.m.value)}
-                </span>
+                <span className={styles.subValue}>{orNoData(s.m.value, s.f)}</span>
                 {c && <ChangeText change={c} />}
               </div>
             );
@@ -103,7 +99,7 @@ export function OverviewTab({
           {data.features.map((f) => {
             const copy = FEATURES[f.key];
             const value = f.value?.value ?? null;
-            const shown = value === null ? NO_DATA : formatRate(value);
+            const shown = orNoData(value, formatRate);
             const c = f.value ? changeWhen(compare, f.value, 'rate') : null;
             const feeds = copy.feeds && f.contribution !== null ? copy.feeds(f.contribution) : null;
             return (

@@ -23,9 +23,9 @@ import type {
   WireSupply,
 } from './pendingAnalytics';
 
-// Admin Analytics (PRD 31). Overview, Sessions, Supply (backend #614) and
-// Credits (#609) are on the generated client; Growth, funnels and Behaviour go
-// through `untyped` until their routes are in the published spec.
+// Admin Analytics (PRD 31). Every section (backend #609, #614, #618) is on the
+// generated client; funnels and Behaviour go through `untyped` until their
+// routes are in the published spec (PRD 30, PostHog).
 
 export type AnalyticsTab = 'overview' | 'sessions' | 'supply' | 'credits' | 'growth' | 'funnels';
 export type FunnelName =
@@ -194,7 +194,8 @@ export const toCredits = (w: WireCredits): Credits => ({
 });
 
 export type StageKey = WireStageKey;
-export type SplitRow = { key: string; members: number; completedShare: number };
+/** `completedShare` null: no members to divide by. */
+export type SplitRow = { key: string; members: number; completedShare: number | null };
 
 export type Growth = AnalyticsHead & {
   signups: { all: Metric; mentees: Metric; mentors: Metric };
@@ -216,7 +217,9 @@ export type Growth = AnalyticsHead & {
   byStage: { key: StageKey; count: number }[];
 };
 
-const toSplit = (r: WireGrowth['by_source'][number]): SplitRow => ({
+const toSplit = (
+  r: WireGrowth['by_source'][number] | WireGrowth['by_channel'][number],
+): SplitRow => ({
   key: r.key,
   members: r.members,
   completedShare: r.completed_share,
@@ -261,7 +264,7 @@ type SectionOf<K extends SectionName> = ReturnType<(typeof MAPPERS)[K]>;
 const query = (w: AnalyticsWindow, compare: boolean) => windowParams(w, compare);
 
 /** Sections in the published spec; the rest are PENDING BACKEND. */
-const PUBLISHED = ['overview', 'sessions', 'supply', 'credits'] as const;
+const PUBLISHED = ['overview', 'sessions', 'supply', 'credits', 'growth'] as const;
 type Published = (typeof PUBLISHED)[number];
 const isPublished = (s: SectionName): s is Published =>
   (PUBLISHED as readonly string[]).includes(s);
