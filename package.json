@@ -43,6 +43,9 @@
       ],
       "@vvo/tzdb": [
         "lib/vendor"
+      ],
+      "posthog-js": [
+        "lib/vendor"
       ]
     }
   },
@@ -67,6 +70,7 @@
     "@vvo/tzdb": "6.201.1",
     "next": "^16.3.6",
     "openapi-fetch": "^0.17.0",
+    "posthog-js": "1.438.24",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
