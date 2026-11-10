@@ -2,15 +2,17 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { windowKey, windowParams, type AnalyticsWindow, type Metric } from '@/lib/utils/analytics';
-import { apiError, retryOnce } from './errors';
+import { ApiError, apiError, retryOnce } from './errors';
 import { keys } from './keys';
 import { untyped } from './pending';
 import type {
   WireAlertKey,
   WireAnalyticsAlert,
+  WireBehaviour,
   WireCreditSource,
   WireCredits,
   WireFeatureKey,
+  WireFunnel,
   WireGrowth,
   WireNoShowReason,
   WireOverview,
@@ -297,3 +299,105 @@ export const useAnalyticsCredits = (adminId: string | null, w: AnalyticsWindow, 
   useSection('credits', adminId, w, compare);
 export const useAnalyticsGrowth = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
   useSection('growth', adminId, w, compare);
+
+// ---- PostHog: funnels and events ---------------------------------------------
+
+export const ANALYTICS_UPSTREAM = '/problems/analytics-upstream';
+
+/**
+ * PostHog isn't answering (the backend's own problem type, never any 503: a
+ * proxy's 503 isn't a PostHog outage): Behaviour shows its notice, the
+ * database cards still load.
+ */
+export const isUpstreamDown = (e: unknown) =>
+  e instanceof ApiError && e.type === ANALYTICS_UPSTREAM;
+
+/** A PostHog outage won't clear on an immediate retry. */
+const retryUnlessDown = (n: number, e: unknown) => !isUpstreamDown(e) && retryOnce(n, e);
+
+export type Funnel = WireFunnel['steps'];
+
+/** GET /admin/analytics/funnels/{name}?by= */
+export function useAnalyticsFunnel(
+  adminId: string | null,
+  name: FunnelName,
+  by: string,
+  w: AnalyticsWindow,
+) {
+  return useQuery({
+    queryKey: keys.admin.analyticsFunnel(adminId ?? 'none', name, by, windowKey(w)),
+    queryFn: async ({ signal }): Promise<Funnel> => {
+      const { data, error, response } = await untyped.GET(
+        `/api/v1/admin/analytics/funnels/${name}`,
+        // The previous period isn't shown on a funnel: not asked for.
+        { params: { query: { ...query(w, false), by } }, signal },
+      );
+      if (!response.ok || !data) throw apiError(response.status, error, response);
+      return (data as WireFunnel).steps;
+    },
+    enabled: adminId !== null,
+    staleTime: STALE,
+    retry: retryUnlessDown,
+  });
+}
+
+/** The event cards' numbers (rates are percentages). */
+export type Behaviour = {
+  login: { attempts: number; failedRate: number; failedMigratedRate: number };
+  search: { searches: number; noResultRate: number; profileViews: number };
+  profileViewsBySource: { source: string; label: string; share: number }[];
+  joining: { clicked: number; failed: number; medianMinutesBefore: number | null };
+  writingAssist: { used: number; acceptedRate: number; discardedRate: number };
+  app: { installed: number; pushAllowedRate: number };
+  errorsByScreen: { route: string; count: number }[];
+  replaysUrl: string;
+};
+
+export const toBehaviour = (w: WireBehaviour): Behaviour => ({
+  login: {
+    attempts: w.login.attempts,
+    failedRate: w.login.failed_rate,
+    failedMigratedRate: w.login.failed_migrated_rate,
+  },
+  search: {
+    searches: w.search.searches,
+    noResultRate: w.search.no_result_rate,
+    profileViews: w.search.profile_views,
+  },
+  profileViewsBySource: w.profile_views_by_source,
+  joining: {
+    clicked: w.joining.clicked,
+    failed: w.joining.failed,
+    medianMinutesBefore: w.joining.median_minutes_before,
+  },
+  writingAssist: {
+    used: w.writing_assist.used,
+    acceptedRate: w.writing_assist.accepted_rate,
+    discardedRate: w.writing_assist.discarded_rate,
+  },
+  app: { installed: w.app.installed, pushAllowedRate: w.app.push_allowed_rate },
+  errorsByScreen: w.errors_by_screen,
+  replaysUrl: w.replays_url,
+});
+
+/** GET /admin/analytics/behaviour: the event cards. */
+export function useAnalyticsBehaviour(
+  adminId: string | null,
+  w: AnalyticsWindow,
+) {
+  return useQuery({
+    queryKey: keys.admin.analytics(adminId ?? 'none', 'behaviour', windowKey(w), false),
+    queryFn: async ({ signal }): Promise<Behaviour> => {
+      // The event cards show no change: the previous period isn't asked for.
+      const { data, error, response } = await untyped.GET('/api/v1/admin/analytics/behaviour', {
+        params: { query: query(w, false) },
+        signal,
+      });
+      if (!response.ok || !data) throw apiError(response.status, error, response);
+      return toBehaviour(data as WireBehaviour);
+    },
+    enabled: adminId !== null,
+    staleTime: STALE,
+    retry: retryUnlessDown,
+  });
+}
