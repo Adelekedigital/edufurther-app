@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
@@ -65,9 +65,10 @@ export function AdminAnalyticsScreen() {
   const current = { overview, sessions, supply, credits, growth, funnels: overview }[tab];
   // The last alerts known stay up while another tab or window loads, so a
   // banner isn't announced again, or its focused link lost, on every move.
-  const lastAlerts = useRef<AnalyticsAlert[]>([]);
-  if (current.data) lastAlerts.current = current.data.alerts;
-  const alerts = current.data?.alerts ?? lastAlerts.current;
+  const fresh = current.data?.alerts;
+  const [lastAlerts, setLastAlerts] = useState<AnalyticsAlert[]>([]);
+  if (fresh && fresh !== lastAlerts) setLastAlerts(fresh);
+  const alerts = fresh ?? lastAlerts;
 
   const go = (next: { tab: AnalyticsTab; funnel?: FunnelName; by?: string }) => {
     const q = new URLSearchParams();

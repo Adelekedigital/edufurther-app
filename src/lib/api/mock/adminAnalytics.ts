@@ -1,9 +1,7 @@
 import type {
   WireAnalyticsAlert,
   WireAnalyticsWindow,
-  WireBehaviour,
   WireCredits,
-  WireFunnel,
   WireGrowth,
   WireMetric,
   WireOverview,
@@ -296,86 +294,4 @@ export function mockSection<K extends keyof WireSections>(
   alerts = true,
 ): WireSections[K] {
   return SECTIONS[section]({ ...c, alerts });
-}
-
-const FUNNELS: Record<string, [string, string, number][]> = {
-  signup: [
-    ['started', 'Started sign-up', 640],
-    ['code_verified', 'Code verified', 498],
-    ['onboarded', 'Onboarding done', 371],
-    ['first_booking_or_bookable', 'First booking or bookable', 142],
-    ['first_completed', 'First completed session', 88],
-  ],
-  booking: [
-    ['started', 'Booking started', 520],
-    ['type_picked', 'Type picked', 431],
-    ['time_picked', 'Time picked', 344],
-    ['questions_done', 'Questions done', 318],
-    ['requested', 'Requested', 302],
-    ['completed', 'Completed', 214],
-  ],
-  mentee_activation: [
-    ['signed_up', 'Signed up', 214],
-    ['onboarded', 'Onboarding done', 162],
-    ['first_request', 'First request', 71],
-    ['first_session', 'First session (14 days)', 47],
-  ],
-  mentor_activation: [
-    ['approved', 'Approved', 21],
-    ['availability_set', 'Availability set', 17],
-    ['session_created', 'Session created', 14],
-    ['video_connected', 'Video connected (bookable)', 10],
-    ['first_session', 'First session (30 days)', 9],
-  ],
-  mentor_application: [
-    ['started', 'Started', 92],
-    ['about_you', 'About you', 74],
-    ['education', 'Education', 61],
-    ['hours', 'Hours', 44],
-    ['submitted', 'Submitted', 38],
-    ['approved', 'Approved', 21],
-  ],
-};
-
-const BY_SHARE: Record<string, number> = { mentee: 0.82, mentor: 0.18, migrated: 0.55 };
-
-export const isMockFunnel = (name: string) => name in FUNNELS;
-
-export function mockFunnel(
-  name: string,
-  by: string,
-  c: NonNullable<ReturnType<typeof mockWindow>>,
-): WireFunnel {
-  const k = by === 'all' || !by ? 1 : (BY_SHARE[by] ?? 0.3);
-  return {
-    steps: FUNNELS[name]!.map(([key, label, v]) => ({
-      key,
-      label,
-      value: Math.max(1, Math.round(((v * c.days) / 30) * k)),
-      previous: c.compare ? Math.max(1, Math.round(((v * 0.9 * c.days) / 30) * k)) : null,
-    })),
-  };
-}
-
-export function mockBehaviour(c: NonNullable<ReturnType<typeof mockWindow>>): WireBehaviour {
-  const s = (n: number) => Math.round((n * c.days) / 30);
-  return {
-    login: { attempts: s(1840), failed_rate: 7.4, failed_migrated_rate: 11.8 },
-    search: { searches: s(1260), no_result_rate: 14, profile_views: s(512) },
-    profile_views_by_source: [
-      { source: 'explore', label: 'Explore', share: 46 },
-      { source: 'home', label: 'Home', share: 31 },
-      { source: 'invite_link', label: 'Invite link', share: 14 },
-      { source: 'other', label: 'Other', share: 9 },
-    ],
-    joining: { clicked: s(398), failed: s(11), median_minutes_before: 3 },
-    writing_assist: { used: s(176), accepted_rate: 61, discarded_rate: 22 },
-    app: { installed: s(84), push_allowed_rate: 47 },
-    errors_by_screen: [
-      { route: '/bookings', count: s(23) },
-      { route: '/explore', count: s(9) },
-      { route: '/messages', count: s(6) },
-    ],
-    replays_url: 'https://eu.posthog.com/replay/recent',
-  };
 }

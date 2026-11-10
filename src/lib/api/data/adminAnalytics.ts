@@ -2,17 +2,15 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { windowKey, windowParams, type AnalyticsWindow, type Metric } from '@/lib/utils/analytics';
-import { ApiError, apiError, retryOnce } from './errors';
+import { apiError, retryOnce } from './errors';
 import { keys } from './keys';
 import { untyped } from './pending';
 import type {
   WireAlertKey,
   WireAnalyticsAlert,
-  WireBehaviour,
   WireCreditSource,
   WireCredits,
   WireFeatureKey,
-  WireFunnel,
   WireGrowth,
   WireNoShowReason,
   WireOverview,
@@ -298,62 +296,3 @@ export const useAnalyticsCredits = (adminId: string | null, w: AnalyticsWindow, 
   useSection('credits', adminId, w, compare);
 export const useAnalyticsGrowth = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
   useSection('growth', adminId, w, compare);
-
-// ---- PostHog: funnels and events ---------------------------------------------
-
-export const ANALYTICS_UPSTREAM = '/problems/analytics-upstream';
-
-/** PostHog isn't answering: Behaviour shows its notice, the database cards still load. */
-export const isUpstreamDown = (e: unknown) =>
-  e instanceof ApiError && e.type === ANALYTICS_UPSTREAM;
-
-export type Funnel = WireFunnel['steps'];
-
-/** GET /admin/analytics/funnels/{name}?by= */
-export function useAnalyticsFunnel(
-  adminId: string | null,
-  name: FunnelName,
-  by: string,
-  w: AnalyticsWindow,
-  compare: boolean,
-) {
-  return useQuery({
-    queryKey: keys.admin.analyticsFunnel(adminId ?? 'none', name, by, windowKey(w), compare),
-    queryFn: async ({ signal }): Promise<Funnel> => {
-      const { data, error, response } = await untyped.GET(
-        `/api/v1/admin/analytics/funnels/${name}`,
-        { params: { query: { ...query(w, compare), by } }, signal },
-      );
-      if (!response.ok || !data) throw apiError(response.status, error, response);
-      return (data as WireFunnel).steps;
-    },
-    enabled: adminId !== null,
-    staleTime: STALE,
-    // A PostHog outage won't clear on an immediate retry.
-    retry: (n, e) => !isUpstreamDown(e) && retryOnce(n, e),
-  });
-}
-
-export type Behaviour = WireBehaviour;
-
-/** GET /admin/analytics/behaviour: the event cards. */
-export function useAnalyticsBehaviour(
-  adminId: string | null,
-  w: AnalyticsWindow,
-  compare: boolean,
-) {
-  return useQuery({
-    queryKey: keys.admin.analytics(adminId ?? 'none', 'behaviour', windowKey(w), compare),
-    queryFn: async ({ signal }): Promise<Behaviour> => {
-      const { data, error, response } = await untyped.GET('/api/v1/admin/analytics/behaviour', {
-        params: { query: query(w, compare) },
-        signal,
-      });
-      if (!response.ok || !data) throw apiError(response.status, error, response);
-      return data as WireBehaviour;
-    },
-    enabled: adminId !== null,
-    staleTime: STALE,
-    retry: (n, e) => !isUpstreamDown(e) && retryOnce(n, e),
-  });
-}

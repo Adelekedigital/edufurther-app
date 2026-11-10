@@ -53,117 +53,11 @@
   color: var(--ink-500);
 }
 
-.twoCol {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
-}
-@media (min-width: 1024px) {
-  .twoCol {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-
 /* The auto-fit grid of figure cards (Credits' flow, Growth's sign-ups). */
 .cardGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: var(--space-3);
-}
-
-.change {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
-}
-.changeSm {
-  font-size: var(--text-p-sm);
-}
-.good {
-  color: var(--green-700);
-}
-.bad {
-  color: var(--red-500);
-}
-.flat {
-  color: var(--ink-600);
-}
-
-.bars {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-/* The design's five sets: label column, value column, bar height, track. */
-.outcomes {
-  --bar-label: 110px;
-  --bar-value: 72px;
-  --bar-h: 12px;
-  --bar-track: var(--ink-100);
-}
-.cohort {
-  --bar-label: 96px;
-  --bar-value: 88px;
-  --bar-h: 20px;
-  --bar-track: var(--ink-50);
-}
-.invites {
-  --bar-label: 120px;
-  --bar-value: 64px;
-  --bar-h: 16px;
-  --bar-track: var(--ink-50);
-}
-.mix {
-  --bar-label: 180px;
-  --bar-value: 48px;
-  --bar-h: 12px;
-  --bar-track: var(--ink-50);
-}
-.funnel {
-  --bar-label: minmax(120px, 200px);
-  --bar-value: 104px;
-  --bar-h: 28px;
-  --bar-track: var(--ink-50);
-  gap: var(--space-2);
-}
-.barRow {
-  display: grid;
-  grid-template-columns: var(--bar-label) 1fr var(--bar-value);
-  align-items: center;
-  gap: var(--space-3);
-  font-size: var(--text-p-xs);
-}
-.barLabel {
-  min-width: 0;
-  color: var(--ink-700);
-}
-.track {
-  height: var(--bar-h);
-  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
-  background: var(--bar-track);
-}
-.bar {
-  display: block;
-  height: var(--bar-h);
-  border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
-  background: var(--blue-500);
-}
-.barMuted {
-  background: var(--ink-400);
-}
-.barValue {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-weight: var(--weight-semibold);
-  color: var(--ink-900);
-}
-/* Phones: the topic names' 180px column would squeeze the bar to nothing. */
-@media (max-width: 479px) {
-  .mix {
-    --bar-label: 110px;
-  }
 }
 
 .table {

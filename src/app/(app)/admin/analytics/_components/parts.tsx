@@ -1,8 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Badge } from '@/components/atoms/Badge/Badge';
-import { Icon } from '@/components/atoms/Icon/Icon';
 import { SOURCE_BADGE } from '@/lib/copy/adminAnalytics';
-import type { Change } from '@/lib/utils/analytics';
 import { cx } from '@/lib/utils/cx';
 import styles from './parts.module.css';
 
@@ -86,97 +84,6 @@ export function Panel({
       )}
       {children}
       {note && <span className={styles.note}>{note}</span>}
-    </div>
-  );
-}
-
-/** Two cards side by side from 1024px; stacked below. */
-export function TwoCol({ children }: { children: ReactNode }) {
-  return <div className={styles.twoCol}>{children}</div>;
-}
-
-/**
- * The change against the previous period: a sign always, an arrow where the
- * design draws one, coloured by whether the move is good, so colour is never
- * the only signal.
- */
-export function ChangeText({
-  change,
-  arrow = false,
-  suffix,
-  size = 'xs',
-  className,
-}: {
-  change: Change;
-  arrow?: boolean;
-  /** Words after the change (Guardrails' "· Worse"). */
-  suffix?: string;
-  size?: 'xs' | 'sm';
-  className?: string;
-}) {
-  return (
-    <span
-      className={cx(
-        styles.change,
-        styles[change.tone],
-        size === 'sm' && styles.changeSm,
-        className,
-      )}
-    >
-      {arrow && <Icon name={change.icon} size={size === 'sm' ? 18 : 14} />}
-      {change.text}
-      {suffix && ` · ${suffix}`}
-    </span>
-  );
-}
-
-export type BarRow = {
-  key: string;
-  label: string;
-  /** 0 to 100: the bar's length. */
-  width: number;
-  value: ReactNode;
-  /** The bar's hover title. */
-  tip?: string;
-  /** The muted bars (How requests end draws all but Completed grey). */
-  muted?: boolean;
-};
-
-/**
- * Rows of label, bar and value. The design draws five sets, differing only in
- * column widths, bar height and track; each is a variant here (parts.module.css):
- * outcomes (How requests end), cohort (From application to bookable), invites
- * (Members from invites), mix (Completed sessions by topic or stage), funnel.
- */
-export function BarRows({
-  rows,
-  variant,
-  label,
-}: {
-  rows: BarRow[];
-  variant: 'outcomes' | 'cohort' | 'invites' | 'mix' | 'funnel';
-  /** With a label the rows are one image, read by this text (a funnel). */
-  label?: string;
-}) {
-  return (
-    <div
-      className={cx(styles.bars, styles[variant])}
-      role={label ? 'img' : undefined}
-      aria-label={label}
-    >
-      {rows.map((r) => (
-        <div key={r.key} className={styles.barRow}>
-          <span className={styles.barLabel}>{r.label}</span>
-          <span className={styles.track}>
-            <span
-              title={r.tip}
-              className={cx(styles.bar, r.muted && styles.barMuted)}
-              style={{ width: `${Math.max(0, Math.min(100, r.width))}%` }}
-            />
-          </span>
-          <span className={styles.barValue}>{r.value}</span>
-        </div>
-      ))}
     </div>
   );
 }

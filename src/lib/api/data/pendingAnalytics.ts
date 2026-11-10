@@ -149,21 +149,6 @@ export type WireGrowth = Section & {
   by_stage: { key: WireStageKey; count: number }[];
 };
 
-export type WireFunnel = {
-  steps: { key: string; label: string; value: number; previous: number | null }[];
-};
-
-export type WireBehaviour = {
-  login: { attempts: number; failed_rate: number; failed_migrated_rate: number };
-  search: { searches: number; no_result_rate: number; profile_views: number };
-  profile_views_by_source: { source: string; label: string; share: number }[];
-  joining: { clicked: number; failed: number; median_minutes_before: number | null };
-  writing_assist: { used: number; accepted_rate: number; discarded_rate: number };
-  app: { installed: number; push_allowed_rate: number };
-  errors_by_screen: { route: string; count: number }[];
-  replays_url: string;
-};
-
 /** The section routes and what each returns. */
 export type WireSections = {
   overview: WireOverview;
@@ -179,6 +164,4 @@ export type PendingAnalyticsResponses = {
   'GET /api/v1/admin/analytics/supply': WireSupply;
   'GET /api/v1/admin/analytics/credits': WireCredits;
   'GET /api/v1/admin/analytics/growth': WireGrowth;
-  'GET /api/v1/admin/analytics/funnels/{name}': WireFunnel;
-  'GET /api/v1/admin/analytics/behaviour': WireBehaviour;
 };
