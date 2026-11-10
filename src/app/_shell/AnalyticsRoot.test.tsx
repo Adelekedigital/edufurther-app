@@ -135,7 +135,7 @@ describe('the flags', () => {
   it('a guest sees the banner on a guest page; Accept goes identified, Decline stays cookieless', async () => {
     env.path = '/invite/abc';
     render(<AnalyticsRoot />);
-    expect(screen.getByRole('region', { name: 'Help us make EduFurther better' })).toBeVisible();
+    expect(screen.getByRole('region', { name: 'Help us see where people get stuck' })).toBeVisible();
     await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless'));
     await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
     expect(screen.queryByRole('region')).toBeNull();
