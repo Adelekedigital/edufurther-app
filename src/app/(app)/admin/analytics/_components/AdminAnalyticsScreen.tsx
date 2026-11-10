@@ -9,7 +9,9 @@ import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import {
   isAnalyticsTab,
   isFunnelName,
+  useAnalyticsBehaviour,
   useAnalyticsCredits,
+  useAnalyticsFunnel,
   useAnalyticsGrowth,
   useAnalyticsOverview,
   useAnalyticsSessions,
@@ -28,6 +30,7 @@ import {
 } from '@/lib/copy/adminAnalytics';
 import { DEFAULT_WINDOW, windowLabel, type AnalyticsWindow } from '@/lib/utils/analytics';
 import { todayIn } from '@/lib/utils/calendar';
+import { BehaviourTab, type TabQuery } from './BehaviourTab';
 import { CreditsTab, isCreditsEmpty } from './CreditsTab';
 import { DateRangeDialog } from './DateRangeDialog';
 import { GrowthTab, isGrowthEmpty } from './GrowthTab';
@@ -39,6 +42,21 @@ import { WindowControls } from './WindowControls';
 import styles from './AdminAnalyticsScreen.module.css';
 
 const panelId = (t: AnalyticsTab) => `admin-analytics-${t}`;
+
+/** A query as a tab reads it: its state, data, why it failed, and a retry. */
+const tabQuery = <T,>(q: {
+  data: T | undefined;
+  isError: boolean;
+  error: unknown;
+  isFetching: boolean;
+  refetch: () => unknown;
+}): TabQuery<T> => ({
+  status: viewStatus(q),
+  data: q.data,
+  error: q.error,
+  onRetry: () => void q.refetch(),
+  retrying: q.isFetching,
+});
 
 /** A database tab: its four states around its content. */
 function section<D>(
@@ -84,13 +102,15 @@ export function AdminAnalyticsScreen() {
   const [picking, setPicking] = useState(false);
   const today = todayIn('UTC');
 
-  // Only the open tab asks; Behavior reads the alerts from Overview.
+  // Only the open tab asks; Behaviour reads the alerts from Overview.
   const on = (...tabs: AnalyticsTab[]) => (tabs.includes(tab) ? adminId : null);
   const overview = useAnalyticsOverview(on('overview', 'funnels'), win, compare);
   const sessions = useAnalyticsSessions(on('sessions'), win, compare);
   const supply = useAnalyticsSupply(on('supply'), win, compare);
   const credits = useAnalyticsCredits(on('credits'), win, compare);
   const growth = useAnalyticsGrowth(on('growth'), win, compare);
+  const funnelQ = useAnalyticsFunnel(on('funnels'), funnel, by, win);
+  const events = useAnalyticsBehaviour(on('funnels'), win);
   const current = { overview, sessions, supply, credits, growth, funnels: overview }[tab];
   // The last alerts known stay up while another tab or window loads, so a
   // banner isn't announced again, or its focused link lost, on every move.
@@ -168,6 +188,17 @@ export function AdminAnalyticsScreen() {
         {tab === 'credits' && section(credits, isCreditsEmpty, (d) => <CreditsTab data={d} />)}
         {tab === 'growth' &&
           section(growth, isGrowthEmpty, (d) => <GrowthTab data={d} compare={compare} />)}
+        {tab === 'funnels' && (
+          <BehaviourTab
+            funnel={funnel}
+            by={by}
+            // Another funnel starts from its whole audience.
+            onFunnel={(f) => go({ tab: 'funnels', funnel: f })}
+            onBy={(b) => go({ tab: 'funnels', funnel, by: b })}
+            funnelQuery={tabQuery(funnelQ)}
+            eventsQuery={tabQuery(events)}
+          />
+        )}
       </TabPanel>
       <p className={styles.footer}>{ANALYTICS_PAGE.footer}</p>
       {picking && (

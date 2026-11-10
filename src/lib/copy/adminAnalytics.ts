@@ -285,6 +285,19 @@ export const STAGES: Record<StageKey, string> = { ...STAGE_LABELS, not_set: 'Not
 
 // ---- Behaviour --------------------------------------------------------------
 
+export const BEHAVIOUR = {
+  heading: 'Behavior: funnels and events',
+  funnelLabel: 'Funnel',
+  start: 'Start',
+  dropped: (pct: number) => `${pct}% dropped`,
+  stepTip: (label: string, n: string) => `${label}: ${n}`,
+  funnelAria: (name: string, steps: string) => `${name} funnel: ${steps}`,
+  refreshed: 'Refreshed every 10 minutes',
+  down: 'Funnels come from PostHog, which isn’t answering right now. Database numbers on this page are up to date. Try again in a few minutes.',
+  replays: 'Session replays (onboarding and booking only, inputs masked) open in PostHog:',
+  replaysLink: 'Open replays in PostHog',
+} as const;
+
 export const FUNNEL_COPY: Record<
   FunnelName,
   { label: string; byLabel: string; by: [string, string][]; note: string }
@@ -340,3 +353,44 @@ export const FUNNEL_COPY: Record<
     note: 'Approved comes from the server.',
   },
 };
+
+export const EVENT_CARDS = {
+  login: {
+    title: 'Log-in codes',
+    q: 'Can people, especially migrated users, get in?',
+    attempts: 'Log-in attempts',
+    failed: 'Codes failed',
+    failedMigrated: 'Failed, migrated users',
+  },
+  search: {
+    title: 'Search',
+    q: 'Where is demand unmet?',
+    searches: 'Searches',
+    noResults: 'No results',
+    views: 'Profile views from search',
+  },
+  views: { title: 'Profile views by source', q: 'Which surfaces send people to profiles?' },
+  joining: {
+    title: 'Joining sessions',
+    q: 'Are no-shows caused by the product?',
+    clicked: 'Join clicked',
+    failed: 'Join failed',
+    median: 'Median click before start',
+    minutes: (n: number) => `${n} min`,
+  },
+  assist: {
+    title: 'Writing assist',
+    q: 'Is the AI feature worth its cost?',
+    used: 'Used',
+    accepted: 'Accepted',
+    discarded: 'Discarded',
+  },
+  app: {
+    title: 'App install and push',
+    q: 'Do reminders reach people?',
+    installed: 'App installed',
+    push: 'Push allowed',
+    ofMembers: (pct: string) => `${pct} of members`,
+  },
+  errors: { title: 'Errors by screen', q: 'Where does the app fail?' },
+} as const;

@@ -1,0 +1,118 @@
+/* Admin Analytics.dc.html `show.funnels`: values from the design's inline styles. */
+.funnelCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.by {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 180px;
+}
+.byLabel {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.stepCount {
+  font-size: var(--text-p-sm);
+}
+.drop {
+  font-weight: var(--weight-regular);
+  color: var(--ink-600);
+}
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-p-xs);
+  color: var(--ink-500);
+}
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-3);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--ink-200);
+  border-radius: var(--radius-xl);
+}
+.cardHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+}
+.cardQ {
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: var(--border-hairline) solid var(--ink-100);
+  font-size: var(--text-p-xs);
+}
+.rowLabel {
+  min-width: 0;
+  color: var(--ink-700);
+}
+.rowValue {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
+
+.replays {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.replaysLink {
+  font-weight: var(--weight-semibold);
+  color: var(--blue-500);
+  text-decoration: none;
+}
+.replaysLink:hover {
+  color: var(--blue-700);
+}
+.replaysLink:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+  border-radius: var(--radius-xs);
+}
