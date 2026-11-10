@@ -1,10 +1,11 @@
-import { mockEmailDetail, mockSaveEmailVariant, resetMockEmails } from './adminEmails';
+import {
+  mockEmailDetail,
+  mockSaveBody,
+  mockSaveEmailVariant,
+  resetMockEmails,
+} from './adminEmails';
 
 beforeEach(() => resetMockEmails());
-
-const lines = (subject: string, version = 0) => ({
-  lines: { subject: { text: subject, version } },
-});
 
 describe('mock email detail', () => {
   it('a shared email: its variants, samples and lines from the code defaults', () => {
@@ -51,7 +52,9 @@ describe('mock save', () => {
     const r = mockSaveEmailVariant(
       'request_accepted',
       'default',
-      lines('{mentorName} said yes to your request'),
+      mockSaveBody('request_accepted', 'default', {
+        subject: '{mentorName} said yes to your request',
+      }),
     );
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -60,18 +63,24 @@ describe('mock save', () => {
   });
 
   it('a stale version is a 409 naming who saved first; nothing is written', () => {
-    const r = mockSaveEmailVariant('session_booked', 'mentee', lines('New words', 1));
+    const r = mockSaveEmailVariant(
+      'session_booked',
+      'mentee',
+      mockSaveBody('session_booked', 'mentee', { subject: { text: 'New words', version: 1 } }),
+    );
     expect(r).toMatchObject({ ok: false, status: 409, problem: { updated_by_name: 'Ada Okeke' } });
     expect(mockEmailDetail('session_booked')!.variants[0]!.lines.subject!.version).toBe(2);
   });
 
   it('the rules: a 422 with every bad line; nothing is written', () => {
-    const r = mockSaveEmailVariant('request_accepted', 'default', {
-      lines: {
-        subject: { text: '{mentorname} said yes', version: 0 },
-        button: { text: ' ', version: 0 },
-      },
-    });
+    const r = mockSaveEmailVariant(
+      'request_accepted',
+      'default',
+      mockSaveBody('request_accepted', 'default', {
+        subject: '{mentorname} said yes',
+        button: ' ',
+      }),
+    );
     expect(r).toMatchObject({
       ok: false,
       status: 422,
@@ -85,7 +94,13 @@ describe('mock save', () => {
   });
 
   it('Not set up refuses with 423', () => {
-    expect(mockSaveEmailVariant('sign_in_code', 'default', lines('x'))).toMatchObject({
+    expect(
+      mockSaveEmailVariant(
+        'sign_in_code',
+        'default',
+        mockSaveBody('sign_in_code', 'default', { subject: 'x' }),
+      ),
+    ).toMatchObject({
       ok: false,
       status: 423,
     });
@@ -95,16 +110,24 @@ describe('mock save', () => {
     const r = mockSaveEmailVariant(
       'session_booked',
       'mentee',
-      lines('Your session with {mentorName} is booked', 2),
+      mockSaveBody('session_booked', 'mentee', {
+        subject: 'Your session with {mentorName} is booked',
+      }),
     );
     expect(r.ok && r.body.variants[0]!.lines.subject).toMatchObject({ edited: false, version: 0 });
   });
 
   it('Keep my edit records that the new default was seen', () => {
-    const r = mockSaveEmailVariant('credits_expiring', 'default', {
-      lines: { subject: { text: 'Use your {creditCount} credits before they expire', version: 1 } },
-      keep_edit: ['subject'],
-    });
+    const r = mockSaveEmailVariant(
+      'credits_expiring',
+      'default',
+      mockSaveBody(
+        'credits_expiring',
+        'default',
+        { subject: 'Use your {creditCount} credits before they expire' },
+        ['subject'],
+      ),
+    );
     expect(r.ok && r.body.variants[0]!.lines.subject).toMatchObject({
       default_changed: false,
       version: 2,

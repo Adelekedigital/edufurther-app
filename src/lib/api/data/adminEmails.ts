@@ -4,20 +4,31 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { LineKey } from '@/lib/utils/emailLines';
 import { ApiError, apiError, retryOnce } from './errors';
 import { keys } from './keys';
-import {
-  untyped,
-  type WireEmailConflict,
-  type WireEmailDetail,
-  type WireEmailLine,
-  type WireEmailLineError,
-  type WireEmailRecipient,
-  type WireEmailSave,
-  type WireEmailSummary,
-  type WireEmailValue,
-} from './pending';
+import type { components } from '../generated/schema';
+import { api } from './http';
 
-// Admin Emails (PRD 28). PENDING BACKEND: the calls go through `untyped`
-// until the routes are in the published spec.
+// Admin Emails (PRD 28), on the typed client (backend decision 321).
+
+type S = components['schemas'];
+export type WireEmailSummary = S['EmailListItem'];
+export type WireEmailValue = S['EmailValueRead'];
+export type WireEmailLine = S['EmailLineRead'];
+export type WireEmailVariant = S['EmailVariantRead'];
+export type WireEmailDetail = S['EmailDetailRead'];
+export type WireEmailSave = S['EmailSaveBody'];
+export type WireEmailRecipient = WireEmailSummary['recipients'][number];
+export type WireLineKey = keyof S['EmailLinesRead'];
+
+/** 409 /problems/email-line-conflict: who saved first (problem members, not in the spec). */
+export type WireEmailConflict = { updated_by_name: string; updated_at: string };
+
+/** One of a 422 /problems/email-line-invalid's `errors[]` (it also carries `pointer`, `message`). */
+export type WireEmailLineError = {
+  line: WireLineKey;
+  code: 'empty' | 'unknown_value' | 'value_not_sent' | 'too_long';
+  value?: string;
+  suggestion?: string;
+};
 
 export type EmailRecipient = WireEmailRecipient;
 
@@ -95,9 +106,9 @@ export function useAdminEmails(adminId: string | null) {
   return useQuery({
     queryKey: keys.admin.emails(adminId ?? 'none'),
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await untyped.GET('/api/v1/admin/emails', { signal });
+      const { data, error, response } = await api.GET('/api/v1/admin/emails', { signal });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return (data as { data: WireEmailSummary[] }).data.map(toEmailSummary);
+      return data.data.map(toEmailSummary);
     },
     enabled: adminId !== null,
     retry: retryOnce,
@@ -109,11 +120,9 @@ export function useEmailValues(adminId: string | null) {
   return useQuery({
     queryKey: keys.admin.emailValues(adminId ?? 'none'),
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await untyped.GET('/api/v1/admin/email-values', {
-        signal,
-      });
+      const { data, error, response } = await api.GET('/api/v1/admin/email-values', { signal });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return (data as { data: WireEmailValue[] }).data.map(toEmailValue);
+      return data.data.map(toEmailValue);
     },
     enabled: adminId !== null,
     retry: retryOnce,
@@ -227,12 +236,12 @@ export function useAdminEmail(adminId: string | null, key: string) {
   return useQuery({
     queryKey: keys.admin.email(adminId ?? 'none', key),
     queryFn: async ({ signal }) => {
-      const { data, error, response } = await untyped.GET('/api/v1/admin/emails/{key}', {
+      const { data, error, response } = await api.GET('/api/v1/admin/emails/{key}', {
         params: { path: { key } },
         signal,
       });
       if (!response.ok || !data) throw apiError(response.status, error, response);
-      return toEmailDetail(data as WireEmailDetail);
+      return toEmailDetail(data);
     },
     enabled: adminId !== null,
     retry: retryOnce,
@@ -241,7 +250,8 @@ export function useAdminEmail(adminId: string | null, key: string) {
 
 export type SaveEmailVariant = {
   variant: string;
-  lines: Partial<Record<LineKey, { text: string; version: number }>>;
+  /** All three lines, each with the version read: the backend saves them together. */
+  lines: Record<LineKey, { text: string; version: number }>;
   keepEdit: LineKey[];
 };
 
@@ -255,12 +265,12 @@ export function useSaveEmailVariant(adminId: string | null, key: string) {
   return useMutation<EmailDetail, unknown, SaveEmailVariant>({
     mutationFn: async ({ variant, lines, keepEdit }) => {
       const body: WireEmailSave = { lines, ...(keepEdit.length ? { keep_edit: keepEdit } : {}) };
-      const { data, error, response } = await untyped.PUT(
+      const { data, error, response } = await api.PUT(
         '/api/v1/admin/emails/{key}/variants/{variant}',
         { params: { path: { key, variant } }, body },
       );
       if (!response.ok || !data) throw saveError(response.status, error, response);
-      return toEmailDetail(data as WireEmailDetail);
+      return toEmailDetail(data);
     },
     onSuccess: (email) => {
       const me = adminId ?? 'none';
