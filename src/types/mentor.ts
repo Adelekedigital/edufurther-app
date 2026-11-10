@@ -248,6 +248,8 @@ export type Viewer =
        * person property only (PRD 30): never a permission, never the nav.
        */
       primaryRole?: 'mentee' | 'mentor';
+      /** Carried over from the old app (`/me` is_migrated). Analytics only; absent when not known. */
+      isMigrated?: boolean;
       /**
        * The account's answer to analytics cookies (`/me` analytics_consent):
        * null until answered, absent when not known (the mock viewers).

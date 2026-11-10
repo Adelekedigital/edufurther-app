@@ -52,6 +52,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
     primaryRole: me.primary_role ?? undefined,
+    isMigrated: me.is_migrated,
     analyticsConsent: me.analytics_consent ?? null,
     createdAt: me.created_at,
     credits: me.credits ? toCredits(me.credits) : null,

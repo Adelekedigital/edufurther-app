@@ -13,7 +13,7 @@ import {
 } from '@/lib/analytics/acquisition';
 import { fromServer, reconcile } from '@/lib/analytics/consent';
 import { consentStore } from '@/lib/analytics/consentStore';
-import { personProperties } from '@/lib/analytics/identity';
+import { personProperties, rememberMigrated } from '@/lib/analytics/identity';
 import {
   analyticsMode,
   bannerShown,
@@ -162,12 +162,18 @@ export function AnalyticsRoot() {
     });
   }, [memberId, createdAt, previewing]);
 
+  // Remembered for a later failed log-in (never the previewed person's).
+  const isMigrated = member?.isMigrated;
+  useEffect(() => {
+    if (ANALYTICS_LIVE && !previewing) rememberMigrated(isMigrated);
+  }, [isMigrated, previewing]);
+
   // Identify once identified (track's sink drops it in cookieless mode).
   useEffect(() => {
     if (!member || vendor?.mode !== 'identified') return;
     identify(member.id, personProperties(member, signup));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- by id and role, not every /me refetch
-  }, [member?.id, member?.primaryRole, vendor, signup]);
+  }, [member?.id, member?.primaryRole, member?.isMigrated, vendor, signup]);
 
   // A member's device and account agree on the answer: the newest wins.
   const synced = useRef<string | null>(null);
