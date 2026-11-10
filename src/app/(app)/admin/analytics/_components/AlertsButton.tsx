@@ -46,12 +46,31 @@ export function AlertsButton({
     return () => clearTimeout(t);
   }, [gone]);
 
+  // Set when an alert's row leaves the list with focus in it (a refetch where
+  // it resolved and others still fire): focus goes to the list, not the page.
+  const rowLeft = useRef(false);
+  useEffect(() => {
+    if (!rowLeft.current) return;
+    rowLeft.current = false;
+    const t = setTimeout(() => {
+      const now = document.activeElement;
+      // The panel and the phone sheet both carry the id and take focus (tabIndex -1).
+      if (!now || now === document.body)
+        document.getElementById(id)?.focus({ preventScroll: true });
+    });
+    return () => clearTimeout(t);
+  }, [alerts, id]);
+
   // Every alert cleared while the list was open: it stays closed when the next one fires.
   if (gone && open) setOpen(false);
   if (gone) return null;
   return (
     <span className={styles.root} data-alerts={id}>
-      <LeaveWatch id={id} onLeave={(had) => (leftWithFocus.current = had)} />
+      <LeaveWatch
+        within={`[data-alerts="${id}"]`}
+        id={id}
+        onLeave={(had) => (leftWithFocus.current = had)}
+      />
       <button
         ref={trigger}
         type="button"
@@ -69,7 +88,14 @@ export function AlertsButton({
         <Popover title={ALERTS.heading} id={id} triggerRef={trigger} onClose={() => setOpen(false)}>
           <ul className={styles.list}>
             {alerts.map((a) => (
-              <li key={a.key} className={styles.item}>
+              <li key={a.key} className={styles.item} data-alert-row={`${id}:${a.key}`}>
+                <LeaveWatch
+                  within={`[data-alert-row="${id}:${a.key}"]`}
+                  // Only a leaving row with focus counts; a new row mounting says nothing.
+                  onLeave={(had) => {
+                    if (had) rowLeft.current = true;
+                  }}
+                />
                 <Icon name="error" size={20} className={styles.icon} />
                 <div className={styles.text}>
                   <strong className={styles.title}>{a.title}</strong>
@@ -97,12 +123,23 @@ export function AlertsButton({
 }
 
 /**
- * Says, as the count leaves the page, whether focus was on it or in its list.
- * A layout cleanup runs before the nodes are removed, so it can ask where focus
- * is; a blur can't tell (Chrome fires one on removal, like any other leaving).
- * Found by attribute and id, not refs: React detaches those before this runs.
+ * Says, as its box leaves the page, whether focus was in it: the count with its
+ * list, or one alert's row. A layout cleanup runs before the nodes are removed,
+ * so it can ask where focus is; a blur can't tell (Chrome fires one on removal,
+ * like any other leaving). Found by selector and id, not refs: React detaches
+ * those before this runs.
  */
-function LeaveWatch({ id, onLeave }: { id: string; onLeave: (hadFocus: boolean) => void }) {
+function LeaveWatch({
+  within,
+  id,
+  onLeave,
+}: {
+  /** The box, found from the focused node up. */
+  within: string;
+  /** A portalled part (the phone sheet), found by id. */
+  id?: string;
+  onLeave: (hadFocus: boolean) => void;
+}) {
   const report = useRef(onLeave);
   useLayoutEffect(() => {
     report.current = onLeave;
@@ -111,12 +148,10 @@ function LeaveWatch({ id, onLeave }: { id: string; onLeave: (hadFocus: boolean) 
     report.current(false);
     return () => {
       const now = document.activeElement;
-      // The phone sheet is portalled out of the count's box: found by its id.
       const inside =
-        !!now &&
-        (!!now.closest(`[data-alerts="${id}"]`) || !!document.getElementById(id)?.contains(now));
+        !!now && (!!now.closest(within) || (!!id && !!document.getElementById(id)?.contains(now)));
       report.current(inside);
     };
-  }, [id]);
+  }, [within, id]);
   return null;
 }
