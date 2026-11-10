@@ -4,6 +4,7 @@ import { getAccessToken, refreshAccessToken, signOut } from '@/lib/vendor/supaba
 import { dropDeviceSubscription } from '@/lib/utils/push';
 import { createAuthMiddleware } from './authMiddleware';
 import { createPreviewMiddleware, isPreviewEnded } from './previewMiddleware';
+import { createRequestFailedMiddleware } from './requestFailedMiddleware';
 
 /**
  * The browser's generated client. The server-side calls build their own:
@@ -22,7 +23,11 @@ export const api = createClient<paths>({
   querySerializer: { array: { style: 'form', explode: true } },
 });
 
-// Preview as user: first, so the auth middleware's retry clone carries the
+// Failed calls (PRD 30 `request_failed`): registered first, so its onResponse
+// runs last (openapi-fetch runs them in reverse) and sees the answer after the
+// auth middleware's refresh and retry, not the 401 it replaced.
+api.use(createRequestFailedMiddleware());
+// Preview as user: next, so the auth middleware's retry clone carries the
 // preview header, and its 401 (preview ended) is never refreshed and retried
 // as the admin.
 api.use(createPreviewMiddleware());
