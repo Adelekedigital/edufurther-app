@@ -6,7 +6,7 @@ import {
   mockWindow,
   type MockQuery,
 } from '@/lib/api/mock/adminAnalytics';
-import { pendingOk, problem } from '@/lib/api/mock/respond';
+import { ok, pendingOk, problem } from '@/lib/api/mock/respond';
 
 /**
  * MOCK of GET /api/v1/admin/analytics/{overview|sessions|supply|credits|growth}
@@ -35,7 +35,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ section:
     case 'supply':
       return pendingOk('GET /api/v1/admin/analytics/supply', mockSection('supply', c));
     case 'credits':
-      return pendingOk('GET /api/v1/admin/analytics/credits', mockSection('credits', c));
+      return ok('/api/v1/admin/analytics/credits', 'get', mockSection('credits', c));
     case 'growth':
       return pendingOk('GET /api/v1/admin/analytics/growth', mockSection('growth', c));
   }
