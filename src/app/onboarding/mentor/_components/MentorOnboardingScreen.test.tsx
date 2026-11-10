@@ -706,6 +706,7 @@ describe('MentorOnboardingScreen: "Join as a mentee" on step 1 (owner, 2026-10-2
 });
 
 describe('MentorOnboardingScreen: PRD 30 application funnel', () => {
+  beforeEach(() => localStorage.clear());
   const calls = (event: string) => track.mock.calls.filter(([e]) => e === event);
   /** Every step but hours answered, so About and Education can Continue. */
   const readyForAbout = () =>
@@ -748,6 +749,35 @@ describe('MentorOnboardingScreen: PRD 30 application funnel', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await screen.findByRole('heading', { level: 1, name: 'Where did you study?' });
     expect(calls('mentor_application_step_completed')).toEqual([]);
+  });
+
+  it('a second visit before the first save is not a second start', () => {
+    const first = render(<MentorOnboardingScreen />);
+    expect(calls('mentor_application_started')).toHaveLength(1);
+    expect(localStorage.getItem('ef-mentor-app-started-u1')).toBe('1');
+    first.unmount();
+    render(<MentorOnboardingScreen />);
+    expect(calls('mentor_application_started')).toHaveLength(1);
+  });
+
+  it('storage blocked: still once per visit', () => {
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    try {
+      render(
+        <StrictMode>
+          <MentorOnboardingScreen />
+        </StrictMode>,
+      );
+      expect(calls('mentor_application_started')).toHaveLength(1);
+    } finally {
+      get.mockRestore();
+      set.mockRestore();
+    }
   });
 
   it('a returning applicant has started already', () => {

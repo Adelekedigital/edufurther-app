@@ -20,6 +20,7 @@ import { FLOW_COPY, STEP_ORDER } from '@/lib/copy/mentorOnboarding';
 import { FIELD_SUGGESTIONS } from '@/lib/copy/onboarding';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import { useDeviceFlag } from '@/lib/utils/deviceFlag';
 import {
   DEFAULT_FROM,
   DEFAULT_TO,
@@ -245,11 +246,18 @@ export function useMentorOnboardingFlow() {
   useEffect(() => {
     latest.current = form;
   });
-  // Started: a fresh application's form is on screen (nothing saved yet).
-  // Checked once, as the form appears; a returning applicant has started already.
+  // Started: a fresh application's form is on screen (nothing saved yet), once
+  // per account on this device: a later visit before the first save isn't a new
+  // start (`ef-mentor-app-started-{id}`, no personal data). The funnel is read as
+  // unique users anyway; this only keeps the raw count honest.
+  const [startedHere, setStartedHere] = useDeviceFlag('mentor-app-started', userId);
   useEffect(() => {
+    if (startedHere) return;
     if (hasForm && latest.current && !latest.current.resumed && state?.lastStep === null)
-      trackOnce('started', () => track('mentor_application_started', {}));
+      trackOnce('started', () => {
+        track('mentor_application_started', {});
+        setStartedHere(true);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasForm]);
   // Set on every mount: a remount (Strict Mode runs effects twice) must not leave it false.

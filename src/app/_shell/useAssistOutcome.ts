@@ -12,6 +12,9 @@ import type { AssistField } from '@/lib/api/data/writingAssist';
  * calls `accepted` once the save lands and `discarded` when the edit is
  * thrown away (Cancel, Discard, Start over). An outcome with no AI change
  * pending sends nothing, so a second call can't count twice.
+ *
+ * Leaving without Save or Discard (closing the tab, navigating away) sends
+ * nothing: that under-count is accepted rather than guessing an outcome.
  */
 export function useAssistOutcome(field: AssistField) {
   // The mode of the AI change in the box, until its outcome is known. A later
