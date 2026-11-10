@@ -17,6 +17,11 @@ const ph = vi.hoisted(() => ({
   },
 }));
 vi.mock('posthog-js', () => ({ default: ph }));
+const recorderLoaded = vi.hoisted(() => vi.fn());
+vi.mock('posthog-js/dist/recorder', () => {
+  recorderLoaded();
+  return {};
+});
 
 import {
   NO_REPLAY_ATTR,
@@ -51,6 +56,10 @@ describe('the PostHog seam', () => {
       capture_performance: false,
       disable_session_recording: true,
       disable_surveys: true,
+      disable_external_dependency_loading: true,
+      advanced_disable_flags: true,
+      cross_subdomain_cookie: false,
+      enable_recording_console_log: false,
       session_recording: { maskAllInputs: true, blockSelector: `[${NO_REPLAY_ATTR}]` },
     });
   });
@@ -73,9 +82,25 @@ describe('the PostHog seam', () => {
     expect(ph.identify).toHaveBeenCalledWith('u1', { role: 'mentor' });
     v.setReplay(true);
     v.setReplay(true);
+    // The recorder is our own import, loaded on the first start only.
+    await vi.waitFor(() => expect(ph.startSessionRecording).toHaveBeenCalledWith(true));
     expect(ph.startSessionRecording).toHaveBeenCalledTimes(1);
+    expect(recorderLoaded).toHaveBeenCalledTimes(1);
     v.setReplay(false);
     expect(ph.stopSessionRecording).toHaveBeenCalledTimes(1);
+  });
+
+  it('replay turned off while the recorder loads never starts', async () => {
+    const { wrap } = await import('./analytics');
+    let done!: () => void;
+    const slow = () => new Promise<void>((r) => (done = r));
+    const v = wrap(ph as never, slow);
+    v.setMode('identified');
+    v.setReplay(true);
+    v.setReplay(false);
+    done();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(ph.startSessionRecording).not.toHaveBeenCalled();
   });
 
   it('withdrawing in the session stops replay, resets the id and goes cookieless', async () => {

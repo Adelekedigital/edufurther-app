@@ -58,8 +58,16 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
     disable_product_tours: true,
     disable_conversations: true,
     disable_web_experiments: true,
-    // Off until the app starts it on an allowed route, after Accept.
+    // No feature flags are used: no /flags call on every page.
+    advanced_disable_flags: true,
+    // PostHog never injects a script of its own: the recorder is our own
+    // dynamic import (loadRecorder), bundled and served by this app.
+    disable_external_dependency_loading: true,
+    // Host-only until the landing site reads PostHog's cookie too.
+    cross_subdomain_cookie: false,
+    // Off until the app starts it on an allowed route or scope, after Accept.
     disable_session_recording: true,
+    enable_recording_console_log: false,
     session_recording: {
       maskAllInputs: true,
       blockSelector: `[${NO_REPLAY_ATTR}]`,
@@ -70,8 +78,17 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
   };
 }
 
+/** The session recorder, fetched the first time replay starts (it registers itself with PostHog). */
+export function loadRecorder(): Promise<unknown> {
+  return import('posthog-js/dist/recorder');
+}
+
 /** Wraps a started PostHog in our interface: the app never calls the SDK itself. */
-export function wrap(ph: PostHog): VendorAnalytics {
+export function wrap(
+  ph: PostHog,
+  recorder: () => Promise<unknown> = loadRecorder,
+): VendorAnalytics {
+  let recorderReady: Promise<boolean> | null = null;
   // An earlier visit's Accept is kept in PostHog's own storage: start from it,
   // so a decline given since (here or on the landing site) still resets.
   let mode: VendorMode =
@@ -122,7 +139,19 @@ export function wrap(ph: PostHog): VendorAnalytics {
     setReplay: (on) => {
       if (on && mode === 'identified' && !replaying) {
         replaying = true;
-        ph.startSessionRecording();
+        recorderReady ??= recorder().then(
+          () => true,
+          () => {
+            recorderReady = null;
+            return false;
+          },
+        );
+        void recorderReady.then((ok) => {
+          // Still wanted once the recorder arrived (it may have been turned off meanwhile).
+          // `true`: start whatever the project's sampling or triggers say; the app decides.
+          if (ok && replaying && mode === 'identified') ph.startSessionRecording(true);
+          else if (!ok) replaying = false;
+        });
       } else if (!on) stopReplay();
     },
   };
