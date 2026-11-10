@@ -21,6 +21,8 @@ export async function POST(req: NextRequest) {
     session_type_id?: string;
     starts_at?: string;
     answers?: { question_id?: string; text?: string; option_ids?: string[]; file_id?: string }[];
+    /** Analytics only (PRD 30): accepted and not stored; an unknown value is dropped, never refused, as the backend does. */
+    entry_point?: string | null;
   } | null;
   const type = MOCK_SESSION_TYPES.find((t) => t.id === body?.session_type_id);
   if (!type || !body?.starts_at) return problem(422, { title: 'Unprocessable Content' });

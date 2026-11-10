@@ -452,6 +452,19 @@ describe('the More options menu', () => {
     expect(push).toHaveBeenCalledWith('/bookings?tab=upcoming&booking=b-201');
   });
 
+  it('View profile: the visit it opens came from Messages (PRD 30)', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    open({ items: [msg(false, ago(5), 'Hi')] });
+    render(<MessagesScreen />);
+    await user.click(chat().getByRole('button', { name: 'More options' }));
+    await user.click(screen.getByRole('menuitem', { name: 'View profile' }));
+    const href = push.mock.calls.at(-1)![0] as string;
+    const { takeProfileSource } = await import('@/lib/analytics/profileSource');
+    expect(takeProfileSource(decodeURIComponent(href.split('/')[2]!), new URLSearchParams())).toBe(
+      'messages',
+    );
+  });
+
   it('desktop: no View booking (the subline says it); a mentor gets no View profile (Q3)', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     h.viewer = MENTOR;

@@ -82,6 +82,7 @@ describe('useRequestBooking: a 422 about the answers (backend answer_problems)',
         mentorId: 'm1',
         sessionTypeId: 'st',
         startsAt: '2026-09-30T09:00:00Z',
+        entryPoint: 'explore' as const,
         answers: { qa: { text: 'Fall' }, qf: { file: { id: 'f1', name: 'cv.pdf', size: 8 } } },
       }),
     );
@@ -138,6 +139,7 @@ describe('useRequestBooking: a 422 about the answers (backend answer_problems)',
         mentorId: 'm1',
         sessionTypeId: 'st',
         startsAt: '2026-09-30T09:00:00Z',
+        entryPoint: 'explore' as const,
         answers: { qa: { text: 'Fall' }, qf: { file: { id: 'f1', name: 'cv.pdf', size: 8 } } },
       }),
     );
@@ -286,6 +288,7 @@ describe('useRequestBooking: a sent request', () => {
       mentorId: 'm1',
       sessionTypeId: 'st',
       startsAt: '2026-09-30T09:00:00Z',
+      entryPoint: 'explore' as const,
       answers: {},
     };
     send('confirmed');
@@ -309,10 +312,36 @@ describe('useRequestBooking: a sent request', () => {
         mentorId: 'm1',
         sessionTypeId: 'st',
         startsAt: '2026-09-30T09:00:00Z',
+        entryPoint: 'explore' as const,
         answers: {},
       }),
     );
     await waitFor(() => expect(result.current.isDone).toBe(true));
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['viewer'] });
+  });
+
+  it('sends where the booking began (entry_point, PRD 30)', async () => {
+    POST.mockResolvedValue({ data: { id: 'b1' }, error: undefined, response: new Response(null) });
+    const { result } = renderHook(() => useRequestBooking(), { wrapper });
+    act(() =>
+      result.current.request({
+        mentorId: 'm1',
+        sessionTypeId: 'st',
+        startsAt: '2026-09-30T09:00:00Z',
+        answers: {},
+        entryPoint: 'rebook_after_review',
+      }),
+    );
+    await waitFor(() => expect(result.current.isDone).toBe(true));
+    expect(POST).toHaveBeenLastCalledWith(
+      '/api/v1/sessions',
+      expect.objectContaining({
+        body: {
+          session_type_id: 'st',
+          starts_at: '2026-09-30T09:00:00Z',
+          entry_point: 'rebook_after_review',
+        },
+      }),
+    );
   });
 });

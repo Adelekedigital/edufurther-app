@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { OnboardingError, OnboardingState } from '@/lib/api/data/onboarding';
 import { EMPTY_PLANS } from '@/lib/utils/onboardingAnswers';
 import type { Viewer } from '@/types/mentor';
+import { track } from '@/lib/analytics/track';
 import { OnboardingScreen } from './OnboardingScreen';
 
 // Both flows on, before access.ts reads them: step 1 may offer the mentor flow.
@@ -121,6 +122,7 @@ let matches: unknown = null;
 vi.mock('@/lib/api/data/mentorMatches', () => ({
   useMentorMatches: () => ({ data: matches, isLoading: !matches, error: null, retry: vi.fn() }),
 }));
+vi.mock('@/lib/analytics/track', () => ({ track: vi.fn() }));
 let launcher: Record<string, unknown> = {};
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
   BookingLauncher: (p: Record<string, unknown>) => {
@@ -614,5 +616,71 @@ describe('OnboardingScreen: "Join as a mentor" on step 1 (owner, 2026-10-20)', (
     render(<OnboardingScreen />);
     expect(screen.getByText('Step 1 of 2')).toBeInTheDocument();
     expect(join()).toBeNull();
+  });
+});
+
+describe('OnboardingScreen: the onboarding funnel (PRD 30)', () => {
+  const tracked = (event: string) => vi.mocked(track).mock.calls.filter(([e]) => e === event);
+  const settle = () => new Promise<void>((r) => setTimeout(r, 0));
+  const filled = {
+    ...fresh,
+    lastStep: 'help' as const,
+    needIds: ['o1'],
+    plans: { originId: 'c-ng', degree: 'masters', field: 'Law', destinationId: 'c-gb' },
+  };
+  beforeEach(() => vi.mocked(track).mockClear());
+
+  it('each saved step once, then completed: and no abandon after', async () => {
+    const { unmount } = render(<OnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /Find a program/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(tracked('onboarding_step_completed')).toEqual([
+      ['onboarding_step_completed', { role: 'mentee', step: 'help' }],
+    ]);
+    expect(tracked('onboarding_completed')).toEqual([]);
+    unmount();
+    await settle();
+    expect(tracked('onboarding_abandoned')).toEqual([
+      ['onboarding_abandoned', { role: 'mentee', step: 'plans' }],
+    ]);
+  });
+
+  it('saving the plans completes onboarding; leaving the matches is not an abandon', async () => {
+    state = filled;
+    const { unmount } = render(<OnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'See my matches' }));
+    expect(tracked('onboarding_step_completed')).toEqual([
+      ['onboarding_step_completed', { role: 'mentee', step: 'plans' }],
+    ]);
+    expect(tracked('onboarding_completed')).toEqual([['onboarding_completed', { role: 'mentee' }]]);
+    unmount();
+    await settle();
+    expect(tracked('onboarding_abandoned')).toEqual([]);
+  });
+
+  it('a refused save counts nothing; leaving then abandons at that step', async () => {
+    save.mockReset().mockRejectedValue({ kind: 'server', message: 'x' });
+    state = filled;
+    const { unmount } = render(<OnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'See my matches' }));
+    expect(tracked('onboarding_step_completed')).toEqual([]);
+    unmount();
+    await settle();
+    expect(tracked('onboarding_abandoned')).toEqual([
+      ['onboarding_abandoned', { role: 'mentee', step: 'plans' }],
+    ]);
+  });
+
+  it('nothing before the form exists, and nothing for an onboarding already done', async () => {
+    state = { ...fresh, complete: true };
+    const { unmount } = render(<OnboardingScreen />);
+    unmount();
+    await settle();
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('books with the onboarding entry point', () => {
+    render(<OnboardingScreen />);
+    expect(launcher.entryPoint).toBe('onboarding_guest');
   });
 });

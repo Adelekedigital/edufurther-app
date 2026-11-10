@@ -9,12 +9,15 @@ import {
   useSlots,
   useUploadIntakeFile,
 } from '@/lib/api/data/booking';
+import type { EntryPoint } from '@/lib/analytics/events';
 import { deviceTimeZone } from '@/lib/utils/format';
 import type { Mentor } from '@/types/mentor';
 
 type BookingLauncherProps = {
   /** The mentor to book; null closes the flow (the query stays mounted, disabled). */
   mentor: Mentor | null;
+  /** Which surface this is (PRD 30): sent with the request and on the booking events. */
+  entryPoint: EntryPoint;
   /**
    * A guest signs up after choosing a time; on member screens this is false.
    * Null while the viewer loads (SignInBookingFlow decides on the first answer).
@@ -44,6 +47,7 @@ type BookingLauncherProps = {
  */
 export function BookingLauncher({
   mentor,
+  entryPoint,
   isGuest = false,
   hideProfileLink,
   ratingUnknown,
@@ -80,6 +84,7 @@ export function BookingLauncher({
     <SignInBookingFlow
       key={mentor.id}
       mentor={mentor}
+      entryPoint={entryPoint}
       sessionTypes={sessionTypes}
       sessionTypeId={typeId}
       onSessionTypeChange={setTypeIdState}

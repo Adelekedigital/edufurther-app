@@ -298,6 +298,8 @@ export function OnboardingScreen() {
       {body}
       <BookingLauncher
         mentor={bookMentor}
+        // Every booking from onboarding: their own mentor back from Book, or a match.
+        entryPoint="onboarding_guest"
         // Their own mentor from Book: back on the questions with the time they picked.
         {...(bookMentor && f.guest && bookMentor.profileHref === `/mentors/${f.guest.handle}`
           ? {

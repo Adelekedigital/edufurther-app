@@ -19,7 +19,7 @@ import {
   reminders,
   resetHarness,
 } from './bookingsScreen.harness';
-import { launched, sent } from '@/app/_sessions/reviewAndRebook.harness';
+import { entryPoints, launched, sent } from '@/app/_sessions/reviewAndRebook.harness';
 
 // The data hooks, mocked. Hoisted above the imports, so each factory
 // reaches the harness through a dynamic import rather than a binding
@@ -560,6 +560,7 @@ describe('the review entry on History', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Book again' }));
     expect(screen.getByRole('dialog', { name: 'Book Amara Okafor' })).toBeVisible();
     expect(launched.at(-1)?.id).toBe('p1');
+    expect(entryPoints.at(-1)).toBe('rebook_after_review');
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -690,6 +691,12 @@ describe('booking an offered time actually opens the flow', () => {
     await userEvent.click(screen.getByRole('button', { name: /^Book / }));
     expect(push).toHaveBeenCalledWith(expect.stringContaining('book=st-general'));
     expect(push.mock.calls[0]![0]).toContain('at=');
+    // The profile visit it lands on came from Bookings (PRD 30).
+    const { takeProfileSource } = await import('@/lib/analytics/profileSource');
+    const handle = decodeURIComponent(
+      new URL(push.mock.calls[0]![0], 'http://x').pathname.split('/')[2]!,
+    );
+    expect(takeProfileSource(handle, new URLSearchParams())).toBe('bookings');
   });
 
   it('offers nothing to press when the booking has no offering recorded', () => {

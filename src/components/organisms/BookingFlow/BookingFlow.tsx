@@ -8,6 +8,7 @@ import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { formatDay, formatRating, formatTime } from '@/lib/utils/format';
 import { dayKey } from '@/lib/utils/slots';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
+import type { EntryPoint } from '@/lib/analytics/events';
 import type {
   AppError,
   BookingRequest,
@@ -28,6 +29,7 @@ import { QuestionsStep } from './QuestionsStep';
 import { SignupStep, guestCanContinue } from './SignupStep';
 import signupStyles from './SignupStep.module.css';
 import { TimeStep } from './TimeStep';
+import { useBookingEvents } from './useBookingEvents';
 import { isAnswered, useIntakeAnswers } from './useIntakeAnswers';
 import { useTimeChoice } from './useTimeChoice';
 import type { FirstReason, GuestSignIn } from './types';
@@ -53,6 +55,11 @@ const GUEST_LABEL: Partial<Record<GuestSignIn['stage'], string>> = {
 
 export type BookingFlowProps = {
   mentor: Mentor;
+  /**
+   * The surface that opened the booking (PRD 30): it goes with the request
+   * and on every booking event. Required, so no screen books unnamed.
+   */
+  entryPoint: EntryPoint;
   /** The mentor's offerings (GET /users/{id}/session-types). */
   sessionTypes: Remote<SessionType[]>;
   /**
@@ -175,6 +182,21 @@ export function BookingFlow(p: BookingFlowProps) {
   // Decided once: signing in mid-flow turns the page's `isGuest` off, and the
   // step list must not change under them ("Step 2 of 3" stays).
   const [startedAsGuest] = useState(p.isGuest);
+  const events = useBookingEvents({
+    entryPoint: p.entryPoint,
+    isGuest: startedAsGuest,
+    requestDone: p.requestDone,
+  });
+  // Opened past the time (back from sign-up or onboarding): the offering and
+  // the time were chosen on the way here, so this booking has finished them.
+  const [openedAfterTime] = useState(!!p.startAfterTime);
+  useEffect(() => {
+    if (!openedAfterTime) return;
+    events.stepDone('type');
+    events.stepDone('time');
+    // Once, on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [stepIndex, setStepIndex] = useState(p.startAfterTime ? 1 : 0);
   const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
@@ -270,7 +292,14 @@ export function BookingFlow(p: BookingFlowProps) {
     if (sent.current || !session || !time) return;
     sent.current = true;
     setBookedName(session.name);
-    p.onRequest({ mentorId: m.id, sessionTypeId: session.id, startsAt: time, answers: asked() });
+    events.sent(session.id);
+    p.onRequest({
+      mentorId: m.id,
+      sessionTypeId: session.id,
+      startsAt: time,
+      answers: asked(),
+      entryPoint: p.entryPoint,
+    });
   };
   const pick = session && time ? { sessionTypeId: session.id, time } : null;
   const next = () => {
@@ -289,6 +318,12 @@ export function BookingFlow(p: BookingFlowProps) {
       }
       return;
     }
+    // The offering is settled with the time: both are on the first step, and
+    // it locks once the flow moves on.
+    if (step === 'time') {
+      events.stepDone('type');
+      events.stepDone('time');
+    } else if (step === 'questions') events.stepDone('questions');
     if (isLast) {
       submit();
       return;
@@ -488,25 +523,27 @@ export function BookingFlow(p: BookingFlowProps) {
 
       {/* An answer the server refused says so under its own question instead. */}
       {/* The finish-setup box says it when it can stand in for the refusal. */}
-      {p.requestError && !refusedOnScreen && !(gateOn && p.requestError.kind === 'needsOnboarding') && (
-        <p role="alert" className={styles.error}>
-          <Icon name="error" size={16} />
-          {/* A booking limit is about what this mentee already has, not about
+      {p.requestError &&
+        !refusedOnScreen &&
+        !(gateOn && p.requestError.kind === 'needsOnboarding') && (
+          <p role="alert" className={styles.error}>
+            <Icon name="error" size={16} />
+            {/* A booking limit is about what this mentee already has, not about
               the time, so it names the mentor and points at the list rather
               than inviting another attempt that would be refused the same way. */}
-          {p.requestError.kind === 'bookingWithMentorExists'
-            ? `You already have a session pending or coming up with ${m.firstName}. You can book them again after it.`
-            : p.requestError.message}
-          {BOOKING_LIMIT_KINDS.includes(p.requestError.kind) && (
-            <>
-              {' '}
-              <Link href="/bookings" className={styles.errorLink}>
-                See your bookings
-              </Link>
-            </>
-          )}
-        </p>
-      )}
+            {p.requestError.kind === 'bookingWithMentorExists'
+              ? `You already have a session pending or coming up with ${m.firstName}. You can book them again after it.`
+              : p.requestError.message}
+            {BOOKING_LIMIT_KINDS.includes(p.requestError.kind) && (
+              <>
+                {' '}
+                <Link href="/bookings" className={styles.errorLink}>
+                  See your bookings
+                </Link>
+              </>
+            )}
+          </p>
+        )}
     </>
   );
 

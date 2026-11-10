@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { CodeProblem } from '@/components/organisms/SignInForm';
-import { sendSignInCode, verifySignInCode } from '@/lib/api/data/auth';
+import { sendSignInCode, verifySignInCode, type AuthFailure } from '@/lib/api/data/auth';
+import type { AnalyticsEvents } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/track';
 import { codeTries, recordMiss, resetTries } from '@/lib/utils/codeLock';
 import { useLatest } from '@/lib/utils/useLatest';
 
@@ -25,6 +27,15 @@ export type EmailCodeAuthOptions = {
   /** The account is suspended (a Supabase ban). */
   onBanned: () => void;
 };
+
+type FailReason = AnalyticsEvents['login_code_failed']['reason'];
+
+/** A refused code as the funnel counts it (PRD 30); `expired` is told by the clock. */
+function failReason(reason: AuthFailure, expired: boolean): FailReason {
+  if (reason === 'invalidCode') return expired ? 'expired' : 'invalid';
+  if (reason === 'rateLimited') return 'rate_limited';
+  return 'other';
+}
 
 /**
  * The email-code half of signing in, shared by the sign-in page and the
@@ -114,6 +125,8 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
     latest.current.onVerifyStart?.();
     const r = await verifySignInCode(email, c);
     if (r.ok) {
+      // Log-in and sign-up alike, on the page or in the booking modal (PRD 30).
+      track('login_code_verified', {});
       resetTries(email);
       try {
         await latest.current.onVerified(email);
@@ -124,6 +137,8 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
       return;
     }
     verifyingNow.current = false;
+    const expired = Date.now() - sentAt.current >= CODE_LIFETIME_MS;
+    track('login_code_failed', { reason: failReason(r.reason, expired) });
     if (!mounted.current) return;
     setVerifying(false);
     latest.current.onVerifyRefused?.();
@@ -133,7 +148,7 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
     }
     if (r.reason !== 'invalidCode') return; // offline or unknown: nothing counted, try again
     // Supabase can't tell an expired code from a wrong one; the clock can.
-    if (Date.now() - sentAt.current >= CODE_LIFETIME_MS) return setCodeProblem({ kind: 'expired' });
+    if (expired) return setCodeProblem({ kind: 'expired' });
     const t = recordMiss(email);
     setCodeProblem(
       t.lockedUntil !== null ? { kind: 'locked' } : { kind: 'wrong', triesLeft: t.triesLeft },

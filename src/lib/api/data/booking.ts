@@ -304,6 +304,8 @@ export function useRequestBooking() {
         session_type_id: req.sessionTypeId,
         starts_at: req.startsAt,
         ...(answers.length ? { answers } : {}),
+        // Where the booking began (PRD 30): the funnel by surface reads it server-side.
+        entry_point: req.entryPoint,
       };
       attempt.current = keyForAttempt(attempt.current, JSON.stringify(body), () =>
         crypto.randomUUID(),

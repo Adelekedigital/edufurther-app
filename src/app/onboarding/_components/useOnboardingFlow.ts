@@ -11,6 +11,8 @@ import { useOnboarding, useSaveOnboarding, type OnboardingState } from '@/lib/ap
 import { patchViewer, useViewer } from '@/lib/api/data/viewer';
 import { HELP_LIMIT, type MissingKey } from '@/lib/copy/onboarding';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import { track } from '@/lib/analytics/track';
+import { useOnLeave } from '@/lib/analytics/useOnLeave';
 import { markBookingDraftFinished } from '@/lib/utils/bookingDraft';
 import { parseGuestBooking, type GuestBooking } from '@/lib/utils/guestBooking';
 import { EMPTY_PLANS, missingHelp, missingPlans } from '@/lib/utils/onboardingAnswers';
@@ -126,6 +128,15 @@ export function useOnboardingFlow() {
   }, [doneAtLoad, router, qc, guest]);
 
   const step = form?.step ?? 'help';
+
+  // The onboarding funnel (PRD 30). Saving the plans completes onboarding; the
+  // matches after it are no longer onboarding. Leaving with a step still to
+  // save (closed, navigated away) abandons it, once.
+  const completedHere = useRef(false);
+  useOnLeave(() => {
+    if (!form || completedHere.current || form.step === 'matches') return;
+    track('onboarding_abandoned', { role: 'mentee', step: form.step });
+  });
   const matches = useMentorMatches(userId, topics.topics, levels.levels, {
     enabled: step === 'matches',
     forMentor: guest?.handle ?? null,
@@ -180,6 +191,11 @@ export function useOnboardingFlow() {
       else if (from === 'plans')
         await save.save({ step: 'plans', needIds: form.needIds, plans: form.plans });
       else return [];
+      track('onboarding_step_completed', { role: 'mentee', step: from });
+      if (from === 'plans') {
+        completedHere.current = true;
+        track('onboarding_completed', { role: 'mentee' });
+      }
       setSavedHere(true);
       // Finished for a booking (round 4): back to it, no matches. Saving the
       // plans completed onboarding and paid the starter credit.

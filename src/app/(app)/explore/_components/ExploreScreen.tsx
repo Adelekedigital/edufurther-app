@@ -20,6 +20,7 @@ import {
   useUploadIntakeFile,
 } from '@/lib/api/data/booking';
 import { useInviteLookup } from '@/lib/api/data/invite';
+import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
 import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
 import { deviceTimeZone } from '@/lib/utils/format';
@@ -34,6 +35,7 @@ import styles from './ExploreScreen.module.css';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { MATCH_CALL_URL, isMenteeSide, useAppShell } from '@/app/_shell/useAppShell';
 import { pillLayout, useFloatingPrompt } from './useFloatingPrompt';
+import { useSearchEvent } from './useSearchEvent';
 
 /** Results update this long after typing stops; Enter applies at once (Design decisions §1). */
 const SEARCH_DEBOUNCE_MS = 300;
@@ -88,6 +90,7 @@ export function ExploreScreen() {
 
   const topics = useTopics();
   const results = useMentors({ q, offerings });
+  useSearchEvent(q, offerings, results);
   const sessionTypes = useSessionTypes(booking?.id ?? null);
   // The offering being booked: the one picked in the modal, else the first.
   const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
@@ -148,7 +151,11 @@ export function ExploreScreen() {
           rest={INVITE_LANDING_COPY.banner.rest}
         />
       )}
-      <div className={styles.page}>
+      <div
+        className={styles.page}
+        // A profile opened from the results or the featured card (PRD 30).
+        onClickCapture={profileLinkSource('explore')}
+      >
         {viewer.kind === 'error' && (
           // PROVISIONAL copy: /me failed. The page still works as a public list.
           <Notice tone="neutral" icon="error" title="We couldn’t load your account.">
@@ -276,6 +283,7 @@ export function ExploreScreen() {
         <SignInBookingFlow
           key={booking.id}
           mentor={booking}
+          entryPoint="explore"
           sessionTypes={sessionTypes}
           sessionTypeId={typeId}
           onSessionTypeChange={setBookingTypeId}

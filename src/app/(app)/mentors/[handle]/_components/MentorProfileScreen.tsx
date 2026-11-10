@@ -66,6 +66,8 @@ import { useBookLink } from './useBookLink';
 import { useProfileBooking } from './useProfileBooking';
 import { useProfileReviewing } from './useProfileReviewing';
 import { useProfileTab } from './useProfileTab';
+import { useProfileViewed } from './useProfileViewed';
+import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { focusIfShown } from '@/lib/utils/focus';
 
 // Tests import it from here.
@@ -133,6 +135,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // `handle` arrives decoded (page.tsx, safely): never decode it again.
   const ownUrl = !!member && handle === member.id;
   const detour = useSetupDetour(viewer, isOwner || ownUrl);
+  // A visitor's view (PRD 30): the owner looking at their own page isn't one.
+  useProfileViewed(handle, !!p && viewer.kind !== 'loading' && !isOwner && !ownUrl);
   // "View as mentee" (Mentor Profile.dc.html `pvw`): the owner sees the page as
   // a mentee does, with Book drawn but off. Page state: a reload is back to editing.
   const [previewOn, setPreview] = useState(false);
@@ -693,7 +697,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                   track ||
                   strengthShown ||
                   (!isPhone && !!firstMentees)) && (
-                  <aside className={styles.aside} aria-label={asideLabel}>
+                  <aside
+                    className={styles.aside}
+                    aria-label={asideLabel}
+                    // Its only profile links are the similar mentors'.
+                    onClickCapture={profileLinkSource('similar_mentors')}
+                  >
                     {!isPhone && firstMentees}
                     {asMentee &&
                       (notTaking ? (
@@ -808,6 +817,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         // A fresh flow per mentor, and after a close the page forced.
         key={booking.active?.id ?? 'closed'}
         mentor={booking.active}
+        entryPoint="mentor_profile"
         isGuest={viewer.kind === 'loading' ? null : viewer.kind === 'guest'}
         timeZone={timeZone}
         initialSessionTypeId={booking.initialSessionTypeId}

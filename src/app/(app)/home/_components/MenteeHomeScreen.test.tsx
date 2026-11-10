@@ -138,6 +138,7 @@ vi.mock('@/components/organisms/MentorCard/MentorCard', () => ({
       <button type="button" onClick={() => onBook(mentor)}>
         Book {mentor.name}
       </button>
+      <a href={`/mentors/${mentor.id}`}>Profile</a>
     </article>
   ),
 }));
@@ -153,16 +154,19 @@ const match = (id: string, name: string, slugs: string[] = ['scholarships']) => 
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
   BookingLauncher: ({
     mentor,
+    entryPoint,
     hideProfileLink,
     ratingUnknown,
   }: {
     mentor: unknown;
+    entryPoint: string;
     hideProfileLink?: boolean;
     ratingUnknown?: boolean;
   }) =>
     mentor ? (
       <div
         data-testid="booking-open"
+        data-entry={entryPoint}
         data-hide-profile={String(!!hideProfileLink)}
         data-rating-unknown={String(!!ratingUnknown)}
       />
@@ -644,6 +648,16 @@ describe('MenteeHomeScreen', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Book Tunde Bakare' }));
     // A matched mentor's card carries their rating; only met mentors' doesn't.
     expect(screen.getByTestId('booking-open')).toHaveAttribute('data-rating-unknown', 'false');
+    expect(screen.getByTestId('booking-open')).toHaveAttribute('data-entry', 'home');
+    // A profile opened from Home's suggestions is a home visit (PRD 30).
+    const profileLink = screen
+      .getByRole('article', { name: 'Tunde Bakare' })
+      .querySelector<HTMLAnchorElement>('a[href^="/mentors/"]')!;
+    profileLink.addEventListener('click', (e) => e.preventDefault());
+    profileLink.click();
+    const { takeProfileSource } = await import('@/lib/analytics/profileSource');
+    const handle = decodeURIComponent(profileLink.getAttribute('href')!.split('/')[2]!);
+    expect(takeProfileSource(handle, new URLSearchParams())).toBe('home');
   });
 
   it('with nobody to book again, Recommended stands alone under its heading', () => {
