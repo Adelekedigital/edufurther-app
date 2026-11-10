@@ -2,9 +2,11 @@ import type { AnalyticsEvent, AnalyticsEvents, PersonProperties } from './events
 
 /**
  * Our analytics interface (PRD 30): every screen calls these, nothing imports
- * the vendor. The vendor arrives as a `Sink`, connected by the consent code
- * once someone accepts (lib/vendor/analytics.ts behind it). Until then events
- * wait in memory; a decline drops them.
+ * the vendor. The vendor arrives as a `Sink`, connected by the analytics root
+ * (app/_shell/AnalyticsRoot, lib/vendor/analytics.ts behind it) once it has
+ * loaded in the mode consent allows: cookieless before an answer and after a
+ * decline (its sink drops identify), identified after Accept. Until then
+ * events wait in memory; `setConsent(false)` (off, a preview) drops them.
  *
  * Nothing is sent while blocked: a preview session (PRD 27), tests, Storybook,
  * or the feature flag off. `setBlocked` takes the check so this file knows no

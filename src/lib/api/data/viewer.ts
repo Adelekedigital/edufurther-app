@@ -51,6 +51,8 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
+    primaryRole: me.primary_role ?? undefined,
+    analyticsConsent: me.analytics_consent ?? null,
     createdAt: me.created_at,
     credits: me.credits ? toCredits(me.credits) : null,
     avatarUrl: me.profile?.avatar_url ?? null,
@@ -125,11 +127,18 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     mentorStage: 'none',
     onboardingComplete: true,
     completedSessions: 0,
+    primaryRole: 'mentee',
     credits: {
       balance: 4,
       state: 'on_track',
       nextResetAt: '2026-11-01T00:00:00Z',
-      monthly: { balance: 3, ceiling: 3, level: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
+      monthly: {
+        balance: 3,
+        ceiling: 3,
+        level: 3,
+        expiresAt: '2026-11-01T00:00:00Z',
+        unlocked: true,
+      },
       // Decision 308: a support grant, ending at the month end like every credit.
       bonus: { balance: 1, groups: [{ count: 1, expiresAt: '2026-11-01T00:00:00Z' }] },
     },
@@ -153,6 +162,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     mentorStage: 'approved',
     onboardingComplete: true,
     completedSessions: 0,
+    primaryRole: 'mentor',
     credits: null,
     // No photo, like the mock profile it owns: the initials on its cover tone.
     avatarUrl: null,
@@ -200,7 +210,13 @@ MOCK_VIEWERS['mentee-new'] = {
     nextResetAt: '2026-11-01T00:00:00Z',
     // Decision 308: a new mentee at level 1 (profile finished), one credit a
     // month; the starter is no longer a never-expiring bonus.
-    monthly: { balance: 1, ceiling: 1, level: 1, expiresAt: '2026-11-01T00:00:00Z', unlocked: false },
+    monthly: {
+      balance: 1,
+      ceiling: 1,
+      level: 1,
+      expiresAt: '2026-11-01T00:00:00Z',
+      unlocked: false,
+    },
     bonus: { balance: 0, groups: [] },
   },
 };
