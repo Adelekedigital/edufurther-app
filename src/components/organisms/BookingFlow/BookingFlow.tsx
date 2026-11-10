@@ -183,6 +183,7 @@ export function BookingFlow(p: BookingFlowProps) {
   // step list must not change under them ("Step 2 of 3" stays).
   const [startedAsGuest] = useState(p.isGuest);
   const events = useBookingEvents({
+    mentorId: p.mentor.id,
     entryPoint: p.entryPoint,
     isGuest: startedAsGuest,
     requestDone: p.requestDone,
@@ -298,7 +299,8 @@ export function BookingFlow(p: BookingFlowProps) {
       sessionTypeId: session.id,
       startsAt: time,
       answers: asked(),
-      entryPoint: p.entryPoint,
+      // The surface it began on: a booking resumed after sign-up keeps its first one.
+      entryPoint: events.entryPoint,
     });
   };
   const pick = session && time ? { sessionTypeId: session.id, time } : null;
@@ -523,27 +525,25 @@ export function BookingFlow(p: BookingFlowProps) {
 
       {/* An answer the server refused says so under its own question instead. */}
       {/* The finish-setup box says it when it can stand in for the refusal. */}
-      {p.requestError &&
-        !refusedOnScreen &&
-        !(gateOn && p.requestError.kind === 'needsOnboarding') && (
-          <p role="alert" className={styles.error}>
-            <Icon name="error" size={16} />
-            {/* A booking limit is about what this mentee already has, not about
+      {p.requestError && !refusedOnScreen && !(gateOn && p.requestError.kind === 'needsOnboarding') && (
+        <p role="alert" className={styles.error}>
+          <Icon name="error" size={16} />
+          {/* A booking limit is about what this mentee already has, not about
               the time, so it names the mentor and points at the list rather
               than inviting another attempt that would be refused the same way. */}
-            {p.requestError.kind === 'bookingWithMentorExists'
-              ? `You already have a session pending or coming up with ${m.firstName}. You can book them again after it.`
-              : p.requestError.message}
-            {BOOKING_LIMIT_KINDS.includes(p.requestError.kind) && (
-              <>
-                {' '}
-                <Link href="/bookings" className={styles.errorLink}>
-                  See your bookings
-                </Link>
-              </>
-            )}
-          </p>
-        )}
+          {p.requestError.kind === 'bookingWithMentorExists'
+            ? `You already have a session pending or coming up with ${m.firstName}. You can book them again after it.`
+            : p.requestError.message}
+          {BOOKING_LIMIT_KINDS.includes(p.requestError.kind) && (
+            <>
+              {' '}
+              <Link href="/bookings" className={styles.errorLink}>
+                See your bookings
+              </Link>
+            </>
+          )}
+        </p>
+      )}
     </>
   );
 

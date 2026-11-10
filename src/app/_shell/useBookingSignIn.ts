@@ -13,6 +13,8 @@ import { clearInviteCode, storedInviteCode } from '@/lib/utils/inviteCode';
 import { rememberSignInMethod } from '@/lib/utils/lastUsed';
 import { useOnline } from '@/lib/utils/useOnline';
 import { profileHandle } from '@/lib/utils/guestBooking';
+import { cancelHandOff, handOffBooking } from '@/lib/analytics/bookingHandOff';
+import { useSignupStarted } from '@/app/_auth/useSignupStarted';
 import { useGoogleSignUp } from './useGoogleSignUp';
 
 /**
@@ -45,6 +47,8 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
   const [stage, setStage] = useState<GuestStage>('email');
   const [error, setError] = useState<GuestSignIn['error']>();
   const google = useGoogleSignUp();
+  // A guest signing in here may be signing up (PRD 30): counted once, as /signup does.
+  const signupStarted = useSignupStarted('mentee');
   const [fullName, setFullName] = useState('');
   const [nameError, setNameError] = useState<string>();
   const [finishing, setFinishing] = useState(false);
@@ -103,6 +107,7 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
     error,
     googleBusy: google.busy,
     onSendCode: () => {
+      signupStarted();
       setError(undefined);
       void auth.send().then((sent) => {
         if (sent === 'sent') setStage('code');
@@ -111,8 +116,14 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
       });
     },
     onGoogle: (pick) => {
+      signupStarted();
       setError(undefined);
-      google.start(bookingReturnPath(profileHref, pick), () => setError('googleError'));
+      // Off to Google and back: the booking is paused, not abandoned.
+      handOffBooking();
+      google.start(bookingReturnPath(profileHref, pick), () => {
+        cancelHandOff();
+        setError('googleError');
+      });
     },
     code: auth.code,
     onCodeChange: auth.onCodeChange,
@@ -153,6 +164,8 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
             sid: pick.sessionTypeId,
             time: pick.time,
           };
+          // On to onboarding with the booking: paused, not abandoned.
+          handOffBooking();
           router.push(newAccountDestination({ role: 'mentee', booking }));
         })
         .catch((e: Error) => {

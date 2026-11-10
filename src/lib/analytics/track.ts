@@ -78,9 +78,36 @@ function enqueue(q: Queued) {
   queue.push(q);
 }
 
+/** A part of the app whose session replay the vendor side may record (PRD 30). */
+type ReplayScope = 'booking';
+type ReplayListener = (scope: ReplayScope, on: boolean) => void;
+
+const replayOn = new Set<ReplayScope>();
+const replayListeners = new Set<ReplayListener>();
+
+/**
+ * The booking flow opened (`on`) or closed. Only the flag lives here; the
+ * vendor side listens (onReplayScope) and starts or stops recording.
+ */
+export function setReplayScope(scope: 'booking', on: boolean): void {
+  if (on) replayOn.add(scope);
+  else replayOn.delete(scope);
+  for (const fn of replayListeners) fn(scope, on);
+}
+
+/** Hears every replay-scope change; returns the unsubscribe. */
+export function onReplayScope(fn: (scope: 'booking', on: boolean) => void): () => void {
+  replayListeners.add(fn);
+  return () => {
+    replayListeners.delete(fn);
+  };
+}
+
 /** Tests only: back to a fresh page. */
 export function resetForTests(): void {
   sink = null;
   queue = [];
   blocked = () => false;
+  replayOn.clear();
+  replayListeners.clear();
 }

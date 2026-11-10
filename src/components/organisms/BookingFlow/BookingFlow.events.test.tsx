@@ -1,11 +1,15 @@
 import { StrictMode } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { track } from '@/lib/analytics/track';
+import { cancelHandOff, handOffBooking } from '@/lib/analytics/bookingHandOff';
+import { onReplayScope, track } from '@/lib/analytics/track';
 import { BookingFlow } from './BookingFlow';
 import { pinToday, props, setPhone } from './BookingFlow.testkit';
 
-vi.mock('@/lib/analytics/track', () => ({ track: vi.fn() }));
+vi.mock('@/lib/analytics/track', async (orig) => ({
+  ...(await orig<typeof import('@/lib/analytics/track')>()),
+  track: vi.fn(),
+}));
 
 pinToday();
 
@@ -17,6 +21,7 @@ describe('BookingFlow: the booking funnel (PRD 30)', () => {
   beforeEach(() => {
     setPhone(false);
     vi.mocked(track).mockClear();
+    window.sessionStorage.clear();
   });
 
   it('starts once on open, StrictMode included, with the surface and whether a guest', async () => {
@@ -137,5 +142,113 @@ describe('BookingFlow: the booking funnel (PRD 30)', () => {
       ['booking_step_completed', { step: 'type', entry_point: 'onboarding_guest' }],
       ['booking_step_completed', { step: 'time', entry_point: 'onboarding_guest' }],
     ]);
+  });
+
+  it('Finish setup, then reopened: one start, no abandon, the original entry point throughout', async () => {
+    const user = userEvent.setup();
+    // The page's Finish setup hands the booking off before it goes (SignInBookingFlow).
+    const onFinishSetup = vi.fn(() => handOffBooking());
+    const first = render(
+      <BookingFlow
+        {...props({
+          entryPoint: 'explore',
+          sessionTypeId: 'st2',
+          setupUnfinished: true,
+          onFinishSetup,
+        })}
+      />,
+    );
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
+    await user.click(screen.getByRole('button', { name: 'Finish setup' }));
+    expect(onFinishSetup).toHaveBeenCalled();
+    first.unmount();
+    await settle();
+    expect(calls('booking_abandoned')).toEqual([]);
+
+    // Back from onboarding: the profile reopens it, on its own entry point.
+    const onRequest = vi.fn();
+    const again = render(
+      <StrictMode>
+        <BookingFlow
+          {...props({
+            entryPoint: 'mentor_profile',
+            sessionTypeId: 'st2',
+            startAfterTime: true,
+            initialTime: '2026-09-28T09:00:00Z',
+            onRequest,
+          })}
+        />
+      </StrictMode>,
+    );
+    await user.click(screen.getByRole('button', { name: /^Request Mon, Sep 28/ }));
+    again.rerender(
+      <StrictMode>
+        <BookingFlow
+          {...props({
+            entryPoint: 'mentor_profile',
+            sessionTypeId: 'st2',
+            startAfterTime: true,
+            initialTime: '2026-09-28T09:00:00Z',
+            onRequest,
+            requestDone: true,
+          })}
+        />
+      </StrictMode>,
+    );
+    again.unmount();
+    await settle();
+
+    expect(calls('booking_started')).toEqual([
+      ['booking_started', { entry_point: 'explore', is_guest: false }],
+    ]);
+    expect(calls('booking_step_completed')).toEqual([
+      ['booking_step_completed', { step: 'type', entry_point: 'explore' }],
+      ['booking_step_completed', { step: 'time', entry_point: 'explore' }],
+    ]);
+    expect(onRequest).toHaveBeenCalledWith(expect.objectContaining({ entryPoint: 'explore' }));
+    expect(calls('booking_requested')).toEqual([
+      ['booking_requested', { entry_point: 'explore', session_type_id: 'st2' }],
+    ]);
+    expect(calls('booking_abandoned')).toEqual([]);
+    // The pause is used once: the next open of this mentor is a new booking.
+    render(<BookingFlow {...props({ entryPoint: 'home' })} />);
+    expect(calls('booking_started').at(-1)).toEqual([
+      'booking_started',
+      { entry_point: 'home', is_guest: false },
+    ]);
+  });
+
+  it('a hand-off that didn’t happen (Google couldn’t start) still abandons on close', async () => {
+    const { unmount } = render(<BookingFlow {...props({ entryPoint: 'explore' })} />);
+    handOffBooking();
+    cancelHandOff();
+    unmount();
+    await settle();
+    expect(calls('booking_abandoned')).toEqual([
+      ['booking_abandoned', { entry_point: 'explore', last_step: 'started' }],
+    ]);
+  });
+
+  it('a paused booking with another mentor is not resumed', () => {
+    const first = render(<BookingFlow {...props({ entryPoint: 'explore' })} />);
+    handOffBooking();
+    first.unmount();
+    render(
+      <BookingFlow {...props({ entryPoint: 'home', mentor: { ...props().mentor, id: 'm2' } })} />,
+    );
+    expect(calls('booking_started').at(-1)).toEqual([
+      'booking_started',
+      { entry_point: 'home', is_guest: false },
+    ]);
+  });
+
+  it('turns the booking replay scope on while open and off when it closes', () => {
+    const heard: [string, boolean][] = [];
+    const stop = onReplayScope((scope, on) => heard.push([scope, on]));
+    const { unmount } = render(<BookingFlow {...props()} />);
+    expect(heard.at(-1)).toEqual(['booking', true]);
+    unmount();
+    expect(heard.at(-1)).toEqual(['booking', false]);
+    stop();
   });
 });

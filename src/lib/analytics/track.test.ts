@@ -66,3 +66,20 @@ describe('track', () => {
     expect(s.calls).toEqual([['reset']]);
   });
 });
+
+describe('the replay scope (PRD 30)', () => {
+  it('tells every listener as the booking scope turns on and off, until it unsubscribes', async () => {
+    const { onReplayScope, setReplayScope } = await import('./track');
+    resetForTests();
+    const heard: [string, boolean][] = [];
+    const stop = onReplayScope((scope, on) => heard.push([scope, on]));
+    setReplayScope('booking', true);
+    setReplayScope('booking', false);
+    stop();
+    setReplayScope('booking', true);
+    expect(heard).toEqual([
+      ['booking', true],
+      ['booking', false],
+    ]);
+  });
+});
