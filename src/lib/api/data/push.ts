@@ -9,6 +9,7 @@ import {
   setAppBadge,
   subscribeDevice,
 } from '@/lib/utils/push';
+import { track } from '@/lib/analytics/track';
 import { within } from '@/lib/utils/within';
 import { apiError, retryOnce } from './errors';
 import { api } from './http';
@@ -126,10 +127,19 @@ export function usePushNotifications(userId: string | null) {
   });
 
   const enable = useMutation({
-    mutationFn: async (permission: Promise<NotificationPermission>) => {
+    mutationFn: async ({
+      permission,
+      before,
+    }: {
+      permission: Promise<NotificationPermission>;
+      /** The permission before this ask: already granted is no new grant. */
+      before: NotificationPermission;
+    }) => {
       const answer = await permission;
       if (answer === 'denied') throw new PushBlocked();
       if (answer !== 'granted') throw new PushDismissed();
+      // PRD 30 push reach: the person said yes, just now (once per ask).
+      if (before !== 'granted') track('push_permission_granted', {});
       const sub = await subscribeDevice(vapidKey!);
       const { endpoint, keys: k, expirationTime } = sub.toJSON();
       if (!endpoint || !k?.p256dh || !k.auth) throw new Error('Incomplete push subscription');
@@ -177,7 +187,8 @@ export function usePushNotifications(userId: string | null) {
     begin();
     disable.reset();
     // Asked now, in the tap itself: awaiting anything first loses it on iOS.
-    enable.mutate(Notification.requestPermission(), settle);
+    const before = Notification.permission;
+    enable.mutate({ permission: Notification.requestPermission(), before }, settle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vapidKey, enable, disable]);
 
