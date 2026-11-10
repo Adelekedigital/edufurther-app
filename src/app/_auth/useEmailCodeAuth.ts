@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CodeProblem } from '@/components/organisms/SignInForm';
 import { sendSignInCode, verifySignInCode, type AuthFailure } from '@/lib/api/data/auth';
 import type { AnalyticsEvents } from '@/lib/analytics/events';
+import { knownMigrated } from '@/lib/analytics/identity';
 import { track } from '@/lib/analytics/track';
 import { codeTries, recordMiss, resetTries } from '@/lib/utils/codeLock';
 import { useLatest } from '@/lib/utils/useLatest';
@@ -138,8 +139,12 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
     }
     verifyingNow.current = false;
     const expired = Date.now() - sentAt.current >= CODE_LIFETIME_MS;
-    // is_migrated: knownMigrated() once PR 3 lands
-    track('login_code_failed', { reason: failReason(r.reason, expired) });
+    // Only what this device already knows: never asked of the server (no account enumeration).
+    const migrated = knownMigrated();
+    track('login_code_failed', {
+      reason: failReason(r.reason, expired),
+      ...(migrated === undefined ? {} : { is_migrated: migrated }),
+    });
     if (!mounted.current) return;
     setVerifying(false);
     latest.current.onVerifyRefused?.();

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
+import { CONSENT_COPY } from '@/lib/copy/consent';
 import { SECURITY_COPY } from '@/lib/copy/settings';
 import { supportHref } from '@/lib/utils/mailto';
 import { SecuritySettings, type DeleteShell, type SecuritySettingsProps } from './SecuritySettings';
@@ -270,5 +271,27 @@ describe('SecuritySettings › notifications, blocked from the switch', () => {
       'aria-live',
       'polite',
     );
+  });
+});
+
+describe('SecuritySettings › analytics cookies (PRD 30)', () => {
+  it('is not offered without the prop (flag off, or a preview)', () => {
+    render(<Host />);
+    expect(screen.queryByRole('switch', { name: CONSENT_COPY.settingsTitle })).toBeNull();
+  });
+
+  it('shows the answer and withdraws it from the switch', async () => {
+    const onChange = vi.fn();
+    render(<Host analytics={{ granted: true, busy: false, onChange }} />);
+    const sw = screen.getByRole('switch', { name: CONSENT_COPY.settingsTitle });
+    expect(sw).toBeChecked();
+    expect(sw).toHaveAccessibleDescription(CONSENT_COPY.settingsHint);
+    await userEvent.click(sw);
+    expect(onChange).toHaveBeenCalledWith(false);
+  });
+
+  it('waits while the change is on its way', () => {
+    render(<Host analytics={{ granted: false, busy: true, onChange: vi.fn() }} />);
+    expect(screen.getByRole('switch', { name: CONSENT_COPY.settingsTitle })).toBeDisabled();
   });
 });

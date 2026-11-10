@@ -65,33 +65,37 @@ export function ProfilePhoto({
   className,
 }: ProfilePhotoProps) {
   return (
-    <Avatar
-      size={size}
-      initials={person.initials}
-      tone={person.cover}
-      src={person.src}
-      focus={person.focus}
-      alt={person.name}
-      objectY={objectY}
-      ring={ring}
-      className={className}
-    >
-      <PhotoPicker
-        inputId={inputId}
-        // Under 96px the badge sits flush with the corner (ProfilePhoto.dc.html).
-        compact={size < 96}
-        hasPhoto={!!person.src}
-        accept={upload.accept}
-        uploading={upload.uploading}
-        onFile={upload.upload}
-        error={upload.error}
-        errorFrom={upload.errorFrom}
-        onDismissError={upload.dismissError}
-        onRemove={onRemove}
-        onRetryRemove={onRemove ? upload.remove : undefined}
-        removing={upload.removing}
-        removedStamp={upload.removedStamp}
-      />
-    </Avatar>
+    // The person's photo is never in a session replay (PRD 30). No box of its
+    // own (`display: contents`): the Avatar lays out as it did.
+    <span data-no-replay="" style={{ display: 'contents' }}>
+      <Avatar
+        size={size}
+        initials={person.initials}
+        tone={person.cover}
+        src={person.src}
+        focus={person.focus}
+        alt={person.name}
+        objectY={objectY}
+        ring={ring}
+        className={className}
+      >
+        <PhotoPicker
+          inputId={inputId}
+          // Under 96px the badge sits flush with the corner (ProfilePhoto.dc.html).
+          compact={size < 96}
+          hasPhoto={!!person.src}
+          accept={upload.accept}
+          uploading={upload.uploading}
+          onFile={upload.upload}
+          error={upload.error}
+          errorFrom={upload.errorFrom}
+          onDismissError={upload.dismissError}
+          onRemove={onRemove}
+          onRetryRemove={onRemove ? upload.remove : undefined}
+          removing={upload.removing}
+          removedStamp={upload.removedStamp}
+        />
+      </Avatar>
+    </span>
   );
 }
