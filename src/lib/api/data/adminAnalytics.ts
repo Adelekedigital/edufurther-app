@@ -23,8 +23,9 @@ import type {
   WireSupply,
 } from './pendingAnalytics';
 
-// Admin Analytics (PRD 31). PENDING BACKEND: the calls go through `untyped`
-// until the routes are in the published spec (edufurtherbe-24, PRs 1 to 5).
+// Admin Analytics (PRD 31). Overview, Sessions, Supply (backend #614) and
+// Credits (#609) are on the generated client; Growth, funnels and Behaviour go
+// through `untyped` until their routes are in the published spec.
 
 export type AnalyticsTab = 'overview' | 'sessions' | 'supply' | 'credits' | 'growth' | 'funnels';
 export type FunnelName =
@@ -256,8 +257,26 @@ const STALE = 60_000;
 type SectionName = keyof WireSections;
 type SectionOf<K extends SectionName> = ReturnType<(typeof MAPPERS)[K]>;
 
-/** The query string: `untyped` takes the params as given. */
+/** The query string, as both clients take it. */
 const query = (w: AnalyticsWindow, compare: boolean) => windowParams(w, compare);
+
+/** Sections in the published spec; the rest are PENDING BACKEND. */
+const PUBLISHED = ['overview', 'sessions', 'supply', 'credits'] as const;
+type Published = (typeof PUBLISHED)[number];
+const isPublished = (s: SectionName): s is Published =>
+  (PUBLISHED as readonly string[]).includes(s);
+
+function getSection(
+  section: SectionName,
+  w: AnalyticsWindow,
+  compare: boolean,
+  signal: AbortSignal,
+) {
+  const init = { params: { query: query(w, compare) }, signal };
+  return isPublished(section)
+    ? api.GET(`/api/v1/admin/analytics/${section}`, init)
+    : untyped.GET(`/api/v1/admin/analytics/${section}`, init);
+}
 
 function useSection<K extends SectionName>(
   section: K,
@@ -268,10 +287,7 @@ function useSection<K extends SectionName>(
   return useQuery({
     queryKey: keys.admin.analytics(adminId ?? 'none', section, windowKey(w), compare),
     queryFn: async ({ signal }): Promise<SectionOf<K>> => {
-      const { data, error, response } = await untyped.GET(`/api/v1/admin/analytics/${section}`, {
-        params: { query: query(w, compare) },
-        signal,
-      });
+      const { data, error, response } = await getSection(section, w, compare, signal);
       if (!response.ok || !data) throw apiError(response.status, error, response);
       return (MAPPERS[section] as unknown as (w: WireSections[K]) => SectionOf<K>)(
         data as WireSections[K],
@@ -296,23 +312,9 @@ export const useAnalyticsSessions = (
 ) => useSection('sessions', adminId, w, compare);
 export const useAnalyticsSupply = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
   useSection('supply', adminId, w, compare);
-/** GET /admin/analytics/credits: on the generated client (backend #609). */
-export function useAnalyticsCredits(adminId: string | null, w: AnalyticsWindow, compare: boolean) {
-  return useQuery({
-    queryKey: keys.admin.analytics(adminId ?? 'none', 'credits', windowKey(w), compare),
-    queryFn: async ({ signal }) => {
-      const { data, error, response } = await api.GET('/api/v1/admin/analytics/credits', {
-        params: { query: query(w, compare) },
-        signal,
-      });
-      if (!response.ok || !data) throw apiError(response.status, error, response);
-      return toCredits(data);
-    },
-    enabled: adminId !== null,
-    staleTime: STALE,
-    retry: retryOnce,
-  });
-}
+/** GET /admin/analytics/credits. */
+export const useAnalyticsCredits = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
+  useSection('credits', adminId, w, compare);
 export const useAnalyticsGrowth = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
   useSection('growth', adminId, w, compare);
 
@@ -397,10 +399,7 @@ export const toBehaviour = (w: WireBehaviour): Behaviour => ({
 });
 
 /** GET /admin/analytics/behaviour: the event cards. */
-export function useAnalyticsBehaviour(
-  adminId: string | null,
-  w: AnalyticsWindow,
-) {
+export function useAnalyticsBehaviour(adminId: string | null, w: AnalyticsWindow) {
   return useQuery({
     queryKey: keys.admin.analytics(adminId ?? 'none', 'behaviour', windowKey(w), false),
     queryFn: async ({ signal }): Promise<Behaviour> => {
