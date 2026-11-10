@@ -4,6 +4,8 @@ import { renderHook } from '@testing-library/react';
 import { hhmm } from '@/lib/utils/sessionTypeDraft';
 import { minutes, planHoursSave, toWeeklyHours, useSaveWeeklyHours } from './weeklyHours';
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
 const DELETE = vi.fn();
 const POST = vi.fn();
 vi.mock('./http', () => ({
@@ -129,6 +131,7 @@ describe('useSaveWeeklyHours', () => {
   beforeEach(() => {
     DELETE.mockReset();
     POST.mockReset();
+    track.mockClear();
     qc = new QueryClient();
   });
   const current = toWeeklyHours(
@@ -154,6 +157,8 @@ describe('useSaveWeeklyHours', () => {
     await result.current.save({ current, days: next() });
     expect(order).toEqual(['delete', 'post']);
     expect(DELETE.mock.calls[0]![1].params.path).toEqual({ user_id: 'm1', rule_id: 'b' });
+    // PRD 30: a saved week with hours, once (Calendar and the application share this).
+    expect(track.mock.calls).toEqual([['availability_set', {}]]);
     expect(POST.mock.calls[0]![1].body).toEqual({
       day_of_week: 6,
       start_time: '21:00:00',
@@ -165,6 +170,17 @@ describe('useSaveWeeklyHours', () => {
     expect(keysHit).toEqual(
       expect.arrayContaining(['["weeklyHours","m1"]', '["booking"]', '["mentors"]']),
     );
+  });
+
+  it('a saved week with no hours left is no availability_set; a failed save neither', async () => {
+    DELETE.mockImplementation(() => reply(200));
+    POST.mockImplementation(() => reply(201));
+    const { result } = renderHook(() => useSaveWeeklyHours('m1'), { wrapper });
+    const none = current.days.map((d) => ({ ...d, on: false }));
+    await result.current.save({ current, days: none });
+    POST.mockImplementation(() => reply(500));
+    await expect(result.current.save({ current, days: next() })).rejects.toBeTruthy();
+    expect(track).not.toHaveBeenCalled();
   });
 
   it('a rule already gone (404, a retry after a partial save) counts as removed', async () => {

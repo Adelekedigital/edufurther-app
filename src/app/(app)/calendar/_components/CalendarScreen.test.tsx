@@ -56,11 +56,7 @@ vi.mock('@/lib/api/data/calendarConnection', async () =>
   (await import('./calendarScreen.harness')).mocks.calendarConnection(),
 );
 
-const track = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/analytics/track', () => ({ track }));
-
 beforeEach(resetCalendar);
-beforeEach(() => track.mockClear());
 
 // The header status pill's label; the month legend says "Available" too.
 /** The header status switch; its description is the pill's label and hint. */
@@ -122,17 +118,6 @@ describe('CalendarScreen', () => {
     expect(hasUnsavedChanges()).toBe(false);
     // The bar's button went: focus is on the hours, not lost to the page.
     expect(screen.getByRole('heading', { name: 'Weekly availability' })).toHaveFocus();
-    // PRD 30's activation step, on the save's success.
-    expect(track.mock.calls).toEqual([['availability_set', {}]]);
-  });
-
-  it('a saved week with no hours left is no availability_set', async () => {
-    const user = userEvent.setup();
-    render(<CalendarScreen />);
-    await user.click(screen.getByRole('switch', { name: 'Monday' }));
-    await user.click(screen.getByRole('button', { name: 'Save changes' }));
-    expect(await screen.findByText('Your weekly hours are saved.')).toBeInTheDocument();
-    expect(track).not.toHaveBeenCalled();
   });
 
   it('Discard moves focus to the hours before the bar goes', async () => {
@@ -260,7 +245,6 @@ describe('CalendarScreen', () => {
     );
     expect(within(bar).getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     expect(tuesdaySwitch()).toHaveAttribute('aria-checked', 'true');
-    expect(track).not.toHaveBeenCalled();
   });
 
   it('opens Booking rules and saves the rules with approval as set there', async () => {

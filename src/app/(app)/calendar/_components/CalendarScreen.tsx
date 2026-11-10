@@ -58,7 +58,6 @@ import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker'
 import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useCalendarReconnect } from '@/app/_shell/useCalendarReconnect';
-import { track } from '@/lib/analytics/track';
 import { CalendarSkeleton } from './CalendarSkeleton';
 import { SaveBar, type SaveProblem } from './SaveBar';
 import { useHoursDraft } from './useHoursDraft';
@@ -188,9 +187,6 @@ export function CalendarScreen() {
     const sent = { days: draft.days, timeZone: draft.timeZone };
     saveWeekly.save({ current: weekly.data, ...sent }).then(
       () => {
-        // PRD 30's mentor activation step: hours a mentee can book into.
-        // Every such save; the funnel counts the first after approval.
-        if (sent.days.some((d) => d.on && d.slots.length)) track('availability_set', {});
         focusHours();
         draft.clearIf(sent);
         announce('Your weekly hours are saved.');
@@ -331,7 +327,6 @@ export function CalendarScreen() {
     try {
       // Resolves once the setting is read back, so the row already shows it.
       await saveVideo.save({ provider: next, customUrl: null });
-      track('conferencing_connected', {});
       setSwitchTo(null);
       announce(VIDEO_ROW_COPY.saved);
       focusVideoAction();
