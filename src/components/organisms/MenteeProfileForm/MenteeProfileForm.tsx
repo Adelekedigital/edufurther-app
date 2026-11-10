@@ -2,7 +2,7 @@
 
 import { useId, type Ref } from 'react';
 import { Input } from '@/components/atoms/Input/Input';
-import { AiField, type AssistMode } from '@/components/molecules/AiField/AiField';
+import { AiField, type AiChange, type AssistMode } from '@/components/molecules/AiField/AiField';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import {
@@ -54,6 +54,8 @@ type MenteeProfileFormProps = {
   languages: LanguageSearch;
   onAssist?: (mode: AssistMode, text: string) => Promise<string>;
   onAssistBusy?: (busy: boolean) => void;
+  /** Each AI change and Undo in the box (AiField), for the screen's analytics. */
+  onAiChange?: (change: AiChange) => void;
 };
 
 /**
@@ -72,6 +74,7 @@ export function MenteeProfileForm({
   languages,
   onAssist,
   onAssistBusy,
+  onAiChange,
 }: MenteeProfileFormProps) {
   const id = useId();
   const has = (g: ProfileGap) => errors.includes(g);
@@ -200,6 +203,7 @@ export function MenteeProfileForm({
           hint={C.bioHint}
           onAssist={onAssist}
           onBusyChange={onAssistBusy}
+          onAiChange={onAiChange}
         />
       </section>
     </div>

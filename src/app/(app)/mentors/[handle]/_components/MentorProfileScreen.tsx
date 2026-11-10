@@ -643,6 +643,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                               initial={p.about ?? ''}
                               initialDrafted={p.aboutDrafted}
                               assist={owner.assistAbout}
+                              onAiChange={owner.aboutAiChange}
                               onSave={owner.saveAbout}
                               onCancel={owner.closeAbout}
                               saving={owner.aboutSaving}
