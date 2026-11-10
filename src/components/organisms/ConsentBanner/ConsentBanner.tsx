@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { forwardRef, useId } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { LEGAL_LINKS } from '@/lib/config/auth';
@@ -18,10 +18,13 @@ export type ConsentBannerProps = {
  * no is as easy as yes. The page decides when it shows and what an answer
  * does (app/_shell/AnalyticsRoot).
  */
-export function ConsentBanner({ onAccept, onDecline }: ConsentBannerProps) {
+export const ConsentBanner = forwardRef<HTMLElement, ConsentBannerProps>(function ConsentBanner(
+  { onAccept, onDecline },
+  ref,
+) {
   const titleId = useId();
   return (
-    <section className={styles.banner} aria-labelledby={titleId}>
+    <section ref={ref} className={styles.banner} aria-labelledby={titleId}>
       <div className={styles.text}>
         <p id={titleId} className={styles.title}>
           {C.title}
@@ -41,4 +44,4 @@ export function ConsentBanner({ onAccept, onDecline }: ConsentBannerProps) {
       </div>
     </section>
   );
-}
+});

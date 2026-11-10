@@ -64,16 +64,26 @@
   gap: var(--space-3);
 }
 
-/* Phones: the buttons share the card's width under the text, half each, and
-   the card sits above the app's 56px tab bar (AppShell .tabs) so no tab hides. */
+/* While shown, scrolling to a focused control stops above the card (WCAG
+   2.4.11). AnalyticsRoot measures it into --ef-consent-h; :root outranks the
+   tab bar's own html:has() rule, and the card already sits above the bar. */
+:global(html:root):has(.banner) {
+  scroll-padding-bottom: var(--ef-consent-h, 0px);
+}
+
+/* Phones: the buttons share the card's width under the text, half each. */
 @media (max-width: 767px) {
   .banner {
-    bottom: calc(var(--space-14) + var(--space-2) + env(safe-area-inset-bottom));
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-4);
     padding: var(--space-4);
     width: calc(100% - var(--space-4) * 2);
+  }
+
+  /* Above the app's 56px tab bar (AppShell, members only), so no tab hides. */
+  :global(body:has([data-phone-tabs])) .banner {
+    bottom: calc(var(--space-14) + var(--space-2) + env(safe-area-inset-bottom));
   }
 
   .actions > * {
