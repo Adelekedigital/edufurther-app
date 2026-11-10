@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import type { WireEmailSave } from '@/lib/api/data/pending';
+import type { WireEmailSave } from '@/lib/api/data/adminEmails';
 import { mockSaveEmailVariant } from '@/lib/api/mock/adminEmails';
-import { pendingOk, problem } from '@/lib/api/mock/respond';
+import { ok, problem } from '@/lib/api/mock/respond';
 
 /**
- * MOCK of PUT /api/v1/admin/emails/{key}/variants/{variant} (PRD 28, PENDING
- * BACKEND): the rules, the version check (409), Not set up (423), then the
+ * MOCK of PUT /api/v1/admin/emails/{key}/variants/{variant} (PRD 28): the rules, the version check (409), Not set up (423), then the
  * write. ENABLE_MOCK_API=1 only.
  */
 export async function PUT(
@@ -17,5 +16,5 @@ export async function PUT(
   const { key, variant } = await params;
   const r = mockSaveEmailVariant(key, variant, (await req.json()) as WireEmailSave);
   if (!r.ok) return problem(r.status, r.problem);
-  return pendingOk('PUT /api/v1/admin/emails/{key}/variants/{variant}', r.body);
+  return ok('/api/v1/admin/emails/{key}/variants/{variant}', 'put', r.body);
 }

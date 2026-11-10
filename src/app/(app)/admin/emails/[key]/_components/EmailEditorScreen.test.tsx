@@ -1,9 +1,10 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { WireEmailSave } from '@/lib/api/data/pending';
+import type { WireEmailSave } from '@/lib/api/data/adminEmails';
 import {
   mockEmailDetail,
   mockEmailValues,
+  mockSaveBody,
   mockSaveEmailVariant,
   resetMockEmails,
 } from '@/lib/api/mock/adminEmails';
@@ -278,9 +279,11 @@ describe('Edit an email', () => {
     await screen.findByRole('heading', { level: 1 });
     await replace('Heading', 'Mine');
     // Someone else saves the same line, then the window regains focus.
-    mockSaveEmailVariant('session_booked', 'mentee', {
-      lines: { heading: { text: 'Theirs', version: 0 } },
-    });
+    mockSaveEmailVariant(
+      'session_booked',
+      'mentee',
+      mockSaveBody('session_booked', 'mentee', { heading: 'Theirs' }),
+    );
     await act(() => qc.refetchQueries());
     expect(field('Heading')).toHaveValue('Mine');
     await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
