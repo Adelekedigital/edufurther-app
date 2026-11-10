@@ -95,7 +95,7 @@ function overview(c: Ctx): WireOverview {
         : null,
     };
   });
-  const spark = (seed: number, up: boolean) =>
+  const spark = (seed: number, up: boolean): (number | null)[] =>
     Array.from(
       { length: 8 },
       (_, i) => 20 + (up ? i * 1.6 : -i * 0.6) + [3, -2, 4, -3, 2, -1, 3, 0][(i + seed) % 8]!,

@@ -68,5 +68,12 @@ describe('sparkPath', () => {
     expect(d.startsWith('M0 30')).toBe(true);
     expect(d.endsWith('L100 2')).toBe(true);
     expect(sparkPath([])).toBe('');
+    expect(sparkPath([null, null])).toBe('');
+  });
+
+  it('breaks the line at a point with nothing to divide by', () => {
+    const d = sparkPath([1, null, 3, 4]);
+    expect(d.match(/M/g)).toHaveLength(2);
+    expect(d.startsWith('M0 ')).toBe(true);
   });
 });

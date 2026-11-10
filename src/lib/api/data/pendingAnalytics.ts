@@ -53,7 +53,8 @@ export type WireOverview = Section & {
   features: {
     key: WireFeatureKey;
     value: WireMetric | null;
-    spark: number[] | null;
+    /** 8 points; a point with nothing to divide by is null, never 0. */
+    spark: (number | null)[] | null;
     contribution: number | null;
   }[];
 };

@@ -40,18 +40,28 @@ export function trendModel(series: readonly TrendPoint[], compare: boolean): Tre
 }
 
 /** An 8-point sparkline in a 100 by 32 box, scaled to its own range. */
-export function sparkPath(points: readonly number[]): string {
-  if (points.length === 0) return '';
-  const lo = Math.min(...points);
-  const hi = Math.max(...points);
+export function sparkPath(points: readonly (number | null)[]): string {
+  const known = points.filter((v): v is number => v !== null);
+  if (known.length === 0) return '';
+  const lo = Math.min(...known);
+  const hi = Math.max(...known);
   const span = hi - lo || 1;
   const n = points.length;
+  let gap = true;
   return points
     .map((v, i) => {
+      // A point with nothing to divide by is a gap in the line, never a 0.
+      if (v === null) {
+        gap = true;
+        return '';
+      }
       const x = fix(n > 1 ? (i / (n - 1)) * 100 : 50);
       // 2px inset top and bottom, so the stroke isn't clipped.
       const y = fix(30 - ((v - lo) / span) * 28);
-      return `${i ? 'L' : 'M'}${x} ${y}`;
+      const cmd = gap ? 'M' : 'L';
+      gap = false;
+      return `${cmd}${x} ${y}`;
     })
+    .filter(Boolean)
     .join(' ');
 }
