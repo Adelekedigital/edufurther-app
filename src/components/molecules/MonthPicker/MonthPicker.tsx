@@ -10,8 +10,13 @@ import styles from './MonthPicker.module.css';
 type MonthPickerProps = {
   /** Today (YYYY-MM-DD) in the zone the days are counted in. */
   today: string;
-  /** Days before this can't be picked and read as past; default today. */
+  /**
+   * Days before this can't be picked and read as past; default today. Earlier
+   * than today (a reporting range), Previous pages back to its month.
+   */
   min?: string;
+  /** The last pickable day (a reporting range: today); later days read as past, Next stops at its month. */
+  max?: string;
   /** Blocked days (design `selected`). */
   selected?: readonly string[];
   /** Days with a session booked: amber with a gold dot (design `bookedStyle=soft`). */
@@ -23,7 +28,10 @@ type MonthPickerProps = {
   openUntil?: string;
   /** Exact days (YYYY-MM-DD) tinted open: days that have open times. */
   openDays?: readonly string[];
-  /** The month to open on (any day in it); never before today's month. */
+  /**
+   * The month to open on (any day in it), kept within the months that can be
+   * shown: from today's (or `min`'s, when earlier) to `max`'s.
+   */
   initialMonth?: string;
   /** No picking: the month at a glance. Blocked days read grey, as `selectedKind="blocked"`. */
   readOnly?: boolean;
@@ -93,6 +101,7 @@ const weeks = (cells: MonthCell[]) => {
 export function MonthPicker({
   today,
   min,
+  max,
   selected = [],
   booked = [],
   available,
@@ -107,8 +116,15 @@ export function MonthPicker({
   showLegend = false,
   onMonthChange,
 }: MonthPickerProps) {
+  // Months shown, as offsets from today's: back to min's month only when min
+  // is earlier than today (a reporting range); forward to max's, else open.
+  // A max before today's month pulls the floor down to it, so max's month shows.
+  const maxAt = max ? monthsBetween(today, max) : Infinity;
+  const lo = Math.min(min && min < today ? monthsBetween(today, min) : 0, maxAt);
+  const hi = Math.max(lo, maxAt);
+  const clamp = (o: number) => Math.min(hi, Math.max(lo, o));
   const [offset, setOffset] = useState(() =>
-    initialMonth ? Math.max(0, monthsBetween(today, initialMonth)) : 0,
+    clamp(initialMonth ? monthsBetween(today, initialMonth) : 0),
   );
   const [focusIso, setFocusIso] = useState<string | null>(null);
   const moved = useRef(false);
@@ -119,6 +135,7 @@ export function MonthPicker({
     month,
     today,
     min,
+    max,
     selected,
     booked,
     available,
@@ -152,7 +169,7 @@ export function MonthPicker({
 
   const go = (iso: string) => {
     const delta = monthsBetween(today, iso);
-    if (delta < 0) return;
+    if (delta < lo || delta > hi) return;
     moved.current = true;
     setOffset(delta);
     setFocusIso(iso);
@@ -185,13 +202,15 @@ export function MonthPicker({
         <span id={headingId} className={styles.month} aria-live="polite">
           {monthLabel(month)}
         </span>
+        {/* aria-disabled, not disabled: a button that disables itself while
+            focused would drop focus to the page. At an end a press does nothing. */}
         <div className={styles.nav}>
           <button
             type="button"
             className={styles.navBtn}
             aria-label="Previous month"
-            disabled={offset <= 0}
-            onClick={() => setOffset((o) => Math.max(0, o - 1))}
+            aria-disabled={offset <= lo || undefined}
+            onClick={() => setOffset((o) => clamp(o - 1))}
           >
             <Icon name="chevron_left" size={20} />
           </button>
@@ -199,7 +218,8 @@ export function MonthPicker({
             type="button"
             className={styles.navBtn}
             aria-label="Next month"
-            onClick={() => setOffset((o) => o + 1)}
+            aria-disabled={offset >= hi || undefined}
+            onClick={() => setOffset((o) => clamp(o + 1))}
           >
             <Icon name="chevron_right" size={20} />
           </button>
@@ -237,7 +257,7 @@ export function MonthPicker({
                     label={dayLabel(c, selectedLabel)}
                     pickable={pickable}
                     tabStop={c.iso === stop}
-                    disabled={c.iso < floor}
+                    disabled={c.iso < floor || (!!max && c.iso > max)}
                     refFn={(el) => {
                       if (el) dayRefs.current.set(c.iso, el);
                       else dayRefs.current.delete(c.iso);

@@ -149,6 +149,8 @@ export function monthCells(p: {
   month: string;
   today: string;
   min?: string;
+  /** The last pickable day; days after it read as past (a reporting range: today). */
+  max?: string;
   selected: readonly string[];
   booked: readonly string[];
   /** Weekdays (0 = Sunday) with open hours; absent: no day is marked open. */
@@ -173,7 +175,7 @@ export function monthCells(p: {
   for (let n = 1; n <= length; n++) {
     const iso = addDays(p.month, n - 1);
     const weekday = (lead + n - 1) % 7;
-    const past = iso < min;
+    const past = iso < min || (!!p.max && iso > p.max);
     const selected = sel.has(iso);
     cells.push({
       kind: 'day',

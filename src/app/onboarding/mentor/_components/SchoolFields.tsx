@@ -1,6 +1,7 @@
 'use client';
 
 import { useId } from 'react';
+import { Checkbox } from '@/components/atoms/Checkbox/Checkbox';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
@@ -212,12 +213,7 @@ export function SchoolFields({
       </div>
 
       <label className={styles.current}>
-        <input
-          type="checkbox"
-          className={styles.box}
-          checked={s.current}
-          onChange={onToggleCurrent}
-        />
+        <Checkbox checked={s.current} onChange={onToggleCurrent} />
         {EDUCATION_COPY.current}
       </label>
     </div>

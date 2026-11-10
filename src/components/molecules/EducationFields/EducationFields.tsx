@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { Checkbox } from '@/components/atoms/Checkbox/Checkbox';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { FormField } from '@/components/molecules/FormField/FormField';
@@ -128,9 +129,9 @@ export function EducationFields({
         </FormField>
       </div>
       <label className={cx(styles.current, cur && styles.on)}>
-        <input
-          type="checkbox"
-          className={styles.box}
+        <Checkbox
+          // The card around it draws the focus ring.
+          focusRing="parent"
           checked={cur}
           onChange={(e) => set('current', e.target.checked)}
           // Named by the title alone; the hint below is its description.

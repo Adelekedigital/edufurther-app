@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties, type Ref } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
+import { Checkbox } from '@/components/atoms/Checkbox/Checkbox';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Tag } from '@/components/atoms/Tag/Tag';
@@ -127,9 +128,9 @@ export function MentorTable({
           {selectable && (
             <span role="columnheader" className={styles.headCheck}>
               <label className={styles.check}>
-                <input
+                <Checkbox
                   ref={allRef}
-                  type="checkbox"
+                  size={18}
                   checked={all}
                   onChange={onToggleAll}
                   aria-label={T.selectAll}
@@ -160,8 +161,8 @@ export function MentorTable({
               {selectable && (
                 <span role="cell">
                   <label className={styles.check}>
-                    <input
-                      type="checkbox"
+                    <Checkbox
+                      size={18}
                       checked={isChecked}
                       onChange={() => onToggle(m.id)}
                       aria-label={T.select(m.name)}

@@ -14,6 +14,7 @@ import { Input } from './Input/Input';
 import { Radio } from './Radio/Radio';
 import { Select } from './Select/Select';
 import { Switch } from './Switch/Switch';
+import { Checkbox } from './Checkbox/Checkbox';
 import { Skeleton } from './Skeleton/Skeleton';
 import { StepBars } from './StepBars/StepBars';
 import { ProgressBar } from './ProgressBar/ProgressBar';
@@ -260,6 +261,25 @@ export const Switches: Story = {
         <Switch checked={on} onChange={setOn} aria-label="SOP draft review is live" />
         <Switch checked={false} onChange={() => {}} aria-label="Off" />
         <Switch checked onChange={() => {}} aria-label="Disabled on" disabled />
+      </div>
+    );
+  },
+};
+
+/** Native checkbox in the DS blue: 20 in forms, 18 in dense rows (Admin Mentors, Admin Analytics). */
+export const Checkboxes: Story = {
+  render: function Render() {
+    const [on, setOn] = useState(true);
+    return (
+      <div style={row}>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Checkbox checked={on} onChange={(e) => setOn(e.target.checked)} />I study here now
+        </label>
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Checkbox size={18} checked={on} onChange={(e) => setOn(e.target.checked)} />
+          Compare with previous period
+        </label>
+        <Checkbox aria-label="Disabled" disabled />
       </div>
     );
   },

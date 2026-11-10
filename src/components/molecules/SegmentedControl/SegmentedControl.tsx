@@ -1,14 +1,41 @@
 'use client';
 
-import { useRef, type KeyboardEvent } from 'react';
+import { useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import styles from './SegmentedControl.module.css';
 
-export type Segment<V extends string> = { value: V; label: string; icon?: IconName };
+export type Segment<V extends string> = {
+  value: V;
+  label: string;
+  icon?: IconName;
+  /** Only the icon shows; the label names it (aria-label and title). Needs `icon`. */
+  iconOnly?: boolean;
+};
 
-type SegmentedControlProps<V extends string> = {
+type SegmentedControlProps<V extends string> = CommonProps<V> &
+  (
+    | {
+        /** outline: bordered segments, the pick filled blue (Session Types.dc.html). */
+        look?: 'outline';
+        size?: never;
+        trailing?: never;
+      }
+    | {
+        /** track: a grey track, the pick a white raised segment (PerformanceChart.dc.html, Admin Analytics.dc.html). */
+        look: 'track';
+        /**
+         * sm 28px (PerformanceChart, segments touch), md 32px (Admin Analytics'
+         * toggles, the default), lg 36px (Admin Analytics' time window).
+         */
+        size?: 'sm' | 'md' | 'lg';
+        /** A control sharing the track after the radios (PerformanceChart's year Select). */
+        trailing?: ReactNode;
+      }
+  );
+
+type CommonProps<V extends string> = {
   options: Segment<V>[];
   value: V;
   onChange: (value: V) => void;
@@ -30,19 +57,15 @@ type SegmentedControlProps<V extends string> = {
 };
 
 /**
- * Segmented radio group (Session Types.dc.html Price, Answer type). WAI-ARIA
- * radio group: one tab stop, arrows move and select, Home/End jump.
+ * Segmented radio group (Session Types.dc.html Price, Answer type;
+ * PerformanceChart and Admin Analytics on the grey track). WAI-ARIA radio
+ * group: one tab stop, arrows move and select, Home/End jump.
  */
-export function SegmentedControl<V extends string>({
-  options,
-  value,
-  onChange,
-  label,
-  layout = 'fill',
-  width,
-  className,
-  disabled,
-}: SegmentedControlProps<V>) {
+export function SegmentedControl<V extends string>(props: SegmentedControlProps<V>) {
+  const { options, value, onChange, label, layout = 'fill', width, className, disabled } = props;
+  const track = props.look === 'track';
+  const size = (track && props.size) || 'md';
+  const trailing = track ? props.trailing : null;
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   // Nothing selected (or a value that isn't offered): the first segment takes
   // the tab stop, so the group is still reachable by keyboard.
@@ -72,16 +95,21 @@ export function SegmentedControl<V extends string>({
     e.preventDefault();
     move(to);
   };
-  return (
+  const group = (
     <div
       role="radiogroup"
       aria-label={label}
       aria-disabled={disabled || undefined}
-      className={cx(styles.group, className)}
-      style={width ? { width } : undefined}
+      className={
+        track
+          ? cx(styles.radios, layout === 'fill' && styles.radiosFill)
+          : cx(styles.group, className)
+      }
+      style={!track && width ? { width } : undefined}
     >
       {options.map((o, i) => {
         const on = o.value === value;
+        const iconOnly = !!(o.iconOnly && o.icon);
         return (
           <button
             key={o.value}
@@ -91,16 +119,37 @@ export function SegmentedControl<V extends string>({
             type="button"
             role="radio"
             aria-checked={on}
+            aria-label={iconOnly ? o.label : undefined}
+            title={iconOnly ? o.label : undefined}
             tabIndex={i === stop ? 0 : -1}
-            className={cx(styles.segment, styles[layout], on && styles.on)}
+            className={
+              track
+                ? cx(
+                    styles.tseg,
+                    layout === 'fill' && styles.tsegFill,
+                    iconOnly && styles.iconOnly,
+                    on && styles.ton,
+                  )
+                : cx(styles.segment, styles[layout], on && styles.on)
+            }
             onClick={() => !disabled && onChange(o.value)}
             onKeyDown={(e) => onKey(e, i)}
           >
-            {o.icon && <Icon name={o.icon} size={16} />}
-            {o.label}
+            {o.icon && <Icon name={o.icon} size={iconOnly ? 18 : 16} />}
+            {!iconOnly && o.label}
           </button>
         );
       })}
+    </div>
+  );
+  if (!track) return group;
+  return (
+    <div
+      className={cx(styles.track, styles[size], className)}
+      style={width ? { width } : undefined}
+    >
+      {group}
+      {trailing}
     </div>
   );
 }
