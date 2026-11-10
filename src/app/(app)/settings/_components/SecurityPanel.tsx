@@ -9,6 +9,10 @@ import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useDeleteAccount, useLoginProvider } from '@/lib/api/data/account';
 import { markAccountDeleted, useSignOut } from '@/lib/api/data/auth';
 import { usePushNotifications } from '@/lib/api/data/push';
+import { useAnalyticsConsent } from '@/lib/api/data/analyticsConsent';
+import { usePreview } from '@/lib/api/data/preview';
+import { isCurrent } from '@/lib/analytics/consent';
+import { CONSENT_BANNER_LIVE } from '@/lib/config/analytics';
 import { useMenteeProfile } from '@/lib/api/data/settings';
 import { SETTINGS_COPY } from '@/lib/copy/settings';
 import styles from './SecurityPanel.module.css';
@@ -32,6 +36,8 @@ export function SecurityPanel({
   const { provider } = useLoginProvider(userId);
   const deleting = useDeleteAccount();
   const push = usePushNotifications(userId);
+  const consent = useAnalyticsConsent(userId);
+  const previewing = usePreview().sessionId !== null;
   const signOut = useSignOut('/login?deleted=1', markAccountDeleted);
   const [open, setOpen] = useState(false);
   // One request, however fast the second press: state lands a render later.
@@ -84,6 +90,16 @@ export function SecurityPanel({
       deleting={deleting.isPending || deleting.isSuccess}
       deleteError={deleting.error?.copy ?? null}
       renderShell={(shell, body) => <ModalShell {...shell}>{body}</ModalShell>}
+      // Withdraw or give consent here (PRD 30); never for someone being previewed.
+      analytics={
+        CONSENT_BANNER_LIVE && !previewing
+          ? {
+              granted: isCurrent(consent.answer) && consent.answer.granted,
+              busy: consent.busy,
+              onChange: (on) => void consent.choose(on),
+            }
+          : undefined
+      }
       notifications={
         push.state === 'hidden'
           ? undefined

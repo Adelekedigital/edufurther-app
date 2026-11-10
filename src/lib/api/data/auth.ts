@@ -19,6 +19,7 @@ import { beginSignOut } from './session';
 import { endPreviewForSignOut } from './preview';
 import { forgetPushForSignOut } from './push';
 import { clearAllBookingDrafts } from '@/lib/utils/bookingDraft';
+import { reset as resetAnalytics } from '@/lib/analytics/track';
 
 export { authConfigured, signedInUser };
 export type { AuthFailure, SignedInUser } from '@/lib/vendor/supabase/browser';
@@ -93,6 +94,8 @@ export function useSignOut(to: `/login${string}` = '/login', beforeLeave?: () =>
     }
     // A booking draft's answers can be personal: none stays in the tab.
     clearAllBookingDrafts();
+    // Analytics: the next person on this device starts with a fresh id (PRD 30).
+    resetAnalytics();
     beforeLeave?.();
     hardNavigate(to);
   }, [qc, to, beforeLeave]);

@@ -152,7 +152,8 @@ export function SendMessage({
 
   return (
     <ModalShell key="compose" title={C.title(first)} size="md" mobile="sheet" onClose={onClose}>
-      <div className={styles.body}>
+      {/* Messages are never in a session replay (PRD 30). */}
+      <div className={styles.body} data-no-replay="">
         <div className={styles.person}>
           <Avatar
             size="md"

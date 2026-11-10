@@ -22,7 +22,8 @@ type Props = {
 /** The mentor's intake questions, every kind the offering can ask. */
 export function QuestionsStep(p: Props) {
   return (
-    <div className={styles.questions}>
+    // Intake answers are never in a session replay (PRD 30): blocked whole.
+    <div className={styles.questions} data-no-replay="">
       <p className={styles.intro}>
         {p.firstName} reads these before your session. About 2 minutes.
       </p>
