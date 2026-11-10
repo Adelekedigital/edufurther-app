@@ -1,0 +1,22 @@
+.box {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--blue-500);
+  cursor: pointer;
+}
+.s18 {
+  width: 18px;
+  height: 18px;
+}
+.box:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.parentRing:focus-visible {
+  outline: none;
+}
+.box:disabled {
+  cursor: default;
+}
