@@ -8,12 +8,12 @@
  */
 export const CONSENT_COPY = {
   /** Also the banner region's name, read out when a screen reader lands in it. */
-  title: 'Help us make EduFurther better',
-  body: 'With your OK, we use analytics cookies, and recordings of the onboarding and booking pages, to see where people get stuck. What you type is always hidden. If you decline, we only count visits, without cookies.',
+  title: 'Help us see where people get stuck',
+  body: 'With your OK, we use analytics cookies and record the onboarding and booking pages to find what’s confusing. We hide what you type. If you decline, we only count visits, with no cookies.',
   privacy: 'Privacy policy',
-  accept: 'Accept',
+  accept: 'Allow analytics',
   decline: 'Decline',
   settingsTitle: 'Analytics cookies',
   settingsHint:
-    'Lets us see how you use EduFurther, with recordings of the onboarding and booking pages. What you type is always hidden. Off, we only count visits, without cookies.',
+    'Lets us record the onboarding and booking pages to see where people get stuck. We hide what you type. When this is off, we only count visits, with no cookies.',
 } as const;

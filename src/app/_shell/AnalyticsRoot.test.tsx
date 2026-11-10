@@ -137,7 +137,7 @@ describe('the flags', () => {
     render(<AnalyticsRoot />);
     expect(screen.getByRole('region', { name: 'Help us make EduFurther better' })).toBeVisible();
     await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless'));
-    await userEvent.click(screen.getByRole('button', { name: 'Accept' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
     expect(screen.queryByRole('region')).toBeNull();
     await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('identified'));
     expect(readConsentCookie()?.granted).toBe(true);
@@ -223,7 +223,7 @@ describe('members', () => {
   it("the member's answer is stored on the account", async () => {
     env.viewer = member();
     render(<AnalyticsRoot />);
-    await userEvent.click(screen.getByRole('button', { name: 'Accept' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
     expect(PUT).toHaveBeenCalledWith('/api/v1/me/consents/analytics', {
       body: { granted: true, version: CONSENT_VERSION },
     });
