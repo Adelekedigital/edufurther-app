@@ -99,7 +99,8 @@ export function eventCards(b: Behaviour) {
       key: 'views',
       ...E.views,
       rows: b.profileViewsBySource.map((v) => [
-        PROFILE_VIEW_SOURCES[v.source] ?? PROFILE_VIEW_SOURCES.other,
+        // A source newer than this list keeps its key: never a second "Other" row.
+        PROFILE_VIEW_SOURCES[v.source] ?? v.source,
         orNoData(v.share, formatRate),
       ]),
     },

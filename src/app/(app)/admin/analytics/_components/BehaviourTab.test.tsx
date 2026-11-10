@@ -109,6 +109,28 @@ describe('BehaviourTab: the funnel', () => {
     ]);
   });
 
+  it('a 0 before an untracked step, and two untracked steps in a row', () => {
+    const zeroThenNull = funnelRows([
+      { key: 'a', label: 'A', value: 100, previous: null },
+      { key: 'b', label: 'B', value: 0, previous: null },
+      { key: 'c', label: 'C', value: null, previous: null },
+      { key: 'd', label: 'D', value: 10, previous: null },
+    ]);
+    expect(zeroThenNull.map((r) => r.drop)).toEqual(['Start', '100% dropped', '', '']);
+    const twoNulls = funnelRows([
+      { key: 'a', label: 'A', value: 100, previous: null },
+      { key: 'b', label: 'B', value: null, previous: null },
+      { key: 'c', label: 'C', value: null, previous: null },
+      { key: 'd', label: 'D', value: 20, previous: null },
+    ]);
+    expect(twoNulls.map((r) => [r.count, r.width, r.drop])).toEqual([
+      ['100', 100, 'Start'],
+      ['No data', 0, ''],
+      ['No data', 0, ''],
+      ['20', 20, ''],
+    ]);
+  });
+
   it('a funnel whose first step nothing tracks reads as empty, in its card', () => {
     renderTab({
       funnelQuery: ready([{ key: 'a', label: 'A', value: null, previous: null }]),

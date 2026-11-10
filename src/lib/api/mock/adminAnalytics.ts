@@ -11,6 +11,7 @@ import type {
   WireSessions,
   WireSupply,
 } from '@/lib/api/data/pendingAnalytics';
+import { FUNNEL_COPY } from '@/lib/copy/adminAnalytics';
 
 /**
  * MOCK of Admin Analytics (PRD 31). PENDING BACKEND. The numbers are the
@@ -359,8 +360,9 @@ export function mockFunnel(
     alerts: [],
     name: name as WireFunnel['name'],
     by: by || 'all',
-    note: '',
-    window_days: 30,
+    note: FUNNEL_COPY[name as WireFunnel['name']].note,
+    // The backend's windows: booking 60 days, mentee activation 14, the rest 30.
+    window_days: name === 'booking' ? 60 : name === 'mentee_activation' ? 14 : 30,
     steps: FUNNELS[name]!.map(([key, label, v]) => ({
       key,
       label,
