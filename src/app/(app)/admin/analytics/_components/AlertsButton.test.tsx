@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AnalyticsAlert } from '@/lib/api/data/adminAnalytics';
 import { AlertsButton } from './AlertsButton';
@@ -88,6 +88,39 @@ describe('AlertsButton', () => {
       'false',
     );
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it.each([
+    ['desktop', false],
+    ['phones', true],
+  ])('%s: alerts clearing while the list has focus send it to the fallback', async (_, phone) => {
+    const mq = vi.spyOn(window, 'matchMedia').mockImplementation(
+      (q: string) =>
+        ({
+          matches: phone,
+          media: q,
+          addEventListener: () => {},
+          removeEventListener: () => {},
+        }) as unknown as MediaQueryList,
+    );
+    const Page = ({ alerts }: { alerts: AnalyticsAlert[] }) => (
+      <>
+        <AlertsButton
+          alerts={alerts}
+          onOpen={vi.fn()}
+          fallbackFocus={() => document.getElementById('tab')}
+        />
+        <button id="tab" type="button">
+          Overview
+        </button>
+      </>
+    );
+    const { rerender } = render(<Page alerts={[alert()]} />);
+    await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
+    expect(screen.getByRole('dialog')).toContainElement(document.activeElement as HTMLElement);
+    rerender(<Page alerts={[]} />);
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Overview' })).toHaveFocus());
+    mq.mockRestore();
   });
 
   it('a click outside leaves focus where it landed, not on the count', async () => {

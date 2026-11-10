@@ -17,9 +17,12 @@ type Link = NonNullable<AnalyticsAlert['link']>;
 export function AlertsButton({
   alerts,
   onOpen,
+  fallbackFocus,
 }: {
   alerts: AnalyticsAlert[];
   onOpen: (link: Link) => void;
+  /** Where focus goes if every alert clears while the list has it. */
+  fallbackFocus?: () => HTMLElement | null;
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -43,7 +46,13 @@ export function AlertsButton({
         <span aria-hidden>{alerts.length}</span>
       </button>
       {open && (
-        <Popover title={ALERTS.heading} id={id} triggerRef={trigger} onClose={() => setOpen(false)}>
+        <Popover
+          title={ALERTS.heading}
+          id={id}
+          triggerRef={trigger}
+          onClose={() => setOpen(false)}
+          fallbackFocus={fallbackFocus}
+        >
           <ul className={styles.list}>
             {alerts.map((a) => (
               <li key={a.key} className={styles.item}>

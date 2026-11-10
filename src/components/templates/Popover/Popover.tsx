@@ -21,6 +21,11 @@ type PopoverProps = {
   children: ReactNode;
   /** Which edge of the trigger the panel lines up with. */
   align?: 'start' | 'end';
+  /**
+   * Where focus goes if the trigger left the page with the panel (the thing it
+   * opened has gone, e.g. every alert cleared), so it never falls to the page.
+   */
+  fallbackFocus?: () => HTMLElement | null;
 };
 
 /**
@@ -39,8 +44,26 @@ export function Popover({
   onClose,
   children,
   align = 'start',
+  fallbackFocus,
 }: PopoverProps) {
   const phone = useMediaQuery('(max-width: 767px)');
+  const fallback = useRef(fallbackFocus);
+  useEffect(() => {
+    fallback.current = fallbackFocus;
+  }, [fallbackFocus]);
+  // Both layouts hand focus back to the trigger. When the trigger went with the
+  // panel, that lands on the page: after their cleanups have run, move it on.
+  useEffect(() => {
+    const trigger = triggerRef.current;
+    return () => {
+      setTimeout(() => {
+        if (trigger?.isConnected) return;
+        const now = document.activeElement;
+        if (now && now !== document.body) return;
+        fallback.current?.()?.focus({ preventScroll: true });
+      });
+    };
+  }, [triggerRef]);
   if (phone) {
     return (
       <BottomSheet title={title} id={id} onClose={onClose}>

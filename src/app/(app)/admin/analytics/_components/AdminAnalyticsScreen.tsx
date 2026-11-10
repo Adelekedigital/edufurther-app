@@ -137,7 +137,16 @@ export function AdminAnalyticsScreen() {
     <div className={styles.screen}>
       <PageHeader
         title={ANALYTICS_PAGE.title}
-        titleAside={<AlertsButton alerts={alerts} onOpen={go} />}
+        titleAside={
+          <AlertsButton
+            alerts={alerts}
+            onOpen={go}
+            // The open tab: the next stable control if the count goes away.
+            fallbackFocus={() =>
+              document.querySelector<HTMLElement>(`[role="tab"][aria-controls="${panelId(tab)}"]`)
+            }
+          />
+        }
         subtitle={ANALYTICS_PAGE.subtitle}
         actions={
           <WindowControls
