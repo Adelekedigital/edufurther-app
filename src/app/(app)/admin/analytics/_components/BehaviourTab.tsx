@@ -14,17 +14,11 @@ import {
   type Funnel,
   type FunnelName,
 } from '@/lib/api/data/adminAnalytics';
-import {
-  ANALYTICS_STATES,
-  BEHAVIOUR,
-  EVENT_CARDS,
-  FUNNEL_COPY,
-  NO_DATA,
-} from '@/lib/copy/adminAnalytics';
+import { ANALYTICS_STATES, BEHAVIOUR, EVENT_CARDS, FUNNEL_COPY } from '@/lib/copy/adminAnalytics';
 import { formatRate } from '@/lib/utils/analytics';
 import { formatCount } from '@/lib/utils/format';
 import { AdminLoadError } from '../../_components/AdminLoadError';
-import { BarRows, Section } from './parts';
+import { BarRows, orNoData, Section } from './parts';
 import { steps } from './tabModels';
 import { TabState } from './TabState';
 import styles from './BehaviourTab.module.css';
@@ -99,12 +93,7 @@ export function eventCards(b: Behaviour) {
       rows: [
         [E.joining.clicked, formatCount(b.joining.clicked)],
         [E.joining.failed, formatCount(b.joining.failed)],
-        [
-          E.joining.median,
-          b.joining.medianMinutesBefore === null
-            ? NO_DATA
-            : E.joining.minutes(b.joining.medianMinutesBefore),
-        ],
+        [E.joining.median, orNoData(b.joining.medianMinutesBefore, E.joining.minutes)],
       ],
     },
     {

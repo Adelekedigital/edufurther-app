@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { SOURCE_BADGE } from '@/lib/copy/adminAnalytics';
+import { NO_DATA, SOURCE_BADGE } from '@/lib/copy/adminAnalytics';
 import type { KpiTrend } from '@/components/molecules/KpiCard/KpiCard';
 import type { Change } from '@/lib/utils/analytics';
 import { cx } from '@/lib/utils/cx';
@@ -249,3 +249,7 @@ export const cardGrid = styles.cardGrid;
 export const cellStrong = styles.cellStrong;
 /** The table-cell bar's look. */
 export const cellBar = styles.cellBar;
+
+/** A figure the backend couldn't work out (null) reads "No data", never 0. */
+export const orNoData = (v: number | null, format: (n: number) => string) =>
+  v === null ? NO_DATA : format(v);

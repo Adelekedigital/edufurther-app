@@ -47,6 +47,18 @@ describe('Growth tab', () => {
     expect(row).toHaveTextContent('Invite4641%');
   });
 
+  it('a share the backend couldn’t work out reads No data, not NaN%', () => {
+    render(
+      <GrowthTab
+        data={growth({ bySource: [{ key: 'campaign', members: 0, completedShare: null }] })}
+        compare={false}
+      />,
+    );
+    const table = screen.getByRole('table', { name: 'New members by source' });
+    const row = within(table).getAllByRole('row')[1]!;
+    expect(row).toHaveTextContent('Campaign0No data');
+  });
+
   it('members from invites: the cost sentence only with a cost, the top inviter', () => {
     const { rerender } = render(<GrowthTab data={growth()} compare={false} />);
     expect(screen.queryByText(/Credit cost/)).toBeNull();

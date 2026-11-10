@@ -3,7 +3,7 @@ import type { components } from '@/lib/api/generated/schema';
 type Schemas = components['schemas'];
 
 /**
- * **PENDING BACKEND** (Growth, funnels, Behaviour): Admin Analytics (PRD 31) wire shapes, as proposed to
+ * **PENDING BACKEND** (funnels, Behaviour): Admin Analytics (PRD 31) wire shapes, as proposed to
  * edufurtherbe-24 on 9 Nov (docs/handoff/admin-analytics-backend-request.md).
  * Kept apart from pending.ts so the Emails move onto the typed client doesn't
  * touch these. When a route ships, delete its shape here and `tsc` lists the
@@ -38,37 +38,9 @@ export type WireSupply = Schemas['AnalyticsSupplyRead'];
 export type WireCredits = Schemas['AnalyticsCreditsRead'];
 export type WireCreditSource = WireCredits['by_source'][number]['source'];
 
-export type WireStageKey =
-  | 'exploring'
-  | 'researching'
-  | 'preparing_documents'
-  | 'applying'
-  | 'interview_prep'
-  | 'awaiting_decision'
-  | 'not_set';
-
-export type WireGrowth = Section & {
-  signups: { all: WireMetric; mentees: WireMetric; mentors: WireMetric };
-  /** Empty until PRD 30 records the sign-up source and channel. */
-  by_source: { key: string; members: number; completed_share: number }[];
-  by_channel: { key: string; members: number; completed_share: number }[];
-  invites: {
-    invited: number;
-    joined: number;
-    qualified: number;
-    first_booking: number;
-    first_completed: number;
-    /** Null while no credit is tied to a referral (decision 308). */
-    cost_per_completed: number | null;
-    top_inviter: { name: string; joined: number } | null;
-  };
-  months: { month: string; count: number }[];
-  /** `on` is null: no cutover date is recorded. */
-  migrated: { count: number; on: string | null } | null;
-  completed_total: number;
-  by_topic: { key: string; name: string; count: number }[];
-  by_stage: { key: WireStageKey; count: number }[];
-};
+/** Shipped (backend #618). `by_stage` `not_set`: the session's type has no stage, or it has no type. */
+export type WireGrowth = Schemas['AnalyticsGrowthRead'];
+export type WireStageKey = WireGrowth['by_stage'][number]['key'];
 
 export type WireFunnel = {
   steps: { key: string; label: string; value: number; previous: number | null }[];
@@ -95,7 +67,6 @@ export type WireSections = {
 };
 
 export type PendingAnalyticsResponses = {
-  'GET /api/v1/admin/analytics/growth': WireGrowth;
   'GET /api/v1/admin/analytics/funnels/{name}': WireFunnel;
   'GET /api/v1/admin/analytics/behaviour': WireBehaviour;
 };

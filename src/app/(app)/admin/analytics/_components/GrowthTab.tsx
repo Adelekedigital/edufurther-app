@@ -18,6 +18,7 @@ import {
   Panel,
   Section,
   TwoCol,
+  orNoData,
 } from './parts';
 import { mixRows, monthBars, steps } from './tabModels';
 import styles from './tabs.module.css';
@@ -133,9 +134,9 @@ export function GrowthTab({ data, compare }: { data: Growth; compare: boolean })
                   splitNames[r.key] ?? r.key,
                   formatCount(r.members),
                   <span key="s" className={styles.shareCell}>
-                    <Bar width={r.completedShare} className={cellBar} />
+                    <Bar width={r.completedShare ?? 0} className={cellBar} />
                     <span className={styles.sharePct}>
-                      {formatRate(Math.round(r.completedShare))}
+                      {orNoData(r.completedShare, (n) => formatRate(Math.round(n)))}
                     </span>
                   </span>,
                 ],
