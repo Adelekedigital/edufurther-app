@@ -131,8 +131,8 @@ function overview(c: Ctx): WireOverview {
     },
     features: [
       rate('booking', 71, 68, null, 0),
-      // Explore and matching reads PostHog, which isn't wired yet (backend PR 5).
-      { key: 'explore', value: null, spark: null, contribution: null },
+      // Explore and matching reads PostHog (backend PR 633); null only when it isn't answering.
+      rate('explore', 34, 31, null, 1),
       rate('messaging', 64, 66, 58, 2),
       // A "now" number: nothing to compare with until a snapshot exists (Q1).
       rate('mentor_supply', 58, null, null, 3),
@@ -355,6 +355,12 @@ export function mockFunnel(
 ): WireFunnel {
   const k = by === 'all' || !by ? 1 : (BY_SHARE[by] ?? 0.3);
   return {
+    window: c.window,
+    alerts: [],
+    name: name as WireFunnel['name'],
+    by: by || 'all',
+    note: '',
+    window_days: 30,
     steps: FUNNELS[name]!.map(([key, label, v]) => ({
       key,
       label,
@@ -367,13 +373,15 @@ export function mockFunnel(
 export function mockBehaviour(c: NonNullable<ReturnType<typeof mockWindow>>): WireBehaviour {
   const s = (n: number) => Math.round((n * c.days) / 30);
   return {
+    window: c.window,
+    alerts: [],
     login: { attempts: s(1840), failed_rate: 7.4, failed_migrated_rate: 11.8 },
     search: { searches: s(1260), no_result_rate: 14, profile_views: s(512) },
     profile_views_by_source: [
-      { source: 'explore', label: 'Explore', share: 46 },
-      { source: 'home', label: 'Home', share: 31 },
-      { source: 'invite_link', label: 'Invite link', share: 14 },
-      { source: 'other', label: 'Other', share: 9 },
+      { source: 'explore', share: 46 },
+      { source: 'home', share: 31 },
+      { source: 'invite_link', share: 14 },
+      { source: 'other', share: 9 },
     ],
     joining: { clicked: s(398), failed: s(11), median_minutes_before: 3 },
     writing_assist: { used: s(176), accepted_rate: 61, discarded_rate: 22 },

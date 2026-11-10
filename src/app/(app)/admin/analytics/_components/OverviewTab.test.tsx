@@ -39,7 +39,14 @@ describe('OverviewTab', () => {
   });
 
   it('draws the seven feature cards; Explore reads "No data" with no change or sparkline', () => {
-    show(data());
+    // Explore reads PostHog: null when it isn't answering.
+    const d = data();
+    show({
+      ...d,
+      features: d.features.map((f) =>
+        f.key === 'explore' ? { ...f, value: null, spark: null, contribution: null } : f,
+      ),
+    });
     const features = screen.getByRole('region', { name: 'Feature North Stars' });
     const cards = within(features).getAllByRole('button');
     expect(cards).toHaveLength(7);
@@ -56,6 +63,14 @@ describe('OverviewTab', () => {
     expect(
       within(features).getByRole('button', { name: 'Messaging: 64%, −2 pts. Open detail' }),
     ).toHaveTextContent('Feeds sessions: 58% of confirmed sessions had a message first');
+  });
+
+  it('Explore shows its rate once PostHog answers', () => {
+    show(data());
+    const features = screen.getByRole('region', { name: 'Feature North Stars' });
+    expect(
+      within(features).getByRole('button', { name: /^Explore and matching: 34%/ }),
+    ).toBeInTheDocument();
   });
 
   it('a feature card opens its tab', async () => {

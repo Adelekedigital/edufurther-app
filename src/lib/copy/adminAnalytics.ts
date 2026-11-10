@@ -9,7 +9,7 @@ import type {
   FunnelName,
   StageKey,
 } from '@/lib/api/data/adminAnalytics';
-import type { WireFeatureKey } from '@/lib/api/data/pendingAnalytics';
+import type { WireFeatureKey, WireProfileViewSource } from '@/lib/api/data/pendingAnalytics';
 import { STAGE_LABELS } from '@/lib/utils/sessionTypeDraft';
 
 export const ANALYTICS_PAGE = {
@@ -360,6 +360,18 @@ export const FUNNEL_COPY: Record<
     by: [['all', 'All applicants']],
     note: 'Approved comes from the server.',
   },
+};
+
+/** Where a profile view came from (agreed with edufurtherbe-24, 10 Nov). */
+export const PROFILE_VIEW_SOURCES: Record<WireProfileViewSource, string> = {
+  explore: 'Explore',
+  home: 'Home',
+  bookings: 'Bookings',
+  messages: 'Messages',
+  similar_mentors: 'Similar mentors',
+  invite_link: 'Invite link',
+  direct: 'Direct',
+  other: 'Other',
 };
 
 export const EVENT_CARDS = {

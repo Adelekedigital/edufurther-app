@@ -17,6 +17,7 @@ import type {
   WireGrowth,
   WireNoShowReason,
   WireOverview,
+  WireProfileViewSource,
   WireSections,
   WireSessions,
   WireStageKey,
@@ -362,16 +363,16 @@ export function useAnalyticsFunnel(
   });
 }
 
-/** The event cards' numbers (rates are percentages). */
+/** The event cards' numbers: rates are percentages, null with nothing to divide by. */
 export type Behaviour = {
-  login: { attempts: number; failedRate: number; failedMigratedRate: number };
-  search: { searches: number; noResultRate: number; profileViews: number };
-  profileViewsBySource: { source: string; label: string; share: number }[];
+  login: { attempts: number; failedRate: number | null; failedMigratedRate: number | null };
+  search: { searches: number; noResultRate: number | null; profileViews: number };
+  profileViewsBySource: { source: WireProfileViewSource; share: number | null }[];
   joining: { clicked: number; failed: number; medianMinutesBefore: number | null };
-  writingAssist: { used: number; acceptedRate: number; discardedRate: number };
-  app: { installed: number; pushAllowedRate: number };
+  writingAssist: { used: number; acceptedRate: number | null; discardedRate: number | null };
+  app: { installed: number; pushAllowedRate: number | null };
   errorsByScreen: { route: string; count: number }[];
-  replaysUrl: string;
+  replaysUrl: string | null;
 };
 
 export const toBehaviour = (w: WireBehaviour): Behaviour => ({

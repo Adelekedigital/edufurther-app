@@ -14,7 +14,13 @@ import {
   type Funnel,
   type FunnelName,
 } from '@/lib/api/data/adminAnalytics';
-import { ANALYTICS_STATES, BEHAVIOUR, EVENT_CARDS, FUNNEL_COPY } from '@/lib/copy/adminAnalytics';
+import {
+  ANALYTICS_STATES,
+  BEHAVIOUR,
+  EVENT_CARDS,
+  FUNNEL_COPY,
+  PROFILE_VIEW_SOURCES,
+} from '@/lib/copy/adminAnalytics';
 import { formatRate } from '@/lib/utils/analytics';
 import { formatCount } from '@/lib/utils/format';
 import { AdminLoadError } from '../../_components/AdminLoadError';
@@ -35,7 +41,7 @@ export type TabQuery<T> = {
 const FUNNEL_NAMES = Object.keys(FUNNEL_COPY) as FunnelName[];
 
 /** The replay list opens only on an https address the server sent. */
-export function safeReplayUrl(url: string | undefined): string | null {
+export function safeReplayUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   try {
     return new URL(url).protocol === 'https:' ? url : null;
@@ -44,18 +50,25 @@ export function safeReplayUrl(url: string | undefined): string | null {
   }
 }
 
-/** Each step: its bar against the first step, and how many dropped since the step before. */
+/**
+ * Each step: its bar against the first step, and how many dropped since the
+ * step before. A step nothing tracks (null) reads "No data" with no bar, and
+ * no drop is claimed into or out of it.
+ */
 export function funnelRows(funnel: Funnel) {
-  return steps(funnel).map((s, i) => {
+  const known = steps(funnel.map((s) => ({ key: s.key, value: s.value ?? 0 })));
+  return known.map((s, i) => {
+    const value = funnel[i]!.value;
+    const before = i === 0 ? null : funnel[i - 1]!.value;
     // After an empty step nobody could drop.
-    const drop =
-      s.conversion === null || funnel[i - 1]!.value === 0 ? 0 : Math.max(0, 100 - s.conversion);
+    const pct = s.conversion === null || before === 0 ? 0 : Math.max(0, 100 - s.conversion);
     return {
       key: s.key,
       label: funnel[i]!.label,
-      count: formatCount(s.value),
-      width: s.width,
-      drop: i === 0 ? BEHAVIOUR.start : BEHAVIOUR.dropped(drop),
+      count: orNoData(value, formatCount),
+      width: value === null ? 0 : s.width,
+      drop:
+        i === 0 ? BEHAVIOUR.start : value === null || before === null ? '' : BEHAVIOUR.dropped(pct),
     };
   });
 }
@@ -69,8 +82,8 @@ export function eventCards(b: Behaviour) {
       ...E.login,
       rows: [
         [E.login.attempts, formatCount(b.login.attempts)],
-        [E.login.failed, formatRate(b.login.failedRate)],
-        [E.login.failedMigrated, formatRate(b.login.failedMigratedRate)],
+        [E.login.failed, orNoData(b.login.failedRate, formatRate)],
+        [E.login.failedMigrated, orNoData(b.login.failedMigratedRate, formatRate)],
       ],
     },
     {
@@ -78,14 +91,17 @@ export function eventCards(b: Behaviour) {
       ...E.search,
       rows: [
         [E.search.searches, formatCount(b.search.searches)],
-        [E.search.noResults, formatRate(b.search.noResultRate)],
+        [E.search.noResults, orNoData(b.search.noResultRate, formatRate)],
         [E.search.views, formatCount(b.search.profileViews)],
       ],
     },
     {
       key: 'views',
       ...E.views,
-      rows: b.profileViewsBySource.map((v) => [v.label, formatRate(v.share)]),
+      rows: b.profileViewsBySource.map((v) => [
+        PROFILE_VIEW_SOURCES[v.source] ?? PROFILE_VIEW_SOURCES.other,
+        orNoData(v.share, formatRate),
+      ]),
     },
     {
       key: 'joining',
@@ -101,8 +117,8 @@ export function eventCards(b: Behaviour) {
       ...E.assist,
       rows: [
         [E.assist.used, formatCount(b.writingAssist.used)],
-        [E.assist.accepted, formatRate(b.writingAssist.acceptedRate)],
-        [E.assist.discarded, formatRate(b.writingAssist.discardedRate)],
+        [E.assist.accepted, orNoData(b.writingAssist.acceptedRate, formatRate)],
+        [E.assist.discarded, orNoData(b.writingAssist.discardedRate, formatRate)],
       ],
     },
     {
@@ -110,7 +126,7 @@ export function eventCards(b: Behaviour) {
       ...E.app,
       rows: [
         [E.app.installed, formatCount(b.app.installed)],
-        [E.app.push, E.app.ofMembers(formatRate(b.app.pushAllowedRate))],
+        [E.app.push, orNoData(b.app.pushAllowedRate, (n) => E.app.ofMembers(formatRate(n)))],
       ],
     },
     {
@@ -256,7 +272,8 @@ function FunnelBody({ name, query }: { name: FunnelName; query: TabQuery<Funnel>
       />
     );
   }
-  if (!query.data!.length || query.data![0]!.value === 0) {
+  // Nobody started it, or nothing tracks its first step.
+  if (!query.data!.length || !query.data![0]!.value) {
     // Nobody started this funnel in the window: the page's empty state, in the card.
     return (
       <EmptyState
