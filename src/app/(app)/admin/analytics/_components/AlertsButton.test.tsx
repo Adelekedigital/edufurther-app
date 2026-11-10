@@ -212,6 +212,51 @@ describe('AlertsButton', () => {
     expect(screen.getByRole('button', { name: 'Overview' })).not.toHaveFocus();
   });
 
+  it.each([
+    ['desktop', false],
+    ['phones', true],
+  ])(
+    '%s: the focused alert resolving while others fire sends focus to the list',
+    async (_, phone) => {
+      const mq = vi.spyOn(window, 'matchMedia').mockImplementation(
+        (q: string) =>
+          ({
+            matches: phone,
+            media: q,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+          }) as unknown as MediaQueryList,
+      );
+      const sessions = alert({
+        key: 'no_booking_requests',
+        title: 'No booking requests',
+        link: { tab: 'sessions' },
+      });
+      const { rerender } = render(<AlertsButton alerts={[sessions, alert()]} onOpen={vi.fn()} />);
+      await userEvent.click(screen.getByRole('button', { name: '2 alerts' }));
+      screen.getByRole('button', { name: 'See sessions' }).focus();
+      rerender(<AlertsButton alerts={[alert()]} onOpen={vi.fn()} />);
+      await waitFor(() => expect(screen.getByRole('dialog', { name: 'Alerts' })).toHaveFocus());
+      expect(screen.queryByRole('button', { name: 'See sessions' })).toBeNull();
+      mq.mockRestore();
+    },
+  );
+
+  it('another alert resolving leaves focus on the link it was on', async () => {
+    const sessions = alert({
+      key: 'no_booking_requests',
+      title: 'No booking requests',
+      link: { tab: 'sessions' },
+    });
+    const { rerender } = render(<AlertsButton alerts={[sessions, alert()]} onOpen={vi.fn()} />);
+    await userEvent.click(screen.getByRole('button', { name: '2 alerts' }));
+    const link = screen.getByRole('button', { name: 'See the sign-up funnel' });
+    link.focus();
+    rerender(<AlertsButton alerts={[alert()]} onOpen={vi.fn()} />);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(screen.getByRole('button', { name: 'See the sign-up funnel' })).toHaveFocus();
+  });
+
   it('an alert without a link keeps its words and has no button', async () => {
     render(<AlertsButton alerts={[alert({ link: null })]} onOpen={vi.fn()} />);
     await userEvent.click(screen.getByRole('button', { name: '1 alert' }));
