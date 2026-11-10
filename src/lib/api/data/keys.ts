@@ -251,8 +251,8 @@ export const keys = {
     /** Admin Analytics (PRD 31): one tab's numbers for a window. */
     analytics: (me: string, section: string, window: string, compare: boolean) =>
       ['admin', me, 'analytics', section, window, compare] as const,
-    analyticsFunnel: (me: string, name: string, by: string, window: string, compare: boolean) =>
-      ['admin', me, 'analytics', 'funnel', name, by, window, compare] as const,
+    analyticsFunnel: (me: string, name: string, by: string, window: string) =>
+      ['admin', me, 'analytics', 'funnel', name, by, window] as const,
   },
   /** Push notifications (push.ts): the server's key, and this device's state per account. */
   push: {

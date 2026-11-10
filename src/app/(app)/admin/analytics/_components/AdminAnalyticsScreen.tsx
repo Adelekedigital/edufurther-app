@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
@@ -9,7 +9,9 @@ import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import {
   isAnalyticsTab,
   isFunnelName,
+  useAnalyticsBehaviour,
   useAnalyticsCredits,
+  useAnalyticsFunnel,
   useAnalyticsGrowth,
   useAnalyticsOverview,
   useAnalyticsSessions,
@@ -20,16 +22,59 @@ import {
 } from '@/lib/api/data/adminAnalytics';
 import { viewStatus } from '@/lib/api/data/queryStatus';
 import { useViewer } from '@/lib/api/data/viewer';
-import { alertLinkLabel, ANALYTICS_PAGE, ANALYTICS_TABS } from '@/lib/copy/adminAnalytics';
-import { DEFAULT_WINDOW, type AnalyticsWindow } from '@/lib/utils/analytics';
+import {
+  alertLinkLabel,
+  ANALYTICS_PAGE,
+  ANALYTICS_TABS,
+  FUNNEL_COPY,
+} from '@/lib/copy/adminAnalytics';
+import { DEFAULT_WINDOW, windowLabel, type AnalyticsWindow } from '@/lib/utils/analytics';
 import { todayIn } from '@/lib/utils/calendar';
+import { BehaviourTab, type TabQuery } from './BehaviourTab';
 import { CreditsTab, isCreditsEmpty } from './CreditsTab';
 import { DateRangeDialog } from './DateRangeDialog';
+import { GrowthTab, isGrowthEmpty } from './GrowthTab';
+import { isOverviewEmpty, OverviewTab } from './OverviewTab';
+import { isSessionsEmpty, SessionsTab } from './SessionsTab';
+import { isSupplyEmpty, SupplyTab } from './SupplyTab';
 import { TabState } from './TabState';
 import { WindowControls } from './WindowControls';
 import styles from './AdminAnalyticsScreen.module.css';
 
 const panelId = (t: AnalyticsTab) => `admin-analytics-${t}`;
+
+/** A query as a tab reads it: its state, data, why it failed, and a retry. */
+const tabQuery = <T,>(q: {
+  data: T | undefined;
+  isError: boolean;
+  error: unknown;
+  isFetching: boolean;
+  refetch: () => unknown;
+}): TabQuery<T> => ({
+  status: viewStatus(q),
+  data: q.data,
+  error: q.error,
+  onRetry: () => void q.refetch(),
+  retrying: q.isFetching,
+});
+
+/** A database tab: its four states around its content. */
+function section<D>(
+  q: { data: D | undefined; isError: boolean; isFetching: boolean; refetch: () => unknown },
+  isEmpty: (d: D) => boolean,
+  render: (d: D) => ReactNode,
+) {
+  return (
+    <TabState
+      status={viewStatus(q)}
+      empty={q.data !== undefined && isEmpty(q.data)}
+      onRetry={() => void q.refetch()}
+      retrying={q.isFetching}
+    >
+      {() => render(q.data as D)}
+    </TabState>
+  );
+}
 
 /**
  * /admin/analytics (PRD 31; Admin Analytics.dc.html, direction 1a). The only
@@ -48,7 +93,9 @@ export function AdminAnalyticsScreen() {
   const tab: AnalyticsTab = isAnalyticsTab(raw) ? raw : 'overview';
   const rawFunnel = params.get('funnel');
   const funnel: FunnelName = isFunnelName(rawFunnel) ? rawFunnel : 'signup';
-  const by = params.get('by') ?? 'all';
+  // A breakdown the funnel doesn't offer is never asked for: it reads as the whole audience.
+  const rawBy = params.get('by');
+  const by = FUNNEL_COPY[funnel].by.some(([v]) => v === rawBy) ? rawBy! : 'all';
 
   const [win, setWin] = useState<AnalyticsWindow>(DEFAULT_WINDOW);
   const [compare, setCompare] = useState(true);
@@ -62,6 +109,8 @@ export function AdminAnalyticsScreen() {
   const supply = useAnalyticsSupply(on('supply'), win, compare);
   const credits = useAnalyticsCredits(on('credits'), win, compare);
   const growth = useAnalyticsGrowth(on('growth'), win, compare);
+  const funnelQ = useAnalyticsFunnel(on('funnels'), funnel, by, win);
+  const events = useAnalyticsBehaviour(on('funnels'), win);
   const current = { overview, sessions, supply, credits, growth, funnels: overview }[tab];
   // The last alerts known stay up while another tab or window loads, so a
   // banner isn't announced again, or its focused link lost, on every move.
@@ -124,15 +173,31 @@ export function AdminAnalyticsScreen() {
             {a.body}
           </Notice>
         ))}
-        {tab === 'credits' && (
-          <TabState
-            status={viewStatus(credits)}
-            empty={!!credits.data && isCreditsEmpty(credits.data)}
-            onRetry={() => void credits.refetch()}
-            retrying={credits.isFetching}
-          >
-            {() => <CreditsTab data={credits.data!} />}
-          </TabState>
+        {tab === 'overview' &&
+          section(overview, isOverviewEmpty, (d) => (
+            <OverviewTab
+              data={d}
+              compare={compare}
+              windowLabel={windowLabel(win)}
+              onOpen={(t) => go({ tab: t })}
+            />
+          ))}
+        {tab === 'sessions' &&
+          section(sessions, isSessionsEmpty, (d) => <SessionsTab data={d} compare={compare} />)}
+        {tab === 'supply' && section(supply, isSupplyEmpty, (d) => <SupplyTab data={d} />)}
+        {tab === 'credits' && section(credits, isCreditsEmpty, (d) => <CreditsTab data={d} />)}
+        {tab === 'growth' &&
+          section(growth, isGrowthEmpty, (d) => <GrowthTab data={d} compare={compare} />)}
+        {tab === 'funnels' && (
+          <BehaviourTab
+            funnel={funnel}
+            by={by}
+            // Another funnel starts from its whole audience.
+            onFunnel={(f) => go({ tab: 'funnels', funnel: f })}
+            onBy={(b) => go({ tab: 'funnels', funnel, by: b })}
+            funnelQuery={tabQuery(funnelQ)}
+            eventsQuery={tabQuery(events)}
+          />
         )}
       </TabPanel>
       <p className={styles.footer}>{ANALYTICS_PAGE.footer}</p>

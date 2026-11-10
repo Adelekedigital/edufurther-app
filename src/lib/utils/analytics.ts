@@ -120,6 +120,14 @@ export function changeOf(m: Metric, kind: ChangeKind, upIsGood = true): Change |
   };
 }
 
+/** The change, only while Compare is on: off, no change line shows anywhere. */
+export const changeWhen = (
+  compare: boolean,
+  m: Metric,
+  kind: ChangeKind,
+  upIsGood = true,
+): Change | null => (compare ? changeOf(m, kind, upIsGood) : null);
+
 /** A rate as shown: "84%", "6.8%". */
 export const formatRate = (n: number) => `${trim(n)}%`;
 

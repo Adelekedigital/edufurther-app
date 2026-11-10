@@ -1455,3 +1455,21 @@ Measured: 59 of 60 style checks at 1440 and 390 (the miss is the phone touch tar
 | Loading, error and empty replace the tabs | The tabs stay; the state fills the tab's panel | PRD 31 states are per tab, and a tab row that vanishes while a tab loads moves everything under it | — |
 | Credits rows Monthly, Starter, Referral, Admin; Granted note "Monthly, starter, referral, admin" | Monthly, Level-ups, Admin, Refunds, Carried over; "Monthly, level-ups, admin and carried over" | Backend decision 308: no starter or referral grants exist; a finished onboarding or a qualifying invite raises the credit level (edufurtherbe-24, 9 Nov) | — |
 | The page ships with the admin nav | Behind `NEXT_PUBLIC_ADMIN_ANALYTICS_ENABLED`: off, no nav item and `/admin/analytics` is not found | Founder, 9 Nov: all at once, once PRD 30's tracking and the routes are live | PRD 30 PRs 1–6 and backend PRs 1–5 ship |
+
+### Admin Analytics — Overview, Sessions, Supply, Growth, Behavior (`Admin Analytics.dc.html` 1a, PRD 31 PRs 7–9), 2026-11-10
+
+Measured fidelity 99.71% (1,695 of 1,700 computed-style checks, all six tabs and the date dialog, 1440px; layout checked at 768 and 390).
+
+| Design says | We do | Why | Revisit when |
+| --- | --- | --- | --- |
+| Selected window / toggle segment shadow `0 1px 2px rgba(16,25,40,.12)` | The shared `--shadow-control` (.08) | SegmentedControl `look="track"` is one look for PerformanceChart (.08 in its design) and Analytics; the shared Select uses it too | design aligns the two |
+| Date dialog close button 16px from the top | ModalShell's close button centred on the icon row | ModalShell's shared placement for dialogs with an icon | — |
+| "—" for a number PostHog can't give (designer item 96) | "No data" | The copy rule bans em dashes in product copy (`check:copy`) | — |
+| "Behaviour" (tab and heading) | "Behavior" | US spelling (product rule) | — |
+| Funnel breakdown native `<select>` | The shared Select | PRD 25 fix 9 | — |
+| Source/channel bar drawn at twice its share | The real share | Twice the share misstates anything over 50% | — |
+| Supply "Over 10 is flagged" note, red and warning icon; Credits red expiry | None | Founder, 9 Nov: draft highlights out (designer item 95) | — |
+| Stage rows: four stages | The six "Best for" stages and Not set, with a note that shares can pass 100% | `session_type_stages` has six (backend, 9 Nov; designer item 97) | — |
+| Source/channel table rows | "Source and channel aren’t recorded yet…" until PRD 30 records them | The backend sends empty lists until then | PRD 30 ships `signup_source` |
+| (not drawn) a funnel nobody started | The page's empty state inside the funnel card | Every view that fetches has an empty state | design draws it |
+
