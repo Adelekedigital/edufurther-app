@@ -37,6 +37,7 @@ import {
   type SignupRead,
 } from '@/lib/api/data/analyticsConsent';
 import { usePreview } from '@/lib/api/data/preview';
+import { focusPageHeading } from './RouteFocusManager';
 import { isPreviewing } from '@/lib/api/data/previewStore';
 import { useViewer } from '@/lib/api/data/viewer';
 import {
@@ -257,12 +258,25 @@ export function AnalyticsRoot() {
     };
   }, [show]);
 
+  // Answering removes the banner, and with it the focused button: focus goes
+  // to the page heading, never to <body> (a keyboard user keeps their place).
+  const answeredHere = useRef(false);
+  const answerFromBanner = (granted: boolean) => {
+    answeredHere.current = !!bannerRef.current?.contains(document.activeElement);
+    void choose(granted);
+  };
+  useEffect(() => {
+    if (show || !answeredHere.current) return;
+    answeredHere.current = false;
+    focusPageHeading();
+  }, [show]);
+
   if (!show) return null;
   return (
     <ConsentBanner
       ref={bannerRef}
-      onAccept={() => void choose(true)}
-      onDecline={() => void choose(false)}
+      onAccept={() => answerFromBanner(true)}
+      onDecline={() => answerFromBanner(false)}
     />
   );
 }

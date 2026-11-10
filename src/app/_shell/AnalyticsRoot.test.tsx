@@ -178,6 +178,22 @@ describe('the flags', () => {
     expect(PUT).not.toHaveBeenCalled();
   });
 
+  it('answering from the keyboard puts focus on the page heading, not the page', async () => {
+    render(
+      <>
+        <main id="main">
+          <h1>Explore</h1>
+        </main>
+        <AnalyticsRoot />
+      </>,
+    );
+    const decline = screen.getByRole('button', { name: 'Decline' });
+    decline.focus();
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByRole('region')).toBeNull();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Explore' })).toHaveFocus());
+  });
+
   it('Decline records the answer and keeps cookieless', async () => {
     render(<AnalyticsRoot />);
     await userEvent.click(screen.getByRole('button', { name: 'Decline' }));

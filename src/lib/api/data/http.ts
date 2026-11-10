@@ -1,5 +1,6 @@
 import createClient from 'openapi-fetch';
 import type { paths } from '@/lib/api/generated/schema';
+import { resetIdentity } from '@/lib/analytics/identity';
 import { getAccessToken, refreshAccessToken, signOut } from '@/lib/vendor/supabase/browser';
 import { dropDeviceSubscription } from '@/lib/utils/push';
 import { createAuthMiddleware } from './authMiddleware';
@@ -34,9 +35,12 @@ api.use(
     refresh: refreshAccessToken,
     // An ended session (expired or revoked) leaves no pushes behind on this
     // device for the next person: there is no token to tell the server, so
-    // the subscription itself goes (lib/utils/push).
+    // the subscription itself goes (lib/utils/push). Analytics too, as on a
+    // manual log-out: the next person on this device starts fresh and is
+    // asked for consent themselves (PRD 30, shared devices).
     onExpired: async () => {
       void dropDeviceSubscription();
+      resetIdentity();
       await signOut();
     },
     isFinal: isPreviewEnded,
