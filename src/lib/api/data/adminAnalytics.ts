@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { windowKey, windowParams, type AnalyticsWindow, type Metric } from '@/lib/utils/analytics';
 import { apiError, retryOnce } from './errors';
 import { keys } from './keys';
+import { api } from './http';
 import { untyped } from './pending';
 import type {
   WireAlertKey,
@@ -293,7 +294,22 @@ export const useAnalyticsSessions = (
 ) => useSection('sessions', adminId, w, compare);
 export const useAnalyticsSupply = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
   useSection('supply', adminId, w, compare);
-export const useAnalyticsCredits = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
-  useSection('credits', adminId, w, compare);
+/** GET /admin/analytics/credits: on the generated client (backend #609). */
+export function useAnalyticsCredits(adminId: string | null, w: AnalyticsWindow, compare: boolean) {
+  return useQuery({
+    queryKey: keys.admin.analytics(adminId ?? 'none', 'credits', windowKey(w), compare),
+    queryFn: async ({ signal }) => {
+      const { data, error, response } = await api.GET('/api/v1/admin/analytics/credits', {
+        params: { query: query(w, compare) },
+        signal,
+      });
+      if (!response.ok || !data) throw apiError(response.status, error, response);
+      return toCredits(data);
+    },
+    enabled: adminId !== null,
+    staleTime: STALE,
+    retry: retryOnce,
+  });
+}
 export const useAnalyticsGrowth = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
   useSection('growth', adminId, w, compare);

@@ -1,3 +1,7 @@
+import type { components } from '@/lib/api/generated/schema';
+
+type Schemas = components['schemas'];
+
 /**
  * **PENDING BACKEND**: Admin Analytics (PRD 31) wire shapes, as proposed to
  * edufurtherbe-24 on 9 Nov (docs/handoff/admin-analytics-backend-request.md).
@@ -9,23 +13,11 @@
 /** A number and the same measure over the previous period (null: compare off, or a "now" number). */
 export type WireMetric = { value: number | null; previous: number | null };
 
-export type WireAnalyticsWindow = {
-  from: string;
-  to: string;
-  previous_from: string;
-  previous_to: string;
-};
+/** Shipped (backend #609): the published schema. */
+export type WireAnalyticsWindow = Schemas['WindowRead'];
 
-export type WireAlertKey =
-  'login_code_failed' | 'no_booking_requests' | 'no_signups' | 'delivery_failed';
-
-export type WireAnalyticsAlert = {
-  key: WireAlertKey;
-  title: string;
-  body: string;
-  link: { tab: string; funnel?: string; by?: string } | null;
-  raised_at: string;
-};
+export type WireAnalyticsAlert = Schemas['AlertRead'];
+export type WireAlertKey = WireAnalyticsAlert['key'];
 
 type Section = { window: WireAnalyticsWindow; alerts: WireAnalyticsAlert[] };
 
@@ -100,23 +92,11 @@ export type WireSupply = Section & {
 };
 
 /**
- * Since backend decision 308 there are no starter or referral grants: a finished
- * onboarding or a qualifying invite raises the level (`level_up`). `carried_over`
- * is the migration's opening balances and the old starter and referral lots.
- * `refund`'s granted is credits given back; `flow.granted` leaves refunds out.
+ * Shipped (backend #609). Since backend decision 308 there are no starter or
+ * referral grants: a finished onboarding or a qualifying invite is a `level_up`.
  */
-export type WireCreditSource = 'monthly' | 'level_up' | 'admin' | 'refund' | 'carried_over';
-
-export type WireCredits = Section & {
-  flow: { granted: number; spent: number; refunded: number; expired: number };
-  by_source: {
-    source: WireCreditSource;
-    granted: number;
-    spent: number;
-    refunded: number;
-    expired: number;
-  }[];
-};
+export type WireCredits = Schemas['AnalyticsCreditsRead'];
+export type WireCreditSource = WireCredits['by_source'][number]['source'];
 
 export type WireStageKey =
   | 'exploring'
@@ -163,6 +143,5 @@ export type PendingAnalyticsResponses = {
   'GET /api/v1/admin/analytics/overview': WireOverview;
   'GET /api/v1/admin/analytics/sessions': WireSessions;
   'GET /api/v1/admin/analytics/supply': WireSupply;
-  'GET /api/v1/admin/analytics/credits': WireCredits;
   'GET /api/v1/admin/analytics/growth': WireGrowth;
 };
