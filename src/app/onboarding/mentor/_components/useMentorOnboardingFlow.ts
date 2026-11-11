@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { AssistMode } from '@/components/molecules/AiField/AiField';
+import type { MentorApplicationStep } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/track';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { useFieldsOfStudy } from '@/lib/api/data/catalog';
 import {
@@ -18,6 +20,7 @@ import { FLOW_COPY, STEP_ORDER } from '@/lib/copy/mentorOnboarding';
 import { FIELD_SUGGESTIONS } from '@/lib/copy/onboarding';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import { useDeviceFlag } from '@/lib/utils/deviceFlag';
 import {
   DEFAULT_FROM,
   DEFAULT_TO,
@@ -36,9 +39,20 @@ import { ABOUT_IDS } from './AboutStep';
 import { firstEducationField } from './EducationStep';
 import { HELP_FIRST_ID } from './HelpAreasStep';
 import { FIRST_DAY_ID } from './HoursStep';
+import { useAssistOutcome } from '@/app/_shell/useAssistOutcome';
 
 /** A first About draft that takes longer counts as failed (handoff: 8 s). */
 export const DRAFT_TIMEOUT_MS = 8000;
+
+/**
+ * The application's steps as PRD 30's funnel names them. Help areas (step 1)
+ * has no funnel step: `mentor_application_started` stands before it.
+ */
+const FUNNEL_STEP: Partial<Record<MentorStep, MentorApplicationStep>> = {
+  about: 'about_you',
+  education: 'education',
+  hours: 'hours',
+};
 
 /** Room above a focused field, so the pinned footer never covers it on phones. */
 const FOCUS_OFFSET = 96;
@@ -163,6 +177,15 @@ export function useMentorOnboardingFlow() {
   const [draftFailed, setDraftFailed] = useState(false);
   const draftedOnce = useRef(false);
   const promptVersion = useRef<string | null>(null);
+  const assistOutcome = useAssistOutcome('mentor_about');
+  // PRD 30's application funnel: each event once per visit, however often a
+  // step is saved again (Back, a retried Submit) or the effects run twice.
+  const tracked = useRef(new Set<string>());
+  const trackOnce = (key: string, send: () => void) => {
+    if (tracked.current.has(key)) return;
+    tracked.current.add(key);
+    send();
+  };
 
   const state = app.state;
   // A failed help-areas list is a load error, never a step 1 with no chips.
@@ -223,6 +246,20 @@ export function useMentorOnboardingFlow() {
   useEffect(() => {
     latest.current = form;
   });
+  // Started: a fresh application's form is on screen (nothing saved yet), once
+  // per account on this device: a later visit before the first save isn't a new
+  // start (`ef-mentor-app-started-{id}`, no personal data). The funnel is read as
+  // unique users anyway; this only keeps the raw count honest.
+  const [startedHere, setStartedHere] = useDeviceFlag('mentor-app-started', userId);
+  useEffect(() => {
+    if (startedHere) return;
+    if (hasForm && latest.current && !latest.current.resumed && state?.lastStep === null)
+      trackOnce('started', () => {
+        track('mentor_application_started', {});
+        setStartedHere(true);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasForm]);
   // Set on every mount: a remount (Strict Mode runs effects twice) must not leave it false.
   const mounted = useRef(true);
   useEffect(() => {
@@ -243,6 +280,8 @@ export function useMentorOnboardingFlow() {
     Promise.race([requestAssist('mentor_about', 'draft', ''), timeout])
       .then((r) => {
         if (!mounted.current) return;
+        // The draft goes in only over an empty box (below): then it's an AI change to settle.
+        if (!latest.current?.answers.about.trim()) assistOutcome.applied('draft');
         // Words they typed meanwhile win over the draft.
         setForm((cur) =>
           cur && !cur.answers.about.trim()
@@ -260,7 +299,7 @@ export function useMentorOnboardingFlow() {
       })
       .catch(() => mounted.current && setDraftFailed(true))
       .finally(() => mounted.current && setDrafting(false));
-  }, [step, hasForm]);
+  }, [step, hasForm, assistOutcome]);
 
   // Focus moves to the step heading on every step change, never on the first render.
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -340,12 +379,20 @@ export function useMentorOnboardingFlow() {
     }
     setSaved(true);
     setBaseline(form.answers);
+    const funnelStep = FUNNEL_STEP[from];
+    if (funnelStep)
+      trackOnce(`step:${funnelStep}`, () =>
+        track('mentor_application_step_completed', { step: funnelStep }),
+      );
+    // The About saved: an AI draft or improvement in it was kept.
+    if (from === 'about') assistOutcome.accepted();
     if (from !== 'hours') {
       setForm((f) => (f && f.step === from ? { ...f, step: next(from), resumed: false } : f));
       return;
     }
     try {
       await submit.submit();
+      trackOnce('submitted', () => track('mentor_application_submitted', {}));
       // Locked until the page goes, so a second tap can't send it again.
       setLeaving(true);
       // The status page, inside the app: its first arrival says it was sent.
@@ -397,6 +444,8 @@ export function useMentorOnboardingFlow() {
         aboutDrafted: drafted,
         aboutPromptVersion: drafted ? promptVersion.current : null,
       }),
+    /** The About box's AI changes and Undos (PRD 30 `writing_assist_used`). */
+    onAiChange: assistOutcome.onAiChange,
     assist: async (mode: AssistMode, text: string) => {
       const r = await requestAssist('mentor_about', mode, text);
       promptVersion.current = r.promptVersion;
@@ -418,6 +467,8 @@ export function useMentorOnboardingFlow() {
       setServerGaps([]);
       // An empty About drafts again on the way back to step 3.
       draftedOnce.current = false;
+      // Whatever the AI wrote goes with the rest.
+      assistOutcome.discarded();
       // Nothing saved is deleted until they continue again.
       setForm((f) =>
         f ? { ...f, step: 'help', answers: freshAnswers(f.answers), resumed: false } : f,

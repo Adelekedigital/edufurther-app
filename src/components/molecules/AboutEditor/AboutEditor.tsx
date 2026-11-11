@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { Button } from '@/components/atoms/Button/Button';
-import { AiField, type AssistMode } from '@/components/molecules/AiField/AiField';
+import { AiField, type AiChange, type AssistMode } from '@/components/molecules/AiField/AiField';
 import { ABOUT_MAX } from '@/lib/utils/profileLimits';
 import styles from './AboutEditor.module.css';
 
@@ -24,6 +24,8 @@ type AboutEditorProps = {
   error?: string | null;
   /** "Write a draft" / "Improve" (PRD F6). Absent: a plain field. */
   assist?: AboutAssist;
+  /** Each AI change and Undo (AiField), for the owner's analytics. */
+  onAiChange?: (change: AiChange) => void;
   /** The field's label; "About" (the mentor's) by default, "Short bio" for a mentee. */
   label?: string;
   /** The line under the field; null for none. */
@@ -47,6 +49,7 @@ export function AboutEditor({
   saving,
   error,
   assist,
+  onAiChange,
   label = 'About',
   hint = 'Lead with the path you’ve walked.',
   rows = 6,
@@ -113,6 +116,7 @@ export function AboutEditor({
         invalid={!!error}
         describedBy={error ? errorId : undefined}
         onBusyChange={setAssisting}
+        onAiChange={onAiChange}
       />
       {error && (
         <p id={errorId} role="alert" className={styles.error}>
