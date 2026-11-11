@@ -2,7 +2,12 @@
  * The analytics consent answer (PRD 30), asked once across the app and the
  * landing site: one cookie on `.edufurther.org`, which both read and write.
  *
- *   ef_consent=<version>.<1|0>.<unix seconds>
+ *   ef_consent=<version>.<1|0>.<unix milliseconds>
+ *
+ * THE CONTRACT for the landing site (PRD 30 PR 4, not built yet): write and
+ * read milliseconds. A 10-digit value (unix seconds, the first format) is
+ * still read as seconds. The sign-out marker `ef_consent_out` is milliseconds
+ * too, so an answer given right after a sign-out stays after it.
  *
  * `version` names the consent text that was answered; an answer to another
  * version is no answer (the banner asks again). The time lets the newest of
