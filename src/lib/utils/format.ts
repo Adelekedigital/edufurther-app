@@ -135,6 +135,15 @@ export function inSentence(label: string): string {
   return /^[A-Z][a-z]/.test(label) ? label[0]!.toLowerCase() + label.slice(1) : label;
 }
 
+/**
+ * The zone a viewer's times are shown in: the one saved on their account,
+ * else the device's. One rule for every screen (Bookings, Session Join,
+ * Messages, dashboards, Admin): a member who travels keeps their own days.
+ */
+export function viewerZone(saved: string | null | undefined, device = deviceTimeZone()): string {
+  return saved ?? device;
+}
+
 export function deviceTimeZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone;

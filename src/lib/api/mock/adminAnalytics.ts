@@ -28,14 +28,13 @@ export type MockQuery = {
   tz?: string;
 };
 
-/** A real IANA zone, as the backend checks it (an unknown one is a 422). */
+/**
+ * A real IANA zone, as the backend checks it (an unknown one is a 422). The
+ * backend matches the zone database's own names exactly, so a case variant
+ * ("utc", "africa/lagos") is a 422 too, though Intl would accept it.
+ */
 function validZone(tz: string): boolean {
-  try {
-    new Intl.DateTimeFormat('en-US', { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
+  return tz === 'UTC' || Intl.supportedValuesOf('timeZone').includes(tz);
 }
 
 const DAY = 864e5;

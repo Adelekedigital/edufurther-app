@@ -23,8 +23,15 @@ import {
 import { viewStatus } from '@/lib/api/data/queryStatus';
 import { useViewer } from '@/lib/api/data/viewer';
 import { ALERTS, ANALYTICS_PAGE, ANALYTICS_TABS, FUNNEL_COPY } from '@/lib/copy/adminAnalytics';
-import { DEFAULT_WINDOW, windowLabel, type AnalyticsWindow } from '@/lib/utils/analytics';
+import {
+  clampWindow,
+  DEFAULT_WINDOW,
+  windowLabel,
+  type AnalyticsWindow,
+} from '@/lib/utils/analytics';
 import { todayIn } from '@/lib/utils/calendar';
+import { deviceTimeZone, viewerZone } from '@/lib/utils/format';
+import { useHydrated } from '@/lib/utils/useHydrated';
 import { BehaviourTab, type TabQuery } from './BehaviourTab';
 import { CreditsTab, isCreditsEmpty } from './CreditsTab';
 import { AlertsButton } from './AlertsButton';
@@ -96,17 +103,32 @@ export function AdminAnalyticsScreen() {
   const [win, setWin] = useState<AnalyticsWindow>(DEFAULT_WINDOW);
   const [compare, setCompare] = useState(true);
   const [picking, setPicking] = useState(false);
-  const today = todayIn('UTC');
+  // Days follow the viewer's own zone by default (their account's, else the
+  // device's: viewerZone, as on every screen); UTC or any zone on request, to
+  // compare with PostHog (owner, 2026-11-11). Unknown until hydrated, and
+  // nothing is asked until then: never a read in the server's zone.
+  const hydrated = useHydrated();
+  const member = viewer.kind === 'member' ? viewer : null;
+  const ownZone = hydrated ? viewerZone(member?.timeZone) : null;
+  const [chosenZone, setChosenZone] = useState<string | null>(null);
+  const tz = chosenZone ?? ownZone;
+  const today = todayIn(tz ?? 'UTC');
+  // A custom range ending today can lie in the future of a zone behind this
+  // one (Lagos after midnight, then UTC): trim it, or every read is a 422.
+  const setZone = (next: string) => {
+    setChosenZone(next);
+    setWin((w) => clampWindow(w, todayIn(next)));
+  };
 
   // Only the open tab asks; Behaviour reads the alerts from Overview.
   const on = (...tabs: AnalyticsTab[]) => (tabs.includes(tab) ? adminId : null);
-  const overview = useAnalyticsOverview(on('overview', 'funnels'), win, compare);
-  const sessions = useAnalyticsSessions(on('sessions'), win, compare);
-  const supply = useAnalyticsSupply(on('supply'), win, compare);
-  const credits = useAnalyticsCredits(on('credits'), win, compare);
-  const growth = useAnalyticsGrowth(on('growth'), win, compare);
-  const funnelQ = useAnalyticsFunnel(on('funnels'), funnel, by, win);
-  const events = useAnalyticsBehaviour(on('funnels'), win);
+  const overview = useAnalyticsOverview(on('overview', 'funnels'), win, compare, tz);
+  const sessions = useAnalyticsSessions(on('sessions'), win, compare, tz);
+  const supply = useAnalyticsSupply(on('supply'), win, compare, tz);
+  const credits = useAnalyticsCredits(on('credits'), win, compare, tz);
+  const growth = useAnalyticsGrowth(on('growth'), win, compare, tz);
+  const funnelQ = useAnalyticsFunnel(on('funnels'), funnel, by, win, tz);
+  const events = useAnalyticsBehaviour(on('funnels'), win, tz);
   const current = { overview, sessions, supply, credits, growth, funnels: overview }[tab];
   // The last alerts known stay up while another tab or window loads, so the
   // count doesn't blink, or the open list close, on every move.
@@ -155,6 +177,9 @@ export function AdminAnalyticsScreen() {
             onWindow={setWin}
             onCustom={() => setPicking(true)}
             onCompare={setCompare}
+            zone={tz}
+            deviceZone={hydrated ? deviceTimeZone() : null}
+            onZone={setZone}
           />
         }
       />

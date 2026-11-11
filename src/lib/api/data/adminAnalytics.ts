@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { skipToken, useQuery } from '@tanstack/react-query';
 import { windowKey, windowParams, type AnalyticsWindow, type Metric } from '@/lib/utils/analytics';
 import { ApiError, apiError, retryOnce } from './errors';
 import { keys } from './keys';
@@ -260,31 +260,45 @@ type SectionName = keyof WireSections;
 type SectionOf<K extends SectionName> = ReturnType<(typeof MAPPERS)[K]>;
 
 /** The query string, as both clients take it. */
-const query = (w: AnalyticsWindow, compare: boolean) => windowParams(w, compare);
+const query = (w: AnalyticsWindow, compare: boolean, tz: string) => windowParams(w, compare, tz);
 
 const getSection = (
   section: SectionName,
   w: AnalyticsWindow,
   compare: boolean,
+  tz: string,
   signal: AbortSignal,
 ) =>
-  api.GET(`/api/v1/admin/analytics/${section}`, { params: { query: query(w, compare) }, signal });
+  api.GET(`/api/v1/admin/analytics/${section}`, {
+    params: { query: query(w, compare, tz) },
+    signal,
+  });
 
+/**
+ * Every analytics read takes the zone its days follow. `tz` null: not known
+ * yet (before the page has read the browser's zone), so no call, and never a
+ * call in the server's own zone.
+ */
 function useSection<K extends SectionName>(
   section: K,
   adminId: string | null,
   w: AnalyticsWindow,
   compare: boolean,
+  tz: string | null,
 ) {
   return useQuery({
-    queryKey: keys.admin.analytics(adminId ?? 'none', section, windowKey(w), compare),
-    queryFn: async ({ signal }): Promise<SectionOf<K>> => {
-      const { data, error, response } = await getSection(section, w, compare, signal);
-      if (!response.ok || !data) throw apiError(response.status, error, response);
-      return (MAPPERS[section] as unknown as (w: WireSections[K]) => SectionOf<K>)(
-        data as WireSections[K],
-      );
-    },
+    queryKey: keys.admin.analytics(adminId ?? 'none', section, windowKey(w, tz ?? ''), compare),
+    // skipToken while the zone is unknown: even a refetch can't ask then.
+    queryFn:
+      tz === null
+        ? skipToken
+        : async ({ signal }): Promise<SectionOf<K>> => {
+            const { data, error, response } = await getSection(section, w, compare, tz, signal);
+            if (!response.ok || !data) throw apiError(response.status, error, response);
+            return (MAPPERS[section] as unknown as (w: WireSections[K]) => SectionOf<K>)(
+              data as WireSections[K],
+            );
+          },
     enabled: adminId !== null,
     staleTime: STALE,
     retry: retryOnce,
@@ -296,19 +310,33 @@ export const useAnalyticsOverview = (
   adminId: string | null,
   w: AnalyticsWindow,
   compare: boolean,
-) => useSection('overview', adminId, w, compare);
+  tz: string | null,
+) => useSection('overview', adminId, w, compare, tz);
 export const useAnalyticsSessions = (
   adminId: string | null,
   w: AnalyticsWindow,
   compare: boolean,
-) => useSection('sessions', adminId, w, compare);
-export const useAnalyticsSupply = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
-  useSection('supply', adminId, w, compare);
+  tz: string | null,
+) => useSection('sessions', adminId, w, compare, tz);
+export const useAnalyticsSupply = (
+  adminId: string | null,
+  w: AnalyticsWindow,
+  compare: boolean,
+  tz: string | null,
+) => useSection('supply', adminId, w, compare, tz);
 /** GET /admin/analytics/credits. */
-export const useAnalyticsCredits = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
-  useSection('credits', adminId, w, compare);
-export const useAnalyticsGrowth = (adminId: string | null, w: AnalyticsWindow, compare: boolean) =>
-  useSection('growth', adminId, w, compare);
+export const useAnalyticsCredits = (
+  adminId: string | null,
+  w: AnalyticsWindow,
+  compare: boolean,
+  tz: string | null,
+) => useSection('credits', adminId, w, compare, tz);
+export const useAnalyticsGrowth = (
+  adminId: string | null,
+  w: AnalyticsWindow,
+  compare: boolean,
+  tz: string | null,
+) => useSection('growth', adminId, w, compare, tz);
 
 // ---- PostHog: funnels and events ---------------------------------------------
 
@@ -333,18 +361,25 @@ export function useAnalyticsFunnel(
   name: FunnelName,
   by: string,
   w: AnalyticsWindow,
+  tz: string | null,
 ) {
   return useQuery({
-    queryKey: keys.admin.analyticsFunnel(adminId ?? 'none', name, by, windowKey(w)),
-    queryFn: async ({ signal }): Promise<Funnel> => {
-      const { data, error, response } = await api.GET('/api/v1/admin/analytics/funnels/{name}', {
-        // The previous period isn't shown on a funnel: not asked for.
-        params: { path: { name }, query: { ...query(w, false), by } },
-        signal,
-      });
-      if (!response.ok || !data) throw apiError(response.status, error, response);
-      return data.steps;
-    },
+    queryKey: keys.admin.analyticsFunnel(adminId ?? 'none', name, by, windowKey(w, tz ?? '')),
+    queryFn:
+      tz === null
+        ? skipToken
+        : async ({ signal }): Promise<Funnel> => {
+            const { data, error, response } = await api.GET(
+              '/api/v1/admin/analytics/funnels/{name}',
+              {
+                // The previous period isn't shown on a funnel: not asked for.
+                params: { path: { name }, query: { ...query(w, false, tz), by } },
+                signal,
+              },
+            );
+            if (!response.ok || !data) throw apiError(response.status, error, response);
+            return data.steps;
+          },
     enabled: adminId !== null,
     staleTime: STALE,
     retry: retryUnlessDown,
@@ -391,18 +426,25 @@ export const toBehaviour = (w: WireBehaviour): Behaviour => ({
 });
 
 /** GET /admin/analytics/behaviour: the event cards. */
-export function useAnalyticsBehaviour(adminId: string | null, w: AnalyticsWindow) {
+export function useAnalyticsBehaviour(
+  adminId: string | null,
+  w: AnalyticsWindow,
+  tz: string | null,
+) {
   return useQuery({
-    queryKey: keys.admin.analytics(adminId ?? 'none', 'behaviour', windowKey(w), false),
-    queryFn: async ({ signal }): Promise<Behaviour> => {
-      // The event cards show no change: the previous period isn't asked for.
-      const { data, error, response } = await api.GET('/api/v1/admin/analytics/behaviour', {
-        params: { query: query(w, false) },
-        signal,
-      });
-      if (!response.ok || !data) throw apiError(response.status, error, response);
-      return toBehaviour(data);
-    },
+    queryKey: keys.admin.analytics(adminId ?? 'none', 'behaviour', windowKey(w, tz ?? ''), false),
+    queryFn:
+      tz === null
+        ? skipToken
+        : async ({ signal }): Promise<Behaviour> => {
+            // The event cards show no change: the previous period isn't asked for.
+            const { data, error, response } = await api.GET('/api/v1/admin/analytics/behaviour', {
+              params: { query: query(w, false, tz) },
+              signal,
+            });
+            if (!response.ok || !data) throw apiError(response.status, error, response);
+            return toBehaviour(data);
+          },
     enabled: adminId !== null,
     staleTime: STALE,
     retry: retryUnlessDown,

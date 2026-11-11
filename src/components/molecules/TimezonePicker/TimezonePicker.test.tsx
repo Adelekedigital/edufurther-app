@@ -15,6 +15,25 @@ const picker = (over: Partial<Parameters<typeof TimezonePicker>[0]> = {}) => {
 };
 
 describe('TimezonePicker', () => {
+  it('lists the zones it is asked to offer first, before the common ones (Admin Analytics: UTC)', async () => {
+    render(
+      <TimezonePicker
+        value="Africa/Lagos"
+        onChange={() => {}}
+        deviceZone="Africa/Lagos"
+        alsoOffer={['UTC']}
+      />,
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Change time zone/ }));
+    await screen.findByRole('textbox', { name: 'Search time zones' });
+    const zones = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent ?? '')
+      .filter((t) => /Lagos|Accra|London|UTC/.test(t) && !/Change/.test(t));
+    expect(zones[0]).toMatch(/UTC/);
+    expect(zones.some((t) => /Lagos/.test(t))).toBe(true);
+  });
+
   it('reads "Times shown in Lagos (WAT) · Change", one name for the button', () => {
     picker();
     expect(screen.getByText('Lagos (WAT)')).toBeInTheDocument();

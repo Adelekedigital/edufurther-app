@@ -53,7 +53,7 @@ import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useSessionRoom } from '@/lib/api/data/sessionRoom';
 import { useViewer } from '@/lib/api/data/viewer';
 import { canCancel } from '@/lib/utils/bookings';
-import { dayLabel, deviceTimeZone } from '@/lib/utils/format';
+import { dayLabel, deviceTimeZone, viewerZone } from '@/lib/utils/format';
 import { presenceOf } from '@/lib/utils/presence';
 import {
   ENTER_PARAM,
@@ -154,8 +154,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const deviceZone = useMemo(() => deviceTimeZone(), []);
   // The switcher under the date line: every time on the page follows it.
   const [zone, setZone] = useState<string | null>(null);
-  const timeZone = zone ?? member?.timeZone ?? deviceZone;
-  const accountZone = member?.timeZone ?? deviceZone;
+  const timeZone = zone ?? viewerZone(member?.timeZone, deviceZone);
+  const accountZone = viewerZone(member?.timeZone, deviceZone);
 
   // A session is a booking: the setup lock holds it as it holds Bookings, and
   // a locked page doesn't fetch what it won't show.

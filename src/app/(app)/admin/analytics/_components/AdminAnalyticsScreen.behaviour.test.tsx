@@ -15,7 +15,10 @@ const h = vi.hoisted(() => ({
   listeners: new Set<() => void>(),
 }));
 vi.mock('@/lib/api/data/http', () => ({ api: { GET: h.GET } }));
-vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => admin() }));
+// The account's zone is neither UTC nor the machine's: the default must come from it.
+vi.mock('@/lib/api/data/viewer', () => ({
+  useViewer: () => admin({ timeZone: 'Africa/Lagos' }),
+}));
 // The header's controls have their own tests; this file is about Behaviour.
 vi.mock('./WindowControls', () => ({ WindowControls: () => null }));
 vi.mock('next/navigation', async () => {
@@ -72,7 +75,12 @@ describe('Admin Analytics: Behaviour', () => {
     await screen.findByRole('img', { name: /^Booking funnel:/ });
     const funnelCalls = h.GET.mock.calls.filter(([p]) => p === FUNNEL);
     expect(funnelOf(funnelCalls[0]![1])).toBe('booking');
-    expect(queryOf(funnelCalls[0]![1])).toEqual({ window: '30d', compare: 'false', by: 'explore' });
+    expect(queryOf(funnelCalls[0]![1])).toEqual({
+      window: '30d',
+      compare: 'false',
+      tz: 'Africa/Lagos',
+      by: 'explore',
+    });
     expect(screen.getByRole('combobox', { name: 'Started from' })).toHaveTextContent('Explore');
   });
 
