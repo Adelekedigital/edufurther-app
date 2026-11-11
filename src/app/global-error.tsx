@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { Button, ButtonLink } from '@/components/atoms/Button/Button';
+import { Button, ButtonAnchor } from '@/components/atoms/Button/Button';
 import { BrandLogo } from '@/components/atoms/BrandLogo/BrandLogo';
 import { ErrorPage } from '@/components/organisms/ErrorPage/ErrorPage';
 import { ERROR_PAGE } from '@/lib/copy/errorPage';
@@ -13,7 +12,10 @@ import '@/styles/globals.css';
 /**
  * A crash in the root layout itself: nothing of the app is left (no shell, no
  * providers, so no viewer), so this is Error Page.dc.html's standalone 500,
- * the plain logo bar and its own <html>, <title> and <main id="main">.
+ * the plain logo bar and its own <html>, <title> and <main id="main">. Both
+ * ways home are full page loads, never client navigation: what crashed may be
+ * the app's own client runtime (a stale chunk after a deploy), and a fresh
+ * document is what recovers from that.
  */
 export default function GlobalError({ error, reset, retry }: RouteErrorProps) {
   const reference = useErrorReference(error);
@@ -29,9 +31,10 @@ export default function GlobalError({ error, reset, retry }: RouteErrorProps) {
           landmark
           header={
             <header className={styles.bar}>
-              <Link href="/" className={styles.logo}>
+              {/* A full page load on purpose (see above), so not next/link. */}
+              <a href="/" className={styles.logo}>
                 <BrandLogo alt="EduFurther" height={24} width={180} />
-              </Link>
+              </a>
             </header>
           }
           actions={
@@ -39,9 +42,9 @@ export default function GlobalError({ error, reset, retry }: RouteErrorProps) {
               <Button size="large" onClick={retry ?? reset}>
                 {ERROR_PAGE.actions.retry}
               </Button>
-              <ButtonLink href="/" size="large" variant="secondary-outlined">
+              <ButtonAnchor href="/" size="large" variant="secondary-outlined">
                 {ERROR_PAGE.actions.site}
-              </ButtonLink>
+              </ButtonAnchor>
             </>
           }
         />
