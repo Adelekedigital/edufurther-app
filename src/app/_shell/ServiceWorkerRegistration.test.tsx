@@ -1,4 +1,8 @@
+import { StrictMode } from 'react';
 import { render } from '@testing-library/react';
+
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
@@ -30,5 +34,21 @@ describe('ServiceWorkerRegistration: a tapped notification', () => {
       new MessageEvent('message', { data: { type: 'ef-open', url: '/sessions/s1' } }),
     );
     expect(push).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ServiceWorkerRegistration: pwa_installed (PRD 30)', () => {
+  it('the browser’s appinstalled, once, under Strict Mode; none after unmount', () => {
+    track.mockClear();
+    const { unmount } = render(
+      <StrictMode>
+        <ServiceWorkerRegistration />
+      </StrictMode>,
+    );
+    window.dispatchEvent(new Event('appinstalled'));
+    expect(track.mock.calls).toEqual([['pwa_installed', {}]]);
+    unmount();
+    window.dispatchEvent(new Event('appinstalled'));
+    expect(track).toHaveBeenCalledTimes(1);
   });
 });

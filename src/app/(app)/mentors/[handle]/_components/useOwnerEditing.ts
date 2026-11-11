@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useProfileEdit, type IntroEdit } from '@/lib/api/data/profileEdit';
 import { useWritingAssist } from '@/lib/api/data/writingAssist';
 import type { MentorProfile } from '@/types/mentor';
+import { useAssistOutcome } from '@/app/_shell/useAssistOutcome';
 
 /**
  * The owner's edit mode on their own profile (Mentor Profile.dc.html): the
@@ -19,6 +20,7 @@ export function useOwnerEditing(
 ) {
   const edit = useProfileEdit(isOwner && profile ? profile.mentor.id : null);
   const writing = useWritingAssist('mentor_about');
+  const assistOutcome = useAssistOutcome('mentor_about');
   const [introOpen, setIntroOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const wasOpen = useRef(false);
@@ -65,13 +67,23 @@ export function useOwnerEditing(
       setAboutOpen(true);
     },
     closeAbout: () => {
+      assistOutcome.discarded();
       setAboutOpen(false);
       edit.resetAbout();
     },
     saveAbout: (text: string, meta: { drafted: boolean; promptVersion: string | null }) =>
-      edit.saveAbout(text, () => setAboutOpen(false), meta),
+      edit.saveAbout(
+        text,
+        () => {
+          assistOutcome.accepted();
+          setAboutOpen(false);
+        },
+        meta,
+      ),
     /** "Write a draft" / "Improve" on the About (PRD F6). */
     assistAbout: writing.assist,
+    /** The About box's AI changes and Undos (PRD 30 `writing_assist_used`). */
+    aboutAiChange: assistOutcome.onAiChange,
     aboutSaving: edit.aboutSaving,
     aboutError: edit.aboutError,
   };

@@ -170,6 +170,13 @@ describe('shared device: the last log-out', () => {
     expect(readSignedOut(at(400))).toBe(at(400));
   });
 
+  it('keeps milliseconds: an answer 1 ms after a sign-out still counts', () => {
+    markSignedOut(1_700_000_000_123);
+    expect(readSignedOut(1_800_000_000_000)).toBe(1_700_000_000_123);
+    const answer = { granted: true, version: CONSENT_VERSION, answeredAt: 1_700_000_000_124 };
+    expect(stillValid(answer, readSignedOut(1_800_000_000_000))).toEqual(answer);
+  });
+
   it('a device answer from before it is unanswered for the next person', () => {
     expect(stillValid(yes(100), at(200))).toBeNull();
     expect(stillValid(yes(300), at(200))).toEqual(yes(300));

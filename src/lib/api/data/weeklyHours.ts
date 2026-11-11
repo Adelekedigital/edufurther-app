@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Remote } from '@/types/mentor';
+import { track } from '@/lib/analytics/track';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { emptyWeek, hhmm, type DayHours, type Slot } from '@/lib/utils/sessionTypeDraft';
 import { apiError, normaliseError } from './errors';
@@ -185,6 +186,13 @@ export function useSaveWeeklyHours(userId: string | null) {
     },
     // Offline, fail now with our copy rather than wait, paused, for a reconnect.
     networkMode: 'always',
+    // PRD 30's mentor activation step, from both places weekly hours are saved:
+    // Calendar and the mentor application's Hours step. Only a week with hours
+    // counts. Hours set before approval fire too; how the ordered funnel treats
+    // them is the backend's call.
+    onSuccess: (_, { days }) => {
+      if (days.some((d) => d.on && d.slots.length)) track('availability_set', {});
+    },
     // The save resolves once the hours are read back, so a screen holding a
     // draft can drop it without the old hours showing in between.
     onSettled: async () => {
