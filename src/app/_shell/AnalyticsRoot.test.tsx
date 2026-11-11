@@ -77,6 +77,8 @@ const loadAnalytics = vi.fn(async () => vendor);
 vi.mock('@/lib/vendor/analytics', () => ({
   loadAnalytics: (...a: unknown[]) => loadAnalytics(...(a as [])),
 }));
+const errorsSeam = vi.hoisted(() => ({ setErrorUser: vi.fn() }));
+vi.mock('@/lib/vendor/errors', () => errorsSeam);
 
 import { CONSENT_COPY } from '@/lib/copy/consent';
 import { AnalyticsRoot, analyticsBlocked } from './AnalyticsRoot';
@@ -278,6 +280,30 @@ describe('members', () => {
         signup_channel: 'linkedin',
       }),
     );
+  });
+
+  it('error reports carry the member id only after Accept (error-tracking PRD)', async () => {
+    accepted();
+    env.viewer = member();
+    render(<AnalyticsRoot />);
+    await waitFor(() => expect(errorsSeam.setErrorUser).toHaveBeenLastCalledWith('u1'));
+  });
+
+  it('error reports carry no id while cookieless', async () => {
+    env.viewer = member();
+    render(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setMode).toHaveBeenCalled());
+    expect(errorsSeam.setErrorUser).not.toHaveBeenCalledWith('u1');
+    expect(errorsSeam.setErrorUser).toHaveBeenLastCalledWith(null);
+  });
+
+  it('error reports carry no id in a preview, even after Accept', async () => {
+    accepted();
+    env.viewer = member();
+    env.previewing = true;
+    render(<AnalyticsRoot />);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(errorsSeam.setErrorUser).not.toHaveBeenCalledWith('u1');
   });
 
   it('does not identify while cookieless', async () => {

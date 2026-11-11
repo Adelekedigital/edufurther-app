@@ -10,3 +10,13 @@ export const CONTACT_RE = /[\w.+-]+@[\w-]+\.[\w.]+|\+?\d[\d\s().-]{7,}\d/;
 export function hasContactDetails(text: string): boolean {
   return CONTACT_RE.test(text);
 }
+
+const CONTACT_ALL = new RegExp(CONTACT_RE.source, `${CONTACT_RE.flags}g`);
+
+/**
+ * The same pattern, masked: what an error report may say about a message or
+ * a field that held one (error tracking never sends an email or a phone).
+ */
+export function maskContactDetails(text: string): string {
+  return text.replace(CONTACT_ALL, '[redacted]');
+}

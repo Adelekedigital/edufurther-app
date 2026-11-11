@@ -48,6 +48,7 @@ import {
 } from '@/lib/config/analytics';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { loadAnalytics, type VendorAnalytics } from '@/lib/vendor/analytics';
+import { setErrorUser } from '@/lib/vendor/errors';
 
 /** An arrival older than this isn't the account's sign-up (the held arrival's own lifetime). */
 const NEW_ACCOUNT_MS = 30 * 24 * 60 * 60_000;
@@ -220,6 +221,11 @@ export function AnalyticsRoot() {
   useEffect(() => {
     if (ANALYTICS_LIVE && !previewing) rememberMigrated(isMigrated, mode === 'identified');
   }, [isMigrated, previewing, mode]);
+
+  // Error reports carry the member's id only after Accept (error-tracking PRD),
+  // and lose it on a withdrawal, a log-out or a preview.
+  const errorUser = mode === 'identified' && !previewing ? memberId : null;
+  useEffect(() => setErrorUser(errorUser), [errorUser]);
 
   // Identify once identified (track's sink drops it in cookieless mode).
   useEffect(() => {

@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { withSentryConfig } from '@sentry/nextjs/config';
 import { backendOrigin, proxySecret } from './src/lib/backend';
 import { posthogHosts } from './src/lib/posthogHost';
 import { PWA_HEADERS, SECURITY_HEADERS } from './src/lib/securityHeaders';
@@ -46,4 +47,28 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
 };
 
-export default nextConfig;
+/**
+ * Error tracking (lib/vendor/errors): only a build with Sentry on AND the
+ * upload token is wrapped, so every other build is exactly as before. The
+ * wrapper uploads the source maps after the build and deletes them, so the
+ * site never serves them. SENTRY_AUTH_TOKEN, SENTRY_ORG and SENTRY_PROJECT are
+ * build-only (never NEXT_PUBLIC_). Errors themselves need no wrapper: they
+ * come from instrumentation.ts and instrumentation-client.ts.
+ */
+const sentryUpload =
+  process.env.NEXT_PUBLIC_SENTRY_ENABLED === 'true' &&
+  !!process.env.SENTRY_AUTH_TOKEN &&
+  !!process.env.SENTRY_ORG &&
+  !!process.env.SENTRY_PROJECT;
+
+export default sentryUpload
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      silent: true,
+      telemetry: false,
+      widenClientFileUpload: true,
+      sourcemaps: { deleteSourcemapsAfterUpload: true },
+    })
+  : nextConfig;
