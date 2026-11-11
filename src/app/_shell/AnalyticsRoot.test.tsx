@@ -178,6 +178,21 @@ describe('the flags', () => {
     expect(PUT).not.toHaveBeenCalled();
   });
 
+  it('signing in keeps an identified page identified while the viewer loads (no reset)', async () => {
+    const { rerender } = render(<AnalyticsRoot />);
+    await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
+    await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('identified'));
+    vendor.setMode.mockClear();
+    // The code is accepted: the viewer reloads, then the member is known.
+    env.viewer = { kind: 'loading' } as Viewer;
+    rerender(<AnalyticsRoot />);
+    env.viewer = member();
+    rerender(<AnalyticsRoot />);
+    await waitFor(() => expect(tracker.identify).toHaveBeenCalled());
+    // Never through cookieless: that would run the vendor's withdrawal reset.
+    expect(vendor.setMode).not.toHaveBeenCalledWith('cookieless');
+  });
+
   it('a session ending mid-page asks again at once and drops to cookieless', async () => {
     render(<AnalyticsRoot />);
     await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
@@ -392,11 +407,33 @@ describe('a withdrawal always wins in the session', () => {
     expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless');
   });
 
-  it('a signed-in visitor is never identified before /me answers', async () => {
+  it('a fresh load of a signed-in member waits for /me: no vendor mode at all, so no reset', async () => {
     accepted();
     env.viewer = { kind: 'loading', signedIn: true };
-    render(<AnalyticsRoot />);
-    await waitFor(() => expect(vendor.setMode).toHaveBeenCalled());
+    const { rerender } = render(<AnalyticsRoot />);
+    // Pending: the vendor isn't loaded or set (cookieless would run its withdrawal reset).
+    await new Promise((r) => setTimeout(r, 20));
+    expect(loadAnalytics).not.toHaveBeenCalled();
+    expect(vendor.setMode).not.toHaveBeenCalled();
+    env.viewer = member();
+    rerender(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setMode).toHaveBeenCalledWith('identified'));
+    expect(vendor.setMode).not.toHaveBeenCalledWith('cookieless');
+  });
+
+  it('pending, then /me shows a newer withdrawal on the account: cookieless, never identified', async () => {
+    accepted();
+    env.viewer = { kind: 'loading', signedIn: true };
+    const { rerender } = render(<AnalyticsRoot />);
+    env.viewer = member({
+      analyticsConsent: {
+        granted: false,
+        version: CONSENT_VERSION,
+        answeredAt: new Date(Date.now() + 60_000).toISOString(),
+      },
+    });
+    rerender(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setMode).toHaveBeenCalledWith('cookieless'));
     expect(vendor.setMode).not.toHaveBeenCalledWith('identified');
   });
 });
