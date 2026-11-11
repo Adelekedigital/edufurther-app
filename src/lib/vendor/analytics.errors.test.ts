@@ -123,6 +123,31 @@ describe('PostHog exceptions', () => {
     expect(x!.stacktrace.frames[1]).not.toHaveProperty('vars');
   });
 
+  it('of the exception’s own fields only the allowlisted leave; standard event fields pass', () => {
+    const out = beforeSend({
+      event: '$exception',
+      properties: {
+        token: 'phc_key',
+        distinct_id: 'u1',
+        $lib: 'web',
+        $exception_level: 'error',
+        $exception_personURL: 'https://us.posthog.com/person/u1',
+        $exception_DOM_exception_code: 18,
+        $exception_new_in_a_later_sdk: 'anything',
+        $exception_list: [],
+      },
+    } as unknown as CaptureResult)!;
+    expect(out.properties).toMatchObject({
+      token: 'phc_key',
+      distinct_id: 'u1',
+      $lib: 'web',
+      $exception_level: 'error',
+    });
+    expect(out.properties).not.toHaveProperty('$exception_personURL');
+    expect(out.properties).not.toHaveProperty('$exception_DOM_exception_code');
+    expect(out.properties).not.toHaveProperty('$exception_new_in_a_later_sdk');
+  });
+
   it('a rejected data object’s name is not a type: it leaves as Error', () => {
     const out = beforeSend({
       event: '$exception',
