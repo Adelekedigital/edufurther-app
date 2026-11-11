@@ -1,11 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { Button, ButtonAnchor } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { BrandLogo } from '@/components/atoms/BrandLogo/BrandLogo';
 import { ErrorPage } from '@/components/organisms/ErrorPage/ErrorPage';
 import { ERROR_PAGE } from '@/lib/copy/errorPage';
-import { reportErrorOnce } from '@/lib/vendor/errors';
+import { useErrorReference, type RouteErrorProps } from './_shell/ErrorScreen';
 import { fontVariables } from './fonts';
 import styles from './global-error.module.css';
 import '@/styles/globals.css';
@@ -13,17 +13,20 @@ import '@/styles/globals.css';
 /**
  * A crash in the root layout itself: nothing of the app is left (no shell, no
  * providers, so no viewer), so this is Error Page.dc.html's standalone 500,
- * the plain logo bar and its own <html>. Home is a full page load
- * (ButtonAnchor), in case the app's own navigation is what broke.
+ * the plain logo bar and its own <html>, <title> and <main id="main">.
  */
-export default function GlobalError({ error, reset }: { error: Error; reset: () => void }) {
-  const reference = reportErrorOnce(error);
+export default function GlobalError({ error, reset, retry }: RouteErrorProps) {
+  const reference = useErrorReference(error);
   return (
     <html lang="en" className={fontVariables}>
+      <head>
+        <title>{ERROR_PAGE.serverError.title}</title>
+      </head>
       <body>
         <ErrorPage
           type="serverError"
           reference={reference}
+          landmark
           header={
             <header className={styles.bar}>
               <Link href="/" className={styles.logo}>
@@ -33,12 +36,12 @@ export default function GlobalError({ error, reset }: { error: Error; reset: () 
           }
           actions={
             <>
-              <Button size="large" onClick={reset}>
+              <Button size="large" onClick={retry ?? reset}>
                 {ERROR_PAGE.actions.retry}
               </Button>
-              <ButtonAnchor href="/" size="large" variant="secondary-outlined">
+              <ButtonLink href="/" size="large" variant="secondary-outlined">
                 {ERROR_PAGE.actions.site}
-              </ButtonAnchor>
+              </ButtonLink>
             </>
           }
         />

@@ -12,13 +12,15 @@ export const ERROR_PAGE = {
     code: 'Error 404',
     title: 'We can’t find that page',
     body: 'The link may be old or mistyped, or the page has moved.',
+    /** Then the support address. */
     help: 'Followed a link from us?',
   },
   serverError: {
     code: 'Error 500',
     title: 'Something went wrong on our side',
     body: 'It’s not you. Try again in a moment.',
-    help: 'If it keeps happening, tell us',
+    /** Around the support address: "If it keeps happening, email {address} and quote EF-7Q2K9X." */
+    help: 'If it keeps happening, email',
   },
   actions: {
     home: 'Go to Home',
@@ -27,8 +29,8 @@ export const ERROR_PAGE = {
     back: 'Go back',
     retry: 'Try again',
   },
-  /** The 500's help line, with the reference support can look up when there is one. */
-  quote: (ref: string) => `and quote ${ref}.`,
+  /** After the address on the 500: the reference support can look up, when there is one. */
+  after: (ref: string | null) => (ref ? ` and quote ${ref}.` : '.'),
 } as const;
 
 export type ErrorPageType = 'notFound' | 'serverError';

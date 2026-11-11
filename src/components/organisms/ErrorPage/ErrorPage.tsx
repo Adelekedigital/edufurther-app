@@ -17,6 +17,11 @@ export type ErrorPageProps = {
    * no app shell around the page (a crash in the root layout).
    */
   header?: ReactNode;
+  /**
+   * The page's own <main id="main"> (no app shell around it). Inside the shell
+   * (its <main id="main"> is already there) it's a section: one main per page.
+   */
+  landmark?: boolean;
 };
 
 /**
@@ -24,11 +29,18 @@ export type ErrorPageProps = {
  * h1), the actions, then the help line with the support address. Presentational:
  * the screen decides the actions and reports the error.
  */
-export function ErrorPage({ type, actions, reference = null, header }: ErrorPageProps) {
+export function ErrorPage({
+  type,
+  actions,
+  reference = null,
+  header,
+  landmark = false,
+}: ErrorPageProps) {
   const copy = ERROR_PAGE[type];
   const email = supportEmail();
+  const Root = landmark ? 'main' : 'section';
   const main = (
-    <main className={styles.main} data-screen-label="Error">
+    <Root className={styles.main} data-screen-label="Error" id={landmark ? 'main' : undefined}>
       <span className={styles.code}>{copy.code}</span>
       <EmptyState
         illustration={ART[type]}
@@ -39,11 +51,10 @@ export function ErrorPage({ type, actions, reference = null, header }: ErrorPage
       />
       <div className={styles.actions}>{actions}</div>
       <p className={styles.help}>
-        {copy.help}
-        {type === 'serverError' && reference ? ` ${ERROR_PAGE.quote(reference)}` : ''}{' '}
-        <a href={`mailto:${email}`}>{email}</a>
+        {copy.help} <a href={`mailto:${email}`}>{email}</a>
+        {type === 'serverError' ? ERROR_PAGE.after(reference) : ''}
       </p>
-    </main>
+    </Root>
   );
   if (!header) return main;
   return (

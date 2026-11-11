@@ -141,6 +141,16 @@ function scrubException(x: Exception): Exception {
 /** Contexts describing the runtime, never the request or the person. */
 const SAFE_CONTEXTS = ['os', 'browser', 'runtime', 'device', 'app', 'trace'] as const;
 
+/** Only the support reference and Next's digest: random ids, never the person. */
+function keptTags(tags: ErrorEvent['tags']): { tags?: Record<string, string> } {
+  const kept: Record<string, string> = {};
+  for (const k of [REF_TAG, DIGEST_TAG]) {
+    const v = tags?.[k];
+    if (typeof v === 'string') kept[k] = v;
+  }
+  return Object.keys(kept).length ? { tags: kept } : {};
+}
+
 /**
  * What leaves, for every event, browser and server alike: rebuilt from an
  * allowlist, so a field an SDK adds later never leaves unseen. Exported for tests.
@@ -175,9 +185,7 @@ export function scrubErrorEvent(event: ErrorEvent): ErrorEvent | null {
     user: userId ? { id: userId } : undefined,
     // Only the support reference an error page showed (reportError): random,
     // so it identifies the event, never the person.
-    ...(typeof event.tags?.[REF_TAG] === 'string'
-      ? { tags: { [REF_TAG]: event.tags[REF_TAG] } }
-      : {}),
+    ...keptTags(event.tags),
   };
 }
 
@@ -257,21 +265,22 @@ export function startClientErrors(isBlocked: () => boolean): void {
  */
 let browserLoad: Promise<SentryApi> | null = null;
 function loadBrowser(): Promise<SentryApi> {
-  browserLoad ??= import('./sentryApi').then(
-    (s) => {
+  browserLoad ??= import('./sentryApi')
+    .then((s) => {
       s.init({ ...options(), tunnel: SENTRY_TUNNEL_PATH });
       // Sentry's own handlers take over from here.
       stopHolding();
       started(s);
       return s;
-    },
-    (e: unknown) => {
-      // Blocked by an extension, or offline: the app works without it.
+    })
+    .catch((e: unknown) => {
+      // Blocked by an extension, offline, or init threw: the app works
+      // without it, and a later report may try again.
       stopHolding();
       early.length = 0;
+      browserLoad = null;
       throw e;
-    },
-  );
+    });
   return browserLoad;
 }
 
@@ -303,32 +312,51 @@ function newReference(): string {
   return `EF-${Array.from(bytes, (b) => REF_CHARS[b % REF_CHARS.length]).join('')}`;
 }
 
+/** Next's id for a server error (the message is withheld in production). */
+const DIGEST_TAG = 'ef_digest';
+
 /**
- * An error the app caught and still wants seen (an error page). Returns the
- * reference the page shows ("quote EF-7Q2K9X"), tagged on the event; null
- * when nothing is reported (off, or a preview), so the page quotes none.
+ * An error the app caught and still wants seen (an error page). Resolves to
+ * the reference the page shows ("quote EF-7Q2K9X") only once the event has
+ * been handed to a started Sentry, so a quoted reference always exists; null
+ * when nothing is sent (off, a preview, the server, or Sentry blocked or
+ * offline), so the page quotes none. A server error's `digest` is tagged too,
+ * joining this report to the server's own (onRequestError).
  */
-export function reportError(error: unknown): string | null {
+export async function reportError(error: unknown): Promise<string | null> {
   if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN || blocked()) return null;
+  if (typeof window === 'undefined') return null;
+  let s: SentryApi;
+  try {
+    s = client ?? (await loadBrowser());
+  } catch {
+    return null;
+  }
+  if (blocked()) return null;
   const ref = newReference();
-  const send = (s: SentryApi) => s.captureException(error, { tags: { [REF_TAG]: ref } });
-  // Sentry may still be loading when an error page renders: sent once it's up.
-  if (client) send(client);
-  else void loadBrowser().then(send, () => {});
+  const digest = (error as { digest?: unknown } | null)?.digest;
+  s.captureException(error, {
+    tags: { [REF_TAG]: ref, ...(typeof digest === 'string' ? { [DIGEST_TAG]: digest } : {}) },
+  });
   return ref;
 }
 
-/** Each caught error is reported once, however often its error page renders. */
-const reported = new WeakMap<object, string | null>();
+/** Each caught error is reported once, an object by identity, anything else by value. */
+const reportedObjects = new WeakMap<object, Promise<string | null>>();
+const reportedValues = new Map<unknown, Promise<string | null>>();
 
 /**
- * reportError for an error page's render: the same error gives the same
- * reference and one report (StrictMode renders twice; Try again re-renders).
+ * reportError for an error page: the same error gives one report and the same
+ * reference however often the page renders (StrictMode, Try again).
  */
-export function reportErrorOnce(error: unknown): string | null {
-  if (typeof error !== 'object' || error === null) return reportError(error);
-  if (!reported.has(error)) reported.set(error, reportError(error));
-  return reported.get(error) ?? null;
+export function reportErrorOnce(error: unknown): Promise<string | null> {
+  const isObject = typeof error === 'object' && error !== null;
+  const known = isObject ? reportedObjects.get(error) : reportedValues.get(error);
+  if (known) return known;
+  const p = reportError(error);
+  if (isObject) reportedObjects.set(error, p);
+  else reportedValues.set(error, p);
+  return p;
 }
 
 /**

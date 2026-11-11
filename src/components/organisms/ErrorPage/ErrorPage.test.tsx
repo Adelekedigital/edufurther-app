@@ -23,11 +23,15 @@ describe('ErrorPage (Error Page.dc.html)', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Something went wrong on our side' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/tell us and quote EF-7Q2K9X\./)).toBeInTheDocument();
+    expect(screen.getByText(/If it keeps happening, email/)).toHaveTextContent(
+      'If it keeps happening, email support@edufurther.org and quote EF-7Q2K9X.',
+    );
     unmount();
     render(<ErrorPage type="serverError" actions={null} />);
     expect(screen.queryByText(/quote/)).toBeNull();
-    expect(screen.getByText(/If it keeps happening, tell us/)).toBeInTheDocument();
+    expect(screen.getByText(/If it keeps happening, email/)).toHaveTextContent(
+      'If it keeps happening, email support@edufurther.org.',
+    );
   });
 
   it('never promises the work was saved (a crash loses a form’s unsent input)', () => {
@@ -36,8 +40,10 @@ describe('ErrorPage (Error Page.dc.html)', () => {
   });
 
   it('standalone: the logo bar above, only when given', () => {
-    render(<ErrorPage type="serverError" actions={null} header={<header>Logo bar</header>} />);
+    render(
+      <ErrorPage type="serverError" actions={null} header={<header>Logo bar</header>} landmark />,
+    );
     expect(screen.getByRole('banner')).toHaveTextContent('Logo bar');
-    expect(screen.getByRole('main')).toBeInTheDocument();
+    expect(screen.getByRole('main')).toHaveAttribute('id', 'main');
   });
 });

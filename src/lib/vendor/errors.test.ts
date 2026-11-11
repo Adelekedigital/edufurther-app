@@ -178,7 +178,7 @@ describe('scrubErrorEvent: an event is rebuilt from an allowlist', () => {
 
 describe('off by default', () => {
   it('loads nothing, holds nothing, and the tunnel is a 404', async () => {
-    expect(reportError(new Error('x'))).toBeNull();
+    expect(await reportError(new Error('x'))).toBeNull();
     const add = vi.spyOn(window, 'addEventListener');
     startClientErrors(() => false);
     await startServerErrors();
@@ -262,33 +262,50 @@ describe('on', () => {
     remove.mockRestore();
   });
 
-  it('an error page’s report returns its support reference, tagged on the event', async () => {
+  it('an error page’s report resolves to its reference once sent, tagged with it and the digest', async () => {
     await startServerErrors();
-    const ref = reportError(new Error('boom'));
+    const err = Object.assign(new Error('boom'), { digest: '2943748120' });
+    const ref = await reportError(err);
     expect(ref).toMatch(/^EF-[2-9A-HJKMNP-Z]{6}$/);
+    expect(sentry.captureException).toHaveBeenCalledWith(err, {
+      tags: { ef_ref: ref, ef_digest: '2943748120' },
+    });
+    // The reference and the digest pass the allowlist; any other tag doesn't.
+    expect(
+      scrubErrorEvent(
+        event({ tags: { ef_ref: ref!, ef_digest: '2943748120', email: 'ada@example.com' } }),
+      )?.tags,
+    ).toEqual({ ef_ref: ref, ef_digest: '2943748120' });
+  });
+
+  it('before the idle load: the error page starts Sentry itself, once, then sends', async () => {
+    vi.useFakeTimers();
+    startClientErrors(() => false);
+    const ref = await reportError(new Error('boom'));
+    expect(sentry.init).toHaveBeenCalledTimes(1);
     expect(sentry.captureException).toHaveBeenCalledWith(expect.any(Error), {
       tags: { ef_ref: ref },
     });
-    // The reference passes the allowlist; any other tag doesn't.
-    expect(
-      scrubErrorEvent(event({ tags: { ef_ref: ref!, email: 'ada@example.com' } }))?.tags,
-    ).toEqual({
-      ef_ref: ref,
-    });
+    // The idle load later finds it started: no second init.
+    await vi.advanceTimersByTimeAsync(4100);
+    expect(sentry.init).toHaveBeenCalledTimes(1);
   });
 
-  it('the same error reported from many renders is one report, one reference', async () => {
+  it('the same error from many renders is one report, one reference; a thrown string too', async () => {
     await startServerErrors();
     const err = new Error('boom');
-    const first = reportErrorOnce(err);
-    expect(reportErrorOnce(err)).toBe(first);
-    expect(sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(reportErrorOnce(err)).toBe(reportErrorOnce(err));
+    expect(reportErrorOnce('a string')).toBe(reportErrorOnce('a string'));
+    await reportErrorOnce(err);
+    await reportErrorOnce('a string');
+    expect(sentry.captureException).toHaveBeenCalledTimes(2);
   });
 
-  it('nothing to quote in a preview: no report, no reference', () => {
+  it('nothing to quote in a preview: no report, no reference', async () => {
     vi.useFakeTimers();
     startClientErrors(() => true);
-    expect(reportError(new Error('boom'))).toBeNull();
+    expect(await reportError(new Error('boom'))).toBeNull();
+    expect(sentry.captureException).not.toHaveBeenCalled();
   });
 
   it('a preview already stored when the page starts blocks even the earliest errors', async () => {
