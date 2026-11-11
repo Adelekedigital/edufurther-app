@@ -289,7 +289,7 @@ jobs:
               claude -p --restricted --strict-mcp-config \
               --tools "Read,Grep,Glob" --output-format text \
               --max-budget-usd "$CLAUDE_MAX_BUDGET_USD" "$@" \
-              < code-review/prompt.md > code-review/result.md 2> code-review/stderr.txt
+              < code-review/prompt.md > code-review/result.md 2> "$ERR"
           }
 
           # Why a leg failed, by category only: the output and the CLI's stderr
@@ -297,8 +297,16 @@ jobs:
           # printed, since they may hold review text or a provider's error
           # body. Files grepped directly: under pipefail a `cat | grep -q`
           # can fail on the early exit and hide the match (backend #640).
+          # stderr lives outside the checkout: a later leg's file tools can't
+          # read it and quote a provider's error on the PR. Deleted once used.
+          ERR="$RUNNER_TEMP/review-stderr.txt"
           why() {
-            local f="code-review/result.md code-review/stderr.txt"
+            # Print mode writes a failure as its last stdout line; the rest of
+            # stdout may be review prose ("payment", "PR #401"), so only that
+            # line is matched, with stderr (backend #640).
+            local last="$RUNNER_TEMP/review-last.txt"
+            grep -v '^[[:space:]]*$' code-review/result.md 2>/dev/null | tail -n 1 > "$last" || true
+            local f="$last $ERR"
             if grep -qiE 'credit balance|insufficient (credit|balance|quota)|billing|quota exceeded|payment' $f 2>/dev/null; then echo "out of credit"
             elif grep -qiE 'model.{0,40}(not found|does not exist|invalid|not available)|not_found_error|unknown model' $f 2>/dev/null; then echo "model not available"
             elif grep -qiE 'max.?budget|budget (exceeded|reached)' $f 2>/dev/null; then echo "hit the budget cap ($CLAUDE_MAX_BUDGET_USD USD)"
@@ -335,9 +343,11 @@ jobs:
               break
             fi
             echo "::warning::The $p review did not complete ($(why "$rc")); trying the next reviewer, if any."
+            rm -f "$ERR" "$RUNNER_TEMP/review-last.txt"
             label=""
           done
 
+          rm -f "$ERR" "$RUNNER_TEMP/review-last.txt"
           if [ -z "$used" ]; then
             echo "::error::No reviewer completed (tried: $CHAIN)."
             exit 1
