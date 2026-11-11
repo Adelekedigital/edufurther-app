@@ -2,6 +2,8 @@ node_modules/
 .next/
 out/
 coverage/
+# Vitest shard blobs (CI merges them into one coverage report)
+.vitest/
 .review/
 storybook-static/
 *.tsbuildinfo
