@@ -95,15 +95,15 @@ export function writeConsentCookie(a: ConsentAnswer): void {
  */
 export const SIGNED_OUT_COOKIE = 'ef_consent_out';
 
+/** In milliseconds, so no rounding either way can misplace an answer around a sign-out. */
 export function markSignedOut(now = Date.now()): void {
-  // Rounded up: an answer in the same second as the sign-out is never after it.
-  writeCookie(SIGNED_OUT_COOKIE, String(Math.ceil(now / 1000)));
+  writeCookie(SIGNED_OUT_COOKIE, String(Math.floor(now)));
 }
 
 export function readSignedOut(now = Date.now()): number | null {
   const raw = readCookie(SIGNED_OUT_COOKIE);
-  if (!raw || !/^\d{1,12}$/.test(raw)) return null;
-  return Math.min(Number(raw) * 1000, now);
+  if (!raw || !/^\d{1,15}$/.test(raw)) return null;
+  return Math.min(Number(raw), now);
 }
 
 /** The device's answer, unless it predates the last log-out here. */
