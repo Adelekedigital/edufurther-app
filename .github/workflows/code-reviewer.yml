@@ -289,18 +289,21 @@ jobs:
               claude -p --restricted --strict-mcp-config \
               --tools "Read,Grep,Glob" --output-format text \
               --max-budget-usd "$CLAUDE_MAX_BUDGET_USD" "$@" \
-              < code-review/prompt.md > code-review/result.md
+              < code-review/prompt.md > code-review/result.md 2> code-review/stderr.txt
           }
 
-          # Why a leg failed, by category only: the output is matched, never
-          # printed, since it may hold review text or a provider's error body.
+          # Why a leg failed, by category only: the output and the CLI's stderr
+          # (where errors like "credit balance" land) are matched, never
+          # printed, since they may hold review text or a provider's error
+          # body. Files grepped directly: under pipefail a `cat | grep -q`
+          # can fail on the early exit and hide the match (backend #640).
           why() {
-            local f=code-review/result.md
-            if grep -qiE 'credit balance|insufficient (credit|balance|quota)|billing|quota exceeded|payment' "$f" 2>/dev/null; then echo "out of credit"
-            elif grep -qiE 'model.{0,40}(not found|does not exist|invalid|not available)|not_found_error|unknown model' "$f" 2>/dev/null; then echo "model not available"
-            elif grep -qiE 'max.?budget|budget (exceeded|reached)' "$f" 2>/dev/null; then echo "hit the budget cap ($CLAUDE_MAX_BUDGET_USD USD)"
-            elif grep -qiE 'rate.?limit|overloaded|429|529' "$f" 2>/dev/null; then echo "rate limited or overloaded"
-            elif grep -qiE 'authentication|invalid (x-)?api.?key|401|unauthori[sz]ed' "$f" 2>/dev/null; then echo "key rejected"
+            local f="code-review/result.md code-review/stderr.txt"
+            if grep -qiE 'credit balance|insufficient (credit|balance|quota)|billing|quota exceeded|payment' $f 2>/dev/null; then echo "out of credit"
+            elif grep -qiE 'model.{0,40}(not found|does not exist|invalid|not available)|not_found_error|unknown model' $f 2>/dev/null; then echo "model not available"
+            elif grep -qiE 'max.?budget|budget (exceeded|reached)' $f 2>/dev/null; then echo "hit the budget cap ($CLAUDE_MAX_BUDGET_USD USD)"
+            elif grep -qiE 'rate.?limit|overloaded|429|529' $f 2>/dev/null; then echo "rate limited or overloaded"
+            elif grep -qiE 'authentication|invalid (x-)?api.?key|401|unauthori[sz]ed' $f 2>/dev/null; then echo "key rejected"
             elif [ "$1" -ne 0 ]; then echo "exit $1"
             else echo "no review in its output"
             fi
