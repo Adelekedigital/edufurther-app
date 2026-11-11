@@ -28,15 +28,18 @@ const phone = (on: boolean) =>
 afterEach(() => vi.restoreAllMocks());
 
 describe('CreditsExplainer', () => {
-  it('phones: the shared BottomSheet, named "Your credits", with Close and "Got it"', async () => {
+  it('phones: the shared BottomSheet, named "Your credits": Close and "See my bookings", no "Got it"', async () => {
     phone(true);
     const onClose = vi.fn();
     render(<CreditsExplainer id="c" credits={credits} onClose={onClose} />);
     const sheet = screen.getByRole('dialog', { name: 'Your credits' });
     expect(within(sheet).getByRole('list', { name: 'Credits by type' })).toBeInTheDocument();
+    expect(within(sheet).getByRole('link', { name: 'See my bookings' })).toBeInTheDocument();
+    expect(within(sheet).queryByRole('button', { name: 'Got it' })).toBeNull();
     // The sheet's own close, as on every BottomSheet, takes focus first.
-    expect(within(sheet).getByRole('button', { name: 'Close' })).toHaveFocus();
-    await userEvent.click(within(sheet).getByRole('button', { name: 'Got it' }));
+    const close = within(sheet).getByRole('button', { name: 'Close' });
+    expect(close).toHaveFocus();
+    await userEvent.click(close);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

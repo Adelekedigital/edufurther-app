@@ -58,7 +58,8 @@ export function InviteLinkPanel({
 
   const copyLink = async () => {
     if (!url) return;
-    const copied = await copy(url);
+    // The same message Share sends, so a pasted invite says what EduFurther is.
+    const copied = await copy(INVITE_LANDING_COPY.message(url));
     say(copied ? 'Link copied' : 'Couldn’t copy the link. Try again.');
     if (!copied) return;
     track('link_shared', { kind: 'invite', method: 'copy' });

@@ -1,5 +1,9 @@
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 
+/** The words that go with a shared invite link: the pitch, a blank line, the invite. */
+const INVITE_SHARE_TEXT =
+  'I’m getting help with my grad school applications on EduFurther, from mentors who’ve successfully been through the same process.\n\nJoin me and your first session is free:';
+
 /**
  * The invite landing (`/invite/{code}`, PRD Invite Landing; Invite
  * Landing.dc.html saved defaults: framing partner, pitch full, proof schools).
@@ -62,13 +66,16 @@ export const INVITE_LANDING_COPY = {
     alt: 'An invite to EduFurther',
   },
   /**
-   * What the share sheet sends with the link (WhatsApp, SMS). The title is
-   * mostly dropped by chat apps; mail uses it as the subject.
+   * What goes with the link, from Share (WhatsApp, SMS) and Copy link alike
+   * (owner, 2026-11-11). A blank line before the invite. The title is mostly
+   * dropped by chat apps; mail uses it as the subject.
    */
   share: {
     title: 'Join me on EduFurther',
-    text: 'I’m getting help with my grad school applications on EduFurther, from mentors who’ve successfully been through the same process. Your first session is free:',
+    text: INVITE_SHARE_TEXT,
   },
+  /** Copy link's clipboard: the message, then the link on its own line (as Share reads). */
+  message: (url: string) => `${INVITE_SHARE_TEXT}\n${url}`,
   /** While the page works out who is visiting (screen readers only). */
   opening: 'Opening your invite…',
 };
