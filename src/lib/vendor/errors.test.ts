@@ -16,6 +16,8 @@ const sentry = vi.hoisted(() => ({
 vi.mock('./sentryApi', () => sentry);
 
 import {
+  reportError,
+  reportErrorOnce,
   reportRequestError,
   resetErrorsForTests,
   scrubErrorEvent,
@@ -176,6 +178,7 @@ describe('scrubErrorEvent: an event is rebuilt from an allowlist', () => {
 
 describe('off by default', () => {
   it('loads nothing, holds nothing, and the tunnel is a 404', async () => {
+    expect(reportError(new Error('x'))).toBeNull();
     const add = vi.spyOn(window, 'addEventListener');
     startClientErrors(() => false);
     await startServerErrors();
@@ -257,6 +260,35 @@ describe('on', () => {
     expect(remove).toHaveBeenCalledWith('error', expect.any(Function));
     expect(remove).toHaveBeenCalledWith('unhandledrejection', expect.any(Function));
     remove.mockRestore();
+  });
+
+  it('an error page’s report returns its support reference, tagged on the event', async () => {
+    await startServerErrors();
+    const ref = reportError(new Error('boom'));
+    expect(ref).toMatch(/^EF-[2-9A-HJKMNP-Z]{6}$/);
+    expect(sentry.captureException).toHaveBeenCalledWith(expect.any(Error), {
+      tags: { ef_ref: ref },
+    });
+    // The reference passes the allowlist; any other tag doesn't.
+    expect(
+      scrubErrorEvent(event({ tags: { ef_ref: ref!, email: 'ada@example.com' } }))?.tags,
+    ).toEqual({
+      ef_ref: ref,
+    });
+  });
+
+  it('the same error reported from many renders is one report, one reference', async () => {
+    await startServerErrors();
+    const err = new Error('boom');
+    const first = reportErrorOnce(err);
+    expect(reportErrorOnce(err)).toBe(first);
+    expect(sentry.captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it('nothing to quote in a preview: no report, no reference', () => {
+    vi.useFakeTimers();
+    startClientErrors(() => true);
+    expect(reportError(new Error('boom'))).toBeNull();
   });
 
   it('a preview already stored when the page starts blocks even the earliest errors', async () => {

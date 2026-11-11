@@ -319,7 +319,7 @@ describe('PreviewRoot: the page and the page-view log', () => {
     renderRoot();
     act(() => previewStore.deny('/admin/mentors'));
     expect(screen.queryByText('The page')).toBeNull();
-    expect(screen.getByRole('heading', { name: 'We couldn’t find that page' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'We can’t find that page' })).toBeInTheDocument();
   });
 });
 

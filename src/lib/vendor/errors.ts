@@ -173,6 +173,11 @@ export function scrubErrorEvent(event: ErrorEvent): ErrorEvent | null {
     transaction: event.transaction ? scrubTransaction(event.transaction) : undefined,
     // Only the id we set: never what an SDK infers (an IP address, an email).
     user: userId ? { id: userId } : undefined,
+    // Only the support reference an error page showed (reportError): random,
+    // so it identifies the event, never the person.
+    ...(typeof event.tags?.[REF_TAG] === 'string'
+      ? { tags: { [REF_TAG]: event.tags[REF_TAG] } }
+      : {}),
   };
 }
 
@@ -240,22 +245,34 @@ export function startClientErrors(isBlocked: () => boolean): void {
   blocked = isBlocked;
   window.addEventListener('error', holdError);
   window.addEventListener('unhandledrejection', holdRejection);
-  const load = () =>
-    import('./sentryApi')
-      .then((s) => {
-        s.init({ ...options(), tunnel: SENTRY_TUNNEL_PATH });
-        // Sentry's own handlers take over from here.
-        stopHolding();
-        started(s);
-      })
-      .catch(() => {
-        // Blocked by an extension, or offline: the app works without it.
-        stopHolding();
-        early.length = 0;
-      });
+  const load = () => void loadBrowser().catch(() => {});
   if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(() => void load(), { timeout: 4000 });
-  } else setTimeout(() => void load(), 2000);
+    window.requestIdleCallback(load, { timeout: 4000 });
+  } else setTimeout(load, 2000);
+}
+
+/**
+ * Loads and starts Sentry in the browser once, whoever asks first: the idle
+ * load above, or an error page reporting before it (reportError).
+ */
+let browserLoad: Promise<SentryApi> | null = null;
+function loadBrowser(): Promise<SentryApi> {
+  browserLoad ??= import('./sentryApi').then(
+    (s) => {
+      s.init({ ...options(), tunnel: SENTRY_TUNNEL_PATH });
+      // Sentry's own handlers take over from here.
+      stopHolding();
+      started(s);
+      return s;
+    },
+    (e: unknown) => {
+      // Blocked by an extension, or offline: the app works without it.
+      stopHolding();
+      early.length = 0;
+      throw e;
+    },
+  );
+  return browserLoad;
 }
 
 /** The server half (instrumentation.ts `register`), Node and edge. */
@@ -273,6 +290,45 @@ export async function reportRequestError(
   if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN) return;
   const s = client ?? (await import('./sentryApi'));
   s.captureRequestError(...args);
+}
+
+/** The tag the support reference travels in, so support can search for it exactly. */
+const REF_TAG = 'ef_ref';
+const REF_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+
+/** "EF-7Q2K9X": six characters with no 0/O or 1/I/L to misread over the phone or in an email. */
+function newReference(): string {
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return `EF-${Array.from(bytes, (b) => REF_CHARS[b % REF_CHARS.length]).join('')}`;
+}
+
+/**
+ * An error the app caught and still wants seen (an error page). Returns the
+ * reference the page shows ("quote EF-7Q2K9X"), tagged on the event; null
+ * when nothing is reported (off, or a preview), so the page quotes none.
+ */
+export function reportError(error: unknown): string | null {
+  if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN || blocked()) return null;
+  const ref = newReference();
+  const send = (s: SentryApi) => s.captureException(error, { tags: { [REF_TAG]: ref } });
+  // Sentry may still be loading when an error page renders: sent once it's up.
+  if (client) send(client);
+  else void loadBrowser().then(send, () => {});
+  return ref;
+}
+
+/** Each caught error is reported once, however often its error page renders. */
+const reported = new WeakMap<object, string | null>();
+
+/**
+ * reportError for an error page's render: the same error gives the same
+ * reference and one report (StrictMode renders twice; Try again re-renders).
+ */
+export function reportErrorOnce(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null) return reportError(error);
+  if (!reported.has(error)) reported.set(error, reportError(error));
+  return reported.get(error) ?? null;
 }
 
 /**
@@ -294,5 +350,6 @@ export function resetErrorsForTests(): void {
   blocked = () => false;
   userId = null;
   client = null;
+  browserLoad = null;
   early.length = 0;
 }
