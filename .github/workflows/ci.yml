@@ -7,6 +7,17 @@
 #
 # This file is tier 2: an update stages ci.yml.new beside it rather than
 # overwriting your version.
+#
+# Layout (owner, 2026-11-11: same checks and thresholds, less waiting). The
+# slow parts run side by side instead of one after another:
+#   changes      docs-only PR?  (then the heavy jobs skip)
+#   checks       copy, icons, private paths, spec + client, types, lint,
+#                boundaries, build, bundle secrets
+#   test ×3      the suite in shards, each recording coverage
+#   coverage     merges the shards and applies the coverage thresholds once,
+#                to the whole suite (vitest.config.ts)
+#   verify       the required check: green only if checks and coverage are
+#   page-review  the built app with Playwright, in parallel with the rest
 
 name: ci
 
@@ -21,9 +32,46 @@ concurrency:
 
 env:
   NODE_VERSION: '22'
+  TEST_SHARDS: 3
+
+permissions:
+  contents: read
 
 jobs:
-  verify:
+  # A PR that only touches docs needs no build, tests or browser run. Main
+  # always runs everything. Anything that isn't plainly a doc counts as code.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" != "pull_request" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          files=$(git diff --name-only "$BASE" "$HEAD")
+          code=false
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            case "$f" in
+              docs/*|.claude/*|*.md) ;;
+              *) code=true ;;
+            esac
+          done <<< "$files"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "code changed: $code"
+
+  checks:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -51,8 +99,7 @@ jobs:
         run: pnpm check:icons
 
       # Hard rule 1 of the ux-writer spec: no em dash in a string a user reads.
-      # Cheap and early, before the spec pull and the build, because a copy
-      # defect should not wait behind a six-minute type-check to be reported.
+      # Cheap and early, before the spec pull and the build.
       - name: No em dashes in product copy
         run: pnpm check:copy
 
@@ -77,10 +124,13 @@ jobs:
       - name: Boundaries
         run: node scripts/check-boundaries.mjs
 
-      - name: Test
-        # Not `pnpm test -- --coverage`: after `--` it reached vitest as a file
-        # filter, so coverage was never measured. Thresholds: vitest.config.ts.
-        run: pnpm test:coverage
+      # Next's incremental build cache: a warm build reuses unchanged work.
+      - uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**', 'next.config.ts') }}
+          restore-keys: |
+            next-build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - name: Build
         run: pnpm build
@@ -99,10 +149,93 @@ jobs:
           fi
           echo "clean"
 
-  page-review:
+  # The suite in parallel shards. Each records coverage into a blob; no
+  # thresholds here (VITEST_SHARD), so no shard can pass or fail on its own share.
+  test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Tests compile against the same generated client the app builds with.
+      - name: Pull the API spec and generate the client
+        run: |
+          pnpm spec:pull
+          pnpm gen:api
+      - name: Test (shard ${{ matrix.shard }} of ${{ env.TEST_SHARDS }})
+        env:
+          VITEST_SHARD: ${{ matrix.shard }}
+        run: pnpm exec vitest run --coverage --shard=${{ matrix.shard }}/${{ env.TEST_SHARDS }} --reporter=blob --reporter=default
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vitest-blob-${{ matrix.shard }}
+          path: .vitest/blob/
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  # One coverage report for the whole suite, with the thresholds in
+  # vitest.config.ts applied to it (never lowered to go green).
+  coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: vitest-blob-*
+          path: .vitest/blob/
+          merge-multiple: true
+      - name: Merge the shards and check coverage
+        run: pnpm exec vitest --merge-reports --coverage
+
+  # The required status check. One name for branch protection, green only when
+  # every gate it stands for passed (or was skipped for a docs-only PR).
+  verify:
+    needs: [changes, checks, coverage]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: All gates passed
+        env:
+          CODE: ${{ needs.changes.outputs.code }}
+          CHANGES: ${{ needs.changes.result }}
+          CHECKS: ${{ needs.checks.result }}
+          COVERAGE: ${{ needs.coverage.result }}
+        run: |
+          set -euo pipefail
+          echo "changes=$CHANGES code=$CODE checks=$CHECKS coverage=$COVERAGE"
+          [ "$CHANGES" = "success" ] || { echo "change detection failed"; exit 1; }
+          if [ "$CODE" = "true" ]; then
+            [ "$CHECKS" = "success" ] || { echo "checks: $CHECKS"; exit 1; }
+            [ "$COVERAGE" = "success" ] || { echo "tests or coverage: $COVERAGE"; exit 1; }
+          fi
+          echo "all gates passed"
+
+  page-review:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       # Version comes from package.json "packageManager"; the action refuses two sources.
@@ -113,13 +246,35 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
 
-      # Same spec as verify; the build needs the client.
+      # The browser binary is cached by Playwright's version; the system
+      # libraries it needs are installed every run (they live outside the cache).
+      - name: Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+      - if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      # Same spec as checks; the build needs the client.
       - name: Pull the API spec and generate the client
         run: |
           pnpm spec:pull
           pnpm gen:api
+
+      # Its own build cache: this build talks to the mock API (other env vars).
+      - uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: next-mock-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**', 'next.config.ts') }}
+          restore-keys: |
+            next-mock-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
 
       # Review a BUILT app. Dev-server numbers are not the numbers you ship.
       # Phase A: no backend in CI, so the build talks to the in-app mock API.
