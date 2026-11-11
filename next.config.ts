@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import { backendOrigin, proxySecret } from './src/lib/backend';
+import { posthogHosts } from './src/lib/posthogHost';
 import { PWA_HEADERS, SECURITY_HEADERS } from './src/lib/securityHeaders';
 
 /**
@@ -12,6 +13,9 @@ import { PWA_HEADERS, SECURITY_HEADERS } from './src/lib/securityHeaders';
  */
 backendOrigin();
 proxySecret();
+// Checked here too: a malformed POSTHOG_HOST fails the build. /ingest is
+// forwarded by src/proxy.ts (PRD 30), never by a config rewrite.
+posthogHosts();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -37,6 +41,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [...SECURITY_HEADERS, ...PWA_HEADERS];
   },
+  // PostHog's endpoints end in a slash (`/ingest/e/`); Next's redirect would
+  // drop it. src/proxy.ts makes that redirect itself for every other page.
+  skipTrailingSlashRedirect: true,
 };
 
 export default nextConfig;

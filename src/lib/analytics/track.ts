@@ -2,9 +2,11 @@ import type { AnalyticsEvent, AnalyticsEvents, PersonProperties } from './events
 
 /**
  * Our analytics interface (PRD 30): every screen calls these, nothing imports
- * the vendor. The vendor arrives as a `Sink`, connected by the consent code
- * once someone accepts (lib/vendor/analytics.ts behind it). Until then events
- * wait in memory; a decline drops them.
+ * the vendor. The vendor arrives as a `Sink`, connected by the analytics root
+ * (app/_shell/AnalyticsRoot, lib/vendor/analytics.ts behind it) once it has
+ * loaded in the mode consent allows: cookieless before an answer and after a
+ * decline (its sink drops identify), identified after Accept. Until then
+ * events wait in memory; `setConsent(false)` (off, a preview) drops them.
  *
  * Nothing is sent while blocked: a preview session (PRD 27), tests, Storybook,
  * or the feature flag off. `setBlocked` takes the check so this file knows no
@@ -78,9 +80,41 @@ function enqueue(q: Queued) {
   queue.push(q);
 }
 
+/**
+ * Where replay may record beyond its routes (PRD 30): the booking modal opens
+ * on Explore and profiles, so BookingFlow turns `booking` on while it is open
+ * and off when it closes. The analytics root listens; replay still needs
+ * Accept, and blocked parts ([data-no-replay]) stay blocked.
+ */
+export type ReplayScope = 'booking';
+
+const scopes = new Set<ReplayScope>();
+const scopeListeners = new Set<() => void>();
+
+export function setReplayScope(scope: ReplayScope, on: boolean): void {
+  if (scopes.has(scope) === on) return;
+  if (on) scopes.add(scope);
+  else scopes.delete(scope);
+  scopeListeners.forEach((l) => l());
+}
+
+/** True while any scope is open. */
+export function replayScopeActive(): boolean {
+  return scopes.size > 0;
+}
+
+export function onReplayScope(listener: () => void): () => void {
+  scopeListeners.add(listener);
+  return () => {
+    scopeListeners.delete(listener);
+  };
+}
+
 /** Tests only: back to a fresh page. */
 export function resetForTests(): void {
   sink = null;
   queue = [];
   blocked = () => false;
+  scopes.clear();
+  scopeListeners.clear();
 }
