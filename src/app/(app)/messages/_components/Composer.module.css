@@ -46,7 +46,7 @@
   resize: none;
   background: none;
   font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
+  font-size: var(--text-field);
   /* 22px lines in 11px padding: one line fills the 44px floor exactly. */
   line-height: calc(var(--touch-target-min) / 2);
   color: var(--ink-900);
@@ -70,13 +70,6 @@
   background: var(--blue-500);
   color: var(--white);
 }
-@media (max-width: 767px) {
-  /* 16px so iOS doesn't zoom into the box (design PWA pass). */
-  .input {
-    font-size: var(--text-p-md);
-  }
-}
-
 /* Starters (`startersChips`): the lead line, then chips that wrap; one row that scrolls on phones. */
 .starters {
   display: flex;

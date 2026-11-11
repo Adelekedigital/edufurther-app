@@ -136,14 +136,9 @@ export const PLAN_HINTS = {
   origin: 'We look for mentors who made the same move.',
   degree: 'The next degree you want to study, not the one you have now.',
   field: 'Choose from the list, or type it if it’s not there.',
-  // Settings › Goals takes up to 3; "Settings" links there (design, 2026-10-17; #284).
+  // Settings › Goals takes up to 3. "Settings" is plain text, as the design draws
+  // it: a link here only pulled people out of onboarding (owner, 2026-11-11).
   destination: 'Pick one for now. You can add more later in Settings.',
-};
-
-/** The destination hint's link: the word it sits on and where it goes (a new tab). */
-export const DESTINATION_LINK = {
-  text: 'Settings',
-  href: '/settings/goals',
 };
 
 export const PLAN_PLACEHOLDERS = {

@@ -237,11 +237,6 @@ export function AppShell({
       : opener
     )?.focus();
   };
-  // Phones: the page behind the sheet doesn't scroll (as under ModalShell).
-  useEffect(() => {
-    if (!creditsOpen || !window.matchMedia?.('(max-width: 767px)').matches) return;
-    return lockScroll();
-  }, [creditsOpen]);
   // One pill shows at a time (the bar's on desktop, the header's on phones).
   const togglePill = (from: HTMLButtonElement) => {
     if (creditsOpen) return closeCredits();

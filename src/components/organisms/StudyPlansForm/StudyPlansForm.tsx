@@ -1,13 +1,11 @@
 'use client';
 
 import { useId, type ReactNode } from 'react';
-import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import {
   DEGREE_OPTIONS,
-  DESTINATION_LINK,
   FIELD_MAX,
   FIELD_SUGGESTIONS,
   NOT_SURE,
@@ -76,26 +74,6 @@ function Field({
       {/* Under the hint, as drawn (Mentee Onboarding v5.dc.html `errOrigin` and the rest). */}
       {error && <FieldError id={errorId}>{error}</FieldError>}
     </div>
-  );
-}
-
-/**
- * "…later in Settings." with Settings a link to Settings › Goals. A new tab:
- * onboarding sits outside the app shell, so leaving it here would drop the
- * answers not yet saved.
- */
-function DestinationHint() {
-  const [before, after] = PLAN_HINTS.destination.split(DESTINATION_LINK.text);
-  return (
-    <>
-      {before}
-      <ExternalLink
-        href={DESTINATION_LINK.href}
-        label={DESTINATION_LINK.text}
-        className={styles.hintLink}
-      />
-      {after}
-    </>
   );
 }
 
@@ -186,7 +164,7 @@ export function StudyPlansForm({
       <Field
         id={`${pre}-destination`}
         label={PLAN_LABELS.destination}
-        hint={<DestinationHint />}
+        hint={PLAN_HINTS.destination}
         error={errors.destination}
         wide
       >

@@ -72,7 +72,7 @@
   border-radius: var(--radius-md) var(--radius-md) 0 0;
   background: none;
   font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
+  font-size: var(--text-field);
   line-height: var(--lh-p);
   color: var(--ink-900);
   field-sizing: content;

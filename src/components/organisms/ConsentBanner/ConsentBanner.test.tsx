@@ -12,6 +12,13 @@ describe('ConsentBanner', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('tells a member where to change it later; a guest, with no Settings, is not told', () => {
+    const { rerender } = render(<ConsentBanner onAccept={vi.fn()} onDecline={vi.fn()} signedIn />);
+    expect(screen.getByRole('region')).toHaveTextContent(`${C.body} ${C.change}`);
+    rerender(<ConsentBanner onAccept={vi.fn()} onDecline={vi.fn()} />);
+    expect(screen.getByRole('region')).not.toHaveTextContent(C.change);
+  });
+
   it('links to the privacy policy in a new tab', () => {
     render(<ConsentBanner onAccept={vi.fn()} onDecline={vi.fn()} />);
     const link = screen.getByRole('link', { name: `${C.privacy} (opens in a new tab)` });

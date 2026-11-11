@@ -7,15 +7,10 @@ import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { track } from '@/lib/analytics/track';
+import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
 import { cx } from '@/lib/utils/cx';
 import { useCopyText } from '@/lib/utils/useCopyText';
 import styles from './InviteLinkPanel.module.css';
-
-/** What the native share sheet carries with the link (InviteModal.dc.html). */
-export const INVITE_SHARE = {
-  title: 'Join me on EduFurther',
-  text: 'I’m using EduFurther to get advice from people who’ve done what I’m aiming for. Your first session is free:',
-} as const;
 
 /** The link as shown: host and path, no scheme. */
 export const displayUrl = (url: string) => url.replace(/^https?:\/\//, '');
@@ -72,7 +67,8 @@ export function InviteLinkPanel({
 
   const share = async () => {
     if (!url) return;
-    const payload = { ...INVITE_SHARE, url };
+    // What the share sheet carries with the link (InviteModal.dc.html).
+    const payload = { ...INVITE_LANDING_COPY.share, url };
     // Checked first, so the fallback copy still runs inside the click: after a
     // refused share the gesture is spent and Safari would refuse the copy too.
     if (typeof navigator.share !== 'function' || navigator.canShare?.(payload) === false) {

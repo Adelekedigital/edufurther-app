@@ -49,13 +49,25 @@ export const INVITE_LANDING_COPY = {
     lead: (first: string) => `Invited by ${first}.`,
     rest: 'Your first session is free.',
   },
-  /** The link preview chat apps show (Invite Preview.dc.html), and the page's og: lines. */
+  /**
+   * The link preview chat apps show (Invite Preview.dc.html), and the page's
+   * og: lines. Says what EduFurther is, as the share message does (owner,
+   * 2026-11-11: "who studied abroad" read as a cliché).
+   */
   preview: {
-    title: (first: string) => `${first} invited you`,
-    body: 'Your first session on EduFurther is free',
-    fallbackTitle: 'Talk 1:1 with someone who’s done it',
-    fallbackBody: 'Your first session is free',
+    title: (first: string) => `${first} invited you to EduFurther`,
+    body: '1:1 help with your grad school applications from mentors who’ve been through it. First session free.',
+    fallbackTitle: 'Get 1:1 help with your grad school applications',
+    fallbackBody: 'From mentors who’ve been through it. Your first session is free.',
     alt: 'An invite to EduFurther',
+  },
+  /**
+   * What the share sheet sends with the link (WhatsApp, SMS). The title is
+   * mostly dropped by chat apps; mail uses it as the subject.
+   */
+  share: {
+    title: 'Join me on EduFurther',
+    text: 'I’m getting help with my grad school applications on EduFurther, from mentors who’ve successfully been through the same process. Your first session is free:',
   },
   /** While the page works out who is visiting (screen readers only). */
   opening: 'Opening your invite…',

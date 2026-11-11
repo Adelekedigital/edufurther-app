@@ -1,4 +1,5 @@
-/* Values from AppShell.dc.html ("Your credits": creditsIn=both, green). */
+/* Values from AppShell.dc.html ("Your credits": creditsIn=both, green).
+   Phones: the shared BottomSheet draws the sheet; only the content is here. */
 .scrim {
   position: fixed;
   inset: 0;
@@ -28,9 +29,11 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
 }
-.handle,
-.gotIt {
-  display: none;
+/* The content under the title, on both layouts. */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 .head {
   display: flex;
@@ -40,7 +43,7 @@
 .icon {
   color: var(--green-700);
 }
-.low .icon {
+.iconLow {
   color: var(--warning-text);
 }
 .title {
@@ -190,57 +193,16 @@
 .link:hover {
   color: var(--blue-700);
 }
-.link:focus-visible,
-.gotIt:focus-visible {
+.link:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
-}
-.link:focus-visible {
   border-radius: var(--radius-xs);
 }
 
-/* Phones: a bottom sheet with a handle and "Got it". */
+/* Phones: a 44px tap target around the 32px toggles (project rule). */
 @media (max-width: 767px) {
-  .scrim {
-    background: var(--overlay-scrim-sheet);
-  }
-  .panel {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    max-width: 390px;
-    margin: 0 auto;
-    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
-    padding: var(--space-3) var(--space-5) var(--space-6);
-    padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom));
-  }
-  /* A 44px tap target around the 32px toggles (project rule). */
   .toggle {
     min-height: var(--touch-target-min);
-  }
-  .handle {
-    display: block;
-    align-self: center;
-    width: 36px;
-    height: 4px;
-    margin-bottom: var(--space-1);
-    border-radius: var(--radius-full);
-    background: var(--ink-200);
-  }
-  .gotIt {
-    display: block;
-    height: var(--button-h-large);
-    width: 100%;
-    border: var(--border-hairline) solid var(--ink-300);
-    border-radius: var(--radius-md);
-    background: var(--surface-card);
-    cursor: pointer;
-    font-family: var(--font-button);
-    font-size: var(--text-p-sm);
-    font-weight: var(--weight-bold);
-    color: var(--text-primary);
   }
 }
 
