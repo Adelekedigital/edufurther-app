@@ -295,7 +295,7 @@ export function BookingFlow(p: BookingFlowProps) {
     setBookedName(session.name);
     // No questions to answer: the step is done by having none, so the
     // funnel's "Questions done" doesn't read as a drop (PRD 30).
-    if (!session.questions?.length) events.stepDone('questions');
+    if (!hasQuestions) events.stepDone('questions');
     events.sent(session.id);
     p.onRequest({
       mentorId: m.id,

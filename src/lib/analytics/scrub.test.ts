@@ -19,6 +19,18 @@ describe('scrub', () => {
     expect(scrubUrl('$direct')).toBe('$direct');
   });
 
+  it('an unknown page or a protocol-relative path leaves as the /(other) bucket', () => {
+    expect(scrubUrl('/not-a-page/123')).toBe('/(other)');
+    expect(scrubUrl(`${here}/not-a-page/123?x=1`)).toBe(`${here}/(other)`);
+    expect(scrubUrl('//evil.test/p')).toBe('/(other)');
+  });
+
+  it('our own referrer keeps its template', () => {
+    expect(scrubProperties({ $referrer: `${here}/mentors/ada?y=1` })).toEqual({
+      $referrer: `${here}/mentors/[handle]`,
+    });
+  });
+
   it('scrubs the SDK address properties, $set and $set_once, and nothing else', () => {
     const out = scrubProperties({
       $current_url: `${here}/invite/c?q=1`,

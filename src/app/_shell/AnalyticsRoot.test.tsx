@@ -407,11 +407,33 @@ describe('a withdrawal always wins in the session', () => {
     expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless');
   });
 
-  it('a signed-in visitor is never identified before /me answers', async () => {
+  it('a fresh load of a signed-in member waits for /me: no vendor mode at all, so no reset', async () => {
     accepted();
     env.viewer = { kind: 'loading', signedIn: true };
-    render(<AnalyticsRoot />);
-    await waitFor(() => expect(vendor.setMode).toHaveBeenCalled());
+    const { rerender } = render(<AnalyticsRoot />);
+    // Pending: the vendor isn't loaded or set (cookieless would run its withdrawal reset).
+    await new Promise((r) => setTimeout(r, 20));
+    expect(loadAnalytics).not.toHaveBeenCalled();
+    expect(vendor.setMode).not.toHaveBeenCalled();
+    env.viewer = member();
+    rerender(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setMode).toHaveBeenCalledWith('identified'));
+    expect(vendor.setMode).not.toHaveBeenCalledWith('cookieless');
+  });
+
+  it('pending, then /me shows a newer withdrawal on the account: cookieless, never identified', async () => {
+    accepted();
+    env.viewer = { kind: 'loading', signedIn: true };
+    const { rerender } = render(<AnalyticsRoot />);
+    env.viewer = member({
+      analyticsConsent: {
+        granted: false,
+        version: CONSENT_VERSION,
+        answeredAt: new Date(Date.now() + 60_000).toISOString(),
+      },
+    });
+    rerender(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setMode).toHaveBeenCalledWith('cookieless'));
     expect(vendor.setMode).not.toHaveBeenCalledWith('identified');
   });
 });

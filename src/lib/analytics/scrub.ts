@@ -1,4 +1,10 @@
-import { routeTemplate } from './route';
+import { OTHER_ROUTE, routeTemplate } from './route';
+
+/** A route template as a path: an unknown page is the `/(other)` bucket, never its real path. */
+const pathOf = (pathname: string) => {
+  const t = routeTemplate(pathname);
+  return t === OTHER_ROUTE ? `/${OTHER_ROUTE}` : t;
+};
 
 /**
  * What of an address may leave the browser (PRD 30, Privacy): our own pages
@@ -7,12 +13,12 @@ import { routeTemplate } from './route';
  * fragment (a `?viewAs=` email, `next=`, booking ids, sign-in tokens).
  */
 export function scrubUrl(value: string): string {
-  if (value.startsWith('/')) return routeTemplate(value);
+  if (value.startsWith('/')) return pathOf(value);
   if (!/^https?:\/\//i.test(value)) return value;
   try {
     const u = new URL(value);
     const ours = typeof window !== 'undefined' && u.origin === window.location.origin;
-    return ours ? `${u.origin}${routeTemplate(u.pathname)}` : u.origin;
+    return ours ? `${u.origin}${pathOf(u.pathname)}` : u.origin;
   } catch {
     return value;
   }
