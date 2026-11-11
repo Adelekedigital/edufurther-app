@@ -1,0 +1,68 @@
+/* Error Page.dc.html: centred column, 70vh inside the shell, the whole viewport standalone. */
+.main {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-10) var(--space-5);
+  box-sizing: border-box;
+  text-align: center;
+  color: var(--ink-900);
+}
+
+.code {
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--ink-600);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.help {
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+
+/* Underlined, not colour alone, inside a sentence (WCAG 1.4.1; the design's
+   link is colour only, a small fix logged in the PR). */
+.help a {
+  color: var(--blue-500);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.help a:hover {
+  color: var(--blue-700);
+}
+
+.standalone {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.standalone .main {
+  flex: 1;
+}
+
+/* Phones: the design's full-width buttons in the standalone page. */
+@media (max-width: 767px) {
+  .standalone .actions {
+    width: 100%;
+  }
+
+  .standalone .actions > * {
+    flex: 1 1 100%;
+  }
+}

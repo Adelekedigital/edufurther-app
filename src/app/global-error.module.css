@@ -1,0 +1,25 @@
+/* Error Page.dc.html standalone bar: 72px desktop, 64px phones, the logo at 24px. */
+.bar {
+  display: flex;
+  align-items: center;
+  height: 72px;
+  padding: 0 var(--space-10);
+  border-bottom: 1px solid var(--ink-100);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 24px;
+  width: auto;
+}
+
+@media (max-width: 767px) {
+  .bar {
+    height: 64px;
+    padding: 0 var(--space-5);
+  }
+}

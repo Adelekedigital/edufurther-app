@@ -141,6 +141,16 @@ function scrubException(x: Exception): Exception {
 /** Contexts describing the runtime, never the request or the person. */
 const SAFE_CONTEXTS = ['os', 'browser', 'runtime', 'device', 'app', 'trace'] as const;
 
+/** Only the support reference and Next's digest: random ids, never the person. */
+function keptTags(tags: ErrorEvent['tags']): { tags?: Record<string, string> } {
+  const kept: Record<string, string> = {};
+  for (const k of [REF_TAG, DIGEST_TAG]) {
+    const v = tags?.[k];
+    if (typeof v === 'string') kept[k] = v;
+  }
+  return Object.keys(kept).length ? { tags: kept } : {};
+}
+
 /**
  * What leaves, for every event, browser and server alike: rebuilt from an
  * allowlist, so a field an SDK adds later never leaves unseen. Exported for tests.
@@ -173,6 +183,9 @@ export function scrubErrorEvent(event: ErrorEvent): ErrorEvent | null {
     transaction: event.transaction ? scrubTransaction(event.transaction) : undefined,
     // Only the id we set: never what an SDK infers (an IP address, an email).
     user: userId ? { id: userId } : undefined,
+    // Only the support reference an error page showed (reportError): random,
+    // so it identifies the event, never the person.
+    ...keptTags(event.tags),
   };
 }
 
@@ -240,22 +253,35 @@ export function startClientErrors(isBlocked: () => boolean): void {
   blocked = isBlocked;
   window.addEventListener('error', holdError);
   window.addEventListener('unhandledrejection', holdRejection);
-  const load = () =>
-    import('./sentryApi')
-      .then((s) => {
-        s.init({ ...options(), tunnel: SENTRY_TUNNEL_PATH });
-        // Sentry's own handlers take over from here.
-        stopHolding();
-        started(s);
-      })
-      .catch(() => {
-        // Blocked by an extension, or offline: the app works without it.
-        stopHolding();
-        early.length = 0;
-      });
+  const load = () => void loadBrowser().catch(() => {});
   if (typeof window.requestIdleCallback === 'function') {
-    window.requestIdleCallback(() => void load(), { timeout: 4000 });
-  } else setTimeout(() => void load(), 2000);
+    window.requestIdleCallback(load, { timeout: 4000 });
+  } else setTimeout(load, 2000);
+}
+
+/**
+ * Loads and starts Sentry in the browser once, whoever asks first: the idle
+ * load above, or an error page reporting before it (reportError).
+ */
+let browserLoad: Promise<SentryApi> | null = null;
+function loadBrowser(): Promise<SentryApi> {
+  browserLoad ??= import('./sentryApi')
+    .then((s) => {
+      s.init({ ...options(), tunnel: SENTRY_TUNNEL_PATH });
+      // Sentry's own handlers take over from here.
+      stopHolding();
+      started(s);
+      return s;
+    })
+    .catch((e: unknown) => {
+      // Blocked by an extension, offline, or init threw: the app works
+      // without it, and a later report may try again.
+      stopHolding();
+      early.length = 0;
+      browserLoad = null;
+      throw e;
+    });
+  return browserLoad;
 }
 
 /** The server half (instrumentation.ts `register`), Node and edge. */
@@ -273,6 +299,64 @@ export async function reportRequestError(
   if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN) return;
   const s = client ?? (await import('./sentryApi'));
   s.captureRequestError(...args);
+}
+
+/** The tag the support reference travels in, so support can search for it exactly. */
+const REF_TAG = 'ef_ref';
+const REF_CHARS = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+
+/** "EF-7Q2K9X": six characters with no 0/O or 1/I/L to misread over the phone or in an email. */
+function newReference(): string {
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  return `EF-${Array.from(bytes, (b) => REF_CHARS[b % REF_CHARS.length]).join('')}`;
+}
+
+/** Next's id for a server error (the message is withheld in production). */
+const DIGEST_TAG = 'ef_digest';
+
+/**
+ * An error the app caught and still wants seen (an error page). Resolves to
+ * the reference the page shows ("quote EF-7Q2K9X") only once the event has
+ * been handed to a started Sentry, so a quoted reference always exists; null
+ * when nothing is sent (off, a preview, the server, or Sentry blocked or
+ * offline), so the page quotes none. A server error's `digest` is tagged too,
+ * joining this report to the server's own (onRequestError).
+ */
+export async function reportError(error: unknown): Promise<string | null> {
+  if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN || blocked()) return null;
+  if (typeof window === 'undefined') return null;
+  let s: SentryApi;
+  try {
+    s = client ?? (await loadBrowser());
+  } catch {
+    return null;
+  }
+  if (blocked()) return null;
+  const ref = newReference();
+  const digest = (error as { digest?: unknown } | null)?.digest;
+  s.captureException(error, {
+    tags: { [REF_TAG]: ref, ...(typeof digest === 'string' ? { [DIGEST_TAG]: digest } : {}) },
+  });
+  return ref;
+}
+
+/** Each caught error is reported once, an object by identity, anything else by value. */
+const reportedObjects = new WeakMap<object, Promise<string | null>>();
+const reportedValues = new Map<unknown, Promise<string | null>>();
+
+/**
+ * reportError for an error page: the same error gives one report and the same
+ * reference however often the page renders (StrictMode, Try again).
+ */
+export function reportErrorOnce(error: unknown): Promise<string | null> {
+  const isObject = typeof error === 'object' && error !== null;
+  const known = isObject ? reportedObjects.get(error) : reportedValues.get(error);
+  if (known) return known;
+  const p = reportError(error);
+  if (isObject) reportedObjects.set(error, p);
+  else reportedValues.set(error, p);
+  return p;
 }
 
 /**
@@ -294,5 +378,6 @@ export function resetErrorsForTests(): void {
   blocked = () => false;
   userId = null;
   client = null;
+  browserLoad = null;
   early.length = 0;
 }
