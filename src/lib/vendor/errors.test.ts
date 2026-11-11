@@ -54,9 +54,11 @@ describe('scrubText: free text from an error', () => {
 
   it('reduces addresses to their template and drops every query', () => {
     expect(scrubText('GET /invite/damilola-7k2x?ref=wa failed')).toBe('GET /invite/[code] failed');
+    // An unknown path never leaves as itself, as in analytics (a name in a mistyped URL).
     expect(
       scrubText('at /api/v1/users/3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90/sessions?cursor=x'),
-    ).toBe('at /api/v1/users/[id]/sessions');
+    ).toBe('at /(other)');
+    expect(scrubText('404 for /mentor/ada-l')).toBe('404 for /(other)');
     expect(scrubText('see https://evil.example/x?token_hash=abc')).toBe('see https://evil.example');
   });
 

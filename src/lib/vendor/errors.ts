@@ -69,14 +69,19 @@ const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/g
 /** A long opaque run (a token, a code, a key): never meaningful in an error. */
 const TOKEN = /\b[A-Za-z0-9_-]{24,}\b/g;
 const ABSOLUTE = /\bhttps?:\/\/[^\s"'<>)]+/g;
-const PATH = /(^|[\s(=:'"])(\/[\w\-./%~]+)(\?[^\s"'<>)]*)?/g;
+// A single slash: `//host` is the rest of a URL, already scrubbed above.
+const PATH = /(^|[\s(=:'"])(\/(?!\/)[\w\-./%~]*)(\?[^\s"'<>)]*)?/g;
 const QUOTED = /"[^"]*"/g;
 const MAX_TEXT = 500;
 
-/** A path as analytics sends it: the route template, or ids masked when unknown. */
+/**
+ * A path as analytics sends it: its route template, and an unknown path only
+ * as `/(other)`, never itself (it could carry anything someone typed: a name
+ * in a mistyped URL). As lib/analytics/scrub does.
+ */
 function scrubPath(path: string): string {
   const t = routeTemplate(path);
-  return t === OTHER_ROUTE ? path.replace(UUID, '[id]') : t;
+  return t === OTHER_ROUTE ? `/${OTHER_ROUTE}` : t;
 }
 
 /**
