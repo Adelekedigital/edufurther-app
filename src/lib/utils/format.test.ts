@@ -1,5 +1,5 @@
 import { REVIEW_COPY } from '@/lib/copy/profile';
-import { formatShortDate, timeAgo } from './format';
+import { formatShortDate, timeAgo, viewerZone } from './format';
 import { newestFirst } from './reviewable';
 
 describe('formatShortDate', () => {
@@ -61,5 +61,13 @@ describe('timeAgo', () => {
     ['not a date', 'just now'],
   ])('%s → %s', (at, want) => {
     expect(timeAgo(at, now)).toBe(want);
+  });
+});
+
+describe('viewerZone', () => {
+  it('is the account’s zone, else the device’s', () => {
+    expect(viewerZone('Africa/Lagos', 'Europe/London')).toBe('Africa/Lagos');
+    expect(viewerZone(null, 'Europe/London')).toBe('Europe/London');
+    expect(viewerZone(undefined, 'Europe/London')).toBe('Europe/London');
   });
 });

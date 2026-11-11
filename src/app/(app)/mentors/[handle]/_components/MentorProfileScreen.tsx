@@ -36,7 +36,7 @@ import { NOT_TAKING_TITLE, SHARE_NOTE } from '@/lib/copy/profile';
 import { useMentorsFreeSoon } from '@/lib/api/data/freeSoon';
 import { SIMILAR_SHOWN, useSimilarMentors } from '@/lib/api/data/similar';
 import { personCover } from '@/lib/utils/person';
-import { deviceTimeZone, movedBetween } from '@/lib/utils/format';
+import { deviceTimeZone, movedBetween, viewerZone } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { CompletenessCode } from '@/types/mentor';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -178,7 +178,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // Cards only render after a client fetch, so reading the device zone here is safe.
   const [deviceZone] = useState(deviceTimeZone);
   // The account's zone, as Bookings and the dashboard show times.
-  const timeZone = member?.timeZone ?? deviceZone;
+  const timeZone = viewerZone(member?.timeZone, deviceZone);
   // The profile only exists after a client fetch, so `window` is there by then.
   const shareUrl = p ? `${window.location.origin}${p.mentor.profileHref}` : '';
   // An owner whose profile isn't public hears who can see it before sharing

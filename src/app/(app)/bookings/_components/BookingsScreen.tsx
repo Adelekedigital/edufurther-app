@@ -21,7 +21,7 @@ import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
 import { BOOKINGS_COPY } from '@/lib/copy/bookings';
-import { deviceTimeZone, formatTime } from '@/lib/utils/format';
+import { deviceTimeZone, formatTime, viewerZone } from '@/lib/utils/format';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
@@ -85,9 +85,9 @@ export function BookingsScreen() {
   // The account's zone is what the backend judges dates in; the picker is the
   // viewer's own override for this visit.
   const [zone, setZone] = useState<string | null>(null);
-  const timeZone = zone ?? member?.timeZone ?? deviceZone;
+  const timeZone = zone ?? viewerZone(member?.timeZone, deviceZone);
   // What the backend compares `from` against — never the display override.
-  const accountZone = member?.timeZone ?? deviceZone;
+  const accountZone = viewerZone(member?.timeZone, deviceZone);
 
   // A `?filter=` link's chips, read once: the chips own it from then on.
   const [filters, setFilters] = useState<BookingStatus[]>(() => initialFilters);
