@@ -1,24 +1,18 @@
+import { routeTemplate } from './route';
+
 /**
- * What of an address may leave the browser (PRD 30, Privacy): the path, with
- * an invite code replaced by its route segment, and never the query string or
+ * What of an address may leave the browser (PRD 30, Privacy): our own pages
+ * as their route template (`/mentors/[handle]`, `/invite/[code]`: no handle,
+ * id or code), another site as its origin only, and never a query string or
  * fragment (a `?viewAs=` email, `next=`, booking ids, sign-in tokens).
  */
-
-/** `/invite/AbC_12` → `/invite/[code]`; every other path as it is. */
-export function routeOf(pathname: string): string {
-  return pathname.replace(/^\/invite\/[^/]+/, '/invite/[code]');
-}
-
-/**
- * An absolute URL or a path, with the query and fragment dropped and the
- * invite code hidden; anything that isn't one is returned unchanged.
- */
 export function scrubUrl(value: string): string {
-  if (value.startsWith('/')) return routeOf(value.split(/[?#]/)[0]!);
+  if (value.startsWith('/')) return routeTemplate(value);
   if (!/^https?:\/\//i.test(value)) return value;
   try {
     const u = new URL(value);
-    return `${u.origin}${routeOf(u.pathname)}`;
+    const ours = typeof window !== 'undefined' && u.origin === window.location.origin;
+    return ours ? `${u.origin}${routeTemplate(u.pathname)}` : u.origin;
   } catch {
     return value;
   }

@@ -143,11 +143,14 @@ describe('the PostHog seam', () => {
     const e = {
       uuid: '1',
       event: '$pageview',
-      properties: { $current_url: 'https://a.test/invite/abc?viewAs=x', route: '/invite/[code]' },
+      properties: {
+        $current_url: `${window.location.origin}/invite/abc?viewAs=x`,
+        route: '/invite/[code]',
+      },
       $set: { $initial_pathname: '/invite/abc' },
     } as unknown as CaptureResult;
     expect(beforeSend(e)).toMatchObject({
-      properties: { $current_url: 'https://a.test/invite/[code]' },
+      properties: { $current_url: `${window.location.origin}/invite/[code]` },
       $set: { $initial_pathname: '/invite/[code]' },
     });
     expect(beforeSend(null)).toBeNull();

@@ -124,7 +124,8 @@ describe('BookingFlow: the booking funnel (PRD 30)', () => {
     await settle();
     expect(calls('booking_requested')).toEqual([]);
     expect(calls('booking_abandoned')).toEqual([
-      ['booking_abandoned', { entry_point: 'explore', last_step: 'time' }],
+      // st2 has no questions: requesting completes that step too.
+      ['booking_abandoned', { entry_point: 'explore', last_step: 'questions' }],
     ]);
   });
 
@@ -204,6 +205,8 @@ describe('BookingFlow: the booking funnel (PRD 30)', () => {
     expect(calls('booking_step_completed')).toEqual([
       ['booking_step_completed', { step: 'type', entry_point: 'explore' }],
       ['booking_step_completed', { step: 'time', entry_point: 'explore' }],
+      // No questions on st2: done by having none, so the funnel reads no drop there.
+      ['booking_step_completed', { step: 'questions', entry_point: 'explore' }],
     ]);
     expect(onRequest).toHaveBeenCalledWith(expect.objectContaining({ entryPoint: 'explore' }));
     expect(calls('booking_requested')).toEqual([

@@ -178,6 +178,21 @@ describe('the flags', () => {
     expect(PUT).not.toHaveBeenCalled();
   });
 
+  it('signing in keeps an identified page identified while the viewer loads (no reset)', async () => {
+    const { rerender } = render(<AnalyticsRoot />);
+    await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
+    await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('identified'));
+    vendor.setMode.mockClear();
+    // The code is accepted: the viewer reloads, then the member is known.
+    env.viewer = { kind: 'loading' } as Viewer;
+    rerender(<AnalyticsRoot />);
+    env.viewer = member();
+    rerender(<AnalyticsRoot />);
+    await waitFor(() => expect(tracker.identify).toHaveBeenCalled());
+    // Never through cookieless: that would run the vendor's withdrawal reset.
+    expect(vendor.setMode).not.toHaveBeenCalledWith('cookieless');
+  });
+
   it('a session ending mid-page asks again at once and drops to cookieless', async () => {
     render(<AnalyticsRoot />);
     await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));

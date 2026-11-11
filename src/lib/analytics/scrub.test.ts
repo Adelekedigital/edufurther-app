@@ -1,38 +1,39 @@
-import { routeOf, scrubProperties, scrubUrl } from './scrub';
+import { scrubProperties, scrubUrl } from './scrub';
+
+const here = window.location.origin;
 
 describe('scrub', () => {
-  it('hides an invite code in the route', () => {
-    expect(routeOf('/invite/AbC_12')).toBe('/invite/[code]');
-    expect(routeOf('/invite/AbC_12/more')).toBe('/invite/[code]/more');
-    expect(routeOf('/explore')).toBe('/explore');
+  it('our own pages leave as their route template, never a handle, id or code', () => {
+    expect(scrubUrl('/invite/AbC_12')).toBe('/invite/[code]');
+    expect(scrubUrl('/mentors/olajuwon-samuel')).toBe('/mentors/[handle]');
+    expect(scrubUrl('/explore')).toBe('/explore');
+    expect(scrubUrl(`${here}/mentors/019ffbe6-8cfc?tab=reviews#x`)).toBe(
+      `${here}/mentors/[handle]`,
+    );
   });
 
-  it('drops the query and fragment of a URL or path', () => {
-    expect(scrubUrl('https://app.edufurther.org/home?viewAs=ada@example.com#x')).toBe(
-      'https://app.edufurther.org/home',
-    );
-    expect(scrubUrl('https://app.edufurther.org/invite/secret?utm_source=x')).toBe(
-      'https://app.edufurther.org/invite/[code]',
-    );
+  it('drops the query and fragment; another site leaves as its origin only', () => {
+    expect(scrubUrl(`${here}/home?viewAs=ada@example.com#x`)).toBe(`${here}/home`);
     expect(scrubUrl('/login?next=/x')).toBe('/login');
+    expect(scrubUrl('https://other.test/p/secret?token=t')).toBe('https://other.test');
     expect(scrubUrl('$direct')).toBe('$direct');
   });
 
   it('scrubs the SDK address properties, $set and $set_once, and nothing else', () => {
     const out = scrubProperties({
-      $current_url: 'https://a.test/invite/c?q=1',
+      $current_url: `${here}/invite/c?q=1`,
       $pathname: '/invite/c',
       $referrer: 'https://other.test/p?token=t',
       route: '/explore?x=1',
-      $set: { $initial_current_url: 'https://a.test/x?email=e' },
+      $set: { $initial_current_url: `${here}/home?email=e` },
       $set_once: { $initial_pathname: '/invite/zz' },
     });
     expect(out).toEqual({
-      $current_url: 'https://a.test/invite/[code]',
+      $current_url: `${here}/invite/[code]`,
       $pathname: '/invite/[code]',
-      $referrer: 'https://other.test/p',
+      $referrer: 'https://other.test',
       route: '/explore?x=1',
-      $set: { $initial_current_url: 'https://a.test/x' },
+      $set: { $initial_current_url: `${here}/home` },
       $set_once: { $initial_pathname: '/invite/[code]' },
     });
   });

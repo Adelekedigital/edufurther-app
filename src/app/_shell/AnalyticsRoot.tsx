@@ -21,7 +21,7 @@ import {
   replayAllowed,
   type AnalyticsMode,
 } from '@/lib/analytics/mode';
-import { routeOf } from '@/lib/analytics/scrub';
+import { routeTemplate } from '@/lib/analytics/route';
 import {
   identify,
   onReplayScope,
@@ -101,7 +101,15 @@ export function AnalyticsRoot() {
     previewing,
     answer,
   });
-  const mode: AnalyticsMode = wanted === 'identified' && !viewerKnown ? 'cookieless' : wanted;
+  // Until the viewer is known a signed-in visitor isn't identified (their
+  // account may have withdrawn). But a page already identified stays so while
+  // the viewer reloads (signing in, a /me refetch): dropping to cookieless
+  // would run the vendor's withdrawal, resetting PostHog mid-sign-in, losing
+  // the queued `login_code_verified` and splitting the person in two.
+  const [lastKnown, setLastKnown] = useState<AnalyticsMode | null>(null);
+  if (viewerKnown && lastKnown !== wanted) setLastKnown(wanted);
+  const mode: AnalyticsMode =
+    wanted === 'identified' && !viewerKnown && lastKnown !== 'identified' ? 'cookieless' : wanted;
 
   useEffect(() => setBlocked(analyticsBlocked), []);
 
@@ -152,7 +160,7 @@ export function AnalyticsRoot() {
   useEffect(() => {
     if (!pathname || mode === 'off' || viewed.current === pathname) return;
     viewed.current = pathname;
-    track('$pageview', { route: routeOf(pathname) });
+    track('$pageview', { route: routeTemplate(pathname) });
   }, [pathname, mode]);
 
   // Replay only identified: on the onboarding routes, and while booking is open.
