@@ -1,5 +1,6 @@
 /** Domain types. Components are typed on these, never on the wire shape. */
 
+import type { EntryPoint } from '@/lib/analytics/events';
 import type { CoverArt, CoverKey } from '@/lib/utils/cover';
 
 export type Topic = {
@@ -168,6 +169,8 @@ export type BookingRequest = {
   sessionTypeId: string;
   startsAt: string;
   answers: Record<string, IntakeAnswer>;
+  /** The surface the booking was opened from (`sessions.entry_point`, PRD 30). */
+  entryPoint: EntryPoint;
 };
 
 /** Who is looking (GET /api/v1/me; backend auth reply #3). */

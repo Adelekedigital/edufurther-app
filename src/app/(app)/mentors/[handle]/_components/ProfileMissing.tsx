@@ -2,6 +2,7 @@ import { ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MentorSuggestions } from '@/components/organisms/MentorSuggestions/MentorSuggestions';
 import { FREE_SOON } from '@/lib/api/data/freeSoon';
+import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { SIMILAR_SHOWN } from '@/lib/api/data/similar';
 import { NOT_FOUND_COPY } from '@/lib/copy/profile';
 import type { Mentor, Remote, SimilarMentor } from '@/types/mentor';
@@ -43,7 +44,11 @@ export function ProfileMissing({
   const bySoon = !bySimilar && (freeSoon.isLoading || !!freeSoon.data?.length);
   const shown = similar.data?.slice(0, SIMILAR_SHOWN.missing) ?? [];
   return bySimilar || bySoon ? (
-    <div className={styles.missing}>
+    <div
+      className={styles.missing}
+      // A similar mentor followed from here is a similar_mentors visit (PRD 30).
+      onClickCapture={bySimilar ? profileLinkSource('similar_mentors') : undefined}
+    >
       <EmptyState
         illustration="search-results"
         size={96}

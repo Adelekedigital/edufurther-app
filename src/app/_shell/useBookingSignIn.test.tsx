@@ -31,6 +31,15 @@ vi.mock('@tanstack/react-query', async (orig) => ({
   useQueryClient: () => ({}),
 }));
 
+// What leaves the page, in order: the booking's hand-off, then the push or Google.
+const order: string[] = [];
+const track = vi.fn();
+vi.mock('@/lib/analytics/track', () => ({ track: (...a: unknown[]) => track(...a) }));
+vi.mock('@/lib/analytics/bookingHandOff', () => ({
+  handOffBooking: () => order.push('handOff'),
+  cancelHandOff: () => order.push('cancel'),
+}));
+
 const pick = { sessionTypeId: 'st1', time: '2026-10-20T09:00:00Z' };
 const member = (over: object = {}) => ({
   kind: 'member',
@@ -56,9 +65,15 @@ async function toCode(onboarding = false) {
 }
 
 beforeEach(() => {
-  [push, replace, send, verify, google, account, save, zoneFor, claim].forEach((f) =>
+  [push, replace, send, verify, google, account, save, zoneFor, claim, track].forEach((f) =>
     f.mockReset(),
   );
+  order.length = 0;
+  push.mockImplementation(() => order.push('push'));
+  google.mockImplementation(() => {
+    order.push('google');
+    return Promise.resolve({ ok: true });
+  });
   claim.mockResolvedValue(undefined);
   window.localStorage.clear();
   send.mockResolvedValue({ ok: true });
@@ -311,5 +326,43 @@ describe('useBookingSignIn', () => {
     await act(async () => result.current.onFinish(pick));
     expect(push).toHaveBeenCalledTimes(1);
     expect(result.current.finishing).toBe(true);
+  });
+
+  describe('analytics (PRD 30)', () => {
+    const started = () => track.mock.calls.filter(([e]) => e === 'signup_started');
+
+    it('a code asked for starts a sign-up, once per visit, as a mentee', async () => {
+      const { result } = await toCode();
+      await act(async () => result.current.onSendCode());
+      google.mockResolvedValueOnce({ ok: true });
+      await act(async () => result.current.onGoogle(pick));
+      expect(started()).toEqual([['signup_started', { role: 'mentee' }]]);
+    });
+
+    it('Google: the booking is handed off before the browser leaves; not if it never left', async () => {
+      const { useBookingSignIn } = await load(false);
+      const { result } = renderHook(() => useBookingSignIn({ profileHref: '/mentors/gbenga' }));
+      await act(async () => result.current.onGoogle(pick));
+      expect(order).toEqual(['handOff', 'google']);
+      expect(started()).toEqual([['signup_started', { role: 'mentee' }]]);
+
+      order.length = 0;
+      google.mockImplementationOnce(() => {
+        order.push('google');
+        return Promise.resolve({ ok: false, reason: 'unknown' });
+      });
+      await act(async () => result.current.onGoogle(pick));
+      expect(order).toEqual(['handOff', 'google', 'cancel']);
+    });
+
+    it('a new account on to onboarding: handed off before the push', async () => {
+      const { result } = await toCode(true);
+      verify.mockResolvedValueOnce({ ok: true });
+      account.mockResolvedValueOnce(member());
+      await act(async () => result.current.onVerify('482913'));
+      act(() => result.current.onFullNameChange('Amara Okafor'));
+      await act(async () => result.current.onFinish(pick));
+      expect(order).toEqual(['handOff', 'push']);
+    });
   });
 });

@@ -33,6 +33,9 @@ vi.mock('@/lib/api/data/signIn', () => ({
   zoneToSave: (z: unknown) => zoneFor(z),
 }));
 
+const track = vi.fn();
+vi.mock('@/lib/analytics/track', () => ({ track: (...a: unknown[]) => track(...a) }));
+
 const {
   useSignInFlow,
   TOAST_MS,
@@ -70,7 +73,7 @@ async function flush() {
 beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   session = { status: 'none' };
-  [replace, send, verify, google, account, user, save, signOutHere, zoneFor].forEach((f) =>
+  [replace, send, verify, google, account, user, save, signOutHere, zoneFor, track].forEach((f) =>
     f.mockReset(),
   );
   send.mockResolvedValue({ ok: true });
@@ -731,5 +734,63 @@ describe('useSignInFlow — the device’s timezone with the name', () => {
       name: { fullName: 'Amara Okafor' },
       timezone: 'Europe/London',
     });
+  });
+});
+
+describe('useSignInFlow — the sign-in funnel (PRD 30)', () => {
+  const tracked = (event: string) => track.mock.calls.filter(([e]) => e === event);
+
+  it('sign-up starts once, on the first try, with the page’s role; log-in never starts one', async () => {
+    const { result } = await toCode({ role: 'mentor' });
+    await act(async () => result.current.form.onSendCode());
+    google.mockResolvedValue({ ok: true });
+    await act(async () => result.current.form.onGoogle());
+    expect(tracked('signup_started')).toEqual([['signup_started', { role: 'mentor' }]]);
+
+    track.mockReset();
+    await toCode({ mode: 'login' });
+    expect(tracked('signup_started')).toEqual([]);
+  });
+
+  it('a code that checks out is verified, once', async () => {
+    const { result } = await toCode();
+    verify.mockResolvedValueOnce({ ok: true });
+    account.mockResolvedValueOnce(member({ firstName: 'Amara' }));
+    await act(async () => result.current.form.onVerify!('482913'));
+    await flush();
+    expect(tracked('login_code_verified')).toEqual([['login_code_verified', {}]]);
+    expect(tracked('login_code_failed')).toEqual([]);
+  });
+
+  it.each([
+    ['invalidCode', 0, 'invalid'],
+    ['invalidCode', CODE_LIFETIME_MS, 'expired'],
+    ['rateLimited', 0, 'rate_limited'],
+    ['banned', 0, 'other'],
+    ['offline', 0, 'other'],
+  ] as const)('a refused code (%s) fails as %s', async (reason, wait, expected) => {
+    const { result } = await toCode();
+    act(() => vi.advanceTimersByTime(wait));
+    verify.mockResolvedValueOnce({ ok: false, reason });
+    await act(async () => result.current.form.onVerify!('000000'));
+    expect(tracked('login_code_failed')).toEqual([['login_code_failed', { reason: expected }]]);
+    expect(tracked('login_code_verified')).toEqual([]);
+  });
+
+  it('back from Google with a session: completed once, never without one', async () => {
+    session = { status: 'present', userId: 'u1' };
+    account.mockResolvedValue(member({ firstName: 'Tolu' }));
+    user.mockResolvedValue(null);
+    const { rerender } = renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    await flush();
+    rerender();
+    await flush();
+    expect(tracked('google_oauth_completed')).toEqual([['google_oauth_completed', {}]]);
+
+    track.mockReset();
+    session = { status: 'none' };
+    renderHook(() => useSignInFlow(opts({ googleReturn: true })));
+    await flush();
+    expect(tracked('google_oauth_completed')).toEqual([]);
   });
 });

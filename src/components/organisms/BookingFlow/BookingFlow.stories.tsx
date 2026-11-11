@@ -129,6 +129,7 @@ const meta: Meta<typeof BookingFlow> = {
   component: BookingFlow,
   args: {
     mentor,
+    entryPoint: 'explore',
     sessionTypes: remote(sessionTypes),
     sessionTypeId: null,
     onSessionTypeChange: fn(),

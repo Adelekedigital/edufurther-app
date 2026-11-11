@@ -175,3 +175,26 @@ describe('ExploreScreen — "Invited by" for an invited guest (PRD Invite Landin
     expect(screen.queryByRole('note')).toBeNull();
   });
 });
+
+describe('ExploreScreen — analytics (PRD 30)', () => {
+  it('a profile opened from a card is an explore visit', async () => {
+    const { takeProfileSource } = await import('@/lib/analytics/profileSource');
+    render(<ExploreScreen />);
+    const link = screen.getAllByRole('link').find((a) => a.getAttribute('href') === '/mentors/m1')!;
+    link.addEventListener('click', (e) => e.preventDefault());
+    link.click();
+    expect(takeProfileSource('m1', new URLSearchParams())).toBe('explore');
+  });
+
+  it('the booking opened here says it began on Explore', async () => {
+    const track = vi.spyOn(await import('@/lib/analytics/track'), 'track');
+    const user = userEvent.setup();
+    render(<ExploreScreen />);
+    await user.click(screen.getByRole('button', { name: 'Book session with Olajuwon' }));
+    expect(track).toHaveBeenCalledWith('booking_started', {
+      entry_point: 'explore',
+      is_guest: true,
+    });
+    track.mockRestore();
+  });
+});

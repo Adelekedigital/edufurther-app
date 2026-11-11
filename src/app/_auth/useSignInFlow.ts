@@ -15,6 +15,7 @@ import {
   type SignInRole,
 } from '@/lib/api/data/auth';
 import { claimInvite } from '@/lib/api/data/invite';
+import { track } from '@/lib/analytics/track';
 import { useSaveName, zoneToSave, type NameToSave } from '@/lib/api/data/signIn';
 import { useSession } from '@/lib/api/data/session';
 import { clearInviteCode, storedInviteCode } from '@/lib/utils/inviteCode';
@@ -25,6 +26,7 @@ import { useOnline } from '@/lib/utils/useOnline';
 import { accountHome, signInOutcome, type Outcome } from './outcome';
 import { loadAccount, toAccount } from './account';
 import { useEmailCodeAuth } from './useEmailCodeAuth';
+import { useSignupStarted } from './useSignupStarted';
 
 export { CODE_LIFETIME_MS, RESEND_WAIT_MS } from './useEmailCodeAuth';
 
@@ -380,6 +382,8 @@ export function useSignInFlow({
   useEffect(() => {
     if (!googleReturn || googleHandled.current || session.status !== 'present') return;
     googleHandled.current = true;
+    // Back from Google with a session (PRD 30): counted as a verified sign-in.
+    track('google_oauth_completed', {});
     void afterSignInSafely('google');
   }, [googleReturn, session.status, afterSignInSafely]);
 
@@ -407,7 +411,14 @@ export function useSignInFlow({
     })();
   }, [session.status, next, router, setEmail]);
 
+  // The sign-up funnel's first step (PRD 30), on /signup only: the page's role.
+  const signupStarted = useSignupStarted(role);
+  const startSignup = () => {
+    if (mode === 'signup') signupStarted();
+  };
+
   const onSendCode = async () => {
+    startSignup();
     setStartError(undefined);
     const sent = await auth.send();
     if (sent === 'sent') setStep('code');
@@ -459,6 +470,7 @@ export function useSignInFlow({
   };
 
   const onGoogle = async () => {
+    startSignup();
     setGoogleBusy(true);
     setStartError(undefined);
     const r = await startGoogleSignIn(next, mode, role);

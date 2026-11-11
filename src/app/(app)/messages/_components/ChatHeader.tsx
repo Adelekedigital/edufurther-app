@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { IconButton } from '@/components/atoms/IconButton/IconButton';
+import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { CHAT_COPY } from '@/lib/copy/messages';
 import { formatNextAvailable } from '@/lib/utils/format';
 import type { ChatPerson, NextBooking } from '@/types/messages';
@@ -65,7 +66,13 @@ export function ChatHeader({
       />
       <div className={styles.who}>
         {href ? (
-          <Link href={href} prefetch={false} className={styles.name}>
+          <Link
+            href={href}
+            prefetch={false}
+            className={styles.name}
+            // Where the profile visit came from (PRD 30).
+            onClick={profileLinkSource('messages')}
+          >
             {person.name}
           </Link>
         ) : (

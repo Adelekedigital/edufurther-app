@@ -34,6 +34,9 @@ vi.mock('@/lib/api/data/mentorSchools', () => ({
   useMentorSchools: (active: boolean) => (schoolsFor(active), schools),
 }));
 
+const track = vi.fn();
+vi.mock('@/lib/analytics/track', () => ({ track: (...a: unknown[]) => track(...a) }));
+
 const { InviteLanding } = await import('./InviteLanding');
 const { rememberInviteCode, storedInviteCode } = await import('@/lib/utils/inviteCode');
 
@@ -41,7 +44,7 @@ const mentee = { kind: 'member', id: 'u1', isMentor: false } as unknown as Viewe
 const FIVE = ['Oxford', 'Edinburgh', 'Toronto', 'Carnegie Mellon', 'TU Munich'];
 
 beforeEach(() => {
-  [replace, lookupFor, linkFor, schoolsFor].forEach((f) => f.mockReset());
+  [replace, lookupFor, linkFor, schoolsFor, track].forEach((f) => f.mockReset());
   viewer = { kind: 'guest' };
   lookup = remote({ firstName: 'Damilola', photoUrl: null });
   link = remote<{ code: string; active: boolean; url: string }>(null);
@@ -169,5 +172,26 @@ describe('/invite/{code}', () => {
     render(<InviteLanding code={'"><script>alert(1)</script>'} />);
     expect(document.body.innerHTML).not.toContain('<script>');
     expect(storedInviteCode()).toBeNull();
+  });
+
+  describe('invite_viewed (PRD 30)', () => {
+    it('once per visit when the invite resolves, with nothing about the invite', () => {
+      const { rerender } = render(<InviteLanding code="damilola-7k2x" />);
+      rerender(<InviteLanding code="damilola-7k2x" />);
+      expect(track).toHaveBeenCalledTimes(1);
+      expect(track).toHaveBeenCalledWith('invite_viewed', {});
+    });
+
+    it('not while the lookup runs, nor for a link that can’t be joined or a member', () => {
+      lookup = remote<Inv>(null, { isLoading: true });
+      const loading = render(<InviteLanding code="damilola-7k2x" />);
+      loading.unmount();
+      lookup = remote<Inv>(null);
+      const broken = render(<InviteLanding code="gone-0000" />);
+      broken.unmount();
+      viewer = mentee;
+      render(<InviteLanding code="damilola-7k2x" />);
+      expect(track).not.toHaveBeenCalled();
+    });
   });
 });

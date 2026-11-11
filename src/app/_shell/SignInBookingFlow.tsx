@@ -13,6 +13,7 @@ import {
   type BookingDraft,
 } from '@/lib/utils/bookingDraft';
 import { profileHandle } from '@/lib/utils/guestBooking';
+import { handOffBooking } from '@/lib/analytics/bookingHandOff';
 import { useAppShell } from './useAppShell';
 import { useBookingSignIn } from './useBookingSignIn';
 
@@ -48,6 +49,8 @@ function useFinishSetup(mentor: FlowProps['mentor']) {
             time: d.time,
             after: 'booking',
           });
+          // The booking waits for onboarding: paused, not abandoned (PRD 30).
+          handOffBooking();
           router.push(`/onboarding?${q.toString()}`);
         }
       : undefined;

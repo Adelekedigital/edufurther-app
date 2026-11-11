@@ -11,6 +11,8 @@ import type { Mentor } from '@/types/mentor';
 export const sent: unknown[] = [];
 /** Every mentor the booking modal was given, render by render (null: closed). */
 export const launched: (Mentor | null)[] = [];
+/** The entry point each open declared (PRD 30). */
+export const entryPoints: string[] = [];
 
 export const reviewAndRebookMocks = {
   // The send hook keeps real state, so "sent" re-renders as the real one does.
@@ -63,11 +65,13 @@ export const reviewAndRebookMocks = {
   bookingLauncher: () => ({
     BookingLauncher: (p: {
       mentor: Mentor | null;
+      entryPoint: string;
       ratingUnknown?: boolean;
       timeZone?: string;
       onClose: () => void;
     }) => {
       launched.push(p.mentor);
+      entryPoints.push(p.entryPoint);
       return p.mentor ? (
         <div role="dialog" aria-label={`Book ${p.mentor.name}`}>
           <span>{`${p.mentor.profileHref} ${p.timeZone} ${String(!!p.ratingUnknown)}`}</span>
@@ -83,4 +87,5 @@ export const reviewAndRebookMocks = {
 export function resetReviewAndRebook() {
   sent.length = 0;
   launched.length = 0;
+  entryPoints.length = 0;
 }
