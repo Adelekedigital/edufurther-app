@@ -13,6 +13,9 @@ import type {
   WireCredits,
   WireFeatureKey,
   WireFunnel,
+  WireFunnelFigure,
+  WireFunnelLayer,
+  WireFunnelV2,
   WireGrowth,
   WireNoShowReason,
   WireOverview,
@@ -353,7 +356,22 @@ export const isUpstreamDown = (e: unknown) =>
 /** A PostHog outage won't clear on an immediate retry. */
 const retryUnlessDown = (n: number, e: unknown) => !isUpstreamDown(e) && retryOnce(n, e);
 
-export type Funnel = WireFunnel['steps'];
+export type FunnelStep = WireFunnel['steps'][number] & { layer: WireFunnelLayer };
+export type FunnelFigure = WireFunnelFigure;
+/**
+ * A funnel (v2): the steps, each in its layer (primary: the milestones that
+ * define it; secondary: the outcome that follows), and the figures beside it.
+ */
+export type Funnel = { steps: FunnelStep[]; figures: FunnelFigure[] };
+
+/** Before the backend's v2 release a step has no layer: all primary, no figures. */
+export const toFunnel = (w: WireFunnel | WireFunnelV2): Funnel => {
+  const v2 = w as WireFunnelV2;
+  return {
+    steps: v2.steps.map((s) => ({ ...s, layer: s.layer ?? 'primary' })),
+    figures: v2.figures ?? [],
+  };
+};
 
 /** GET /admin/analytics/funnels/{name}?by= */
 export function useAnalyticsFunnel(
@@ -378,7 +396,7 @@ export function useAnalyticsFunnel(
               },
             );
             if (!response.ok || !data) throw apiError(response.status, error, response);
-            return data.steps;
+            return toFunnel(data);
           },
     enabled: adminId !== null,
     staleTime: STALE,

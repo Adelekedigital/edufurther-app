@@ -140,7 +140,7 @@ describe('ShareMenu', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
     await screen.findByRole('status');
     expect(onCopied).toHaveBeenCalledTimes(1);
-    expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'copy' }]);
+    expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'copy', own: false }]);
     unmount();
     vi.mocked(track).mockClear();
 
@@ -162,7 +162,7 @@ describe('ShareMenu', () => {
     // jsdom can't follow mailto:, and the click is what counts.
     email.addEventListener('click', (e) => e.preventDefault());
     await user.click(email);
-    expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'email' }]);
+    expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'email', own: false }]);
     await user.click(screen.getByRole('button', { name: 'Share profile' }));
     const linkedin = screen.getByRole('menuitem', {
       name: 'Share on LinkedIn (opens in a new tab)',
@@ -170,8 +170,8 @@ describe('ShareMenu', () => {
     linkedin.addEventListener('click', (e) => e.preventDefault());
     await user.click(linkedin);
     expect(shares()).toEqual([
-      { kind: 'mentor_profile', method: 'email' },
-      { kind: 'mentor_profile', method: 'linkedin' },
+      { kind: 'mentor_profile', method: 'email', own: false },
+      { kind: 'mentor_profile', method: 'linkedin', own: false },
     ]);
   });
 

@@ -563,6 +563,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                       note={shareNote}
                       open={shareOpen}
                       onOpenChange={setShareOpen}
+                      own={isOwner}
                     />
                   )}
                 </>

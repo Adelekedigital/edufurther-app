@@ -154,7 +154,7 @@ function MentorHome({ member }: { member: Member }) {
     }
     void copy(url).then((ok) => {
       if (!ok) return say('Couldn’t copy the link');
-      track('link_shared', { kind: 'mentor_profile', method: 'copy' });
+      track('link_shared', { kind: 'mentor_profile', method: 'copy', own: true });
       markShared();
       say('Link copied');
     });
