@@ -2,7 +2,7 @@ import type { SignupRead } from '@/lib/api/data/analyticsConsent';
 import type { Viewer } from '@/types/mentor';
 import type { PersonProperties } from './events';
 import { forgetAcquisitionSent } from './acquisition';
-import { markSignedOut } from './consent';
+import { consentStore } from './consentStore';
 import { reset } from './track';
 
 type Member = Extract<Viewer, { kind: 'member' }>;
@@ -62,7 +62,7 @@ export function resetIdentity(): void {
   reset();
   migrated = undefined;
   forgetAcquisitionSent();
-  markSignedOut();
+  consentStore.signedOut();
   try {
     localStorage.removeItem(MIGRATED_KEY);
   } catch {
