@@ -88,11 +88,7 @@
   width: 100%;
 }
 
-/* Phones: 16px fields, so iOS doesn't zoom in. */
 @media (max-width: 767px) {
-  .field input {
-    font-size: var(--text-p-md);
-  }
   /* Phones: no "How mentees see you" (owner, 2026-10-20). Below the form it
      only repeats it; the account menu's View profile opens the real page. */
   .aside {

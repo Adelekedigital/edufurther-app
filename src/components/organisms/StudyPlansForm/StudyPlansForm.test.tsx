@@ -106,13 +106,11 @@ describe('StudyPlansForm', () => {
     expect(screen.queryByRole('listbox', { name: 'What do you want to study?' })).toBeNull();
   });
 
-  it('the destination hint links "Settings" to Settings › Goals, in a new tab', () => {
+  it('the destination hint names Settings as plain text, not a link (owner, 2026-11-11)', () => {
     render(<Harness />);
-    const link = screen.getByRole('link', { name: 'Settings (opens in a new tab)' });
-    expect(link).toHaveAttribute('href', '/settings/goals');
-    expect(link).toHaveAttribute('target', '_blank');
-    expect(link.closest('p')).toHaveTextContent(
-      'Pick one for now. You can add more later in Settings.',
-    );
+    expect(
+      screen.getByText('Pick one for now. You can add more later in Settings.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link')).toBeNull();
   });
 });

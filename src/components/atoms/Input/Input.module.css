@@ -7,7 +7,7 @@
   background: var(--surface-card);
   color: var(--text-primary);
   font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
+  font-size: var(--text-field);
   font-weight: var(--weight-regular);
   caret-color: var(--caret);
   transition: border-color var(--duration-fast) var(--ease-standard);
@@ -56,7 +56,6 @@
 }
 @media (max-width: 767px) {
   .field {
-    font-size: var(--text-p-md);
     min-height: var(--touch-target-min);
   }
   /* The prototype's phone rule turns `0 var(--space-3)` into 8px sides

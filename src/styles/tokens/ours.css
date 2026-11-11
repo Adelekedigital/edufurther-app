@@ -167,11 +167,18 @@
      <html>), which fixed elements don't get. These keep them where they were. */
   --fixed-center-x: calc(50% - var(--scroll-lock-gap, 0px) / 2);
   --fixed-edge-gap: var(--scroll-lock-gap, 0px);
+  /* Text a person types: 14px, and 16px on phones (below). Every input and
+     textarea uses this, never a p-size of its own. */
+  --text-field: var(--text-p-sm);
 }
 
 @media (max-width: 767px) {
   :root {
     --text-avatar-profile: 26px;
+    /* iOS Safari zooms the whole page into any field under 16px, which pushes
+       a sheet or card off the screen. One size for every text field, so no
+       field can miss it. */
+    --text-field: var(--text-p-md);
   }
 }
 

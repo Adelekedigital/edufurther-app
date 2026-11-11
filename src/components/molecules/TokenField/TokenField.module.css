@@ -13,7 +13,7 @@
   border: var(--border-hairline) solid transparent;
   border-radius: var(--radius-md);
   font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
+  font-size: var(--text-field);
   line-height: var(--lh-token-field);
   white-space: pre-wrap;
   overflow-wrap: anywhere;

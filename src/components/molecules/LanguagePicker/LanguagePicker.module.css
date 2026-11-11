@@ -64,7 +64,7 @@
   outline: none;
   background: none;
   font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
+  font-size: var(--text-field);
   color: var(--text-primary);
 }
 .search::-webkit-search-cancel-button {
@@ -132,10 +132,7 @@
   cursor: pointer;
 }
 @media (max-width: 767px) {
-  /* Design phone rule: 16px text, no iOS zoom; 44px rows. */
-  .search {
-    font-size: var(--text-p-md);
-  }
+  /* Design phone rule: 44px rows. */
   .option {
     height: var(--touch-target-min);
   }

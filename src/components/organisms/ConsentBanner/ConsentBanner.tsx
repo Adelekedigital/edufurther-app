@@ -8,6 +8,8 @@ import styles from './ConsentBanner.module.css';
 export type ConsentBannerProps = {
   onAccept: () => void;
   onDecline: () => void;
+  /** A member can change the answer in Settings; a guest has no Settings, so isn't told to. */
+  signedIn?: boolean;
 };
 
 /**
@@ -19,7 +21,7 @@ export type ConsentBannerProps = {
  * does (app/_shell/AnalyticsRoot).
  */
 export const ConsentBanner = forwardRef<HTMLElement, ConsentBannerProps>(function ConsentBanner(
-  { onAccept, onDecline },
+  { onAccept, onDecline, signedIn = false },
   ref,
 ) {
   const titleId = useId();
@@ -30,7 +32,8 @@ export const ConsentBanner = forwardRef<HTMLElement, ConsentBannerProps>(functio
           {C.title}
         </p>
         <p className={styles.body}>
-          {C.body}{' '}
+          {C.body}
+          {signedIn && ` ${C.change}`}{' '}
           <ExternalLink href={LEGAL_LINKS.privacy} label={C.privacy} className={styles.link} />
         </p>
       </div>
