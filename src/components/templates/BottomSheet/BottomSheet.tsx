@@ -16,8 +16,6 @@ type BottomSheetProps = {
   id?: string;
   onClose: () => void;
   children: ReactNode;
-  /** Pinned under the scrolling body, e.g. "Got it". */
-  footer?: ReactNode;
 };
 
 /**
@@ -28,15 +26,7 @@ type BottomSheetProps = {
  * are `useFocusTrap`'s. One sheet for every phone read-out (Session Join,
  * Your credits), so they look and behave the same.
  */
-export function BottomSheet({
-  title,
-  icon,
-  label,
-  id,
-  onClose,
-  children,
-  footer,
-}: BottomSheetProps) {
+export function BottomSheet({ title, icon, label, id, onClose, children }: BottomSheetProps) {
   const titleId = useId();
   const ref = useRef<HTMLDivElement>(null);
   useFocusTrap(ref, onClose);
@@ -64,7 +54,6 @@ export function BottomSheet({
           <IconButton size="lg" icon="close" aria-label="Close" onClick={onClose} />
         </div>
         <div className={styles.body}>{children}</div>
-        {footer && <div className={styles.footer}>{footer}</div>}
       </div>
     </div>,
     document.body,

@@ -106,7 +106,7 @@ describe('InviteModal', () => {
     clip(write);
     const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Copy invite link' }));
-    expect(write).toHaveBeenCalledWith(URL);
+    expect(write).toHaveBeenCalledWith(INVITE_LANDING_COPY.message(URL));
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
     expect(screen.getAllByRole('status').some((s) => s.textContent === 'Link copied')).toBe(true);
     expect(p.onShared).toHaveBeenCalledTimes(1);
@@ -165,7 +165,7 @@ describe('InviteModal', () => {
     const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Share' }));
     await flush();
-    expect(write).toHaveBeenCalledWith(URL);
+    expect(write).toHaveBeenCalledWith(INVITE_LANDING_COPY.message(URL));
     expect(p.onShared).toHaveBeenCalledTimes(1);
     // Counted once, as what actually happened: a copy.
     expect(shares()).toEqual([{ kind: 'invite', method: 'copy' }]);
@@ -181,7 +181,7 @@ describe('InviteModal', () => {
     renderModal();
     await user.click(screen.getByRole('button', { name: 'Share' }));
     expect(share).not.toHaveBeenCalled();
-    expect(write).toHaveBeenCalledWith(URL);
+    expect(write).toHaveBeenCalledWith(INVITE_LANDING_COPY.message(URL));
   });
 
   it('without a share sheet, Share copies the link instead', async () => {
@@ -190,7 +190,7 @@ describe('InviteModal', () => {
     clip(write);
     const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Share' }));
-    expect(write).toHaveBeenCalledWith(URL);
+    expect(write).toHaveBeenCalledWith(INVITE_LANDING_COPY.message(URL));
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
     expect(p.onShared).toHaveBeenCalledTimes(1);
   });
@@ -239,5 +239,14 @@ describe('InviteModal', () => {
     const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Close' }));
     expect(p.onClose).toHaveBeenCalled();
+  });
+});
+
+describe('the invite message', () => {
+  it('Copy link carries the same words as Share: a blank line, then the invite, then the link on its own line', () => {
+    expect(INVITE_LANDING_COPY.message('https://x.test/invite/AB')).toBe(
+      'I’m getting help with my grad school applications on EduFurther, from mentors who’ve successfully been through the same process.\n\nJoin me and your first session is free:\nhttps://x.test/invite/AB',
+    );
+    expect(INVITE_LANDING_COPY.message('u').startsWith(INVITE_LANDING_COPY.share.text)).toBe(true);
   });
 });
