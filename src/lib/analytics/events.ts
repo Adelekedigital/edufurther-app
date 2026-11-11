@@ -82,7 +82,8 @@ export type AnalyticsEvents = {
   session_join_failed: { session_id: string };
 
   /** Feeds the messaging North Star. */
-  message_sent: { conversation_id: string; is_first_in_conversation: boolean };
+  // No conversation id: a pair key would hand the vendor the messaging graph (decided 10 Nov).
+  message_sent: { is_first_in_conversation: boolean };
 
   /** Is the AI feature worth its cost? `outcome` is what the person did with the draft. */
   writing_assist_used: { field: string; mode: string; outcome: 'accepted' | 'discarded' };

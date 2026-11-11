@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { AppError, Remote } from '@/types/mentor';
+import { track } from '@/lib/analytics/track';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
@@ -77,6 +78,9 @@ export function useSaveConferencing(userId: string | null) {
     },
     // Offline, fail now with our copy rather than wait, paused, for a reconnect.
     networkMode: 'always',
+    // PRD 30's mentor activation step ("video connected"): any saved provider,
+    // from Calendar or Integrations, counted once here.
+    onSuccess: () => track('conferencing_connected', {}),
     onSettled: async () => {
       // Session types that follow the default show the new venue.
       void qc.invalidateQueries({ queryKey: keys.sessionTypes.all });

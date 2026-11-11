@@ -1,5 +1,21 @@
+import { act, renderHook } from '@testing-library/react';
 import type { CalendarConnection } from '@/lib/api/data/calendarConnection';
-import { isNew } from './useCalendarConnect';
+import { isNew, useCalendarConnect } from './useCalendarConnect';
+
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
+const consent = vi.hoisted(() => ({ outcome: 'connected' as string }));
+vi.mock('@/lib/utils/connectPopup', () => ({
+  openConsentWindow: () => null,
+  waitForConsent: async () => consent.outcome,
+}));
+vi.mock('@/lib/api/data/calendarConnection', () => ({
+  readCalendarConnection: async () => null,
+  useStartCalendarConnect: () => ({
+    start: async () => ({ ok: true, consentUrl: 'https://accounts.google.test/o' }),
+  }),
+  useRefreshAfterConnect: () => async () => {},
+}));
 
 const conn = (over: Partial<CalendarConnection> = {}): CalendarConnection => ({
   connectedAt: '2026-10-01T09:00:00Z',
@@ -44,5 +60,28 @@ describe('isNew', () => {
 
   it('is false when the connection goes away mid-consent', () => {
     expect(isNew(conn(), null)).toBe(false);
+  });
+});
+
+describe('useCalendarConnect: calendar_connected (PRD 30)', () => {
+  beforeEach(() => track.mockClear());
+
+  const run = async () => {
+    const { result } = renderHook(() => useCalendarConnect('m1', null, () => {}));
+    await act(() => result.current.connect());
+  };
+
+  it('a finished connect counts once, for every screen that uses it', async () => {
+    consent.outcome = 'connected';
+    await run();
+    expect(track.mock.calls).toEqual([['calendar_connected', {}]]);
+  });
+
+  it('a closed, blocked or refused consent counts nothing', async () => {
+    for (const outcome of ['abandoned', 'closed', 'blocked', 'refused']) {
+      consent.outcome = outcome;
+      await run();
+    }
+    expect(track).not.toHaveBeenCalled();
   });
 });

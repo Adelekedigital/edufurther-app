@@ -4,6 +4,7 @@ import { useState, type Dispatch, type SetStateAction } from 'react';
 import type { useTopics } from '@/lib/api/data/mentors';
 import { useCreateSessionType, type CreateError, type Created } from '@/lib/api/data/sessionTypes';
 import { useSaveSessionType, type SaveResult } from '@/lib/api/data/sessionTypeEdit';
+import { track } from '@/lib/analytics/track';
 import { deviceTimeZone } from '@/lib/utils/format';
 import {
   toCreateBody,
@@ -95,7 +96,13 @@ export function useSessionTypeSubmit(a: Args) {
         body: toCreateBody(a.draft, ids),
         windows: a.draft.hours === 'custom' ? toWindows(a.draft.days, deviceTimeZone()) : [],
       },
-      { onSuccess: a.onPublished, onError: onFieldErrors },
+      {
+        onSuccess: (created) => {
+          track('session_type_created', {});
+          a.onPublished(created);
+        },
+        onError: onFieldErrors,
+      },
     );
   };
 
