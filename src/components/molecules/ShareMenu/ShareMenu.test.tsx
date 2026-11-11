@@ -2,6 +2,19 @@ import { useState } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ShareMenu } from './ShareMenu';
+import { track } from '@/lib/analytics/track';
+
+vi.mock('@/lib/analytics/track', async (orig) => ({
+  ...(await orig<typeof import('@/lib/analytics/track')>()),
+  track: vi.fn(),
+}));
+/** The link_shared events sent so far (PRD 30 adoption metric). */
+const shares = () =>
+  vi
+    .mocked(track)
+    .mock.calls.filter(([e]) => e === 'link_shared')
+    .map(([, p]) => p);
+beforeEach(() => vi.mocked(track).mockClear());
 
 describe('ShareMenu', () => {
   it('opens on Enter, moves with arrows, closes on Escape back to the button', async () => {
@@ -127,7 +140,9 @@ describe('ShareMenu', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
     await screen.findByRole('status');
     expect(onCopied).toHaveBeenCalledTimes(1);
+    expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'copy' }]);
     unmount();
+    vi.mocked(track).mockClear();
 
     onCopied.mockClear();
     writeText.mockRejectedValue(new Error('denied'));
@@ -136,6 +151,28 @@ describe('ShareMenu', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Couldn’t copy the link');
     expect(onCopied).not.toHaveBeenCalled();
+    expect(shares()).toEqual([]);
+  });
+
+  it('counts a share target opened, by its method (PRD 30 link_shared)', async () => {
+    const user = userEvent.setup();
+    render(<ShareMenu url="https://x.test/m" name="G E" />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    const email = screen.getByRole('menuitem', { name: 'Share by email' });
+    // jsdom can't follow mailto:, and the click is what counts.
+    email.addEventListener('click', (e) => e.preventDefault());
+    await user.click(email);
+    expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'email' }]);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    const linkedin = screen.getByRole('menuitem', {
+      name: 'Share on LinkedIn (opens in a new tab)',
+    });
+    linkedin.addEventListener('click', (e) => e.preventDefault());
+    await user.click(linkedin);
+    expect(shares()).toEqual([
+      { kind: 'mentor_profile', method: 'email' },
+      { kind: 'mentor_profile', method: 'linkedin' },
+    ]);
   });
 
   it('says so when the clipboard API is missing (plain-http previews; review of #21)', async () => {

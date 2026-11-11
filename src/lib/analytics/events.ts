@@ -27,6 +27,10 @@ export type ProfileViewSource =
 export type BookingStep = 'type' | 'time' | 'questions';
 export type MentorApplicationStep = 'about_you' | 'education' | 'hours';
 export type Role = Schemas['PrimaryRole'];
+/** Whose link: a mentor's profile, or an invite (names agreed with edufurtherbe-85, 11 Nov). */
+export type ShareKind = 'mentor_profile' | 'invite';
+/** How it left: copied, the device's share sheet, or a share target. */
+export type ShareMethod = 'copy' | 'native' | 'whatsapp' | 'x' | 'linkedin' | 'email' | 'other';
 
 export type AnalyticsEvents = {
   /** One per navigation, from the router (track.ts), never from a screen. */
@@ -87,6 +91,13 @@ export type AnalyticsEvents = {
 
   /** Is the AI feature worth its cost? `outcome` is what the person did with the draft. */
   writing_assist_used: { field: string; mode: string; outcome: 'accepted' | 'discarded' };
+
+  /**
+   * A profile or invite link copied or shared (on success only; a dismissed
+   * share sheet is not a share). Feeds the mentor adoption metric beside the
+   * activation funnel, and invites shared for mentees; never a funnel step.
+   */
+  link_shared: { kind: ShareKind; method: ShareMethod };
 
   // Push reach.
   pwa_installed: Record<string, never>;

@@ -6,6 +6,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import { track } from '@/lib/analytics/track';
 import { cx } from '@/lib/utils/cx';
 import { useCopyText } from '@/lib/utils/useCopyText';
 import styles from './InviteLinkPanel.module.css';
@@ -64,7 +65,9 @@ export function InviteLinkPanel({
     if (!url) return;
     const copied = await copy(url);
     say(copied ? 'Link copied' : 'Couldn’t copy the link. Try again.');
-    if (copied) onShared?.();
+    if (!copied) return;
+    track('link_shared', { kind: 'invite', method: 'copy' });
+    onShared?.();
   };
 
   const share = async () => {
@@ -77,6 +80,7 @@ export function InviteLinkPanel({
     }
     try {
       await navigator.share(payload);
+      track('link_shared', { kind: 'invite', method: 'native' });
       onShared?.();
     } catch (e) {
       // Dismissing the share sheet is not a failure. Anything else falls back
