@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "review:size": "node scripts/review-size.mjs",
     "gen:api": "openapi-typescript openapi/openapi.json -o src/lib/api/generated/schema.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",

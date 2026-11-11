@@ -16,7 +16,8 @@
 #   test ×3      the suite in shards, each recording coverage
 #   coverage     merges the shards and applies the coverage thresholds once,
 #                to the whole suite (vitest.config.ts)
-#   verify       the required check: green only if checks and coverage are
+#   size         over the code reviewer's line limit? (fails in seconds)
+#   verify       the required check: green only if size, checks and coverage are
 #   page-review  the built app with Playwright, in parallel with the rest
 
 name: ci
@@ -68,6 +69,20 @@ jobs:
           done <<< "$files"
           echo "code=$code" >> "$GITHUB_OUTPUT"
           echo "code changed: $code"
+
+  # The GitHub code reviewer skips a PR over its line limit: say so in seconds,
+  # before anyone waits for a review that won't run. Promotions
+  # (development → main) are exempt: they bundle PRs already reviewed.
+  size:
+    if: github.event_name == 'pull_request' && github.head_ref != 'development'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reviewable size
+        run: node scripts/review-size.mjs "origin/${{ github.base_ref }}" HEAD
 
   checks:
     needs: changes
@@ -210,7 +225,7 @@ jobs:
   # The required status check. One name for branch protection, green only when
   # every gate it stands for passed (or was skipped for a docs-only PR).
   verify:
-    needs: [changes, checks, coverage]
+    needs: [changes, size, checks, coverage]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -221,10 +236,12 @@ jobs:
           CHANGES: ${{ needs.changes.result }}
           CHECKS: ${{ needs.checks.result }}
           COVERAGE: ${{ needs.coverage.result }}
+          SIZE: ${{ needs.size.result }}
         run: |
           set -euo pipefail
           echo "changes=$CHANGES code=$CODE checks=$CHECKS coverage=$COVERAGE"
           [ "$CHANGES" = "success" ] || { echo "change detection failed"; exit 1; }
+          case "$SIZE" in success|skipped) ;; *) echo "too large for the code reviewer: split the PR"; exit 1 ;; esac
           if [ "$CODE" = "true" ]; then
             [ "$CHECKS" = "success" ] || { echo "checks: $CHECKS"; exit 1; }
             [ "$COVERAGE" = "success" ] || { echo "tests or coverage: $COVERAGE"; exit 1; }
