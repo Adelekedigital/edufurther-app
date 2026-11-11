@@ -72,12 +72,13 @@ const vendor = vi.hoisted(() => ({
   sink: { capture: vi.fn(), identify: vi.fn(), reset: vi.fn() },
   setMode: vi.fn(),
   setReplay: vi.fn(),
-  setHalted: vi.fn(),
   captureException: vi.fn(),
 }));
 const loadAnalytics = vi.fn(async () => vendor);
+const setAnalyticsHalted = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/vendor/analytics', () => ({
   loadAnalytics: (...a: unknown[]) => loadAnalytics(...(a as [])),
+  setAnalyticsHalted,
 }));
 const errorsSeam = vi.hoisted(() => ({
   setErrorUser: vi.fn(),
@@ -380,10 +381,24 @@ describe('Preview as user', () => {
     env.viewer = member();
     const { rerender } = render(<AnalyticsRoot />);
     await waitFor(() => expect(vendor.setMode).toHaveBeenCalled());
-    expect(vendor.setHalted).toHaveBeenLastCalledWith(false);
+    expect(setAnalyticsHalted).toHaveBeenLastCalledWith(false);
     env.previewing = true;
     rerender(<AnalyticsRoot />);
-    await waitFor(() => expect(vendor.setHalted).toHaveBeenLastCalledWith(true));
+    await waitFor(() => expect(setAnalyticsHalted).toHaveBeenLastCalledWith(true));
+  });
+
+  it('a preview started while PostHog is still loading halts it, and the late load never resumes it', async () => {
+    let finish: (v: typeof vendor) => void = () => {};
+    loadAnalytics.mockImplementationOnce(() => new Promise((r) => (finish = r)));
+    env.viewer = member();
+    const { rerender } = render(<AnalyticsRoot />);
+    await waitFor(() => expect(loadAnalytics).toHaveBeenCalled());
+    env.previewing = true;
+    rerender(<AnalyticsRoot />);
+    expect(setAnalyticsHalted).toHaveBeenLastCalledWith(true);
+    await act(async () => finish(vendor));
+    expect(setAnalyticsHalted).not.toHaveBeenCalledWith(false);
+    expect(vendor.setMode).not.toHaveBeenCalled();
   });
 
   it('an error page’s errors reach PostHog once it has loaded (the trial’s other tracker)', async () => {

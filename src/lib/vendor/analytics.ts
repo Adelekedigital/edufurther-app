@@ -31,8 +31,6 @@ export type VendorAnalytics = {
   setReplay: (on: boolean) => void;
   /** An error the app caught (an error page): PostHog's exceptions, when on. */
   captureException: (error: unknown) => void;
-  /** Nothing leaves while halted (analytics off, a preview), autocapture included. */
-  setHalted: (on: boolean) => void;
 };
 
 type ExceptionFrame = Record<string, unknown>;
@@ -82,11 +80,17 @@ function scrubException(props: Record<string, unknown>): Record<string, unknown>
 }
 
 /**
- * Off: analytics went off or a preview started on a page where PostHog was
- * already running. Its own autocapture (exceptions, page leaves) still fires,
- * so every event stops here (PRD 27: nothing as anyone).
+ * Off: analytics went off or a preview started, whether PostHog has loaded,
+ * is still loading, or never will. Its own autocapture (exceptions, page
+ * leaves) would still fire, so every event stops here (PRD 27: nothing as
+ * anyone). Module-level, not on the vendor: a halt must hold before it exists.
  */
 let halted = false;
+
+/** Halts (or resumes) everything PostHog would send; callable at any time. */
+export function setAnalyticsHalted(on: boolean): void {
+  halted = on;
+}
 
 /** Every address property scrubbed before it leaves (no query string, no invite code). */
 export function beforeSend(event: CaptureResult | null): CaptureResult | null {
@@ -207,9 +211,6 @@ export function wrap(
     },
     captureException: (error) => {
       if (POSTHOG_ERRORS_LIVE && !halted) ph.captureException(error);
-    },
-    setHalted: (on) => {
-      halted = on;
     },
     setReplay: (on) => {
       if (on && mode === 'identified' && !replaying) {

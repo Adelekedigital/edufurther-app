@@ -25,7 +25,13 @@ vi.mock('posthog-js/dist/exception-autocapture', () => {
   return {};
 });
 
-import { beforeSend, loadAnalytics, resetVendorForTests, vendorConfig } from './analytics';
+import {
+  beforeSend,
+  loadAnalytics,
+  resetVendorForTests,
+  setAnalyticsHalted,
+  vendorConfig,
+} from './analytics';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -129,9 +135,9 @@ describe('PostHog exceptions', () => {
     expect(x).not.toHaveProperty('extra');
   });
 
-  it('halted (analytics off, a preview started on this page): nothing leaves, autocapture included', async () => {
+  it('halted (analytics off, a preview): nothing leaves, autocapture included, even before PostHog loads', async () => {
     const v = await loadAnalytics('phc_key', '/ingest');
-    v.setHalted(true);
+    setAnalyticsHalted(true);
     expect(
       beforeSend({ event: '$exception', properties: {} } as unknown as CaptureResult),
     ).toBeNull();
@@ -140,7 +146,7 @@ describe('PostHog exceptions', () => {
     ).toBeNull();
     v.captureException(new Error('boom'));
     expect(ph.captureException).not.toHaveBeenCalled();
-    v.setHalted(false);
+    setAnalyticsHalted(false);
     expect(
       beforeSend({ event: '$pageleave', properties: {} } as unknown as CaptureResult),
     ).not.toBeNull();

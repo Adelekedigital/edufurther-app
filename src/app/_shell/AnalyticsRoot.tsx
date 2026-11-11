@@ -47,7 +47,7 @@ import {
   POSTHOG_KEY,
 } from '@/lib/config/analytics';
 import { useHydrated } from '@/lib/utils/useHydrated';
-import { loadAnalytics, type VendorAnalytics } from '@/lib/vendor/analytics';
+import { loadAnalytics, setAnalyticsHalted, type VendorAnalytics } from '@/lib/vendor/analytics';
 import { addErrorReporter, setErrorUser } from '@/lib/vendor/errors';
 
 /** An arrival older than this isn't the account's sign-up (the held arrival's own lifetime). */
@@ -128,15 +128,17 @@ export function AnalyticsRoot() {
       // A preview started (or a flag went): stop replay, disconnect, drop the queue.
       setConsent(false);
       loadedRef.current?.setReplay(false);
-      // PostHog's own autocapture (exceptions, page leaves) stops too.
-      loadedRef.current?.setHalted(true);
+      // PostHog's own autocapture (exceptions, page leaves) stops too, even if
+      // it is still loading: the halt doesn't need the vendor to exist.
+      setAnalyticsHalted(true);
       return;
     }
     let live = true;
     void loadAnalytics(POSTHOG_KEY, ANALYTICS_PATH)
       .then((v) => {
         if (!live) return;
-        v.setHalted(false);
+        // Only a load still wanted resumes (a preview may have started meanwhile).
+        setAnalyticsHalted(false);
         v.setMode(mode);
         setConsent(true, v.sink);
         loadedRef.current = v;
