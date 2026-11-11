@@ -45,8 +45,9 @@ env:
   # is its OpenAI-compatible one.
   MOONSHOT_BASE_URL: "https://api.moonshot.ai/anthropic"
   # Per Claude run, in Anthropic's prices. The CLI cannot price a Kimi model,
-  # so a Kimi run is bounded by the job's timeout instead.
-  CLAUDE_MAX_BUDGET_USD: "3"
+  # so a Kimi run is bounded by the job's timeout instead. A repository
+  # variable lowers it without a code change (owner, 11 Nov: the review budget).
+  CLAUDE_MAX_BUDGET_USD: ${{ vars.CLAUDE_MAX_BUDGET_USD || '3' }}
 
 jobs:
   review:
@@ -288,16 +289,34 @@ jobs:
               claude -p --restricted --strict-mcp-config \
               --tools "Read,Grep,Glob" --output-format text \
               --max-budget-usd "$CLAUDE_MAX_BUDGET_USD" "$@" \
-              < code-review/prompt.md > code-review/result.md
+              < code-review/prompt.md > code-review/result.md 2> code-review/stderr.txt
+          }
+
+          # Why a leg failed, by category only: the output and the CLI's stderr
+          # (where errors like "credit balance" land) are matched, never
+          # printed, since they may hold review text or a provider's error
+          # body. Files grepped directly: under pipefail a `cat | grep -q`
+          # can fail on the early exit and hide the match (backend #640).
+          why() {
+            local f="code-review/result.md code-review/stderr.txt"
+            if grep -qiE 'credit balance|insufficient (credit|balance|quota)|billing|quota exceeded|payment' $f 2>/dev/null; then echo "out of credit"
+            elif grep -qiE 'model.{0,40}(not found|does not exist|invalid|not available)|not_found_error|unknown model' $f 2>/dev/null; then echo "model not available"
+            elif grep -qiE 'max.?budget|budget (exceeded|reached)' $f 2>/dev/null; then echo "hit the budget cap ($CLAUDE_MAX_BUDGET_USD USD)"
+            elif grep -qiE 'rate.?limit|overloaded|429|529' $f 2>/dev/null; then echo "rate limited or overloaded"
+            elif grep -qiE 'authentication|invalid (x-)?api.?key|401|unauthori[sz]ed' $f 2>/dev/null; then echo "key rejected"
+            elif [ "$1" -ne 0 ]; then echo "exit $1"
+            else echo "no review in its output"
+            fi
           }
 
           used=""
           for p in $CHAIN; do
+            rc=0
             case "$p" in
               claude)
                 set -- --model "$CLAUDE_MODEL"
                 [ -n "$CLAUDE_EFFORT" ] && set -- "$@" --effort "$CLAUDE_EFFORT"
-                ANTHROPIC_API_KEY="$ANTHROPIC_KEY" review "$@" && label="Claude" ;;
+                if ANTHROPIC_API_KEY="$ANTHROPIC_KEY" review "$@"; then label="Claude"; else rc=$?; fi ;;
               kimi)
                 # Every model slot, so no background call asks Moonshot for a
                 # Claude model it does not serve.
@@ -308,14 +327,14 @@ jobs:
                 ANTHROPIC_DEFAULT_SONNET_MODEL="$KIMI_MODEL" \
                 ANTHROPIC_DEFAULT_HAIKU_MODEL="$KIMI_MODEL" \
                 ANTHROPIC_SMALL_FAST_MODEL="$KIMI_MODEL" \
-                  review --model "$KIMI_MODEL" && label="Kimi" ;;
+                  review --model "$KIMI_MODEL" && label="Kimi" || rc=$? ;;
             esac
             # A review is the prompt's shape, never an error line on exit 0.
             if [ -n "${label:-}" ] && grep -qE '^(NO FINDINGS|### \[P[012]\])' code-review/result.md; then
               used="$label"
               break
             fi
-            echo "::warning::The $p review did not complete; trying the next reviewer, if any."
+            echo "::warning::The $p review did not complete ($(why "$rc")); trying the next reviewer, if any."
             label=""
           done
 
