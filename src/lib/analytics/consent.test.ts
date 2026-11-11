@@ -30,7 +30,7 @@ afterEach(() => {
 describe('the consent cookie value', () => {
   it('round-trips an answer', () => {
     expect(parseConsent(formatConsent(yes(1700000000)))).toEqual(yes(1700000000));
-    expect(parseConsent(formatConsent(no(5)))).toEqual(no(5));
+    expect(parseConsent(formatConsent(no(1700000001)))).toEqual(no(1700000001));
   });
 
   it.each(['', 'yes', '2026.2.5', 'v1.1', 'v 1.1.5', 'v1.1.5.6', `${'a'.repeat(33)}.1.5`])(
@@ -168,6 +168,18 @@ describe('shared device: the last log-out', () => {
     markSignedOut(at(500));
     expect(readSignedOut(at(1000))).toBe(at(500));
     expect(readSignedOut(at(400))).toBe(at(400));
+  });
+
+  it('an answer 200 ms after a sign-out survives the cookie round trip', () => {
+    markSignedOut(1_700_000_000_400);
+    const answer = { granted: true, version: CONSENT_VERSION, answeredAt: 1_700_000_000_600 };
+    const back = parseConsent(formatConsent(answer));
+    expect(back).toEqual(answer);
+    expect(stillValid(back, readSignedOut(1_800_000_000_000))).toEqual(answer);
+  });
+
+  it('a cookie written in seconds (before milliseconds) still reads', () => {
+    expect(parseConsent(`${CONSENT_VERSION}.1.1700000000`)?.answeredAt).toBe(1_700_000_000_000);
   });
 
   it('keeps milliseconds: an answer 1 ms after a sign-out still counts', () => {

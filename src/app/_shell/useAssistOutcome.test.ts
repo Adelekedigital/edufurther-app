@@ -35,6 +35,18 @@ describe('useAssistOutcome', () => {
     ]);
   });
 
+  it('Undo of an Improve restores the earlier draft, which a Save then keeps', () => {
+    const { result } = renderHook(() => useAssistOutcome('mentor_about'));
+    result.current.onAiChange({ kind: 'applied', mode: 'draft' });
+    result.current.onAiChange({ kind: 'applied', mode: 'improve' });
+    result.current.onAiChange({ kind: 'undone' });
+    result.current.accepted();
+    expect(track.mock.calls).toEqual([
+      ['writing_assist_used', { field: 'mentor_about', mode: 'improve', outcome: 'discarded' }],
+      ['writing_assist_used', { field: 'mentor_about', mode: 'draft', outcome: 'accepted' }],
+    ]);
+  });
+
   it('a later change replaces the earlier one: one outcome, the last mode', () => {
     const { result } = renderHook(() => useAssistOutcome('mentor_about'));
     result.current.onAiChange({ kind: 'applied', mode: 'draft' });

@@ -17,24 +17,30 @@ import type { AssistField } from '@/lib/api/data/writingAssist';
  * nothing: that under-count is accepted rather than guessing an outcome.
  */
 export function useAssistOutcome(field: AssistField) {
-  // The mode of the AI change in the box, until its outcome is known. A later
-  // change replaces it: the person is still deciding.
-  const pending = useRef<AssistMode | null>(null);
+  // The AI changes in the box, newest last, until their outcome is known. Save
+  // or Discard settles the newest (a later change replaces an earlier one: the
+  // person was still deciding). Undo takes the newest back as discarded and
+  // the one it restores is pending again, so that kept draft still counts.
+  const pending = useRef<AssistMode[]>([]);
   return useMemo(() => {
     const settle = (outcome: 'accepted' | 'discarded') => {
-      const mode = pending.current;
-      if (!mode) return;
-      pending.current = null;
-      track('writing_assist_used', { field, mode, outcome });
+      const mode = pending.current.at(-1);
+      pending.current = [];
+      if (mode) track('writing_assist_used', { field, mode, outcome });
     };
     return {
       onAiChange: (change: AiChange) => {
-        if (change.kind === 'applied') pending.current = change.mode;
-        else settle('discarded');
+        if (change.kind === 'applied') {
+          pending.current = [...pending.current, change.mode];
+          return;
+        }
+        const undone = pending.current.at(-1);
+        pending.current = pending.current.slice(0, -1);
+        if (undone) track('writing_assist_used', { field, mode: undone, outcome: 'discarded' });
       },
       /** An AI change landed outside the box (the application's first About draft). */
       applied: (mode: AssistMode) => {
-        pending.current = mode;
+        pending.current = [...pending.current, mode];
       },
       accepted: () => settle('accepted'),
       discarded: () => settle('discarded'),

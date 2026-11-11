@@ -20,18 +20,21 @@ const MAX_AGE_S = 365 * 24 * 60 * 60;
 
 export type ConsentAnswer = { granted: boolean; version: string; answeredAt: number };
 
-const SHAPE = /^([A-Za-z0-9-]{1,32})\.([01])\.(\d{1,12})$/;
+const SHAPE = /^([A-Za-z0-9-]{1,32})\.([01])\.(\d{1,15})$/;
 
 /** A cookie value, or null when it isn't one of ours. */
 export function parseConsent(raw: string | null | undefined): ConsentAnswer | null {
   if (!raw) return null;
   const m = SHAPE.exec(raw);
   if (!m) return null;
-  return { version: m[1]!, granted: m[2] === '1', answeredAt: Number(m[3]) * 1000 };
+  // Milliseconds; a value from before that change (seconds, 10 digits) is read as seconds.
+  const n = Number(m[3]);
+  return { version: m[1]!, granted: m[2] === '1', answeredAt: n < 1e11 ? n * 1000 : n };
 }
 
 export function formatConsent(a: ConsentAnswer): string {
-  return `${a.version}.${a.granted ? '1' : '0'}.${Math.floor(a.answeredAt / 1000)}`;
+  // Milliseconds, like the sign-out marker: an answer right after a sign-out stays after it.
+  return `${a.version}.${a.granted ? '1' : '0'}.${Math.floor(a.answeredAt)}`;
 }
 
 /** An answer to the consent text in force; any other is treated as unanswered. */
