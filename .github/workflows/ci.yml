@@ -278,7 +278,7 @@ jobs:
       # failures hung this step 10 minutes). A time limit and one retry: a
       # blip passes, an outage fails in minutes and says so.
       - name: Install the browser and its system libraries
-        timeout-minutes: 8
+        timeout-minutes: 11
         env:
           CACHED: ${{ steps.pw-cache.outputs.cache-hit }}
         run: |
@@ -289,7 +289,12 @@ jobs:
             echo "playwright $cmd failed (attempt $attempt); Ubuntu mirrors may be down"
             sleep 15
           done
-          exit 1
+          # The mirrors are down (11 Nov: over an hour). The runner image ships
+          # Chrome and the libraries it needs, so the browser alone (from
+          # Playwright's own CDN, not apt) runs the same checks; only some
+          # extra fonts may be missing. Said in the run, never silent.
+          echo "::warning::Ubuntu mirrors unreachable: running page-review with the runner's own system libraries."
+          [ "$CACHED" = "true" ] || timeout 180 pnpm exec playwright install chromium
 
       # Same spec as checks; the build needs the client.
       - name: Pull the API spec and generate the client
