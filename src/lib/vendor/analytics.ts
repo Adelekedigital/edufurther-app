@@ -44,14 +44,23 @@ type ExceptionEntry = {
 /** The frame fields posthog-js sends, none of them personal; anything else stays home. */
 const FRAME_KEYS = ['platform', 'function', 'in_app', 'lineno', 'colno', 'chunk_id'] as const;
 
+/** The exception's own fields that may leave; any other `$exception_*` stays home. */
+const EXCEPTION_KEYS = new Set(['$exception_list', '$exception_level', '$exception_message']);
+
 /**
  * An `$exception`'s own properties, rebuilt as Sentry's are (lib/vendor/errors):
- * each entry from an allowlist, so a field a posthog-js upgrade adds never
- * leaves unseen; its type an identifier, its value through scrubText, its
- * frames' files through the shared frame rule.
+ * of the exception's fields (`$exception_*`) only the allowlisted ones leave, so
+ * one a posthog-js upgrade adds never leaves unseen, and each entry is rebuilt
+ * from an allowlist: its type an identifier, its value through scrubText, its
+ * frames' files through the shared frame rule. PostHog's standard event fields
+ * (token, distinct id, library, session) are what every event carries, already
+ * through scrubProperties.
  */
 function scrubException(props: Record<string, unknown>): Record<string, unknown> {
-  const out = { ...props };
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(props)) {
+    if (!k.startsWith('$exception') || EXCEPTION_KEYS.has(k)) out[k] = v;
+  }
   if (typeof out.$exception_message === 'string')
     out.$exception_message = scrubText(out.$exception_message);
   if (Array.isArray(out.$exception_list)) {
