@@ -10,7 +10,10 @@ const h = vi.hoisted(() => ({
   listeners: new Set<() => void>(),
 }));
 vi.mock('@/lib/api/data/http', () => ({ api: { GET: h.GET } }));
-vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => admin() }));
+// The account's zone is neither UTC nor the machine's: the default must come from it.
+vi.mock('@/lib/api/data/viewer', () => ({
+  useViewer: () => admin({ timeZone: 'Africa/Lagos' }),
+}));
 vi.mock('next/navigation', async () => {
   const { useSyncExternalStore } = await import('react');
   const subscribe = (fn: () => void) => {
@@ -68,9 +71,10 @@ describe('Admin Analytics: the page', () => {
     expect(within(windows).getByRole('radio', { name: '30 days' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Compare with previous period' })).toBeChecked();
     expect(screen.getByRole('tab', { name: 'Credits', selected: true })).toBeInTheDocument();
-    expect(screen.getByText(/All dates and times in UTC/)).toBeInTheDocument();
+    expect(screen.getByText(/Days follow the time zone above/)).toBeInTheDocument();
     await screen.findByRole('heading', { level: 2, name: 'Credits' });
-    expect(calls('credits')[0]).toEqual({ window: '30d', compare: 'true' });
+    // Days follow the viewer's own zone by default: the account's (owner, 2026-11-11).
+    expect(calls('credits')[0]).toEqual({ window: '30d', compare: 'true', tz: 'Africa/Lagos' });
   });
 
   it('asks again for 7 days, and with Compare off', async () => {
@@ -78,10 +82,42 @@ describe('Admin Analytics: the page', () => {
     renderScreen(<AdminAnalyticsScreen />);
     await screen.findByRole('heading', { level: 2, name: 'Credits' });
     await userEvent.click(screen.getByRole('radio', { name: '7 days' }));
-    await waitFor(() => expect(calls('credits')).toContainEqual({ window: '7d', compare: 'true' }));
+    await waitFor(() =>
+      expect(calls('credits')).toContainEqual({
+        window: '7d',
+        compare: 'true',
+        tz: 'Africa/Lagos',
+      }),
+    );
     await userEvent.click(screen.getByRole('checkbox', { name: 'Compare with previous period' }));
     await waitFor(() =>
-      expect(calls('credits')).toContainEqual({ window: '7d', compare: 'false' }),
+      expect(calls('credits')).toContainEqual({
+        window: '7d',
+        compare: 'false',
+        tz: 'Africa/Lagos',
+      }),
+    );
+  });
+
+  it('the days follow a chosen zone: every read asks again in it, UTC offered first', async () => {
+    serve();
+    renderScreen(<AdminAnalyticsScreen />);
+    await screen.findByRole('heading', { level: 2, name: 'Credits' });
+    expect(screen.getByText(/Days in/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Change time zone/ }));
+    await screen.findByRole('textbox', { name: 'Search time zones' });
+    const zones = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent ?? '')
+      .filter((t) => /Lagos|London|UTC/.test(t) && !/Change/.test(t));
+    expect(zones[0]).toMatch(/UTC/);
+    await userEvent.click(screen.getAllByRole('button', { name: /^UTC/ })[0]!);
+    await waitFor(() =>
+      expect(calls('credits')).toContainEqual({
+        window: '30d',
+        compare: 'true',
+        tz: 'UTC',
+      }),
     );
   });
 
@@ -104,7 +140,12 @@ describe('Admin Analytics: the page', () => {
     await userEvent.click(apply);
     expect(screen.queryByRole('dialog')).toBeNull();
     await waitFor(() =>
-      expect(calls('credits')).toContainEqual({ from: today, to: today, compare: 'true' }),
+      expect(calls('credits')).toContainEqual({
+        from: today,
+        to: today,
+        compare: 'true',
+        tz: 'Africa/Lagos',
+      }),
     );
     const short = new Date(`${today}T12:00:00Z`).toLocaleDateString('en-US', {
       month: 'short',

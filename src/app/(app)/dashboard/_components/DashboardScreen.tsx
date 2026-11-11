@@ -13,7 +13,7 @@ import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { useMentorStatus } from '@/lib/api/data/mentorStatus';
 import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
 import { track } from '@/lib/analytics/track';
-import { deviceTimeZone, inSentence } from '@/lib/utils/format';
+import { inSentence, viewerZone } from '@/lib/utils/format';
 import { useCopyText } from '@/lib/utils/useCopyText';
 import type { Viewer } from '@/types/mentor';
 import { ApprovedToast } from './ApprovedToast';
@@ -114,7 +114,7 @@ function DashboardError({ onRetry }: { onRetry: () => void }) {
 }
 
 function MentorHome({ member }: { member: Member }) {
-  const accountZone = member.timeZone ?? deviceTimeZone();
+  const accountZone = viewerZone(member.timeZone);
   const [shared, setShared] = useState(() => readShared(member.id));
   // Keyed so a repeated identical message still re-announces (LiveRegion).
   const [announce, setAnnounce] = useState<{ text: string; id: number } | null>(null);

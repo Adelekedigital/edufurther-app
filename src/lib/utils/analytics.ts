@@ -8,7 +8,7 @@ import { addDays } from './slots';
 
 export type WindowKey = '7d' | '30d' | '90d';
 
-/** The window: one of the presets ending today, or whole UTC days, inclusive. */
+/** The window: one of the presets ending today, or whole days, inclusive (in the zone asked). */
 export type AnalyticsWindow = { kind: WindowKey } | { kind: 'custom'; from: string; to: string };
 
 export const DEFAULT_WINDOW: AnalyticsWindow = { kind: '30d' };
@@ -18,19 +18,36 @@ export const ANALYTICS_MIN_DAY = '2024-06-01';
 
 const PRESET_DAYS: Record<WindowKey, number> = { '7d': 7, '30d': 30, '90d': 90 };
 
-/** "Nov 3", for a UTC calendar date. */
+/** "Nov 3", for a calendar date (a YYYY-MM-DD string, in no zone). */
 const shortDate = (iso: string) => formatDay(iso).date;
 
-/** The window as query params: the preset, or `from` and `to` (the same date twice for one day). */
-export function windowParams(w: AnalyticsWindow, compare: boolean): Record<string, string> {
+/**
+ * The window as query params: the preset, or `from` and `to` (the same date
+ * twice for one day), and `tz`, the IANA zone the days follow (owner,
+ * 2026-11-11: the viewer's own time by default, UTC to compare with PostHog).
+ */
+export function windowParams(
+  w: AnalyticsWindow,
+  compare: boolean,
+  tz: string,
+): Record<string, string> {
   const base: Record<string, string> =
     w.kind === 'custom' ? { from: w.from, to: w.to } : { window: w.kind };
-  return { ...base, compare: String(compare) };
+  return { ...base, compare: String(compare), tz };
 }
 
-/** A stable key for the query cache. */
-export const windowKey = (w: AnalyticsWindow) =>
-  w.kind === 'custom' ? `${w.from}_${w.to}` : w.kind;
+/** A stable key for the query cache: the same days in another zone are other numbers. */
+export const windowKey = (w: AnalyticsWindow, tz: string) =>
+  `${w.kind === 'custom' ? `${w.from}_${w.to}` : w.kind}@${tz}`;
+
+/**
+ * The window as it may be asked in a zone whose today is `today`: a custom
+ * range is cut to end there (and to start no later), presets are unchanged.
+ */
+export function clampWindow(w: AnalyticsWindow, today: string): AnalyticsWindow {
+  if (w.kind !== 'custom' || w.to <= today) return w;
+  return { kind: 'custom', from: w.from <= today ? w.from : today, to: today };
+}
 
 /** Days in the window, inclusive. */
 export function windowDays(w: AnalyticsWindow): number {

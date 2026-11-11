@@ -23,7 +23,7 @@ import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/m
 import { ProfileSaveError, useSaveMenteeProfile } from '@/lib/api/data/settings';
 import { GETTING_STARTED, MENTORS_FOR_GOAL, NEW_SUBLINE, PROFILE_SHEET } from '@/lib/copy/home';
 import { useDeviceFlag } from '@/lib/utils/deviceFlag';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { deviceTimeZone, viewerZone } from '@/lib/utils/format';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
@@ -83,7 +83,7 @@ export function MenteeHomeScreen() {
   const [invited, setInvited] = useDeviceFlag('home-invite-shared', userId);
   const candidate = early && !hidden && !doneFlag;
 
-  const zone = member?.timeZone ?? browserZone;
+  const zone = viewerZone(member?.timeZone, browserZone);
   const stats = useMenteeStats(userId, menteeSide);
   const upcoming = useUpcomingBookings(userId, zone, menteeSide);
   const metMentors = useMetMentors(menteeSide);

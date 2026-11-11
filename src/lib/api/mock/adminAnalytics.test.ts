@@ -26,6 +26,9 @@ describe("mockWindow: the routes' window rules", () => {
       tz: 'UTC',
     });
     expect(mockWindow({ tz: 'Mars/Olympus' }, late)).toBeNull();
+    // The backend matches the zone database's names exactly: a case variant is a 422.
+    expect(mockWindow({ tz: 'utc' }, late)).toBeNull();
+    expect(mockWindow({ tz: 'africa/lagos' }, late)).toBeNull();
   });
 
   it('takes one day or a range, inclusive', () => {

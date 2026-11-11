@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { CreditsBar } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import { StepChecklist } from '@/components/molecules/StepChecklist/StepChecklist';
@@ -23,8 +22,9 @@ import styles from './CreditsExplainer.module.css';
 
 /**
  * "Your credits" (AppShell.dc.html creditOpen): a popover under the pill on
- * desktop; on phones the app's shared BottomSheet, with "Got it" in its footer,
- * so it looks and behaves like every other phone sheet (owner, 2026-11-11).
+ * desktop; on phones the app's shared BottomSheet, so it looks and behaves
+ * like every other phone sheet (owner, 2026-11-11). No "Got it": the sheet's
+ * close already does that; "See my bookings" stays as the one next step.
  * Takes focus, keeps Tab inside, closes on Escape or outside; the caller
  * returns focus.
  *
@@ -53,11 +53,6 @@ export function CreditsExplainer({
         icon={icon}
         label={DIALOG_LABEL}
         onClose={onClose}
-        footer={
-          <Button variant="secondary-outlined" size="large" fullWidth onClick={onClose}>
-            Got it
-          </Button>
-        }
       >
         <CreditsDetails credits={credits} onClose={onClose} />
       </BottomSheet>

@@ -18,9 +18,11 @@ export const ANALYTICS_PAGE = {
   windowLabel: 'Time window',
   windows: { '7d': '7 days', '30d': '30 days', '90d': '90 days' },
   compare: 'Compare with previous period',
+  /** Before the zone, as in Days in Lagos (WAT) and Change. */
+  zonePrefix: 'Days in',
   tabsLabel: 'Analytics pages',
   footer:
-    'All dates and times in UTC. Admins, demo accounts and preview sessions are left out. Numbers that touch credits or that mentors see come from our database.',
+    'Days follow the time zone above; monthly totals and alerts use UTC. Admins, demo accounts and preview sessions are left out. Numbers that touch credits or that mentors see come from our database.',
 } as const;
 
 export const ANALYTICS_TABS: { value: AnalyticsTab; label: string }[] = [
@@ -271,7 +273,8 @@ export const GROWTH = {
   invitesCost: (n: string) =>
     `Credit cost per invited member who completed a session: ${n} credits.`,
   topInviter: (name: string, n: number) => `Top inviter: ${name} (${n} joined).`,
-  monthsHeading: 'New sign-ups per month, all roles',
+  // Calendar months stay UTC for every viewer (backend decision 247), so say so.
+  monthsHeading: 'New sign-ups per month (UTC), all roles',
   monthTip: (month: string, n: number, soFar: boolean) =>
     `${month}: ${n} new members${soFar ? ' (month so far)' : ''}`,
   monthsLabel: (parts: string) => `New members per month: ${parts}`,

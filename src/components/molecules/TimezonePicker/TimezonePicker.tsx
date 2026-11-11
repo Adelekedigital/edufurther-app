@@ -50,6 +50,11 @@ type TimezonePickerProps = {
    * darken to ink-700 and blue-700.
    */
   onTint?: boolean;
+  /**
+   * Zones listed first, before the common ones (Admin Analytics offers UTC,
+   * to compare with PostHog). Searching still finds every zone.
+   */
+  alsoOffer?: string[];
 };
 
 /**
@@ -63,6 +68,7 @@ export function TimezonePicker({
   deviceZone,
   prefix = 'Times shown in',
   onTint = false,
+  alsoOffer = [],
 }: TimezonePickerProps) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
@@ -106,7 +112,7 @@ export function TimezonePicker({
   const needle = q.trim();
   const list: ZoneRow[] = needle
     ? searchZones(rows, needle)
-    : [...COMMON_ZONES, ...(COMMON_ZONES.includes(current) ? [] : [current])]
+    : [...new Set([...alsoOffer, ...COMMON_ZONES, current])]
         .map((id) => rows.find((r) => r.id === id))
         .filter((r): r is ZoneRow => !!r);
   const head = needle

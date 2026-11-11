@@ -22,7 +22,7 @@ export function DateRangeDialog({
   onApply,
   onClose,
 }: {
-  /** Today in UTC (YYYY-MM-DD): the last day that can be picked. */
+  /** Today in the zone the days follow (YYYY-MM-DD): the last day that can be picked. */
   today: string;
   /** The custom window already applied, if any. */
   initial: Range | null;

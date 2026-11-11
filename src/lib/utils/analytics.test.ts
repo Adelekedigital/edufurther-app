@@ -6,7 +6,9 @@ import {
   formatReplyHours,
   formatRate,
   nextDraft,
+  clampWindow,
   windowDays,
+  windowKey,
   windowLabel,
   windowParams,
 } from './analytics';
@@ -24,13 +26,37 @@ describe('windows', () => {
     expect(customLabel({ kind: '7d' })).toBe('Custom');
   });
 
-  it('sends the preset or the dates, with compare', () => {
-    expect(windowParams({ kind: '7d' }, true)).toEqual({ window: '7d', compare: 'true' });
-    expect(windowParams({ kind: 'custom', from: '2026-11-03', to: '2026-11-03' }, false)).toEqual({
-      from: '2026-11-03',
-      to: '2026-11-03',
-      compare: 'false',
+  it('sends the preset or the dates, with compare and the zone the days follow', () => {
+    expect(windowParams({ kind: '7d' }, true, 'Africa/Lagos')).toEqual({
+      window: '7d',
+      compare: 'true',
+      tz: 'Africa/Lagos',
     });
+    expect(
+      windowParams({ kind: 'custom', from: '2026-11-03', to: '2026-11-03' }, false, 'UTC'),
+    ).toEqual({ from: '2026-11-03', to: '2026-11-03', compare: 'false', tz: 'UTC' });
+  });
+
+  it('trims a custom range to the zone’s today (a zone behind would be a 422), presets unchanged', () => {
+    const range = { kind: 'custom' as const, from: '2026-11-05', to: '2026-11-12' };
+    expect(clampWindow(range, '2026-11-11')).toEqual({
+      kind: 'custom',
+      from: '2026-11-05',
+      to: '2026-11-11',
+    });
+    expect(
+      clampWindow({ kind: 'custom', from: '2026-11-12', to: '2026-11-12' }, '2026-11-11'),
+    ).toEqual({
+      kind: 'custom',
+      from: '2026-11-11',
+      to: '2026-11-11',
+    });
+    expect(clampWindow(range, '2026-11-12')).toBe(range);
+    expect(clampWindow({ kind: '7d' }, '2026-11-11')).toEqual({ kind: '7d' });
+  });
+
+  it('keys the cache by zone too: the same days in another zone are other numbers', () => {
+    expect(windowKey({ kind: '7d' }, 'UTC')).not.toBe(windowKey({ kind: '7d' }, 'Africa/Lagos'));
   });
 
   it('counts days inclusively', () => {
