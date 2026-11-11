@@ -12,7 +12,7 @@ import {
   setAcquisitionPersistence,
   storedAcquisition,
 } from '@/lib/analytics/acquisition';
-import { effectiveConsent, readSignedOut } from '@/lib/analytics/consent';
+import { effectiveConsent } from '@/lib/analytics/consent';
 import { consentStore } from '@/lib/analytics/consentStore';
 import { personProperties, rememberMigrated } from '@/lib/analytics/identity';
 import {
@@ -77,13 +77,12 @@ export function AnalyticsRoot() {
   const qc = useQueryClient();
   const member = viewer.kind === 'member' ? viewer : null;
   const memberId = member?.id ?? null;
-  const { answer: stored, here, choose } = useAnalyticsConsent(memberId);
+  const { answer: stored, here, signedOutAt, choose } = useAnalyticsConsent(memberId);
 
   // An answer from before the last log-out here was someone else's (shared
   // device): unanswered, unless given on this page.
   // A member's answer is the newest of this device's and the account's; one
   // given on this page always wins.
-  const [signedOutAt] = useState(() => readSignedOut());
   const r = effectiveConsent({
     stored,
     here,
@@ -269,6 +268,14 @@ export function AnalyticsRoot() {
     if (show || !answeredHere.current) return;
     answeredHere.current = false;
     focusPageHeading();
+    // Pages without the app shell's #main (guest pages): their first heading.
+    if (document.activeElement === document.body) {
+      const h = document.querySelector<HTMLElement>('h1');
+      if (h) {
+        if (!h.hasAttribute('tabindex')) h.setAttribute('tabindex', '-1');
+        h.focus({ preventScroll: true });
+      }
+    }
   }, [show]);
 
   if (!show) return null;

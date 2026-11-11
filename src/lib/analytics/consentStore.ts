@@ -1,5 +1,7 @@
 import {
+  markSignedOut,
   readConsentCookie,
+  readSignedOut,
   writeConsentCookie,
   CONSENT_VERSION,
   type ConsentAnswer,
@@ -16,16 +18,21 @@ import {
  * just made while Settings shows Off.
  */
 
-export type ConsentState = { answer: ConsentAnswer | null; here: boolean };
+/** `signedOutAt`: the last sign-out on this device; an older device answer counts as unanswered. */
+export type ConsentState = {
+  answer: ConsentAnswer | null;
+  here: boolean;
+  signedOutAt: number | null;
+};
 
-let state: ConsentState = { answer: null, here: false };
+let state: ConsentState = { answer: null, here: false, signedOutAt: null };
 let loaded = false;
 const listeners = new Set<() => void>();
 
 function ensureLoaded() {
   if (loaded || typeof document === 'undefined') return;
   loaded = true;
-  state = { answer: readConsentCookie(), here: false };
+  state = { answer: readConsentCookie(), here: false, signedOutAt: readSignedOut() };
 }
 
 function set(next: ConsentState) {
@@ -34,7 +41,7 @@ function set(next: ConsentState) {
   listeners.forEach((l) => l());
 }
 
-const SERVER: ConsentState = { answer: null, here: false };
+const SERVER: ConsentState = { answer: null, here: false, signedOutAt: null };
 
 export const consentStore = {
   get(): ConsentAnswer | null {
@@ -60,14 +67,14 @@ export const consentStore = {
   answer(granted: boolean, now = Date.now()): ConsentAnswer {
     ensureLoaded();
     const next = { granted, version: CONSENT_VERSION, answeredAt: now };
-    set({ answer: next, here: true });
+    set({ ...state, answer: next, here: true });
     return next;
   },
   /** The account's answer, when newer than this device's: kept and written to the cookie. */
   adopt(next: ConsentAnswer) {
     ensureLoaded();
     if (state.here) return;
-    set({ answer: next, here: false });
+    set({ ...state, answer: next, here: false });
   },
   /**
    * The server stored the answer: its own `answered_at` goes in the cookie,
@@ -78,13 +85,25 @@ export const consentStore = {
     ensureLoaded();
     const a = state.answer;
     if (!a || a.granted !== stored.granted || a.version !== stored.version) return;
-    set({ answer: stored, here: state.here });
+    set({ ...state, answer: stored });
+  },
+  /**
+   * A session ended (Logout, or expired or revoked): the marker is written and
+   * this page forgets that an answer was given here, so the next person on
+   * this device is asked again at once, not on the next reload (PRD 30, shared devices).
+   */
+  signedOut(now = Date.now()) {
+    ensureLoaded();
+    markSignedOut(now);
+    // The exact time here; the cookie (whole seconds) is for the next page load.
+    state = { answer: state.answer, here: false, signedOutAt: now };
+    listeners.forEach((l) => l());
   },
 };
 
 /** Tests only. */
 export function resetConsentStoreForTests() {
-  state = { answer: null, here: false };
+  state = { answer: null, here: false, signedOutAt: null };
   loaded = false;
   listeners.clear();
 }

@@ -11,7 +11,7 @@ import { markAccountDeleted, useSignOut } from '@/lib/api/data/auth';
 import { usePushNotifications } from '@/lib/api/data/push';
 import { useAnalyticsConsent } from '@/lib/api/data/analyticsConsent';
 import { usePreview } from '@/lib/api/data/preview';
-import { effectiveConsent, isCurrent, readSignedOut } from '@/lib/analytics/consent';
+import { effectiveConsent, isCurrent } from '@/lib/analytics/consent';
 import { useViewer } from '@/lib/api/data/viewer';
 import { CONSENT_BANNER_LIVE } from '@/lib/config/analytics';
 import { useMenteeProfile } from '@/lib/api/data/settings';
@@ -40,11 +40,10 @@ export function SecurityPanel({
   const consent = useAnalyticsConsent(userId);
   const viewer = useViewer();
   // The same answer the analytics root acts on (AnalyticsRoot).
-  const [signedOutAt] = useState(() => readSignedOut());
   const shown = effectiveConsent({
     stored: consent.answer,
     here: consent.here,
-    signedOutAt,
+    signedOutAt: consent.signedOutAt,
     server: viewer.kind === 'member' ? viewer.analyticsConsent : undefined,
     member: viewer.kind === 'member',
   }).answer;

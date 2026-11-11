@@ -4,7 +4,7 @@ import type { Viewer } from '@/types/mentor';
 import { CONSENT_COOKIE, CONSENT_VERSION, readConsentCookie } from '@/lib/analytics/consent';
 import { resetConsentStoreForTests } from '@/lib/analytics/consentStore';
 import { resetAcquisitionForTests } from '@/lib/analytics/acquisition';
-import { resetIdentityForTests } from '@/lib/analytics/identity';
+import { resetIdentity, resetIdentityForTests } from '@/lib/analytics/identity';
 import { setReplayScope } from '@/lib/analytics/track';
 import { SIGNED_OUT_COOKIE } from '@/lib/analytics/consent';
 
@@ -176,6 +176,31 @@ describe('the flags', () => {
     expect(readConsentCookie()?.granted).toBe(true);
     // A guest has no account to store it on.
     expect(PUT).not.toHaveBeenCalled();
+  });
+
+  it('a session ending mid-page asks again at once and drops to cookieless', async () => {
+    render(<AnalyticsRoot />);
+    await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
+    await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('identified'));
+    expect(screen.queryByRole('region')).toBeNull();
+    // An expired session or a log-out in this tab (lib/api/data/http onExpired, useSignOut).
+    act(() => resetIdentity());
+    await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless'));
+    expect(screen.getByRole('region', { name: CONSENT_COPY.title })).toBeVisible();
+  });
+
+  it('answering on a page without #main puts focus on its first heading', async () => {
+    render(
+      <>
+        <h1>Join EduFurther</h1>
+        <AnalyticsRoot />
+      </>,
+    );
+    screen.getByRole('button', { name: 'Decline' }).focus();
+    await userEvent.keyboard('{Enter}');
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Join EduFurther' })).toHaveFocus(),
+    );
   });
 
   it('answering from the keyboard puts focus on the page heading, not the page', async () => {
