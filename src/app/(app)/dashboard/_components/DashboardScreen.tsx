@@ -12,7 +12,9 @@ import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { useMentorStatus } from '@/lib/api/data/mentorStatus';
 import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
+import { track } from '@/lib/analytics/track';
 import { deviceTimeZone, inSentence } from '@/lib/utils/format';
+import { useCopyText } from '@/lib/utils/useCopyText';
 import type { Viewer } from '@/types/mentor';
 import { ApprovedToast } from './ApprovedToast';
 import { DashboardHeader } from './DashboardHeader';
@@ -119,6 +121,7 @@ function MentorHome({ member }: { member: Member }) {
   // The chart reports its range here; the session-quality card follows it.
   const [chartRange, setChartRange] = useState('6m');
   const say = (text: string) => setAnnounce((a) => ({ text, id: (a?.id ?? 0) + 1 }));
+  const { copy } = useCopyText(3000);
   // A broken Google grant is costing them bookings right now, so Home says so
   // too rather than leaving it on Integrations, a page they rarely open.
   const reconnect = useCalendarReconnect(member.id, say);
@@ -145,17 +148,16 @@ function MentorHome({ member }: { member: Member }) {
   };
 
   const copyShareLink = (url: string) => {
-    if (!url || !navigator.clipboard) {
+    if (!url) {
       say('Couldn’t copy the link');
       return;
     }
-    navigator.clipboard.writeText(url).then(
-      () => {
-        markShared();
-        say('Link copied');
-      },
-      () => say('Couldn’t copy the link'),
-    );
+    void copy(url).then((ok) => {
+      if (!ok) return say('Couldn’t copy the link');
+      track('link_shared', { kind: 'mentor_profile', method: 'copy' });
+      markShared();
+      say('Link copied');
+    });
   };
 
   // Error before loading, so a profile failure shows at once even while a

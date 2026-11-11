@@ -2,7 +2,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MentorDashboard, MentorStage } from '@/lib/api/data/dashboard';
 import { viewers } from '@/app/_shell/lockedPage.harness';
+import { track } from '@/lib/analytics/track';
 import { DashboardScreen } from './DashboardScreen';
+
+vi.mock('@/lib/analytics/track', async (orig) => ({
+  ...(await orig<typeof import('@/lib/analytics/track')>()),
+  track: vi.fn(),
+}));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock('@/app/_shell/useAppShell', () => ({
@@ -173,6 +179,26 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     expect(await screen.findByText('Couldn’t copy the link')).toBeInTheDocument();
     expect(screen.getByTestId('moves')).toHaveTextContent('');
     expect(localStorage.getItem('ef-dash-shared-' + viewers.mentorApproved.id)).toBeNull();
+  });
+
+  it('the banner’s Copy link counts one mentor-profile share, on success only', async () => {
+    localStorage.clear();
+    vi.mocked(track).mockClear();
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    make('noBookings');
+    dash.data!.setup.next = {
+      key: 'share',
+      title: 'Share your profile',
+      action: { label: 'Copy link', copy: true },
+    };
+    render(<DashboardScreen />);
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    expect(await screen.findByText('Link copied')).toBeInTheDocument();
+    expect(vi.mocked(track).mock.calls.filter(([e]) => e === 'link_shared')).toEqual([
+      ['link_shared', { kind: 'mentor_profile', method: 'copy' }],
+    ]);
   });
 
   it('active: KPIs, next session, chart and quality, no hero or banner', () => {

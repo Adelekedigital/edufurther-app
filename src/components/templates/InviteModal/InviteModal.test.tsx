@@ -3,6 +3,19 @@ import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { INVITE_SHARE } from '@/components/molecules/InviteLinkPanel/InviteLinkPanel';
 import { InviteModal } from './InviteModal';
+import { track } from '@/lib/analytics/track';
+
+vi.mock('@/lib/analytics/track', async (orig) => ({
+  ...(await orig<typeof import('@/lib/analytics/track')>()),
+  track: vi.fn(),
+}));
+/** The link_shared events sent so far (PRD 30 adoption metric). */
+const shares = () =>
+  vi
+    .mocked(track)
+    .mock.calls.filter(([e]) => e === 'link_shared')
+    .map(([, p]) => p);
+beforeEach(() => vi.mocked(track).mockClear());
 
 const URL = 'https://app.test/invite/damilola-7k2x';
 
@@ -97,6 +110,7 @@ describe('InviteModal', () => {
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
     expect(screen.getAllByRole('status').some((s) => s.textContent === 'Link copied')).toBe(true);
     expect(p.onShared).toHaveBeenCalledTimes(1);
+    expect(shares()).toEqual([{ kind: 'invite', method: 'copy' }]);
     await act(async () => {
       vi.advanceTimersByTime(1900);
     });
@@ -115,6 +129,7 @@ describe('InviteModal', () => {
     expect(await screen.findByText('Couldn’t copy the link. Try again.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Copy invite link' })).toBeInTheDocument();
     expect(p.onShared).not.toHaveBeenCalled();
+    expect(shares()).toEqual([]);
   });
 
   it('shares through the system sheet with the invite text', async () => {
@@ -125,6 +140,7 @@ describe('InviteModal', () => {
     await user.click(screen.getByRole('button', { name: 'Share' }));
     expect(share).toHaveBeenCalledWith({ ...INVITE_SHARE, url: URL });
     expect(p.onShared).toHaveBeenCalledTimes(1);
+    expect(shares()).toEqual([{ kind: 'invite', method: 'native' }]);
   });
 
   it('dismissing the share sheet does nothing', async () => {
@@ -137,6 +153,8 @@ describe('InviteModal', () => {
     await flush();
     expect(write).not.toHaveBeenCalled();
     expect(p.onShared).not.toHaveBeenCalled();
+    // A dismissed sheet is not a share.
+    expect(shares()).toEqual([]);
   });
 
   it('a share the browser refuses falls back to copying', async () => {
@@ -149,6 +167,8 @@ describe('InviteModal', () => {
     await flush();
     expect(write).toHaveBeenCalledWith(URL);
     expect(p.onShared).toHaveBeenCalledTimes(1);
+    // Counted once, as what actually happened: a copy.
+    expect(shares()).toEqual([{ kind: 'invite', method: 'copy' }]);
   });
 
   it('a payload the browser can’t share is copied straight away, without the sheet', async () => {

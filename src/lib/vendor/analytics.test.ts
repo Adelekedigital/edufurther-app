@@ -51,7 +51,7 @@ describe('the PostHog seam', () => {
       opt_out_capturing_by_default: true,
       autocapture: false,
       capture_pageview: false,
-      capture_pageleave: false,
+      capture_pageleave: true,
       capture_exceptions: false,
       capture_performance: false,
       disable_session_recording: true,
