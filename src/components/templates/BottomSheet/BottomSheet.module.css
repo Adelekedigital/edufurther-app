@@ -51,6 +51,9 @@
 }
 
 .title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
   font-size: var(--text-p-md);
   font-weight: var(--weight-semibold);
@@ -65,6 +68,21 @@
   gap: var(--space-4);
   /* Ours: the home indicator's inset on phones that have one. */
   padding: var(--space-5) var(--space-5) max(var(--space-8), env(safe-area-inset-bottom));
+}
+
+/* With a footer, the body's bottom inset moves to it: the footer meets the edge. */
+.body:has(+ .footer) {
+  padding-bottom: var(--space-5);
+}
+/* As ModalShell's sheet footer: pinned, a hairline above, the home indicator's inset. */
+.footer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5) max(var(--space-3), env(safe-area-inset-bottom));
+  border-top: var(--border-hairline) solid var(--border-muted);
+  background: var(--surface-card);
 }
 
 @keyframes fade {

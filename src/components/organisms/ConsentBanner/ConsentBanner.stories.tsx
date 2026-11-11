@@ -13,7 +13,10 @@ export default meta;
 
 type Story = StoryObj<typeof ConsentBanner>;
 
+/** A guest: no Settings, so no "change it later" line. */
 export const Desktop: Story = {};
+
+export const SignedIn: Story = { args: { signedIn: true } };
 
 export const Phone: Story = {
   globals: { viewport: { value: 'mobile1' } },

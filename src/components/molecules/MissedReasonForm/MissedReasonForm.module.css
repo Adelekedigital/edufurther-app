@@ -12,17 +12,11 @@
 }
 
 /* The design's box: three rows, 14px text, the medium radius. The atom gives
-   the border, padding, focus ring and resize. */
+   the border, padding, focus ring, resize and the text size (--text-field:
+   14px, 16px on phones so iOS doesn't zoom). */
 .note {
   width: 100%;
   border-radius: var(--radius-md);
-}
-/* 14px only from tablet up: on phones the atom's 16px stays, or iOS zooms the
-   page on focus (as ReasonField). */
-@media (min-width: 768px) {
-  .note {
-    font-size: var(--text-p-sm);
-  }
 }
 
 .error {

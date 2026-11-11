@@ -296,6 +296,7 @@ export function AnalyticsRoot() {
   return (
     <ConsentBanner
       ref={bannerRef}
+      signedIn={viewer.kind === 'member'}
       onAccept={() => answerFromBanner(true)}
       onDecline={() => answerFromBanner(false)}
     />

@@ -62,10 +62,3 @@
   font-weight: var(--weight-regular);
   color: var(--ink-500);
 }
-
-/* Phones: 16px fields, so iOS doesn't zoom in. */
-@media (max-width: 767px) {
-  .field input {
-    font-size: var(--text-p-md);
-  }
-}

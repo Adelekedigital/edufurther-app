@@ -40,12 +40,12 @@
   padding: 0 var(--space-3);
   background: transparent;
   font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
+  font-size: var(--text-field);
   color: var(--text-primary);
   caret-color: var(--caret);
 }
 @media (max-width: 767px) {
-  /* Phones: 44px, and 16px text so iOS doesn't zoom (as the Input atom). */
+  /* Phones: 44px, as the Input atom. */
   .box {
     height: auto;
     min-height: var(--touch-target-min);
@@ -53,6 +53,5 @@
   /* The prototype's phone rule: 8px sides, as the Input atom. */
   .input {
     padding: 0 var(--space-2);
-    font-size: var(--text-p-md);
   }
 }

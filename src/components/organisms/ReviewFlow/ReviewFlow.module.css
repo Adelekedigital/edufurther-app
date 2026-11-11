@@ -49,10 +49,11 @@
   line-height: var(--lh-p);
   color: var(--ink-600);
 }
+/* No font-size: the atom's --text-field gives 14px, and 16px on phones so iOS
+   doesn't zoom. A size here wins the tie with the atom's class (review, PR 551). */
 .textarea {
   padding: var(--space-3);
   border-color: var(--ink-300);
-  font-size: var(--text-p-sm);
   line-height: var(--lh-p);
   resize: vertical;
 }

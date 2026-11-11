@@ -1,7 +1,7 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
-import { INVITE_SHARE } from '@/components/molecules/InviteLinkPanel/InviteLinkPanel';
+import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
 import { InviteModal } from './InviteModal';
 import { track } from '@/lib/analytics/track';
 
@@ -138,7 +138,7 @@ describe('InviteModal', () => {
     setShare(share);
     const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Share' }));
-    expect(share).toHaveBeenCalledWith({ ...INVITE_SHARE, url: URL });
+    expect(share).toHaveBeenCalledWith({ ...INVITE_LANDING_COPY.share, url: URL });
     expect(p.onShared).toHaveBeenCalledTimes(1);
     expect(shares()).toEqual([{ kind: 'invite', method: 'native' }]);
   });
