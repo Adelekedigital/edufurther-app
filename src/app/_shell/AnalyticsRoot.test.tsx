@@ -72,12 +72,18 @@ const vendor = vi.hoisted(() => ({
   sink: { capture: vi.fn(), identify: vi.fn(), reset: vi.fn() },
   setMode: vi.fn(),
   setReplay: vi.fn(),
+  captureException: vi.fn(),
 }));
 const loadAnalytics = vi.fn(async () => vendor);
+const setAnalyticsHalted = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/vendor/analytics', () => ({
   loadAnalytics: (...a: unknown[]) => loadAnalytics(...(a as [])),
+  setAnalyticsHalted,
 }));
-const errorsSeam = vi.hoisted(() => ({ setErrorUser: vi.fn() }));
+const errorsSeam = vi.hoisted(() => ({
+  setErrorUser: vi.fn(),
+  addErrorReporter: vi.fn(() => () => {}),
+}));
 vi.mock('@/lib/vendor/errors', () => errorsSeam);
 
 import { CONSENT_COPY } from '@/lib/copy/consent';
@@ -371,6 +377,42 @@ describe('members', () => {
 });
 
 describe('Preview as user', () => {
+  it('a preview started on a running page halts PostHog itself (its own autocapture too)', async () => {
+    env.viewer = member();
+    const { rerender } = render(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setMode).toHaveBeenCalled());
+    expect(setAnalyticsHalted).toHaveBeenLastCalledWith(false);
+    env.previewing = true;
+    rerender(<AnalyticsRoot />);
+    await waitFor(() => expect(setAnalyticsHalted).toHaveBeenLastCalledWith(true));
+  });
+
+  it('a preview started while PostHog is still loading halts it, and the late load never resumes it', async () => {
+    let finish: (v: typeof vendor) => void = () => {};
+    loadAnalytics.mockImplementationOnce(() => new Promise((r) => (finish = r)));
+    env.viewer = member();
+    const { rerender } = render(<AnalyticsRoot />);
+    await waitFor(() => expect(loadAnalytics).toHaveBeenCalled());
+    env.previewing = true;
+    rerender(<AnalyticsRoot />);
+    expect(setAnalyticsHalted).toHaveBeenLastCalledWith(true);
+    await act(async () => finish(vendor));
+    expect(setAnalyticsHalted).not.toHaveBeenCalledWith(false);
+    expect(vendor.setMode).not.toHaveBeenCalled();
+  });
+
+  it('an error page’s errors reach PostHog once it has loaded (the trial’s other tracker)', async () => {
+    env.viewer = member();
+    render(<AnalyticsRoot />);
+    await waitFor(() => expect(errorsSeam.addErrorReporter).toHaveBeenCalledTimes(1));
+    const report = (
+      errorsSeam.addErrorReporter.mock.calls[0] as unknown as [(e: unknown) => void]
+    )[0];
+    const err = new Error('boom');
+    report(err);
+    expect(vendor.captureException).toHaveBeenCalledWith(err);
+  });
+
   it('sends nothing, asks nothing, writes nothing', async () => {
     env.previewing = true;
     accepted();

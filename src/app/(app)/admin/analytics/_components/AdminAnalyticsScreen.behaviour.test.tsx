@@ -85,14 +85,15 @@ describe('Admin Analytics: Behaviour', () => {
   });
 
   it('a breakdown the funnel does not offer is never asked for', async () => {
-    h.params = new URLSearchParams('tab=funnels&funnel=mentor_activation&by=invite');
+    // Mentor application offers only All applicants.
+    h.params = new URLSearchParams('tab=funnels&funnel=mentor_application&by=invite');
     serve();
     renderScreen(<AdminAnalyticsScreen />);
-    await screen.findByRole('img', { name: /^Mentor activation funnel:/ });
+    await screen.findByRole('img', { name: /^Mentor application funnel:/ });
     const call = h.GET.mock.calls.find(([p]) => p === FUNNEL)!;
     expect(queryOf(call[1]).by).toBe('all');
     expect(screen.getByRole('combobox', { name: 'Break down by' })).toHaveTextContent(
-      'All mentors',
+      'All applicants',
     );
   });
 

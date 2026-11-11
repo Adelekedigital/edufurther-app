@@ -13,5 +13,13 @@ export const CONSENT_BANNER_LIVE =
   ANALYTICS_LIVE && process.env.NEXT_PUBLIC_CONSENT_BANNER_ENABLED === 'true';
 export const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim() ?? '';
 
+/**
+ * PostHog error tracking (the error-tracking trial, beside Sentry; owner
+ * 2026-11-11): exceptions sent with the analytics, so off whenever analytics
+ * is. Its own flag, so either tool can be switched off for the comparison.
+ */
+export const POSTHOG_ERRORS_LIVE =
+  ANALYTICS_LIVE && process.env.NEXT_PUBLIC_POSTHOG_ERRORS_ENABLED === 'true';
+
 /** The same-origin path next.config.ts forwards to PostHog (never the vendor's own host). */
 export const ANALYTICS_PATH = '/ingest';

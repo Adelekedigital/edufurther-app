@@ -65,6 +65,7 @@ Vercel preview pattern `https://*-<team>.vercel.app/**`. The magic link lands on
 | `ENABLE_MOCK_API` | **never** | **never** | mock is for local dev and CI only |
 | `NEXT_PUBLIC_MOCK_VIEWER` | **never** | **never** | fakes the viewer with no sign-in and no token, so booking fails with 401 (see above). Local dev only |
 | `NEXT_PUBLIC_SENTRY_ENABLED` | `true` for the trial | *unset* | error tracking (ADR 0012); unset or anything but `true` loads nothing |
+| `NEXT_PUBLIC_POSTHOG_ERRORS_ENABLED` | `true` for the trial | *unset* | PostHog's exceptions beside Sentry (ADR 0012); needs analytics on too. Scrubbed as Sentry's are; the person's id only after Accept |
 | `NEXT_PUBLIC_SENTRY_DSN` | the app project's DSN | *unset* | public by design (it only names the project); without it nothing loads |
 | `NEXT_PUBLIC_ERRORS_ENVIRONMENT` | `production` live; `testing` on the testing site | *unset* | the testing site is a Vercel production deployment on test data, and the trial scores live traffic only |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | build only | *unset* | **never** `NEXT_PUBLIC_`. With Sentry on, the build uploads source maps and deletes them, so the site never serves them |

@@ -12,7 +12,9 @@ import {
   isUpstreamDown,
   type Behaviour,
   type Funnel,
+  type FunnelFigure,
   type FunnelName,
+  type FunnelStep,
 } from '@/lib/api/data/adminAnalytics';
 import {
   ANALYTICS_STATES,
@@ -55,7 +57,7 @@ export function safeReplayUrl(url: string | null | undefined): string | null {
  * step before. A step nothing tracks (null) reads "No data" with no bar, and
  * no drop is claimed into or out of it.
  */
-export function funnelRows(funnel: Funnel) {
+export function funnelRows(funnel: Omit<FunnelStep, 'layer'>[]) {
   const known = steps(funnel.map((s) => ({ key: s.key, value: s.value ?? 0 })));
   return known.map((s, i) => {
     const value = funnel[i]!.value;
@@ -273,8 +275,9 @@ function FunnelBody({ name, query }: { name: FunnelName; query: TabQuery<Funnel>
       />
     );
   }
+  const { steps: all, figures } = query.data!;
   // Nobody started it, or nothing tracks its first step.
-  if (!query.data!.length || !query.data![0]!.value) {
+  if (!all.length || !all[0]!.value) {
     // Nobody started this funnel in the window: the page's empty state, in the card.
     return (
       <EmptyState
@@ -286,32 +289,70 @@ function FunnelBody({ name, query }: { name: FunnelName; query: TabQuery<Funnel>
       />
     );
   }
-  const rows = funnelRows(query.data!);
+  // One run of rows, so drop-off carries on from the milestones into the outcome.
+  const rows = funnelRows(all);
+  const primary = rows.filter((_, i) => all[i]!.layer !== 'secondary');
+  const secondary = rows.filter((_, i) => all[i]!.layer === 'secondary');
+  const bars = (list: typeof rows, label: string) => (
+    <BarRows
+      label={label}
+      variant="funnel"
+      rows={list.map((r) => ({
+        key: r.key,
+        label: r.label,
+        width: r.width,
+        tip: BEHAVIOUR.stepTip(r.label, r.count),
+        value: (
+          <span className={styles.step}>
+            <strong className={styles.stepCount}>{r.count}</strong>
+            <span className={styles.drop}>{r.drop}</span>
+          </span>
+        ),
+      }))}
+    />
+  );
+  const spoken = (list: typeof rows) => list.map((r) => `${r.label} ${r.count}`).join(', ');
   return (
     <>
-      <BarRows
-        label={BEHAVIOUR.funnelAria(
-          copy.label,
-          rows.map((r) => `${r.label} ${r.count}`).join(', '),
-        )}
-        variant="funnel"
-        rows={rows.map((r) => ({
-          key: r.key,
-          label: r.label,
-          width: r.width,
-          tip: BEHAVIOUR.stepTip(r.label, r.count),
-          value: (
-            <span className={styles.step}>
-              <strong className={styles.stepCount}>{r.count}</strong>
-              <span className={styles.drop}>{r.drop}</span>
-            </span>
-          ),
-        }))}
-      />
+      {bars(primary, BEHAVIOUR.funnelAria(copy.label, spoken(primary)))}
+      {secondary.length > 0 && (
+        <>
+          <p className={styles.layer} aria-hidden="true">
+            {BEHAVIOUR.outcome}
+          </p>
+          {bars(secondary, BEHAVIOUR.outcomeLabel(copy.label, spoken(secondary)))}
+        </>
+      )}
+      {figures.length > 0 && <Figures name={copy.label} figures={figures} />}
       <div className={styles.foot}>
         <span>{copy.note}</span>
         <span>{BEHAVIOUR.refreshed}</span>
       </div>
     </>
+  );
+}
+
+const ONE_DECIMAL = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
+
+/** A figure as read: "2.5 days", "41.7%", or "No data". */
+export function figureValue(f: Pick<FunnelFigure, 'value' | 'unit'>): string {
+  return orNoData(f.value, (n) =>
+    f.unit === 'days'
+      ? BEHAVIOUR.days(ONE_DECIMAL.format(n))
+      : BEHAVIOUR.percent(ONE_DECIMAL.format(n)),
+  );
+}
+
+/** The numbers beside the funnel (funnels v2): days to bookable, adoption, review time. */
+function Figures({ name, figures }: { name: string; figures: FunnelFigure[] }) {
+  return (
+    <dl className={styles.figures} aria-label={BEHAVIOUR.figuresLabel(name)}>
+      {figures.map((f) => (
+        <div key={f.key} className={styles.figure}>
+          <dt>{f.label}</dt>
+          <dd>{figureValue(f)}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

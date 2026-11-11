@@ -10,6 +10,7 @@ import type {
   WireSections,
   WireSessions,
   WireSupply,
+  WireFunnelFigure,
 } from '@/lib/api/data/pendingAnalytics';
 import { FUNNEL_COPY } from '@/lib/copy/adminAnalytics';
 
@@ -325,46 +326,81 @@ export function mockSection<K extends keyof WireSections>(
   return SECTIONS[section]({ ...c, alerts });
 }
 
-const FUNNELS: Record<string, [string, string, number][]> = {
+/** Funnels v2 (backend decision 338): key, label, count, layer. */
+type MockStep = [string, string, number, 'primary' | 'secondary'];
+const FUNNELS: Record<string, MockStep[]> = {
   signup: [
-    ['started', 'Started sign-up', 640],
-    ['code_verified', 'Code verified', 498],
-    ['onboarded', 'Onboarding done', 371],
-    ['first_booking_or_bookable', 'First booking or bookable', 142],
-    ['first_completed', 'First completed session', 88],
+    ['started', 'Started sign-up', 640, 'primary'],
+    ['code_verified', 'Code verified', 498, 'primary'],
+    ['onboarded', 'Onboarding done', 371, 'primary'],
   ],
   booking: [
-    ['started', 'Booking started', 520],
-    ['type_picked', 'Type picked', 431],
-    ['time_picked', 'Time picked', 344],
-    ['questions_done', 'Questions done', 318],
-    ['requested', 'Requested', 302],
-    ['completed', 'Completed', 214],
+    ['started', 'Booking started', 520, 'primary'],
+    ['type_picked', 'Type picked', 431, 'primary'],
+    ['time_picked', 'Time picked', 344, 'primary'],
+    ['questions_done', 'Questions done', 318, 'primary'],
+    ['requested', 'Requested', 302, 'primary'],
+    ['completed', 'Completed', 214, 'primary'],
   ],
   mentee_activation: [
-    ['signed_up', 'Signed up', 214],
-    ['onboarded', 'Onboarding done', 162],
-    ['first_request', 'First request', 71],
-    ['first_session', 'First session (14 days)', 47],
+    ['onboarded', 'Onboarding done', 162, 'primary'],
+    ['first_request', 'First request', 71, 'primary'],
+    ['first_session', 'First session (14 days)', 47, 'secondary'],
   ],
   mentor_activation: [
-    ['approved', 'Approved', 21],
-    ['availability_set', 'Availability set', 17],
-    ['session_created', 'Session created', 14],
-    ['video_connected', 'Video connected (bookable)', 10],
-    ['first_session', 'First session (30 days)', 9],
+    ['approved', 'Approved', 12, 'primary'],
+    ['availability_set', 'Availability set', 11, 'primary'],
+    ['session_type_created', 'Session created', 7, 'primary'],
+    ['first_booking_received', 'First booking (30 days)', 6, 'secondary'],
+    ['first_session_delivered', 'First session (30 days)', 3, 'secondary'],
   ],
   mentor_application: [
-    ['started', 'Started', 92],
-    ['about_you', 'About you', 74],
-    ['education', 'Education', 61],
-    ['hours', 'Hours', 44],
-    ['submitted', 'Submitted', 38],
-    ['approved', 'Approved', 21],
+    ['started', 'Started', 92, 'primary'],
+    ['about_you', 'About you', 74, 'primary'],
+    ['education', 'Education', 61, 'primary'],
+    ['hours', 'Hours', 44, 'primary'],
+    ['submitted', 'Submitted', 38, 'primary'],
+    ['approved', 'Approved', 21, 'primary'],
   ],
 };
 
-const BY_SHARE: Record<string, number> = { mentee: 0.82, mentor: 0.18, migrated: 0.55 };
+/** The figures beside each funnel (decision 338); [] for the others. */
+const FIGURES: Record<string, WireFunnelFigure[]> = {
+  mentor_activation: [
+    { key: 'days_to_bookable', label: 'Days to bookable', value: 2.5, previous: 3.0, unit: 'days' },
+    {
+      key: 'calendar_connected',
+      label: 'Connected a calendar (of approved)',
+      value: 41.7,
+      previous: 33.3,
+      unit: 'percent',
+    },
+    {
+      key: 'profile_link_shared',
+      label: 'Shared their profile link (of approved, with analytics on)',
+      value: null,
+      previous: null,
+      unit: 'percent',
+    },
+  ],
+  mentor_application: [
+    {
+      key: 'median_review_days',
+      label: 'Median days in review',
+      value: 2,
+      previous: 3,
+      unit: 'days',
+    },
+  ],
+};
+
+const BY_SHARE: Record<string, number> = {
+  mentee: 0.82,
+  mentor: 0.18,
+  migrated: 0.55,
+  invite: 0.35,
+  direct: 0.65,
+};
 
 export const isMockFunnel = (name: string) => name in FUNNELS;
 
@@ -382,13 +418,23 @@ export function mockFunnel(
     note: FUNNEL_COPY[name as WireFunnel['name']].note,
     // The backend's windows: booking 60 days, mentee activation 14, the rest 30.
     window_days: name === 'booking' ? 60 : name === 'mentee_activation' ? 14 : 30,
-    steps: FUNNELS[name]!.map(([key, label, v]) => ({
-      key,
-      label,
-      value: Math.max(1, Math.round(((v * c.days) / 30) * k)),
-      previous: c.compare ? Math.max(1, Math.round(((v * 0.9 * c.days) / 30) * k)) : null,
-    })),
+    // Built apart from the literal: layer and figures are in the backend's
+    // next spec, not yet this one, so this type-checks before and after.
+    ...v2(name, k, c),
   };
+}
+
+function v2(name: string, k: number, c: NonNullable<ReturnType<typeof mockWindow>>) {
+  const steps = FUNNELS[name]!.map(([key, label, v, layer]) => ({
+    key,
+    label,
+    value: Math.max(1, Math.round(((v * c.days) / 30) * k)),
+    previous: c.compare ? Math.max(1, Math.round(((v * 0.9 * c.days) / 30) * k)) : null,
+    layer,
+  }));
+  // previous is null with compare off (the backend's rule).
+  const figures = (FIGURES[name] ?? []).map((f) => (c.compare ? f : { ...f, previous: null }));
+  return { steps, figures };
 }
 
 export function mockBehaviour(c: NonNullable<ReturnType<typeof mockWindow>>): WireBehaviour {

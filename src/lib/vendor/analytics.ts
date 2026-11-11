@@ -1,6 +1,7 @@
 import type { CaptureResult, PostHog, PostHogConfig } from 'posthog-js';
 import type { PersonProperties } from '@/lib/analytics/events';
-import { scrubProperties } from '@/lib/analytics/scrub';
+import { scrubErrorType, scrubFrameFile, scrubProperties, scrubText } from '@/lib/analytics/scrub';
+import { POSTHOG_ERRORS_LIVE } from '@/lib/config/analytics';
 import type { Sink } from '@/lib/analytics/track';
 
 /**
@@ -12,8 +13,9 @@ import type { Sink } from '@/lib/analytics/track';
  * so before an answer and after a decline PostHog counts without cookies or
  * storage (a server-side hash, no identify, no replay). Accept opts in:
  * persistence, identify, and replay where the app turns it on. Typed events
- * only, plus page leaves for Web Analytics: autocapture, automatic page views, heatmaps, dead and rage clicks,
- * exceptions, web vitals, surveys, tours and experiments are all off.
+ * only, plus page leaves for Web Analytics (and exceptions behind their own
+ * flag, the error-tracking trial): autocapture, automatic page views, heatmaps, dead and rage clicks,
+ * web vitals, surveys, tours and experiments are all off.
  */
 
 /** Marks a part of the page replay never records (intake answers, message dialogs). */
@@ -27,14 +29,85 @@ export type VendorAnalytics = {
   setMode: (mode: VendorMode) => void;
   /** Replay on this route; only ever on while identified. */
   setReplay: (on: boolean) => void;
+  /** An error the app caught (an error page): PostHog's exceptions, when on. */
+  captureException: (error: unknown) => void;
 };
+
+type ExceptionFrame = Record<string, unknown>;
+type ExceptionEntry = {
+  type?: unknown;
+  value?: unknown;
+  mechanism?: Record<string, unknown>;
+  stacktrace?: { type?: unknown; frames?: ExceptionFrame[] };
+};
+
+/** The frame fields posthog-js sends, none of them personal; anything else stays home. */
+const FRAME_KEYS = ['platform', 'function', 'in_app', 'lineno', 'colno', 'chunk_id'] as const;
+
+/** The exception's own fields that may leave; any other `$exception_*` stays home. */
+const EXCEPTION_KEYS = new Set(['$exception_list', '$exception_level', '$exception_message']);
+
+/**
+ * An `$exception`'s own properties, rebuilt as Sentry's are (lib/vendor/errors):
+ * of the exception's fields (`$exception_*`) only the allowlisted ones leave, so
+ * one a posthog-js upgrade adds never leaves unseen, and each entry is rebuilt
+ * from an allowlist: its type an identifier, its value through scrubText, its
+ * frames' files through the shared frame rule. PostHog's standard event fields
+ * (token, distinct id, library, session) are what every event carries, already
+ * through scrubProperties.
+ */
+function scrubException(props: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(props)) {
+    if (!k.startsWith('$exception') || EXCEPTION_KEYS.has(k)) out[k] = v;
+  }
+  if (typeof out.$exception_message === 'string')
+    out.$exception_message = scrubText(out.$exception_message);
+  if (Array.isArray(out.$exception_list)) {
+    out.$exception_list = (out.$exception_list as ExceptionEntry[]).map((x) => ({
+      type: scrubErrorType(x.type),
+      value: typeof x.value === 'string' ? scrubText(x.value) : undefined,
+      mechanism: x.mechanism && {
+        type: x.mechanism.type,
+        handled: x.mechanism.handled,
+        synthetic: x.mechanism.synthetic,
+      },
+      stacktrace: x.stacktrace && {
+        type: x.stacktrace.type,
+        frames: x.stacktrace.frames?.map((f) => {
+          const kept: Record<string, unknown> = {
+            filename: scrubFrameFile(f.filename),
+            abs_path: scrubFrameFile(f.abs_path),
+          };
+          for (const k of FRAME_KEYS) if (k in f) kept[k] = f[k];
+          return kept;
+        }),
+      },
+    }));
+  }
+  return out;
+}
+
+/**
+ * Off: analytics went off or a preview started, whether PostHog has loaded,
+ * is still loading, or never will. Its own autocapture (exceptions, page
+ * leaves) would still fire, so every event stops here (PRD 27: nothing as
+ * anyone). Module-level, not on the vendor: a halt must hold before it exists.
+ */
+let halted = false;
+
+/** Halts (or resumes) everything PostHog would send; callable at any time. */
+export function setAnalyticsHalted(on: boolean): void {
+  halted = on;
+}
 
 /** Every address property scrubbed before it leaves (no query string, no invite code). */
 export function beforeSend(event: CaptureResult | null): CaptureResult | null {
-  if (!event) return null;
+  if (!event || halted) return null;
+  const props = scrubProperties(event.properties ?? {});
   return {
     ...event,
-    properties: scrubProperties(event.properties ?? {}),
+    properties: event.event === '$exception' ? scrubException(props) : props,
     ...(event.$set ? { $set: scrubProperties(event.$set) } : {}),
     ...(event.$set_once ? { $set_once: scrubProperties(event.$set_once) } : {}),
   };
@@ -53,7 +126,15 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
     capture_dead_clicks: false,
     capture_heatmaps: false,
     rageclick: false,
-    capture_exceptions: false,
+    // Exceptions (error-tracking trial) only behind their own flag: unhandled
+    // errors and rejections, never the console (it can hold anything).
+    capture_exceptions: POSTHOG_ERRORS_LIVE
+      ? {
+          capture_unhandled_errors: true,
+          capture_unhandled_rejections: true,
+          capture_console_errors: false,
+        }
+      : false,
     capture_performance: false,
     disable_surveys: true,
     disable_product_tours: true,
@@ -137,6 +218,9 @@ export function wrap(
         ph.sessionPersistence?.remove();
       }
     },
+    captureException: (error) => {
+      if (POSTHOG_ERRORS_LIVE && !halted) ph.captureException(error);
+    },
     setReplay: (on) => {
       if (on && mode === 'identified' && !replaying) {
         replaying = true;
@@ -162,7 +246,12 @@ let loading: Promise<VendorAnalytics> | null = null;
 
 /** Loads and starts PostHog once per page; later calls get the same instance. */
 export function loadAnalytics(key: string, apiHost: string): Promise<VendorAnalytics> {
-  loading ??= import('posthog-js').then(({ default: posthog }) => {
+  // The exception capture is our own bundled chunk too (no external script),
+  // fetched only when PostHog errors are on, and registered before init.
+  loading ??= Promise.all([
+    import('posthog-js'),
+    POSTHOG_ERRORS_LIVE ? import('posthog-js/dist/exception-autocapture') : null,
+  ]).then(([{ default: posthog }]) => {
     posthog.init(key, vendorConfig(apiHost));
     return wrap(posthog);
   });
@@ -172,4 +261,5 @@ export function loadAnalytics(key: string, apiHost: string): Promise<VendorAnaly
 /** Tests only. */
 export function resetVendorForTests() {
   loading = null;
+  halted = false;
 }

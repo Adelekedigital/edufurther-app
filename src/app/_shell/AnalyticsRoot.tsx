@@ -47,8 +47,8 @@ import {
   POSTHOG_KEY,
 } from '@/lib/config/analytics';
 import { useHydrated } from '@/lib/utils/useHydrated';
-import { loadAnalytics, type VendorAnalytics } from '@/lib/vendor/analytics';
-import { setErrorUser } from '@/lib/vendor/errors';
+import { loadAnalytics, setAnalyticsHalted, type VendorAnalytics } from '@/lib/vendor/analytics';
+import { addErrorReporter, setErrorUser } from '@/lib/vendor/errors';
 
 /** An arrival older than this isn't the account's sign-up (the held arrival's own lifetime). */
 const NEW_ACCOUNT_MS = 30 * 24 * 60 * 60_000;
@@ -128,12 +128,17 @@ export function AnalyticsRoot() {
       // A preview started (or a flag went): stop replay, disconnect, drop the queue.
       setConsent(false);
       loadedRef.current?.setReplay(false);
+      // PostHog's own autocapture (exceptions, page leaves) stops too, even if
+      // it is still loading: the halt doesn't need the vendor to exist.
+      setAnalyticsHalted(true);
       return;
     }
     let live = true;
     void loadAnalytics(POSTHOG_KEY, ANALYTICS_PATH)
       .then((v) => {
         if (!live) return;
+        // Only a load still wanted resumes (a preview may have started meanwhile).
+        setAnalyticsHalted(false);
         v.setMode(mode);
         setConsent(true, v.sink);
         loadedRef.current = v;
@@ -149,6 +154,13 @@ export function AnalyticsRoot() {
 
   // Only the vendor in the mode in force; nothing while off.
   const vendor = mode === 'off' ? null : loaded;
+
+  // An error page's error also goes to PostHog (the trial compares both), while
+  // it's loaded; the vendor itself checks POSTHOG_ERRORS_LIVE.
+  useEffect(() => {
+    if (!vendor) return;
+    return addErrorReporter((e) => vendor.v.captureException(e));
+  }, [vendor]);
 
   // Device storage only once identified; a withdrawal removes what was written.
   const wasIdentified = useRef(false);

@@ -42,6 +42,24 @@ export type WireStageKey = WireGrowth['by_stage'][number]['key'];
 
 /** Shipped (backend #633): the published schemas. Every rate is a percentage or null. */
 export type WireFunnel = Schemas['AnalyticsFunnelRead'];
+
+/**
+ * Funnels v2 (backend decision 338, release handshake): each step's layer and
+ * the figures beside the funnel. Optional here until the spec publishes them;
+ * the intersection still type-checks once they're required.
+ */
+export type WireFunnelLayer = 'primary' | 'secondary';
+export type WireFunnelFigure = {
+  key: string;
+  label: string;
+  value: number | null;
+  previous: number | null;
+  unit: 'days' | 'percent';
+};
+export type WireFunnelV2 = Omit<WireFunnel, 'steps'> & {
+  steps: (WireFunnel['steps'][number] & { layer?: WireFunnelLayer })[];
+  figures?: WireFunnelFigure[];
+};
 export type WireBehaviour = Schemas['AnalyticsBehaviourRead'];
 /** Where a profile view came from; anything else is counted as `other`. The words are ours. */
 export type WireProfileViewSource = WireBehaviour['profile_views_by_source'][number]['source'];

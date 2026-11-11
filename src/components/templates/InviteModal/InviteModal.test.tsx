@@ -110,7 +110,7 @@ describe('InviteModal', () => {
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
     expect(screen.getAllByRole('status').some((s) => s.textContent === 'Link copied')).toBe(true);
     expect(p.onShared).toHaveBeenCalledTimes(1);
-    expect(shares()).toEqual([{ kind: 'invite', method: 'copy' }]);
+    expect(shares()).toEqual([{ kind: 'invite', method: 'copy', own: true }]);
     await act(async () => {
       vi.advanceTimersByTime(1900);
     });
@@ -140,7 +140,7 @@ describe('InviteModal', () => {
     await user.click(screen.getByRole('button', { name: 'Share' }));
     expect(share).toHaveBeenCalledWith({ ...INVITE_LANDING_COPY.share, url: URL });
     expect(p.onShared).toHaveBeenCalledTimes(1);
-    expect(shares()).toEqual([{ kind: 'invite', method: 'native' }]);
+    expect(shares()).toEqual([{ kind: 'invite', method: 'native', own: true }]);
   });
 
   it('dismissing the share sheet does nothing', async () => {
@@ -168,7 +168,7 @@ describe('InviteModal', () => {
     expect(write).toHaveBeenCalledWith(INVITE_LANDING_COPY.message(URL));
     expect(p.onShared).toHaveBeenCalledTimes(1);
     // Counted once, as what actually happened: a copy.
-    expect(shares()).toEqual([{ kind: 'invite', method: 'copy' }]);
+    expect(shares()).toEqual([{ kind: 'invite', method: 'copy', own: true }]);
   });
 
   it('a payload the browser can’t share is copied straight away, without the sheet', async () => {

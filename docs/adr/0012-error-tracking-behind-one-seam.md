@@ -56,6 +56,28 @@ Option 1.
 - **Pinned:** `@sentry/nextjs` 11.9.0 exactly. Its defaults move between
   versions, so an upgrade is re-reviewed for what it collects.
 
+### PostHog's exceptions (PR b2)
+
+- Behind `NEXT_PUBLIC_POSTHOG_ERRORS_ENABLED`, on top of analytics: unhandled
+  errors and rejections, never the console. The exception module is posthog-js's
+  own bundled chunk (`posthog-js/dist/exception-autocapture`), so PostHog still
+  loads no external script.
+- `$exception` events go through the same `before_send` as every event, plus
+  `scrubException`: the message and values through `scrubText` (now shared in
+  `lib/analytics/scrub`, one implementation for both trackers), page-URL frames
+  to their template.
+- An error an error page catches (React handles it, so autocapture never sees
+  it) is forwarded by the error seam to every added reporter (`addErrorReporter`),
+  so both tools see the same set. Identity follows analytics consent (cookieless
+  until Accept); a preview sends nothing.
+- Previews: a preview started on a page where PostHog already runs halts it
+  (`setHalted`: `before_send` drops every event, its own autocapture included).
+- Read the trial's counts knowing where PostHog sees less: unhandled errors from
+  before it loads (Sentry holds up to 10), and a crash in the root layout
+  (global-error replaces the providers, so no PostHog reporter is there).
+  Errors an error page catches before PostHog loads are held (up to 10) and
+  handed to it when it does.
+
 ## Consequences
 
 - Good: the trial runs without changing what users download while it's off,

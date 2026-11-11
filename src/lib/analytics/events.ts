@@ -97,7 +97,8 @@ export type AnalyticsEvents = {
    * share sheet is not a share). Feeds the mentor adoption metric beside the
    * activation funnel, and invites shared for mentees; never a funnel step.
    */
-  link_shared: { kind: ShareKind; method: ShareMethod };
+  /** `own`: the sharer's own profile or invite (a visitor can share a mentor's profile too). */
+  link_shared: { kind: ShareKind; method: ShareMethod; own: boolean };
 
   // Push reach.
   pwa_installed: Record<string, never>;
