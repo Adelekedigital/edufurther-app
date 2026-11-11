@@ -245,6 +245,15 @@ parallel. `verify` is the required check and is green only when those gates are.
 Coverage thresholds are never per shard (`VITEST_SHARD`), and never lowered. About
 3.5 minutes for `verify`, down from 10.
 
+**Decide by the build principles; hold only what's the owner's (owner, 2026-11-11, every session).**
+When a choice blocks the work, decide it yourself by the four principles (build now, build to
+scale, build securely, build to industry pattern and standard), write the decision and why in the
+PR body (and the decision row or memory when it will recur), and keep building. Hold for the owner
+ONLY what critically needs them: money or billing, legal or consent, a product direction with no
+recorded answer, anything irreversible or customer-facing in production, access or secrets.
+Everything else is decided, recorded and reported in the summary. The gates never change: CI green
+on the exact head and a completed review before any merge.
+
 **Machine room (owner, standing rule).** Stop every idle task you own at each
 checkpoint: dev servers (a stopped task can leave Next's child on the port: check
 and stop it), pollers and watchers, test runners, merged or idle worktrees. Confirm a
