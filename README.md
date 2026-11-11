@@ -64,6 +64,10 @@ Vercel preview pattern `https://*-<team>.vercel.app/**`. The magic link lands on
 | `NEXT_PUBLIC_API_BASE_URL` | *unset* | *unset* | unset = same-origin proxy |
 | `ENABLE_MOCK_API` | **never** | **never** | mock is for local dev and CI only |
 | `NEXT_PUBLIC_MOCK_VIEWER` | **never** | **never** | fakes the viewer with no sign-in and no token, so booking fails with 401 (see above). Local dev only |
+| `NEXT_PUBLIC_SENTRY_ENABLED` | `true` for the trial | *unset* | error tracking (ADR 0012); unset or anything but `true` loads nothing |
+| `NEXT_PUBLIC_SENTRY_DSN` | the app project's DSN | *unset* | public by design (it only names the project); without it nothing loads |
+| `NEXT_PUBLIC_ERRORS_ENVIRONMENT` | `production` live; `testing` on the testing site | *unset* | the testing site is a Vercel production deployment on test data, and the trial scores live traffic only |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | build only | *unset* | **never** `NEXT_PUBLIC_`. With Sentry on, the build uploads source maps and deletes them, so the site never serves them |
 | `NEXT_PUBLIC_ONBOARDING_ENABLED` | `true` | `true` | mentee onboarding; read as `=== 'true'`, so unset is off and `/onboarding` is not found (`src/lib/config/auth.ts`) |
 | `NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED` | `true` | `true` | mentor onboarding and `/mentor-application`; read as `=== 'true'`, so unset is off (`src/lib/config/auth.ts`) |
 | `NEXT_PUBLIC_MESSAGES_ENABLED` | `true` | `true` | Messages, its nav item and every Message button; read as `=== 'true'`, so unset is off and `/messages` is not found (`src/lib/config/messages.ts`) |
