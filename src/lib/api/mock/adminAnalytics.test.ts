@@ -9,8 +9,23 @@ describe("mockWindow: the routes' window rules", () => {
       to: '2026-11-09',
       previous_from: '2026-10-27',
       previous_to: '2026-11-02',
+      tz: 'UTC',
     });
     expect(mockWindow({}, NOW)?.days).toBe(30);
+  });
+
+  it('follows the asked zone: its own today, echoed back; an unknown zone is a 422', () => {
+    // 23:30 on 9 Nov in UTC is already 10 Nov in Lagos (UTC+1).
+    const late = new Date('2026-11-09T23:30:00Z');
+    expect(mockWindow({ window: '7d', tz: 'Africa/Lagos' }, late)?.window).toMatchObject({
+      to: '2026-11-10',
+      tz: 'Africa/Lagos',
+    });
+    expect(mockWindow({ window: '7d' }, late)?.window).toMatchObject({
+      to: '2026-11-09',
+      tz: 'UTC',
+    });
+    expect(mockWindow({ tz: 'Mars/Olympus' }, late)).toBeNull();
   });
 
   it('takes one day or a range, inclusive', () => {

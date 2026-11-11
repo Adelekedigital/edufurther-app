@@ -5,6 +5,8 @@ import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import { track } from '@/lib/analytics/track';
+import { useCopyText } from '@/lib/utils/useCopyText';
 import { useClampIntoView } from '@/lib/utils/useEdgeFlip';
 import styles from './ShareMenu.module.css';
 
@@ -40,7 +42,7 @@ type ShareMenuProps = {
   | { open?: undefined; onOpenChange?: undefined }
 );
 
-type Item = { key: string; label: string; icon: IconName } & (
+type Item = { key: 'copy' | 'linkedin' | 'email'; label: string; icon: IconName } & (
   { href: string; onSelect?: never } | { onSelect: () => void; href?: never }
 );
 
@@ -66,6 +68,7 @@ export function ShareMenu({
     onOpenChange?.(next);
   };
   const [status, setStatus] = useState('');
+  const { copy } = useCopyText(3000);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -115,19 +118,14 @@ export function ShareMenu({
       label: 'Copy profile link',
       icon: 'link',
       onSelect: () => {
-        // No clipboard API outside secure contexts (plain-http previews, some
-        // webviews): say so rather than fail silently.
-        if (!navigator.clipboard) {
-          setStatus('Couldn’t copy the link');
-          return;
-        }
-        navigator.clipboard.writeText(url).then(
-          () => {
-            setStatus('Link copied');
-            onCopied?.();
-          },
-          () => setStatus('Couldn’t copy the link'),
-        );
+        // useCopyText reads no clipboard API (plain-http previews, some
+        // webviews) as a failure, said rather than silent.
+        void copy(url).then((ok) => {
+          setStatus(ok ? 'Link copied' : 'Couldn’t copy the link');
+          if (!ok) return;
+          track('link_shared', { kind: 'mentor_profile', method: 'copy' });
+          onCopied?.();
+        });
       },
     },
     {
@@ -237,7 +235,12 @@ export function ShareMenu({
                   href={it.href}
                   label={it.label}
                   newTab={it.key === 'linkedin'}
-                  onClick={() => close(false)}
+                  onClick={() => {
+                    // A share target opened: the intent is the share (the
+                    // site's own send is out of our sight).
+                    track('link_shared', { kind: 'mentor_profile', method: it.key });
+                    close(false);
+                  }}
                 >
                   {body}
                 </ExternalLink>

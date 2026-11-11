@@ -12,7 +12,7 @@ import type { Sink } from '@/lib/analytics/track';
  * so before an answer and after a decline PostHog counts without cookies or
  * storage (a server-side hash, no identify, no replay). Accept opts in:
  * persistence, identify, and replay where the app turns it on. Typed events
- * only: autocapture, page views, page leaves, heatmaps, dead and rage clicks,
+ * only, plus page leaves for Web Analytics: autocapture, automatic page views, heatmaps, dead and rage clicks,
  * exceptions, web vitals, surveys, tours and experiments are all off.
  */
 
@@ -48,7 +48,8 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
     person_profiles: 'identified_only',
     autocapture: false,
     capture_pageview: false,
-    capture_pageleave: false,
+    // Web Analytics' bounce rate and time on page; pairs with our own $pageview.
+    capture_pageleave: true,
     capture_dead_clicks: false,
     capture_heatmaps: false,
     rageclick: false,

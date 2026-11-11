@@ -21,7 +21,7 @@ import {
   replayAllowed,
   type AnalyticsMode,
 } from '@/lib/analytics/mode';
-import { routeOf } from '@/lib/analytics/scrub';
+import { routeTemplate } from '@/lib/analytics/route';
 import {
   identify,
   onReplayScope,
@@ -101,7 +101,19 @@ export function AnalyticsRoot() {
     previewing,
     answer,
   });
-  const mode: AnalyticsMode = wanted === 'identified' && !viewerKnown ? 'cookieless' : wanted;
+  // Until the viewer is known a signed-in visitor isn't identified (their
+  // account may have withdrawn). A page already identified stays so while the
+  // viewer reloads (signing in, a /me refetch). Otherwise the answer is
+  // pending: nothing identified happens, and the vendor isn't touched either,
+  // because setting it to cookieless runs its withdrawal (a PostHog reset:
+  // queued events lost, the person split in two). Events wait in track()'s
+  // queue and leave in the known mode.
+  const [lastKnown, setLastKnown] = useState<AnalyticsMode | null>(null);
+  if (viewerKnown && lastKnown !== wanted) setLastKnown(wanted);
+  const pending = wanted === 'identified' && !viewerKnown && lastKnown !== 'identified';
+  const mode: AnalyticsMode = pending ? 'cookieless' : wanted;
+  // The vendor's mode: none while pending (leave it as it is).
+  const vendorMode: AnalyticsMode | null = pending ? null : mode;
 
   useEffect(() => setBlocked(analyticsBlocked), []);
 
@@ -109,6 +121,8 @@ export function AnalyticsRoot() {
   const [loaded, setLoaded] = useState<{ v: VendorAnalytics; mode: AnalyticsMode } | null>(null);
   const loadedRef = useRef<VendorAnalytics | null>(null);
   useEffect(() => {
+    if (vendorMode === null) return;
+    const mode = vendorMode;
     if (mode === 'off') {
       // A preview started (or a flag went): stop replay, disconnect, drop the queue.
       setConsent(false);
@@ -130,7 +144,7 @@ export function AnalyticsRoot() {
     return () => {
       live = false;
     };
-  }, [mode]);
+  }, [vendorMode]);
 
   // Only the vendor in the mode in force; nothing while off.
   const vendor = mode === 'off' ? null : loaded;
@@ -152,7 +166,7 @@ export function AnalyticsRoot() {
   useEffect(() => {
     if (!pathname || mode === 'off' || viewed.current === pathname) return;
     viewed.current = pathname;
-    track('$pageview', { route: routeOf(pathname) });
+    track('$pageview', { route: routeTemplate(pathname) });
   }, [pathname, mode]);
 
   // Replay only identified: on the onboarding routes, and while booking is open.
