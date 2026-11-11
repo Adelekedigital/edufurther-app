@@ -424,7 +424,7 @@ describe('replay scope: booking', () => {
 
 describe('shared device', () => {
   const signedOutNow = () => {
-    document.cookie = `${SIGNED_OUT_COOKIE}=${Math.floor(Date.now() / 1000) + 1}; Path=/`;
+    document.cookie = `${SIGNED_OUT_COOKIE}=${Date.now() + 1000}; Path=/`;
   };
 
   it('an answer from before the last log-out: a new account is asked, and nothing is pushed', async () => {
