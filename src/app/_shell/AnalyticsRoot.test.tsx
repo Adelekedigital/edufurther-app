@@ -77,7 +77,10 @@ const loadAnalytics = vi.fn(async () => vendor);
 vi.mock('@/lib/vendor/analytics', () => ({
   loadAnalytics: (...a: unknown[]) => loadAnalytics(...(a as [])),
 }));
-const errorsSeam = vi.hoisted(() => ({ setErrorUser: vi.fn() }));
+const errorsSeam = vi.hoisted(() => ({
+  setErrorUser: vi.fn(),
+  addErrorReporter: vi.fn(() => () => {}),
+}));
 vi.mock('@/lib/vendor/errors', () => errorsSeam);
 
 import { CONSENT_COPY } from '@/lib/copy/consent';

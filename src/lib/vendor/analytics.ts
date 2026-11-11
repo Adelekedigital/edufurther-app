@@ -1,6 +1,7 @@
 import type { CaptureResult, PostHog, PostHogConfig } from 'posthog-js';
 import type { PersonProperties } from '@/lib/analytics/events';
-import { scrubProperties } from '@/lib/analytics/scrub';
+import { scrubProperties, scrubText, scrubUrl } from '@/lib/analytics/scrub';
+import { POSTHOG_ERRORS_LIVE } from '@/lib/config/analytics';
 import type { Sink } from '@/lib/analytics/track';
 
 /**
@@ -27,14 +28,53 @@ export type VendorAnalytics = {
   setMode: (mode: VendorMode) => void;
   /** Replay on this route; only ever on while identified. */
   setReplay: (on: boolean) => void;
+  /** An error the app caught (an error page): PostHog's exceptions, when on. */
+  captureException: (error: unknown) => void;
 };
+
+type ExceptionFrame = { filename?: unknown; abs_path?: unknown; [k: string]: unknown };
+type ExceptionEntry = {
+  type?: unknown;
+  value?: unknown;
+  stacktrace?: { frames?: ExceptionFrame[]; [k: string]: unknown };
+  [k: string]: unknown;
+};
+
+const pageFile = (v: unknown) =>
+  typeof v === 'string' && /^https?:\/\//.test(v) ? scrubUrl(v) : v;
+
+/**
+ * An `$exception`'s own properties, as Sentry's are (lib/vendor/errors): the
+ * message and every value through scrubText, a page-URL frame to its template.
+ */
+export function scrubException(props: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...props };
+  if (typeof out.$exception_message === 'string')
+    out.$exception_message = scrubText(out.$exception_message);
+  if (Array.isArray(out.$exception_list)) {
+    out.$exception_list = (out.$exception_list as ExceptionEntry[]).map((x) => ({
+      ...x,
+      value: typeof x.value === 'string' ? scrubText(x.value) : x.value,
+      stacktrace: x.stacktrace && {
+        ...x.stacktrace,
+        frames: x.stacktrace.frames?.map((f) => ({
+          ...f,
+          filename: pageFile(f.filename),
+          abs_path: pageFile(f.abs_path),
+        })),
+      },
+    }));
+  }
+  return out;
+}
 
 /** Every address property scrubbed before it leaves (no query string, no invite code). */
 export function beforeSend(event: CaptureResult | null): CaptureResult | null {
   if (!event) return null;
+  const props = scrubProperties(event.properties ?? {});
   return {
     ...event,
-    properties: scrubProperties(event.properties ?? {}),
+    properties: event.event === '$exception' ? scrubException(props) : props,
     ...(event.$set ? { $set: scrubProperties(event.$set) } : {}),
     ...(event.$set_once ? { $set_once: scrubProperties(event.$set_once) } : {}),
   };
@@ -53,7 +93,15 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
     capture_dead_clicks: false,
     capture_heatmaps: false,
     rageclick: false,
-    capture_exceptions: false,
+    // Exceptions (error-tracking trial) only behind their own flag: unhandled
+    // errors and rejections, never the console (it can hold anything).
+    capture_exceptions: POSTHOG_ERRORS_LIVE
+      ? {
+          capture_unhandled_errors: true,
+          capture_unhandled_rejections: true,
+          capture_console_errors: false,
+        }
+      : false,
     capture_performance: false,
     disable_surveys: true,
     disable_product_tours: true,
@@ -137,6 +185,9 @@ export function wrap(
         ph.sessionPersistence?.remove();
       }
     },
+    captureException: (error) => {
+      if (POSTHOG_ERRORS_LIVE) ph.captureException(error);
+    },
     setReplay: (on) => {
       if (on && mode === 'identified' && !replaying) {
         replaying = true;
@@ -162,7 +213,12 @@ let loading: Promise<VendorAnalytics> | null = null;
 
 /** Loads and starts PostHog once per page; later calls get the same instance. */
 export function loadAnalytics(key: string, apiHost: string): Promise<VendorAnalytics> {
-  loading ??= import('posthog-js').then(({ default: posthog }) => {
+  // The exception capture is our own bundled chunk too (no external script),
+  // fetched only when PostHog errors are on, and registered before init.
+  loading ??= Promise.all([
+    import('posthog-js'),
+    POSTHOG_ERRORS_LIVE ? import('posthog-js/dist/exception-autocapture') : null,
+  ]).then(([{ default: posthog }]) => {
     posthog.init(key, vendorConfig(apiHost));
     return wrap(posthog);
   });

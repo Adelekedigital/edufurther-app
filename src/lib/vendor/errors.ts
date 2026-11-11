@@ -1,13 +1,11 @@
 import type { ErrorEvent, Exception, StackFrame } from '@sentry/nextjs';
-import { OTHER_ROUTE, routeTemplate } from '@/lib/analytics/route';
-import { scrubUrl } from '@/lib/analytics/scrub';
+import { scrubText, scrubUrl } from '@/lib/analytics/scrub';
 import {
   ERRORS_ENVIRONMENT,
   ERRORS_RELEASE,
   SENTRY_DSN,
   SENTRY_TUNNEL_PATH,
 } from '@/lib/config/errors';
-import { maskContactDetails } from '@/lib/utils/contactDetails';
 
 /**
  * Error tracking enters the app here and nowhere else (vendorSeams; next.config
@@ -65,49 +63,10 @@ export function setErrorUser(id: string | null): void {
   client?.setUser(id ? { id } : null);
 }
 
-const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
-/** A long opaque run (a token, a code, a key): never meaningful in an error. */
-const TOKEN = /\b[A-Za-z0-9_-]{24,}\b/g;
-const ABSOLUTE = /\bhttps?:\/\/[^\s"'<>)]+/g;
-// A single slash: `//host` is the rest of a URL, already scrubbed above.
-const PATH = /(^|[\s(=:'"])(\/(?!\/)[\w\-./%~]*)(\?[^\s"'<>)]*)?/g;
-const QUOTED = /"[^"]*"/g;
-const MAX_TEXT = 500;
-
-/**
- * A path as analytics sends it: its route template, and an unknown path only
- * as `/(other)`, never itself (it could carry anything someone typed: a name
- * in a mistyped URL). As lib/analytics/scrub does.
- */
-function scrubPath(path: string): string {
-  const t = routeTemplate(path);
-  return t === OTHER_ROUTE ? `/${OTHER_ROUTE}` : t;
-}
-
-/**
- * Free text from an error (its message, a rejection's value): no email or
- * phone, no address but its template and never a query, no id or token, and
- * no quoted span (a parse error quotes the body it choked on).
- */
-export function scrubText(text: string): string {
-  return maskContactDetails(text)
-    .replace(ABSOLUTE, (u) => scrubUrl(u))
-    .replace(PATH, (_m, lead: string, path: string) => `${lead}${scrubPath(path)}`)
-    .replace(UUID, '[id]')
-    .replace(TOKEN, '[redacted]')
-    .replace(QUOTED, '"…"')
-    .slice(0, MAX_TEXT);
-}
-
-/** A URL or path field: an origin plus template (never a query or fragment). */
-function scrubAddress(value: string): string {
-  return value.startsWith('/') ? scrubPath(value.split(/[?#]/)[0] ?? value) : scrubUrl(value);
-}
-
 /** "GET /mentors/ada-l" → "GET /mentors/[handle]"; a bare path or URL likewise. */
 function scrubTransaction(name: string): string {
   const m = /^([A-Z]+) (.*)$/.exec(name);
-  return m ? `${m[1]} ${scrubAddress(m[2] ?? '')}` : scrubAddress(name);
+  return m ? `${m[1]} ${scrubUrl(m[2] ?? '')}` : scrubUrl(name);
 }
 
 /** A frame keeps where in our code it ran; a page URL filename keeps only its template. */
@@ -177,7 +136,7 @@ export function scrubErrorEvent(event: ErrorEvent): ErrorEvent | null {
     exception: event.exception && { values: event.exception.values?.map(scrubException) },
     contexts: contexts as ErrorEvent['contexts'],
     request: event.request && {
-      url: event.request.url ? scrubAddress(event.request.url) : undefined,
+      url: event.request.url ? scrubUrl(event.request.url) : undefined,
       method: event.request.method,
     },
     transaction: event.transaction ? scrubTransaction(event.transaction) : undefined,
@@ -312,6 +271,15 @@ function newReference(): string {
   return `EF-${Array.from(bytes, (b) => REF_CHARS[b % REF_CHARS.length]).join('')}`;
 }
 
+/** Other error trackers (PostHog's exceptions, the trial), added by the app when on. */
+const reporters = new Set<(error: unknown) => void>();
+
+/** Adds a tracker for the errors an error page catches; returns its removal. */
+export function addErrorReporter(report: (error: unknown) => void): () => void {
+  reporters.add(report);
+  return () => void reporters.delete(report);
+}
+
 /** Next's id for a server error (the message is withheld in production). */
 const DIGEST_TAG = 'ef_digest';
 
@@ -324,8 +292,10 @@ const DIGEST_TAG = 'ef_digest';
  * joining this report to the server's own (onRequestError).
  */
 export async function reportError(error: unknown): Promise<string | null> {
-  if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN || blocked()) return null;
-  if (typeof window === 'undefined') return null;
+  if (typeof window === 'undefined' || blocked()) return null;
+  // The trial's other tracker sees the same set (each guards its own flag).
+  for (const report of reporters) report(error);
+  if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN) return null;
   let s: SentryApi;
   try {
     s = client ?? (await loadBrowser());
@@ -375,6 +345,7 @@ export async function tunnel(request: Request): Promise<Response> {
 
 /** Tests only. */
 export function resetErrorsForTests(): void {
+  reporters.clear();
   blocked = () => false;
   userId = null;
   client = null;

@@ -1,3 +1,4 @@
+import { maskContactDetails } from '@/lib/utils/contactDetails';
 import { OTHER_ROUTE, routeTemplate } from './route';
 
 /** A route template as a path: an unknown page is the `/(other)` bucket, never its real path. */
@@ -49,4 +50,29 @@ export function scrubProperties(props: Record<string, unknown>): Record<string, 
     else out[k] = v;
   }
   return out;
+}
+
+const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+/** A long opaque run (a token, a code, a key): never meaningful in an error. */
+const TOKEN = /\b[A-Za-z0-9_-]{24,}\b/g;
+const ABSOLUTE = /\bhttps?:\/\/[^\s"'<>)]+/g;
+// A single slash: `//host` is the rest of a URL, already scrubbed above.
+const PATH = /(^|[\s(=:'"])(\/(?!\/)[\w\-./%~]*)(\?[^\s"'<>)]*)?/g;
+const QUOTED = /"[^"]*"/g;
+const MAX_TEXT = 500;
+
+/**
+ * Free text from an error (a message, a rejection's value), for every error
+ * tracker (lib/vendor/errors, and PostHog's exceptions in lib/vendor/analytics):
+ * no email or phone, no address but its template and never a query, no id or
+ * token, and no quoted span (a parse error quotes the body it choked on).
+ */
+export function scrubText(text: string): string {
+  return maskContactDetails(text)
+    .replace(ABSOLUTE, (u) => scrubUrl(u))
+    .replace(PATH, (_m, lead: string, path: string) => `${lead}${pathOf(path)}`)
+    .replace(UUID, '[id]')
+    .replace(TOKEN, '[redacted]')
+    .replace(QUOTED, '"…"')
+    .slice(0, MAX_TEXT);
 }

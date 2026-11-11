@@ -15,13 +15,14 @@ const sentry = vi.hoisted(() => ({
 }));
 vi.mock('./sentryApi', () => sentry);
 
+import { scrubText } from '@/lib/analytics/scrub';
 import {
+  addErrorReporter,
   reportError,
   reportErrorOnce,
   reportRequestError,
   resetErrorsForTests,
   scrubErrorEvent,
-  scrubText,
   setErrorUser,
   startClientErrors,
   startServerErrors,
@@ -301,11 +302,25 @@ describe('on', () => {
     expect(sentry.captureException).toHaveBeenCalledTimes(2);
   });
 
+  it('an error page’s error also goes to the trial’s other tracker, until it’s removed', async () => {
+    const other = vi.fn();
+    const remove = addErrorReporter(other);
+    const err = new Error('boom');
+    await reportError(err);
+    expect(other).toHaveBeenCalledWith(err);
+    remove();
+    await reportError(new Error('again'));
+    expect(other).toHaveBeenCalledTimes(1);
+  });
+
   it('nothing to quote in a preview: no report, no reference', async () => {
     vi.useFakeTimers();
     startClientErrors(() => true);
+    const other = vi.fn();
+    addErrorReporter(other);
     expect(await reportError(new Error('boom'))).toBeNull();
     expect(sentry.captureException).not.toHaveBeenCalled();
+    expect(other).not.toHaveBeenCalled();
   });
 
   it('a preview already stored when the page starts blocks even the earliest errors', async () => {

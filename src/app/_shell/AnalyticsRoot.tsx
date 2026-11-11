@@ -48,7 +48,7 @@ import {
 } from '@/lib/config/analytics';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { loadAnalytics, type VendorAnalytics } from '@/lib/vendor/analytics';
-import { setErrorUser } from '@/lib/vendor/errors';
+import { addErrorReporter, setErrorUser } from '@/lib/vendor/errors';
 
 /** An arrival older than this isn't the account's sign-up (the held arrival's own lifetime). */
 const NEW_ACCOUNT_MS = 30 * 24 * 60 * 60_000;
@@ -149,6 +149,13 @@ export function AnalyticsRoot() {
 
   // Only the vendor in the mode in force; nothing while off.
   const vendor = mode === 'off' ? null : loaded;
+
+  // An error page's error also goes to PostHog (the trial compares both), while
+  // it's loaded; the vendor itself checks POSTHOG_ERRORS_LIVE.
+  useEffect(() => {
+    if (!vendor) return;
+    return addErrorReporter((e) => vendor.v.captureException(e));
+  }, [vendor]);
 
   // Device storage only once identified; a withdrawal removes what was written.
   const wasIdentified = useRef(false);
