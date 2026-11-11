@@ -70,6 +70,13 @@ Option 1.
   it) is forwarded by the error seam to every added reporter (`addErrorReporter`),
   so both tools see the same set. Identity follows analytics consent (cookieless
   until Accept); a preview sends nothing.
+- Previews: a preview started on a page where PostHog already runs halts it
+  (`setHalted`: `before_send` drops every event, its own autocapture included).
+- Read the trial's counts knowing where PostHog sees less: unhandled errors from
+  before it loads (Sentry holds up to 10), and a crash in the root layout
+  (global-error replaces the providers, so no PostHog reporter is there).
+  Errors an error page catches before PostHog loads are held (up to 10) and
+  handed to it when it does.
 
 ## Consequences
 

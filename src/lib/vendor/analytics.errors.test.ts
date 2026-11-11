@@ -42,6 +42,10 @@ describe('PostHog exceptions', () => {
     });
     const v = await loadAnalytics('phc_key', '/ingest');
     expect(exceptionsLoaded).toHaveBeenCalledTimes(1);
+    // Registered before init, so posthog-js never reaches for an external script.
+    expect(exceptionsLoaded.mock.invocationCallOrder[0]).toBeLessThan(
+      ph.init.mock.invocationCallOrder[0]!,
+    );
     // PostHog never fetches a script of its own for it.
     expect(vendorConfig('/ingest').disable_external_dependency_loading).toBe(true);
     const err = new Error('boom');
@@ -75,6 +79,71 @@ describe('PostHog exceptions', () => {
       filename: `${window.location.origin}/mentors/[handle]`,
       lineno: 3,
     });
+  });
+
+  it('our own chunks keep their path in a frame (no personal data); a page address is templated', () => {
+    const origin = window.location.origin;
+    const out = beforeSend({
+      event: '$exception',
+      properties: {
+        $exception_list: [
+          {
+            type: 'TypeError',
+            value: 'x is undefined',
+            stacktrace: {
+              type: 'raw',
+              frames: [
+                {
+                  filename: `${origin}/_next/static/chunks/main-app.js?v=1`,
+                  lineno: 1,
+                  in_app: true,
+                },
+                { filename: `${origin}/invite/damilola-7k2x`, lineno: 2, vars: { p: 'secret' } },
+              ],
+            },
+          },
+        ],
+      },
+    } as unknown as CaptureResult)!;
+    const [x] = out.properties.$exception_list as {
+      stacktrace: { frames: Record<string, unknown>[] };
+    }[];
+    expect(x!.stacktrace.frames[0]).toMatchObject({
+      filename: `${origin}/_next/static/chunks/main-app.js`,
+      in_app: true,
+    });
+    expect(x!.stacktrace.frames[1]!.filename).toBe(`${origin}/invite/[code]`);
+    // Only the known frame fields leave.
+    expect(x!.stacktrace.frames[1]).not.toHaveProperty('vars');
+  });
+
+  it('a rejected data object’s name is not a type: it leaves as Error', () => {
+    const out = beforeSend({
+      event: '$exception',
+      properties: {
+        $exception_list: [{ type: 'Ada Okafor', value: 'captured as exception', extra: 'x' }],
+      },
+    } as unknown as CaptureResult)!;
+    const [x] = out.properties.$exception_list as Record<string, unknown>[];
+    expect(x!.type).toBe('Error');
+    expect(x).not.toHaveProperty('extra');
+  });
+
+  it('halted (analytics off, a preview started on this page): nothing leaves, autocapture included', async () => {
+    const v = await loadAnalytics('phc_key', '/ingest');
+    v.setHalted(true);
+    expect(
+      beforeSend({ event: '$exception', properties: {} } as unknown as CaptureResult),
+    ).toBeNull();
+    expect(
+      beforeSend({ event: '$pageleave', properties: {} } as unknown as CaptureResult),
+    ).toBeNull();
+    v.captureException(new Error('boom'));
+    expect(ph.captureException).not.toHaveBeenCalled();
+    v.setHalted(false);
+    expect(
+      beforeSend({ event: '$pageleave', properties: {} } as unknown as CaptureResult),
+    ).not.toBeNull();
   });
 
   it('off: no exception capture, no chunk, and a caught error goes nowhere', async () => {

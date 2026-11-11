@@ -1,5 +1,5 @@
 import type { ErrorEvent, Exception, StackFrame } from '@sentry/nextjs';
-import { scrubText, scrubUrl } from '@/lib/analytics/scrub';
+import { scrubErrorType, scrubFrameFile, scrubText, scrubUrl } from '@/lib/analytics/scrub';
 import {
   ERRORS_ENVIRONMENT,
   ERRORS_RELEASE,
@@ -71,10 +71,9 @@ function scrubTransaction(name: string): string {
 
 /** A frame keeps where in our code it ran; a page URL filename keeps only its template. */
 function scrubFrame(f: StackFrame): StackFrame {
-  const fix = (v?: string) => (v && /^https?:\/\//.test(v) ? scrubUrl(v) : v);
   return {
-    filename: fix(f.filename),
-    abs_path: fix(f.abs_path),
+    filename: scrubFrameFile(f.filename),
+    abs_path: scrubFrameFile(f.abs_path),
     function: f.function,
     module: f.module,
     lineno: f.lineno,
@@ -88,7 +87,7 @@ function scrubFrame(f: StackFrame): StackFrame {
 
 function scrubException(x: Exception): Exception {
   return {
-    type: x.type,
+    type: x.type === undefined ? undefined : scrubErrorType(x.type),
     value: x.value === undefined ? undefined : scrubText(x.value),
     module: x.module,
     // The mechanism's kind only: its `data` can carry handler arguments.
@@ -207,9 +206,10 @@ function started(s: SentryApi): void {
  * the page is idle and sends them.
  */
 export function startClientErrors(isBlocked: () => boolean): void {
+  // The preview gate holds for every reporter, Sentry on or off.
+  blocked = isBlocked;
   if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN) return;
   if (typeof window === 'undefined') return;
-  blocked = isBlocked;
   window.addEventListener('error', holdError);
   window.addEventListener('unhandledrejection', holdRejection);
   const load = () => void loadBrowser().catch(() => {});
@@ -274,9 +274,24 @@ function newReference(): string {
 /** Other error trackers (PostHog's exceptions, the trial), added by the app when on. */
 const reporters = new Set<(error: unknown) => void>();
 
-/** Adds a tracker for the errors an error page catches; returns its removal. */
+/** Errors an error page caught before any other tracker was added (it loads later). */
+const unreported: unknown[] = [];
+
+function offer(report: (error: unknown) => void, error: unknown) {
+  try {
+    report(error);
+  } catch {
+    // One tracker failing never stops the others (or Sentry).
+  }
+}
+
+/**
+ * Adds a tracker for the errors an error page catches, and hands it the few
+ * caught before it was there (it loads after the page). Returns its removal.
+ */
 export function addErrorReporter(report: (error: unknown) => void): () => void {
   reporters.add(report);
+  for (const e of unreported.splice(0)) if (!blocked()) offer(report, e);
   return () => void reporters.delete(report);
 }
 
@@ -294,7 +309,8 @@ const DIGEST_TAG = 'ef_digest';
 export async function reportError(error: unknown): Promise<string | null> {
   if (typeof window === 'undefined' || blocked()) return null;
   // The trial's other tracker sees the same set (each guards its own flag).
-  for (const report of reporters) report(error);
+  if (reporters.size) for (const report of reporters) offer(report, error);
+  else if (unreported.length < EARLY_MAX) unreported.push(error);
   if (process.env.NEXT_PUBLIC_SENTRY_ENABLED !== 'true' || !SENTRY_DSN) return null;
   let s: SentryApi;
   try {
@@ -346,6 +362,7 @@ export async function tunnel(request: Request): Promise<Response> {
 /** Tests only. */
 export function resetErrorsForTests(): void {
   reporters.clear();
+  unreported.length = 0;
   blocked = () => false;
   userId = null;
   client = null;

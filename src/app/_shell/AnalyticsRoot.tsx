@@ -128,12 +128,15 @@ export function AnalyticsRoot() {
       // A preview started (or a flag went): stop replay, disconnect, drop the queue.
       setConsent(false);
       loadedRef.current?.setReplay(false);
+      // PostHog's own autocapture (exceptions, page leaves) stops too.
+      loadedRef.current?.setHalted(true);
       return;
     }
     let live = true;
     void loadAnalytics(POSTHOG_KEY, ANALYTICS_PATH)
       .then((v) => {
         if (!live) return;
+        v.setHalted(false);
         v.setMode(mode);
         setConsent(true, v.sink);
         loadedRef.current = v;

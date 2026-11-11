@@ -1,6 +1,6 @@
 import type { CaptureResult, PostHog, PostHogConfig } from 'posthog-js';
 import type { PersonProperties } from '@/lib/analytics/events';
-import { scrubProperties, scrubText, scrubUrl } from '@/lib/analytics/scrub';
+import { scrubErrorType, scrubFrameFile, scrubProperties, scrubText } from '@/lib/analytics/scrub';
 import { POSTHOG_ERRORS_LIVE } from '@/lib/config/analytics';
 import type { Sink } from '@/lib/analytics/track';
 
@@ -13,8 +13,9 @@ import type { Sink } from '@/lib/analytics/track';
  * so before an answer and after a decline PostHog counts without cookies or
  * storage (a server-side hash, no identify, no replay). Accept opts in:
  * persistence, identify, and replay where the app turns it on. Typed events
- * only, plus page leaves for Web Analytics: autocapture, automatic page views, heatmaps, dead and rage clicks,
- * exceptions, web vitals, surveys, tours and experiments are all off.
+ * only, plus page leaves for Web Analytics (and exceptions behind their own
+ * flag, the error-tracking trial): autocapture, automatic page views, heatmaps, dead and rage clicks,
+ * web vitals, surveys, tours and experiments are all off.
  */
 
 /** Marks a part of the page replay never records (intake answers, message dialogs). */
@@ -30,47 +31,66 @@ export type VendorAnalytics = {
   setReplay: (on: boolean) => void;
   /** An error the app caught (an error page): PostHog's exceptions, when on. */
   captureException: (error: unknown) => void;
+  /** Nothing leaves while halted (analytics off, a preview), autocapture included. */
+  setHalted: (on: boolean) => void;
 };
 
-type ExceptionFrame = { filename?: unknown; abs_path?: unknown; [k: string]: unknown };
+type ExceptionFrame = Record<string, unknown>;
 type ExceptionEntry = {
   type?: unknown;
   value?: unknown;
-  stacktrace?: { frames?: ExceptionFrame[]; [k: string]: unknown };
-  [k: string]: unknown;
+  mechanism?: Record<string, unknown>;
+  stacktrace?: { type?: unknown; frames?: ExceptionFrame[] };
 };
 
-const pageFile = (v: unknown) =>
-  typeof v === 'string' && /^https?:\/\//.test(v) ? scrubUrl(v) : v;
+/** The frame fields posthog-js sends, none of them personal; anything else stays home. */
+const FRAME_KEYS = ['platform', 'function', 'in_app', 'lineno', 'colno', 'chunk_id'] as const;
 
 /**
- * An `$exception`'s own properties, as Sentry's are (lib/vendor/errors): the
- * message and every value through scrubText, a page-URL frame to its template.
+ * An `$exception`'s own properties, rebuilt as Sentry's are (lib/vendor/errors):
+ * each entry from an allowlist, so a field a posthog-js upgrade adds never
+ * leaves unseen; its type an identifier, its value through scrubText, its
+ * frames' files through the shared frame rule.
  */
-export function scrubException(props: Record<string, unknown>): Record<string, unknown> {
+function scrubException(props: Record<string, unknown>): Record<string, unknown> {
   const out = { ...props };
   if (typeof out.$exception_message === 'string')
     out.$exception_message = scrubText(out.$exception_message);
   if (Array.isArray(out.$exception_list)) {
     out.$exception_list = (out.$exception_list as ExceptionEntry[]).map((x) => ({
-      ...x,
-      value: typeof x.value === 'string' ? scrubText(x.value) : x.value,
+      type: scrubErrorType(x.type),
+      value: typeof x.value === 'string' ? scrubText(x.value) : undefined,
+      mechanism: x.mechanism && {
+        type: x.mechanism.type,
+        handled: x.mechanism.handled,
+        synthetic: x.mechanism.synthetic,
+      },
       stacktrace: x.stacktrace && {
-        ...x.stacktrace,
-        frames: x.stacktrace.frames?.map((f) => ({
-          ...f,
-          filename: pageFile(f.filename),
-          abs_path: pageFile(f.abs_path),
-        })),
+        type: x.stacktrace.type,
+        frames: x.stacktrace.frames?.map((f) => {
+          const kept: Record<string, unknown> = {
+            filename: scrubFrameFile(f.filename),
+            abs_path: scrubFrameFile(f.abs_path),
+          };
+          for (const k of FRAME_KEYS) if (k in f) kept[k] = f[k];
+          return kept;
+        }),
       },
     }));
   }
   return out;
 }
 
+/**
+ * Off: analytics went off or a preview started on a page where PostHog was
+ * already running. Its own autocapture (exceptions, page leaves) still fires,
+ * so every event stops here (PRD 27: nothing as anyone).
+ */
+let halted = false;
+
 /** Every address property scrubbed before it leaves (no query string, no invite code). */
 export function beforeSend(event: CaptureResult | null): CaptureResult | null {
-  if (!event) return null;
+  if (!event || halted) return null;
   const props = scrubProperties(event.properties ?? {});
   return {
     ...event,
@@ -186,7 +206,10 @@ export function wrap(
       }
     },
     captureException: (error) => {
-      if (POSTHOG_ERRORS_LIVE) ph.captureException(error);
+      if (POSTHOG_ERRORS_LIVE && !halted) ph.captureException(error);
+    },
+    setHalted: (on) => {
+      halted = on;
     },
     setReplay: (on) => {
       if (on && mode === 'identified' && !replaying) {
@@ -228,4 +251,5 @@ export function loadAnalytics(key: string, apiHost: string): Promise<VendorAnaly
 /** Tests only. */
 export function resetVendorForTests() {
   loading = null;
+  halted = false;
 }

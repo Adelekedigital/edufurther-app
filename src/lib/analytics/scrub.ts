@@ -76,3 +76,27 @@ export function scrubText(text: string): string {
     .replace(QUOTED, '"…"')
     .slice(0, MAX_TEXT);
 }
+
+/**
+ * A stack frame's file, for every error tracker: our own built code
+ * (`/_next/...`, no personal data) keeps its path, so traces still say where
+ * it ran; a page's own address (an inline script) is reduced like any address.
+ */
+export function scrubFrameFile<T>(file: T): T | string {
+  if (typeof file !== 'string' || !/^https?:\/\//.test(file)) return file;
+  try {
+    const u = new URL(file);
+    if (u.pathname.startsWith('/_next/')) return `${u.origin}${u.pathname}`;
+  } catch {
+    return file;
+  }
+  return scrubUrl(file);
+}
+
+/**
+ * An error's type as an identifier (TypeError, ApiError), or 'Error': a
+ * rejected data object's `name` (a person's) is not a type.
+ */
+export function scrubErrorType<T>(type: T): T | string {
+  return typeof type === 'string' && /^[A-Za-z_$][\w$.]{0,63}$/.test(type) ? type : 'Error';
+}

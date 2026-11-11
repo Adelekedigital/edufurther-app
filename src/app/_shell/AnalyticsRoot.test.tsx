@@ -72,6 +72,8 @@ const vendor = vi.hoisted(() => ({
   sink: { capture: vi.fn(), identify: vi.fn(), reset: vi.fn() },
   setMode: vi.fn(),
   setReplay: vi.fn(),
+  setHalted: vi.fn(),
+  captureException: vi.fn(),
 }));
 const loadAnalytics = vi.fn(async () => vendor);
 vi.mock('@/lib/vendor/analytics', () => ({
@@ -374,6 +376,28 @@ describe('members', () => {
 });
 
 describe('Preview as user', () => {
+  it('a preview started on a running page halts PostHog itself (its own autocapture too)', async () => {
+    env.viewer = member();
+    const { rerender } = render(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setMode).toHaveBeenCalled());
+    expect(vendor.setHalted).toHaveBeenLastCalledWith(false);
+    env.previewing = true;
+    rerender(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setHalted).toHaveBeenLastCalledWith(true));
+  });
+
+  it('an error page’s errors reach PostHog once it has loaded (the trial’s other tracker)', async () => {
+    env.viewer = member();
+    render(<AnalyticsRoot />);
+    await waitFor(() => expect(errorsSeam.addErrorReporter).toHaveBeenCalledTimes(1));
+    const report = (
+      errorsSeam.addErrorReporter.mock.calls[0] as unknown as [(e: unknown) => void]
+    )[0];
+    const err = new Error('boom');
+    report(err);
+    expect(vendor.captureException).toHaveBeenCalledWith(err);
+  });
+
   it('sends nothing, asks nothing, writes nothing', async () => {
     env.previewing = true;
     accepted();
