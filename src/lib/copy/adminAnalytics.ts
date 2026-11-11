@@ -304,6 +304,12 @@ export const BEHAVIOUR = {
   stepTip: (label: string, n: string) => `${label}: ${n}`,
   funnelAria: (name: string, steps: string) => `${name} funnel: ${steps}`,
   refreshed: 'Refreshed every 10 minutes',
+  /** Above the secondary layer (funnels v2): what happened after the milestones. */
+  outcome: 'Then',
+  outcomeLabel: (name: string, steps: string) => `${name}, what happened next: ${steps}`,
+  figuresLabel: (name: string) => `${name}: beside the funnel`,
+  days: (n: string) => `${n} ${n === '1' ? 'day' : 'days'}`,
+  percent: (n: string) => `${n}%`,
   down: 'Funnels come from PostHog, which isn’t answering right now. Database numbers on this page are up to date. Try again in a few minutes.',
   replays: 'Session replays (onboarding and booking only, inputs masked) open in PostHog:',
   replaysLink: 'Open replays in PostHog',
@@ -348,13 +354,17 @@ export const FUNNEL_COPY: Record<
       ['invite', 'Invite'],
       ['direct', 'Direct'],
     ],
-    note: 'Target window: 14 days from sign-up.',
+    note: 'Target window: 14 days from finishing onboarding.',
   },
   mentor_activation: {
     label: 'Mentor activation',
     byLabel: 'Break down by',
     // "New / Reapplied" waits on the applicant type (PRD Q3).
-    by: [['all', 'All mentors']],
+    by: [
+      ['all', 'All mentors'],
+      ['invite', 'Invite'],
+      ['direct', 'Direct'],
+    ],
     note: 'Bookable target: 7 days from approval.',
   },
   mentor_application: {

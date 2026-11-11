@@ -107,7 +107,9 @@ function rateContext(
   ) {
     const n = current.completedSessions;
     const went =
-      n === 1 ? 'Your one booked session went ahead' : `All ${n} of your booked sessions went ahead`;
+      n === 1
+        ? 'Your one booked session went ahead'
+        : `All ${n} of your booked sessions went ahead`;
     return `${went}. Mentees can count on you.`;
   }
   if (onTrack) {
@@ -354,7 +356,11 @@ function WarningBlock({
   return (
     <div className={cx(styles.alert, styles[`ground${t}`], styles[`alertBorder${t}`])}>
       <div className={styles.alertHead}>
-        <Icon name={TIERS[tier].icon} size={20} className={cx(styles.tierIcon, styles[`tone${t}`])} />
+        <Icon
+          name={TIERS[tier].icon}
+          size={20}
+          className={cx(styles.tierIcon, styles[`tone${t}`])}
+        />
         <div className={styles.alertBody}>
           {leftWaiting > 0 ? (
             <>
@@ -526,9 +532,7 @@ export function SessionQuality({
           <h2 id={headingId} ref={headingRef} tabIndex={-1} className={styles.title}>
             Session quality
           </h2>
-          <span className={styles.subline}>
-            How you show up for booked sessions · {period}
-          </span>
+          <span className={styles.subline}>How you show up for booked sessions · {period}</span>
         </div>
         <Badge type="accent" color={TIERS[tier].badgeColor} size="sm">
           {TIERS[tier].badge}
@@ -536,12 +540,7 @@ export function SessionQuality({
       </header>
 
       <div className={styles.showUp}>
-        <ProgressCircle
-          value={rate}
-          size="lg"
-          tone={TIERS[tier].ring}
-          aria-label="Show-up rate"
-        />
+        <ProgressCircle value={rate} size="lg" tone={TIERS[tier].ring} aria-label="Show-up rate" />
         <div className={styles.showUpText}>
           <span className={styles.showUpLabel}>Show-up rate</span>
           <span className={styles.rateContext}>

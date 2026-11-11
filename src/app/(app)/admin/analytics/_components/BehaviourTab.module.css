@@ -39,6 +39,38 @@
   font-weight: var(--weight-regular);
   color: var(--ink-600);
 }
+/* Funnels v2: the label above the outcome layer, then the figures beside the funnel. */
+.layer {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-caption-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--ls-caption-xs);
+  text-transform: uppercase;
+  color: var(--ink-600);
+}
+.figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ink-100);
+}
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.figure dt {
+  font-size: var(--text-p-xs);
+  color: var(--ink-600);
+}
+.figure dd {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+}
 .foot {
   display: flex;
   flex-wrap: wrap;

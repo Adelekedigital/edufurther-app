@@ -62,7 +62,7 @@ export function InviteLinkPanel({
     const copied = await copy(INVITE_LANDING_COPY.message(url));
     say(copied ? 'Link copied' : 'Couldn’t copy the link. Try again.');
     if (!copied) return;
-    track('link_shared', { kind: 'invite', method: 'copy' });
+    track('link_shared', { kind: 'invite', method: 'copy', own: true });
     onShared?.();
   };
 
@@ -77,7 +77,7 @@ export function InviteLinkPanel({
     }
     try {
       await navigator.share(payload);
-      track('link_shared', { kind: 'invite', method: 'native' });
+      track('link_shared', { kind: 'invite', method: 'native', own: true });
       onShared?.();
     } catch (e) {
       // Dismissing the share sheet is not a failure. Anything else falls back

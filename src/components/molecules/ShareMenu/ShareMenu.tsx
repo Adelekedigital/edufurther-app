@@ -29,6 +29,8 @@ type ShareMenuProps = {
   note?: string;
   /** After "Copy profile link" lands (Mentor Home marks its Share moves done). */
   onCopied?: () => void;
+  /** The viewer's own profile (link_shared `own`): only own shares count toward activation. */
+  own?: boolean;
 } & (
   | {
       /**
@@ -58,6 +60,7 @@ export function ShareMenu({
   triggerLabel,
   note,
   onCopied,
+  own = false,
   open: openProp,
   onOpenChange,
 }: ShareMenuProps) {
@@ -123,7 +126,7 @@ export function ShareMenu({
         void copy(url).then((ok) => {
           setStatus(ok ? 'Link copied' : 'Couldn’t copy the link');
           if (!ok) return;
-          track('link_shared', { kind: 'mentor_profile', method: 'copy' });
+          track('link_shared', { kind: 'mentor_profile', method: 'copy', own });
           onCopied?.();
         });
       },
@@ -238,7 +241,7 @@ export function ShareMenu({
                   onClick={() => {
                     // A share target opened: the intent is the share (the
                     // site's own send is out of our sight).
-                    track('link_shared', { kind: 'mentor_profile', method: it.key });
+                    track('link_shared', { kind: 'mentor_profile', method: it.key, own });
                     close(false);
                   }}
                 >

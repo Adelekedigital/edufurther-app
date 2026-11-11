@@ -37,6 +37,7 @@ export function DashboardHeader({
           url={shareUrl}
           name={shareName}
           onCopied={onShareCopied}
+          own
         />
       )}
     </div>

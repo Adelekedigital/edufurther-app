@@ -197,7 +197,7 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     await user.click(screen.getByRole('button', { name: 'Copy link' }));
     expect(await screen.findByText('Link copied')).toBeInTheDocument();
     expect(vi.mocked(track).mock.calls.filter(([e]) => e === 'link_shared')).toEqual([
-      ['link_shared', { kind: 'mentor_profile', method: 'copy' }],
+      ['link_shared', { kind: 'mentor_profile', method: 'copy', own: true }],
     ]);
   });
 

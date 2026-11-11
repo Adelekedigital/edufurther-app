@@ -1,11 +1,15 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError } from '@/lib/api/data/errors';
-import { toBehaviour } from '@/lib/api/data/adminAnalytics';
+import { toBehaviour, toFunnel, type Funnel } from '@/lib/api/data/adminAnalytics';
 import { mockBehaviour, mockFunnel, mockWindow } from '@/lib/api/mock/adminAnalytics';
 import { BehaviourTab, funnelRows, safeReplayUrl, type TabQuery } from './BehaviourTab';
 
 const c = mockWindow({ window: '30d' })!;
+/** A funnel from plain steps: all primary, no figures (the v1 shape). */
+const steps = (list: Omit<Funnel['steps'][number], 'layer'>[]): Funnel =>
+  toFunnel({ steps: list } as Parameters<typeof toFunnel>[0]);
+
 const ready = <T,>(data: T): TabQuery<T> => ({
   status: 'ready',
   data,
@@ -28,7 +32,7 @@ function renderTab(over: Partial<Parameters<typeof BehaviourTab>[0]> = {}) {
     by: 'all',
     onFunnel: vi.fn(),
     onBy: vi.fn(),
-    funnelQuery: ready(mockFunnel('signup', 'all', c).steps),
+    funnelQuery: ready(toFunnel(mockFunnel('signup', 'all', c))),
     eventsQuery: ready(toBehaviour(mockBehaviour(c))),
     ...over,
   };
@@ -48,17 +52,19 @@ describe('BehaviourTab: the funnel', () => {
     expect(p.onFunnel).toHaveBeenCalledWith('booking');
   });
 
-  it('the breakdown offers that funnel’s options; Mentor activation has All mentors only', async () => {
+  it('the breakdown offers that funnel’s options; Mentor activation: all, invite, direct (v2)', async () => {
     renderTab({
       funnel: 'mentor_activation',
-      funnelQuery: ready(mockFunnel('mentor_activation', 'all', c).steps),
+      funnelQuery: ready(toFunnel(mockFunnel('mentor_activation', 'all', c))),
     });
     const select = screen.getByRole('combobox', { name: 'Break down by' });
     expect(select).toHaveTextContent('All mentors');
     await userEvent.click(select);
     const options = screen.getAllByRole('option');
-    expect(options).toHaveLength(1);
+    expect(options).toHaveLength(3);
     expect(options[0]).toHaveAccessibleName(/^All mentors/);
+    expect(options[1]).toHaveAccessibleName(/^Invite/);
+    expect(options[2]).toHaveAccessibleName(/^Direct/);
   });
 
   it('a breakdown pick is sent up', async () => {
@@ -70,10 +76,12 @@ describe('BehaviourTab: the funnel', () => {
 
   it('reads every step and count, Start first, then the drop from the step before', () => {
     renderTab({
-      funnelQuery: ready([
-        { key: 'a', label: 'Started sign-up', value: 640, previous: null },
-        { key: 'b', label: 'Code verified', value: 498, previous: null },
-      ]),
+      funnelQuery: ready(
+        steps([
+          { key: 'a', label: 'Started sign-up', value: 640, previous: null },
+          { key: 'b', label: 'Code verified', value: 498, previous: null },
+        ]),
+      ),
     });
     expect(
       screen.getByRole('img', { name: 'Sign-up funnel: Started sign-up 640, Code verified 498' }),
@@ -133,7 +141,7 @@ describe('BehaviourTab: the funnel', () => {
 
   it('a funnel whose first step nothing tracks reads as empty, in its card', () => {
     renderTab({
-      funnelQuery: ready([{ key: 'a', label: 'A', value: null, previous: null }]),
+      funnelQuery: ready(steps([{ key: 'a', label: 'A', value: null, previous: null }])),
     });
     expect(screen.getByRole('heading', { name: 'No data for this period' })).toBeInTheDocument();
   });
@@ -233,8 +241,43 @@ describe('BehaviourTab: PostHog down', () => {
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 
+  it('v2: the outcome layer follows the milestones, then the figures beside the funnel', () => {
+    renderTab({
+      funnel: 'mentor_activation',
+      funnelQuery: ready(toFunnel(mockFunnel('mentor_activation', 'all', c))),
+    });
+    expect(
+      screen.getByRole('img', {
+        name: /^Mentor activation funnel: Approved 12, Availability set 11, Session created 7$/,
+      }),
+    ).toBeInTheDocument();
+    // Drop-off carries on into the outcome: 7 created, then 6 with a first booking.
+    expect(
+      screen.getByRole('img', {
+        name: 'Mentor activation, what happened next: First booking (30 days) 6, First session (30 days) 3',
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('14% dropped')).toBeInTheDocument();
+    const figures = screen.getByLabelText('Mentor activation: beside the funnel');
+    expect(within(figures).getByText('Days to bookable').nextSibling).toHaveTextContent('2.5 days');
+    expect(
+      within(figures).getByText('Connected a calendar (of approved)').nextSibling,
+    ).toHaveTextContent('41.7%');
+    // PostHog not configured or failed: the figure says so, the funnel still shows.
+    expect(
+      within(figures).getByText('Shared their profile link (of approved, with analytics on)')
+        .nextSibling,
+    ).toHaveTextContent('No data');
+  });
+
+  it('a funnel with one layer and no figures shows neither the outcome label nor the figures', () => {
+    renderTab({ funnelQuery: ready(toFunnel(mockFunnel('signup', 'all', c))) });
+    expect(screen.queryByText('Then')).toBeNull();
+    expect(screen.queryByRole('definition')).toBeNull();
+  });
+
   it('a funnel nobody started reads as empty, in its card', () => {
-    renderTab({ funnelQuery: ready([]) });
+    renderTab({ funnelQuery: ready(steps([])) });
     expect(screen.getByRole('heading', { name: 'No data for this period' })).toBeInTheDocument();
   });
 });
