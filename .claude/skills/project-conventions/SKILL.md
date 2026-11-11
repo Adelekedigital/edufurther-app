@@ -227,11 +227,29 @@ Merge only when both are resolved and CI is green on the PR's exact head commit.
 The reviewer (`.github/workflows/code-reviewer.yml`) never runs by itself when a PR
 opens or a branch is pushed; only a `/code-reviewer` comment starts it.
 
-The reviewer is Claude, with Kimi as the fallback when the Claude run fails. Verify
-every finding before acting on it (the reviewer has been wrong), fix P0 and P1
-always and P2 if cheap with a failing-first test, and answer every finding in ONE
-reply comment. Which reviewer, its keys and variables, and the seven-step loop:
-`references/code-review-loop.md` (the loop's steps: read it before posting a review).
+The reviewer is **Kimi** by default; Claude returns on 17 Nov 2026 for high-risk PRs
+only. **Ask for a review only once CI is green on that head, once per round**;
+trivial PRs (docs, tests, mocks) get CI only; no stacked PRs; run `pnpm review:size`
+before opening a PR (over 3000 reviewed lines the reviewer skips it). Verify every
+finding before acting on it (the reviewer has been wrong), fix P0 and P1 always and
+P2 if cheap with a failing-first test, and answer every finding in ONE reply comment.
+Which reviewer, when to ask, its keys and variables, and the seven-step loop:
+`references/code-review-loop.md` (read it before posting a review).
+
+**CI (owner, 2026-11-11: same checks and thresholds, less waiting).** `ci.yml` runs
+the slow parts side by side: `changes` (a docs-only PR skips the heavy jobs; main
+runs everything), `size`, `checks` (copy, icons, private paths, spec and client,
+types, lint, boundaries, build, bundle secrets), `test` in 3 shards with one
+`coverage` job applying the thresholds to the merged suite, and `page-review` in
+parallel. `verify` is the required check and is green only when those gates are.
+Coverage thresholds are never per shard (`VITEST_SHARD`), and never lowered. About
+3.5 minutes for `verify`, down from 10.
+
+**Machine room (owner, standing rule).** Stop every idle task you own at each
+checkpoint: dev servers (a stopped task can leave Next's child on the port: check
+and stop it), pollers and watchers, test runners, merged or idle worktrees. Confirm a
+process is yours before stopping it. One heavy process (install, build, full suite)
+at a time.
 
 **Parallel delivery (owner, 2026-10-12).**
 - Independent work runs at once: each PR in its own worktree; long mechanical work
