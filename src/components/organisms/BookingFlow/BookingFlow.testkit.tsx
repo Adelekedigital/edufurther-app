@@ -103,6 +103,7 @@ export const renderShell: BookingFlowProps['renderShell'] = (shell, body) => (
 
 export const props = (over: Partial<BookingFlowProps> = {}): BookingFlowProps => ({
   mentor,
+  entryPoint: 'explore',
   sessionTypes: remote(sessionTypes),
   sessionTypeId: 'st1',
   onSessionTypeChange: vi.fn(),

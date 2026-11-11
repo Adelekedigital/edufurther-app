@@ -11,6 +11,8 @@ vi.hoisted(() => {
   process.env.NEXT_PUBLIC_ONBOARDING_ENABLED = 'true';
   process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED = 'true';
 });
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
 const switchTo = vi.fn();
 vi.mock('@/lib/api/data/roleHooks', () => ({
   useSwitchRole: () => ({ switchTo, isPending: false, error: null }),
@@ -174,6 +176,7 @@ beforeEach(() => {
   avatar.uploadedUrl = null;
   topicsError = null;
   switchTo.mockReset().mockResolvedValue(undefined);
+  track.mockClear();
 });
 
 describe('MentorOnboardingScreen', () => {
@@ -699,5 +702,130 @@ describe('MentorOnboardingScreen: "Join as a mentee" on step 1 (owner, 2026-10-2
     render(<MentorOnboardingScreen />);
     expect(screen.getByText('Step 1 of 4')).toBeInTheDocument();
     expect(join()).toBeNull();
+  });
+});
+
+describe('MentorOnboardingScreen: PRD 30 application funnel', () => {
+  beforeEach(() => localStorage.clear());
+  const calls = (event: string) => track.mock.calls.filter(([e]) => e === event);
+  /** Every step but hours answered, so About and Education can Continue. */
+  const readyForAbout = () =>
+    stateWith({
+      lastStep: 'education',
+      hasProfile: true,
+      answers: answers({
+        helpIds: ['o-docs'],
+        schools: [
+          {
+            key: 's1',
+            id: 'sch-1',
+            school: 'University of Lagos',
+            institutionId: 'inst-1',
+            catalogCountryId: 'c-ng',
+            countryId: '',
+            countryOpen: false,
+            degree: 'bachelors',
+            field: 'Microbiology',
+            start: '2011',
+            end: '2015',
+            current: true,
+          },
+        ],
+        photoUrl: 'https://cdn.test/p.jpg',
+        originId: 'c-ng',
+        linkedin: 'https://www.linkedin.com/in/gbenga',
+        days: [0, 1],
+      }),
+    });
+
+  it('a fresh application starts once, under Strict Mode; help areas is no funnel step', async () => {
+    render(
+      <StrictMode>
+        <MentorOnboardingScreen />
+      </StrictMode>,
+    );
+    expect(calls('mentor_application_started')).toEqual([['mentor_application_started', {}]]);
+    await userEvent.click(screen.getByRole('button', { name: 'School selection' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByRole('heading', { level: 1, name: 'Where did you study?' });
+    expect(calls('mentor_application_step_completed')).toEqual([]);
+  });
+
+  it('a second visit before the first save is not a second start', () => {
+    const first = render(<MentorOnboardingScreen />);
+    expect(calls('mentor_application_started')).toHaveLength(1);
+    expect(localStorage.getItem('ef-mentor-app-started-u1')).toBe('1');
+    first.unmount();
+    render(<MentorOnboardingScreen />);
+    expect(calls('mentor_application_started')).toHaveLength(1);
+  });
+
+  it('storage blocked: still once per visit', () => {
+    const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('blocked');
+    });
+    try {
+      render(
+        <StrictMode>
+          <MentorOnboardingScreen />
+        </StrictMode>,
+      );
+      expect(calls('mentor_application_started')).toHaveLength(1);
+    } finally {
+      get.mockRestore();
+      set.mockRestore();
+    }
+  });
+
+  it('a returning applicant has started already', () => {
+    appState = stateWith({ lastStep: 'help', hasProfile: true });
+    render(<MentorOnboardingScreen />);
+    expect(calls('mentor_application_started')).toEqual([]);
+  });
+
+  it('each step once as it saves, the kept AI draft, then submitted', async () => {
+    appState = readyForAbout();
+    render(<MentorOnboardingScreen />);
+    await screen.findByDisplayValue('I studied…');
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await screen.findByRole('heading', { level: 1, name: 'When can you mentor?' });
+    expect(calls('mentor_application_step_completed')).toEqual([
+      ['mentor_application_step_completed', { step: 'about_you' }],
+    ]);
+    expect(calls('writing_assist_used')).toEqual([
+      ['writing_assist_used', { field: 'mentor_about', mode: 'draft', outcome: 'accepted' }],
+    ]);
+    // Back to Education and on again: Education counts, About doesn't twice.
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    await screen.findByRole('heading', { level: 1, name: 'Where did you study?' });
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+    submit.mockRejectedValueOnce(new Error('offline'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Submit application' }));
+    expect(calls('mentor_application_submitted')).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: 'Submit application' }));
+    await waitFor(() =>
+      expect(calls('mentor_application_submitted')).toEqual([['mentor_application_submitted', {}]]),
+    );
+    expect(calls('mentor_application_step_completed').map(([, p]) => p)).toEqual([
+      { step: 'about_you' },
+      { step: 'education' },
+      { step: 'hours' },
+    ]);
+    expect(calls('writing_assist_used')).toHaveLength(1);
+  });
+
+  it('Start over discards the AI draft', async () => {
+    appState = readyForAbout();
+    render(<MentorOnboardingScreen />);
+    await screen.findByDisplayValue('I studied…');
+    await userEvent.click(screen.getByRole('button', { name: 'Start over' }));
+    expect(calls('writing_assist_used')).toEqual([
+      ['writing_assist_used', { field: 'mentor_about', mode: 'draft', outcome: 'discarded' }],
+    ]);
   });
 });

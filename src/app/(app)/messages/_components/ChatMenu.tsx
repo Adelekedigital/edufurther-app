@@ -5,6 +5,7 @@ import { RowMenu, type RowMenuItem } from '@/components/molecules/RowMenu/RowMen
 import { CHAT_COPY, REPORT_REQUEST } from '@/lib/copy/messages';
 import { supportHref } from '@/lib/utils/mailto';
 import type { ChatPerson, NextBooking } from '@/types/messages';
+import { noteProfileSource } from '@/lib/analytics/profileSource';
 import { profileHref } from './ChatHeader';
 
 /** Who is reporting: their name and account email, for the support email's sign-off. */
@@ -55,7 +56,10 @@ export function ChatMenu({
             key: 'profile',
             icon: 'person' as const,
             label: CHAT_COPY.viewProfile,
-            onSelect: () => router.push(profile),
+            onSelect: () => {
+              noteProfileSource('messages', profile);
+              router.push(profile);
+            },
           },
         ]
       : []),

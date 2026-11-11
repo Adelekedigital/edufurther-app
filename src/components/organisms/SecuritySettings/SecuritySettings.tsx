@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActions/ConfirmActions';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
+import { CONSENT_COPY } from '@/lib/copy/consent';
 import { SECURITY_COPY as C } from '@/lib/copy/settings';
 import { supportHref } from '@/lib/utils/mailto';
 import type { LoginProvider } from '@/types/settings';
@@ -56,6 +57,12 @@ export type SecuritySettingsProps = {
    * here (unsupported, push not set up, or a preview), so no card.
    */
   notifications?: DeviceNotifications;
+  /**
+   * Analytics cookies (PRD 30): the same answer the banner records, changed
+   * here at any time, effective at once. Absent: not offered (flag off, or a
+   * preview).
+   */
+  analytics?: { granted: boolean; busy: boolean; onChange: (granted: boolean) => void };
 };
 
 export type DeviceNotifications = {
@@ -123,6 +130,26 @@ export function SecuritySettings(p: SecuritySettingsProps) {
       </section>
 
       {p.notifications && <NotificationsCard {...p.notifications} />}
+
+      {p.analytics && (
+        <section className={styles.card} aria-label={CONSENT_COPY.settingsTitle}>
+          <SwitchRow
+            label={CONSENT_COPY.settingsTitle}
+            labelAs="h2"
+            hint={CONSENT_COPY.settingsHint}
+            checked={p.analytics.granted}
+            onChange={p.analytics.onChange}
+            busy={p.analytics.busy}
+            leading={<Tile icon="monitoring" />}
+            classes={{
+              row: styles.row,
+              text: styles.text,
+              label: styles.rowTitle,
+              hint: styles.meta,
+            }}
+          />
+        </section>
+      )}
 
       <section className={styles.danger} aria-labelledby={dangerId}>
         <div className={styles.dangerText}>

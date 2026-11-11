@@ -18,7 +18,11 @@ vi.mock('@/components/organisms/BookingFlow/BookingFlow', () => ({
   },
 }));
 vi.mock('./useBookingSignIn', () => ({ useBookingSignIn: () => ({ stage: 'email' }) }));
-const push = vi.fn();
+const order: string[] = [];
+vi.mock('@/lib/analytics/bookingHandOff', () => ({
+  handOffBooking: () => order.push('handOff'),
+}));
+const push = vi.fn((to: string) => order.push(`push ${to.split('?')[0]}`));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 let viewer: Viewer = { kind: 'guest' };
 vi.mock('./useAppShell', () => ({ useAppShell: () => ({ viewer }) }));
@@ -53,7 +57,8 @@ const member = (over: Record<string, unknown> = {}) =>
 afterEach(() => {
   vi.restoreAllMocks();
   window.sessionStorage.clear();
-  push.mockReset();
+  push.mockClear();
+  order.length = 0;
   viewer = { kind: 'guest' };
 });
 
@@ -99,6 +104,8 @@ describe('SignInBookingFlow', () => {
     expect(to).toBe('/onboarding?for=gbenga&sid=st1&time=2026-10-20T09%3A00%3A00Z&after=booking');
     // The answers never go in the URL.
     expect(to).not.toMatch(/Private/);
+    // The booking is paused, not abandoned: handed off before the page goes (PRD 30).
+    expect(order).toEqual(['handOff', 'push /onboarding']);
   });
 
   it('a mentor sign-up is never offered the mentee’s Finish setup (canBookFor keeps them out)', () => {

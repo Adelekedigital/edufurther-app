@@ -81,6 +81,8 @@ export async function GET(req: Request) {
     timezone: 'Africa/Lagos',
     created_at: '2026-10-17T09:00:00Z',
     is_admin: false,
+    // Made in this app, not carried over from the old one (backend #635).
+    is_migrated: false,
     can_preview_as_user: false,
     education: [],
     awards: [],

@@ -270,6 +270,9 @@ export const keys = {
     unread: (me: string) => ['messages', me, 'unread'] as const,
     people: (me: string, q: string) => ['messages', me, 'people', q] as const,
     thread: (me: string, withId: string) => ['messages', me, 'thread', withId] as const,
+    /** The status-only read (SendMessage): under the thread's key, so invalidating a thread covers it. */
+    threadStatus: (me: string, withId: string) =>
+      ['messages', me, 'thread', withId, 'status'] as const,
     settings: (me: string) => ['messages', me, 'settings'] as const,
   },
 };

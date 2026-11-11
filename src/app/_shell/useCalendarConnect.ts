@@ -7,6 +7,7 @@ import {
   useStartCalendarConnect,
   type CalendarConnection,
 } from '@/lib/api/data/calendarConnection';
+import { track } from '@/lib/analytics/track';
 import { openConsentWindow, waitForConsent } from '@/lib/utils/connectPopup';
 
 /**
@@ -98,6 +99,9 @@ export function useCalendarConnect(
       });
       if (controller.signal.aborted || outcome === 'abandoned') return;
       if (outcome === 'connected') {
+        // Here, not in each screen: Integrations, the approved application and
+        // the reconnect banner all connect through this one flow.
+        track('calendar_connected', {});
         // Hold busy until the row is actually true, or it reads "Connect" for
         // a moment after we have just said it is connected.
         await refresh();

@@ -19,6 +19,7 @@ import { useRequiredFields } from '@/lib/utils/useRequiredFields';
 import type { CoverKey } from '@/lib/utils/cover';
 import { personCover, type PhotoFocus } from '@/lib/utils/person';
 import type { MenteeProfileValues } from '@/types/settings';
+import { useAssistOutcome } from '@/app/_shell/useAssistOutcome';
 import styles from './ProfilePanel.module.css';
 
 /** The design's eight languages, in its order (Mentee Settings.dc.html `mLangs`). */
@@ -78,6 +79,7 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
   const [query, setQuery] = useState('');
   const search = useLanguageSearch(query, query.trim() !== '');
   const { assist } = useWritingAssist('mentee_bio');
+  const assistOutcome = useAssistOutcome('mentee_bio');
 
   // `base` is what's saved; `draft` is the form. The server's values come in
   // only while there's nothing unsaved (a refetch must not wipe an edit).
@@ -125,6 +127,7 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
 
   const discard = () => {
     if (base) setDraft(base);
+    assistOutcome.discarded();
     required.reset();
     saving.reset();
     keepFocus();
@@ -151,12 +154,16 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
     } catch (e) {
       // The name, country and bio landed, the languages didn't: only the
       // languages are still unsaved.
-      if (e instanceof ProfileSaveError && e.profileSaved)
+      if (e instanceof ProfileSaveError && e.profileSaved) {
         setBase({ ...after, languages: base.languages });
+        // The bio is among what landed.
+        assistOutcome.accepted();
+      }
       setTries((n) => n + 1);
       return false;
     }
     keepFocus();
+    assistOutcome.accepted();
     setBase(after);
     setDraft(after);
     setToast(SAVE_COPY.profileSaved);
@@ -233,6 +240,7 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
           return out.text;
         }}
         onAssistBusy={setAssistBusy}
+        onAiChange={assistOutcome.onAiChange}
       />
       {dirty && (
         <SaveBar

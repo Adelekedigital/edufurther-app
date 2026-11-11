@@ -117,6 +117,8 @@ export function useReviewAndRebook({ canBook, author, timeZone, live, focusAfter
       )}
       <BookingLauncher
         mentor={mentor}
+        // Book again, from the review or from the session's row.
+        entryPoint="rebook_after_review"
         timeZone={timeZone}
         // Rating and reviews aren't on the session row.
         ratingUnknown

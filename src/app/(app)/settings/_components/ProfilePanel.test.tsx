@@ -6,6 +6,9 @@ import { unsavedSave } from '@/lib/utils/leaveGuard';
 import { SAVE_COPY, SETTINGS_COPY } from '@/lib/copy/settings';
 import { ProfilePanel } from './ProfilePanel';
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/analytics/track', () => ({ track }));
+
 let read: {
   profile: MenteeProfile | null;
   status: 'loading' | 'error' | 'ready';
@@ -93,6 +96,7 @@ beforeEach(() => {
   mutateAsync.mockResolvedValue(undefined);
   saveError = null;
   commonFails = false;
+  track.mockClear();
   window.scrollBy = vi.fn();
 });
 
@@ -277,5 +281,39 @@ describe('ProfilePanel', () => {
     await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
     expect(screen.getAllByText(SAVE_COPY.waitForDraft).length).toBeGreaterThan(0);
     expect(mutateAsync).not.toHaveBeenCalled();
+  });
+});
+
+describe('ProfilePanel: writing_assist_used (PRD 30)', () => {
+  const outcomes = () =>
+    track.mock.calls.filter(([e]) => e === 'writing_assist_used').map(([, p]) => p);
+
+  it('a saved AI draft is accepted, once', async () => {
+    ready();
+    assist.mockResolvedValue({ text: 'I want to study abroad.', promptVersion: 'v1' });
+    render(<ProfilePanel userId="u1" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Write a draft' }));
+    expect(outcomes()).toEqual([]);
+    await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
+    expect(await screen.findByText(SAVE_COPY.profileSaved)).toBeInTheDocument();
+    expect(outcomes()).toEqual([{ field: 'mentee_bio', mode: 'draft', outcome: 'accepted' }]);
+  });
+
+  it('Discard throws the AI draft away: discarded', async () => {
+    ready();
+    assist.mockResolvedValue({ text: 'I want to study abroad.', promptVersion: 'v1' });
+    render(<ProfilePanel userId="u1" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Write a draft' }));
+    await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.discard }));
+    expect(outcomes()).toEqual([{ field: 'mentee_bio', mode: 'draft', outcome: 'discarded' }]);
+  });
+
+  it('a save with no AI change sends nothing', async () => {
+    ready();
+    render(<ProfilePanel userId="u1" />);
+    await userEvent.click(screen.getByRole('button', { name: 'Igbo' }));
+    await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
+    await screen.findByText(SAVE_COPY.profileSaved);
+    expect(outcomes()).toEqual([]);
   });
 });

@@ -4,7 +4,7 @@ import { useId, type ReactNode, type Ref } from 'react';
 import { FormGrid } from '@/components/atoms/FormGrid/FormGrid';
 import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
-import { AiField, type AssistMode } from '@/components/molecules/AiField/AiField';
+import { AiField, type AiChange, type AssistMode } from '@/components/molecules/AiField/AiField';
 import { CoverBanner } from '@/components/molecules/CoverBanner/CoverBanner';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
@@ -57,6 +57,8 @@ type MentorProfileFormProps = {
   languages: LanguageSearch;
   onAssist?: (mode: AssistMode, text: string) => Promise<string>;
   onAssistBusy?: (busy: boolean) => void;
+  /** Each AI change and Undo in the box (AiField), for the screen's analytics. */
+  onAiChange?: (change: AiChange) => void;
   /** "How mentees see you": the preview column. */
   preview: ReactNode;
 };
@@ -82,6 +84,7 @@ export function MentorProfileForm({
   languages,
   onAssist,
   onAssistBusy,
+  onAiChange,
   preview,
 }: MentorProfileFormProps) {
   const id = useId();
@@ -199,6 +202,7 @@ export function MentorProfileForm({
             hint={C.aboutHint}
             onAssist={onAssist}
             onBusyChange={onAssistBusy}
+            onAiChange={onAiChange}
           />
         </section>
 

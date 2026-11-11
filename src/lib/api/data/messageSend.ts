@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
-import type { Message, MessageFile, OutboxItem, Thread } from '@/types/messages';
+import { track } from '@/lib/analytics/track';
+import type { Chats, Message, MessageFile, OutboxItem, Thread } from '@/types/messages';
 import { apiError, ApiError } from './errors';
 import { keys } from './keys';
 import { inTimeOrder, toMessage } from './messages';
@@ -52,7 +53,28 @@ function settle(withId: string, msg: Message) {
       ? cur
       : { ...cur, items: inTimeOrder([...cur.items, msg]) },
   );
+  // The status read holds no items: once a message is stored, the chat has history,
+  // so a reopened SendMessage never reads it as a first message again.
+  qc.setQueryData<Thread>(keys.messages.threadStatus(me, withId), (cur) =>
+    cur ? { ...cur, hasMore: true } : cur,
+  );
   void qc.invalidateQueries({ queryKey: keys.messages.chats(me) });
+}
+
+/**
+ * Nothing stored between us yet, as this tab last read it: the thread (open
+ * in /messages, or SendMessage's status read), else the chat list. Unknown
+ * (nothing read) counts as not first. Asked before the new message settles.
+ */
+function isFirst(withId: string): boolean {
+  if (!ctx) return false;
+  const { qc, me } = ctx;
+  const thread =
+    qc.getQueryData<Thread>(keys.messages.thread(me, withId)) ??
+    qc.getQueryData<Thread>(keys.messages.threadStatus(me, withId));
+  if (thread) return thread.items.length === 0 && !thread.hasMore;
+  const chats = qc.getQueryData<Chats>(keys.messages.chats(me));
+  return !!chats && !chats.rows.some((r) => r.person.id === withId && r.last);
 }
 
 /** The server refused for a reason the chat itself shows (paused, closed): re-read it. */
@@ -73,6 +95,9 @@ async function post(item: OutboxItem): Promise<boolean> {
     });
     if (!response.ok || !data) throw apiError(response.status, error, response);
     update(item.clientId, null);
+    // PRD 30's messaging North Star: whether it opened the chat, nothing else
+    // (no ids, never the text).
+    track('message_sent', { is_first_in_conversation: isFirst(item.to) });
     settle(item.to, toMessage(data));
     // A message sent: the one-time notifications ask may follow (lib/utils/push).
     notePushMoment('message');

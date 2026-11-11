@@ -1,9 +1,11 @@
 import createClient from 'openapi-fetch';
 import type { paths } from '@/lib/api/generated/schema';
+import { resetIdentity } from '@/lib/analytics/identity';
 import { getAccessToken, refreshAccessToken, signOut } from '@/lib/vendor/supabase/browser';
 import { dropDeviceSubscription } from '@/lib/utils/push';
 import { createAuthMiddleware } from './authMiddleware';
 import { createPreviewMiddleware, isPreviewEnded } from './previewMiddleware';
+import { createRequestFailedMiddleware } from './requestFailedMiddleware';
 
 /**
  * The browser's generated client. The server-side calls build their own:
@@ -22,7 +24,11 @@ export const api = createClient<paths>({
   querySerializer: { array: { style: 'form', explode: true } },
 });
 
-// Preview as user: first, so the auth middleware's retry clone carries the
+// Failed calls (PRD 30 `request_failed`): registered first, so its onResponse
+// runs last (openapi-fetch runs them in reverse) and sees the answer after the
+// auth middleware's refresh and retry, not the 401 it replaced.
+api.use(createRequestFailedMiddleware());
+// Preview as user: next, so the auth middleware's retry clone carries the
 // preview header, and its 401 (preview ended) is never refreshed and retried
 // as the admin.
 api.use(createPreviewMiddleware());
@@ -34,9 +40,12 @@ api.use(
     refresh: refreshAccessToken,
     // An ended session (expired or revoked) leaves no pushes behind on this
     // device for the next person: there is no token to tell the server, so
-    // the subscription itself goes (lib/utils/push).
+    // the subscription itself goes (lib/utils/push). Analytics too, as on a
+    // manual log-out: the next person on this device starts fresh and is
+    // asked for consent themselves (PRD 30, shared devices).
     onExpired: async () => {
       void dropDeviceSubscription();
+      resetIdentity();
       await signOut();
     },
     isFinal: isPreviewEnded,

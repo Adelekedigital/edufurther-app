@@ -52,6 +52,7 @@ import { BookingsPanel } from './BookingsPanel';
 import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
 import { useRouter } from 'next/navigation';
+import { noteProfileSource, profileLinkSource } from '@/lib/analytics/profileSource';
 import { useReminders } from './useReminders';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
@@ -421,7 +422,11 @@ export function BookingsScreen() {
   return (
     <>
       {gate ?? (
-        <div className={cx(styles.page, showPanel && !asSheet && styles.withAside)}>
+        <div
+          className={cx(styles.page, showPanel && !asSheet && styles.withAside)}
+          // A profile opened from a booking (PRD 30: mentor_profile_viewed.source).
+          onClickCapture={profileLinkSource('bookings')}
+        >
           <PageHeader
             title="Bookings"
             subtitle={
@@ -605,16 +610,17 @@ export function BookingsScreen() {
                   // shows what was offered with nothing to press — the link
                   // would otherwise land them on a profile with nothing selected.
                   open?.suggestion && open.side === 'mentee' && open.sessionTypeId
-                    ? () =>
+                    ? () => {
                         // `book` is what opens the flow at all; `at` lands it on
                         // the offered time. The held slot is listed for this
                         // mentee alone, so the ordinary flow is all it takes —
                         // no special path, and the booking limits still apply.
-                        router.push(
-                          `/mentors/${open.other.id}?book=${encodeURIComponent(
-                            open.sessionTypeId ?? '',
-                          )}&at=${encodeURIComponent(open.suggestion!.startsAt)}`,
-                        )
+                        const href = `/mentors/${open.other.id}?book=${encodeURIComponent(
+                          open.sessionTypeId ?? '',
+                        )}&at=${encodeURIComponent(open.suggestion!.startsAt)}`;
+                        noteProfileSource('bookings', href);
+                        router.push(href);
+                      }
                     : undefined
                 }
                 answersExpanded={answersExpanded}

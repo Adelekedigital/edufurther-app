@@ -438,7 +438,8 @@ export function AppShell({
       )}
 
       {member && (
-        <nav aria-label="Main" className={styles.tabs}>
+        // data-phone-tabs: fixed bottom chrome lifts above it (ConsentBanner).
+        <nav aria-label="Main" className={styles.tabs} data-phone-tabs="">
           {tabs.map((n) => {
             const body = (
               <>
@@ -515,7 +516,8 @@ export function AppShell({
       {moreOpen && (
         <>
           <div className={styles.sheetScrim} aria-hidden onClick={() => setMoreOpen(false)} />
-          <div id="more-sheet" className={styles.sheet}>
+          {/* Account items (name, credits) are never in a session replay (PRD 30). */}
+          <div id="more-sheet" className={styles.sheet} data-no-replay="">
             <span className={styles.handle} aria-hidden />
             {credits && (
               <CreditsSummary credits={credits} onHowItWorks={() => openCredits(moreRef.current)} />

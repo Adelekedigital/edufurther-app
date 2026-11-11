@@ -191,7 +191,8 @@ export function FileViewer({
 
   return (
     <ModalShell title={shown} subtitle={meta} size="xl" onClose={onClose}>
-      <div className={styles.viewer}>
+      {/* A private file is never in a session replay (PRD 30). */}
+      <div className={styles.viewer} data-no-replay="">
         <LiveRegion message={loading ? { text: FILE_VIEWER.loading, id: 1 } : null} />
         {download && <div className={styles.toolbar}>{download}</div>}
         <div className={cx(styles.body, ready && previewable && styles.pdf)}>{body}</div>

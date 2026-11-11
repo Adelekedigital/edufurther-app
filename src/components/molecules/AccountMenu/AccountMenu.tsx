@@ -84,7 +84,8 @@ export function AccountMenu({ avatar, items, credits, narrow }: AccountMenuProps
   };
 
   return (
-    <div className={styles.root}>
+    // The person's name, photo and credits are never in a session replay (PRD 30).
+    <div className={styles.root} data-no-replay="">
       {open && <div className={styles.backdrop} aria-hidden onClick={() => close(false)} />}
       {open && (
         <div className={cx(styles.menu, narrow && styles.narrow)}>

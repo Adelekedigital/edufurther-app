@@ -1,5 +1,6 @@
 /** Domain types. Components are typed on these, never on the wire shape. */
 
+import type { EntryPoint } from '@/lib/analytics/events';
 import type { CoverArt, CoverKey } from '@/lib/utils/cover';
 
 export type Topic = {
@@ -168,6 +169,8 @@ export type BookingRequest = {
   sessionTypeId: string;
   startsAt: string;
   answers: Record<string, IntakeAnswer>;
+  /** The surface the booking was opened from (`sessions.entry_point`, PRD 30). */
+  entryPoint: EntryPoint;
 };
 
 /** Who is looking (GET /api/v1/me; backend auth reply #3). */
@@ -243,6 +246,18 @@ export type Viewer =
       isListedMentor?: boolean;
       /** The account's IANA zone (`/me` timezone): the backend judges "today" in it (return dates). */
       timeZone?: string;
+      /**
+       * The role the account signed up as (`/me` primary_role). Analytics'
+       * person property only (PRD 30): never a permission, never the nav.
+       */
+      primaryRole?: 'mentee' | 'mentor';
+      /** Carried over from the old app (`/me` is_migrated). Analytics only; absent when not known. */
+      isMigrated?: boolean;
+      /**
+       * The account's answer to analytics cookies (`/me` analytics_consent):
+       * null until answered, absent when not known (the mock viewers).
+       */
+      analyticsConsent?: { granted: boolean; version: string; answeredAt: string } | null;
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
       /** When the account was made (`/me` created_at). Absent: not known. */

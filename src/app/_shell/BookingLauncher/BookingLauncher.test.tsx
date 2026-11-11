@@ -14,6 +14,7 @@ vi.mock('@/app/_shell/useAppShell', () => ({
 vi.mock('@/components/organisms/BookingFlow/BookingFlow', () => ({
   BookingFlow: (p: {
     mentor: { name: string };
+    entryPoint: string;
     ratingUnknown?: boolean;
     hideProfileLink?: boolean;
     sessionTypeId?: string | null;
@@ -22,6 +23,7 @@ vi.mock('@/components/organisms/BookingFlow/BookingFlow', () => ({
   }) => (
     <div
       data-testid="flow"
+      data-entry={p.entryPoint}
       data-type={String(p.sessionTypeId)}
       data-after-time={String(!!p.startAfterTime)}
       data-rating-unknown={String(!!p.ratingUnknown)}
@@ -63,16 +65,28 @@ const mentor = {
 
 describe('BookingLauncher', () => {
   it('renders nothing when no mentor is set', () => {
-    const { container } = render(<BookingLauncher mentor={null} onClose={vi.fn()} />);
+    const { container } = render(
+      <BookingLauncher entryPoint="home" mentor={null} onClose={vi.fn()} />,
+    );
     expect(container).toBeEmptyDOMElement();
   });
 
   it('opens the booking flow for a mentor, threading ratingUnknown and hideProfileLink', () => {
-    render(<BookingLauncher mentor={mentor} ratingUnknown hideProfileLink onClose={vi.fn()} />);
+    render(
+      <BookingLauncher
+        entryPoint="home"
+        mentor={mentor}
+        ratingUnknown
+        hideProfileLink
+        onClose={vi.fn()}
+      />,
+    );
     const flow = screen.getByTestId('flow');
     expect(flow).toHaveTextContent('Mariam Alamata');
     expect(flow).toHaveAttribute('data-rating-unknown', 'true');
     expect(flow).toHaveAttribute('data-hide-profile', 'true');
+    // The surface goes through to the flow (its events and the request).
+    expect(flow).toHaveAttribute('data-entry', 'home');
   });
 
   it('calls onBooked when the flow closes after a sent request, and only then', async () => {
@@ -80,7 +94,7 @@ describe('BookingLauncher', () => {
     const onClose = vi.fn();
     requestDone = false;
     const { unmount } = render(
-      <BookingLauncher mentor={mentor} onClose={onClose} onBooked={onBooked} />,
+      <BookingLauncher entryPoint="home" mentor={mentor} onClose={onClose} onBooked={onBooked} />,
     );
     screen.getByRole('button', { name: 'Close flow' }).click();
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -88,7 +102,9 @@ describe('BookingLauncher', () => {
     unmount();
 
     requestDone = true;
-    render(<BookingLauncher mentor={mentor} onClose={onClose} onBooked={onBooked} />);
+    render(
+      <BookingLauncher entryPoint="home" mentor={mentor} onClose={onClose} onBooked={onBooked} />,
+    );
     screen.getByRole('button', { name: 'Close flow' }).click();
     expect(onBooked).toHaveBeenCalledTimes(1);
     requestDone = false;
@@ -98,6 +114,7 @@ describe('BookingLauncher', () => {
     types = [{ id: 'st-general' }, { id: 'st-cv' }];
     const { unmount } = render(
       <BookingLauncher
+        entryPoint="home"
         mentor={mentor}
         initialSessionTypeId="st-cv"
         startAfterTime
@@ -107,7 +124,14 @@ describe('BookingLauncher', () => {
     expect(screen.getByTestId('flow')).toHaveAttribute('data-type', 'st-cv');
     expect(screen.getByTestId('flow')).toHaveAttribute('data-after-time', 'true');
     unmount();
-    render(<BookingLauncher mentor={mentor} initialSessionTypeId="st-gone" onClose={vi.fn()} />);
+    render(
+      <BookingLauncher
+        entryPoint="home"
+        mentor={mentor}
+        initialSessionTypeId="st-gone"
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByTestId('flow')).toHaveAttribute('data-type', 'st-general');
     types = null;
   });
@@ -115,11 +139,16 @@ describe('BookingLauncher', () => {
   it('asks for times in the zone it is given, else the device’s', () => {
     types = [{ id: 'st-general' }];
     const { unmount } = render(
-      <BookingLauncher mentor={mentor} timeZone="America/Chicago" onClose={vi.fn()} />,
+      <BookingLauncher
+        entryPoint="home"
+        mentor={mentor}
+        timeZone="America/Chicago"
+        onClose={vi.fn()}
+      />,
     );
     expect(slotsArgs).toHaveBeenLastCalledWith('m1', 'st-general', 'America/Chicago');
     unmount();
-    render(<BookingLauncher mentor={mentor} onClose={vi.fn()} />);
+    render(<BookingLauncher entryPoint="home" mentor={mentor} onClose={vi.fn()} />);
     expect(slotsArgs).toHaveBeenLastCalledWith('m1', 'st-general', deviceTimeZone());
     types = null;
   });

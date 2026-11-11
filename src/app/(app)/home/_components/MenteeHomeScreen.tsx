@@ -36,6 +36,7 @@ import { ProfileSheet } from './ProfileSheet';
 import { stageFor, stepsDone, targetText } from './newMentee';
 import { goalLineFrom, recommendedFrom } from './recommended';
 import { useNewMentee } from './useNewMentee';
+import { profileLinkSource } from '@/lib/analytics/profileSource';
 import styles from './MenteeHomeScreen.module.css';
 
 /** Getting started leaves this long after its last step is done (design gsDone). */
@@ -331,7 +332,12 @@ export function MenteeHomeScreen() {
   return (
     // data-help reserves bottom room so the fixed help pill never overlaps the
     // last content at full scroll.
-    <div className={styles.page} data-help={showHelp ? '' : undefined}>
+    <div
+      className={styles.page}
+      data-help={showHelp ? '' : undefined}
+      // A profile opened from Home: suggestions, featured, My mentors (PRD 30).
+      onClickCapture={profileLinkSource('home')}
+    >
       <header className={styles.header}>
         {settling ? (
           <div className={styles.greeting}>
@@ -492,6 +498,7 @@ export function MenteeHomeScreen() {
           (/mentors/{slug ?? id}) always resolves, as on Explore. */}
       <BookingLauncher
         mentor={booking?.mentor ?? null}
+        entryPoint="home"
         ratingUnknown={booking?.ratingUnknown ?? false}
         onClose={() => setBooking(null)}
       />
