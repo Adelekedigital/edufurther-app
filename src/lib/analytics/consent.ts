@@ -96,7 +96,8 @@ export function writeConsentCookie(a: ConsentAnswer): void {
 export const SIGNED_OUT_COOKIE = 'ef_consent_out';
 
 export function markSignedOut(now = Date.now()): void {
-  writeCookie(SIGNED_OUT_COOKIE, String(Math.floor(now / 1000)));
+  // Rounded up: an answer in the same second as the sign-out is never after it.
+  writeCookie(SIGNED_OUT_COOKIE, String(Math.ceil(now / 1000)));
 }
 
 export function readSignedOut(now = Date.now()): number | null {

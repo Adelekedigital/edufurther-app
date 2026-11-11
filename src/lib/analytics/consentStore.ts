@@ -95,7 +95,8 @@ export const consentStore = {
   signedOut(now = Date.now()) {
     ensureLoaded();
     markSignedOut(now);
-    state = { answer: state.answer, here: false, signedOutAt: readSignedOut(now) ?? now };
+    // The exact time here; the cookie (whole seconds) is for the next page load.
+    state = { answer: state.answer, here: false, signedOutAt: now };
     listeners.forEach((l) => l());
   },
 };
