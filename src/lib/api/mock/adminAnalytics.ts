@@ -19,7 +19,24 @@ import { FUNNEL_COPY } from '@/lib/copy/adminAnalytics';
  * length; the shapes are the ones agreed with edufurtherbe-24 on 9 Nov.
  */
 
-export type MockQuery = { window?: string; from?: string; to?: string; compare?: string };
+export type MockQuery = {
+  window?: string;
+  from?: string;
+  to?: string;
+  compare?: string;
+  /** IANA zone the days follow (v2, backend decision 335); absent = UTC. */
+  tz?: string;
+};
+
+/** A real IANA zone, as the backend checks it (an unknown one is a 422). */
+function validZone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 const DAY = 864e5;
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
@@ -29,7 +46,10 @@ export function mockWindow(
   q: MockQuery,
   now = new Date(),
 ): { days: number; compare: boolean; window: WireAnalyticsWindow } | null {
-  const today = iso(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const tz = q.tz ?? 'UTC';
+  if (!validZone(tz)) return null;
+  // "Today" is the viewer's date in that zone (en-CA formats as YYYY-MM-DD).
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
   let from: string;
   let to: string;
   if (q.from || q.to) {
@@ -47,16 +67,16 @@ export function mockWindow(
   }
   if (q.compare !== undefined && q.compare !== 'true' && q.compare !== 'false') return null;
   const days = Math.round((Date.parse(to) - Date.parse(from)) / DAY) + 1;
-  return {
-    days,
-    compare: q.compare !== 'false',
-    window: {
-      from,
-      to,
-      previous_from: iso(Date.parse(from) - days * DAY),
-      previous_to: iso(Date.parse(from) - DAY),
-    },
+  // Built apart, not inline: `tz` is in the backend's next spec but not yet
+  // in this one, so it must type-check both before and after the release.
+  const window = {
+    from,
+    to,
+    previous_from: iso(Date.parse(from) - days * DAY),
+    previous_to: iso(Date.parse(from) - DAY),
+    tz,
   };
+  return { days, compare: q.compare !== 'false', window };
 }
 
 /** The alerts the mock raises, newest first, so the count and its list can be seen in dev. */
