@@ -107,7 +107,7 @@ export async function recordAcquisition(held: Acquisition | null): Promise<Acqui
  * a way to answer. A member's answer is stored on the account too.
  */
 export function useAnalyticsConsent(memberId: string | null) {
-  const { answer, here } = useSyncExternalStore(
+  const { answer, here, signedOutAt } = useSyncExternalStore(
     consentStore.subscribe,
     consentStore.snapshot,
     consentStore.snapshotServer,
@@ -128,6 +128,10 @@ export function useAnalyticsConsent(memberId: string | null) {
     },
     [memberId, qc],
   );
-  /** `here`: answered on this page, which wins over any stored answer until it reloads. */
-  return { answer, here, choose, busy };
+  /**
+   * `here`: answered on this page, which wins over any stored answer until it
+   * reloads or a session ends. `signedOutAt`: the last sign-out on this device,
+   * live, so an expiry mid-page asks the next person at once.
+   */
+  return { answer, here, signedOutAt, choose, busy };
 }

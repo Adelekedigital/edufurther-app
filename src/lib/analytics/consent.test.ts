@@ -150,7 +150,7 @@ describe('an answer given on this page', () => {
   it('is kept when the server confirms it with its own time, and not when they changed their mind', () => {
     consentStore.answer(false, at(100));
     consentStore.confirm(no(90));
-    expect(consentStore.snapshot()).toEqual({ answer: no(90), here: true });
+    expect(consentStore.snapshot()).toMatchObject({ answer: no(90), here: true });
     consentStore.confirm(yes(95));
     expect(consentStore.get()).toEqual(no(90));
   });
