@@ -38,6 +38,14 @@
   min-width: 0;
   max-width: 100%;
 }
+/* The trend's empty state: the chart's height, centred, so the card keeps its shape. */
+.noTrend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: var(--space-4) 0;
+}
 /* The role filter: its own row above the headline, left aligned. */
 .role {
   align-self: flex-start;

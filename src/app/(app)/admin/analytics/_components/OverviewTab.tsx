@@ -1,11 +1,13 @@
 import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
+import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SegmentedControl } from '@/components/molecules/SegmentedControl/SegmentedControl';
 import type { ActiveRole, AnalyticsTab, Overview } from '@/lib/api/data/adminAnalytics';
 import { FEATURES, OVERVIEW } from '@/lib/copy/adminAnalytics';
 import { changeWhen, formatRate, type Metric } from '@/lib/utils/analytics';
 import { formatCount, formatDay } from '@/lib/utils/format';
+import { addDays } from '@/lib/utils/slots';
 import { ChangeText, orNoData, SourceBadge } from './parts';
 import { TrendChart } from './TrendChart';
 import { sparkPath } from './trendModel';
@@ -67,6 +69,33 @@ const longDate = (iso: string) =>
     year: 'numeric',
     timeZone: 'UTC',
   });
+
+/**
+ * The trend has nothing to draw. A window that ends before anything was
+ * recorded says when history starts; otherwise it's the first week, and the
+ * first point is a full week after history starts.
+ */
+function NoTrend({ historyFrom, windowEnd }: { historyFrom: string | null; windowEnd: string }) {
+  const A = OVERVIEW.active;
+  // history_from is the day after the first one recorded: a window that ends
+  // on that first day (today, at launch) is the first week, not "before".
+  const before = historyFrom !== null && windowEnd < addDays(historyFrom, -1);
+  return (
+    <div className={styles.noTrend}>
+      <EmptyState
+        illustration="dashboard"
+        size={96}
+        headingLevel={3}
+        title={before ? A.beforeHistoryTitle : A.noTrendTitle}
+        description={
+          before
+            ? A.beforeHistoryBody(longDate(historyFrom))
+            : A.noTrendBody(historyFrom && formatDay(addDays(historyFrom, 6)).date)
+        }
+      />
+    </div>
+  );
+}
 
 /** "Mentees 204 · Mentors 42", or nothing when the response has no split. */
 const roleSplit = (
@@ -259,8 +288,9 @@ export function OverviewTab({
           )}
         </div>
         {active ? (
-          // No chart when every point is a gap (a window before history): absent, never 0.
-          auSeries?.some((pt) => pt.value !== null) && (
+          // Every point a gap (the first week, or dates before history): the
+          // empty pattern in the chart's place, never a line at 0.
+          auSeries?.some((pt) => pt.value !== null) ? (
             <TrendChart
               series={auSeries}
               unit={ns.unit}
@@ -268,6 +298,8 @@ export function OverviewTab({
               windowLabel={windowLabel}
               labels={auLabels}
             />
+          ) : (
+            <NoTrend historyFrom={am.historyFrom} windowEnd={data.to} />
           )
         ) : (
           <TrendChart
