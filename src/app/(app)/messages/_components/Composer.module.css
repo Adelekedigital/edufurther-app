@@ -54,6 +54,12 @@
   line-height: calc(var(--touch-target-min) / 2);
   color: var(--ink-900);
 }
+/* The box draws the focus; the field inside never does. `:focus-visible` here
+   outranks the global ring whatever order the stylesheets load in (in
+   production the global sheet came last and drew a second ring). */
+.input:focus-visible {
+  outline: none;
+}
 .input::placeholder {
   color: var(--ink-500);
 }
