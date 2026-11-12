@@ -279,6 +279,7 @@ describe('members', () => {
     render(<AnalyticsRoot />);
     await waitFor(() =>
       expect(tracker.identify).toHaveBeenLastCalledWith('u1', {
+        user_id: 'u1',
         role: 'mentor',
         signup_source: 'campaign',
         signup_channel: 'linkedin',

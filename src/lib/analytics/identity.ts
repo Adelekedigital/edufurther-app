@@ -15,6 +15,7 @@ type Member = Extract<Viewer, { kind: 'member' }>;
  */
 export function personProperties(viewer: Member, signup: SignupRead | null): PersonProperties {
   return {
+    user_id: viewer.id,
     role: viewer.primaryRole ?? (viewer.isMentor || viewer.signedUpAsMentor ? 'mentor' : 'mentee'),
     ...(viewer.isMigrated !== undefined ? { is_migrated: viewer.isMigrated } : {}),
     ...(signup ? { signup_source: signup.source, signup_channel: signup.channel } : {}),

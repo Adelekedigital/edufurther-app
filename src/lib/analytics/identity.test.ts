@@ -27,12 +27,19 @@ describe('personProperties', () => {
         source: 'invite',
         channel: null,
       }),
-    ).toEqual({ role: 'mentor', is_migrated: true, signup_source: 'invite', signup_channel: null });
+    ).toEqual({
+      user_id: 'u1',
+      role: 'mentor',
+      is_migrated: true,
+      signup_source: 'invite',
+      signup_channel: null,
+    });
   });
 
-  it('leaves out what is not known, and never carries a name or email', () => {
+  it('leaves out what is not known, and never carries a name or email: the id, never the person', () => {
     const p = personProperties(member({ firstName: 'Ada', email: 'a@x.test' }), null);
-    expect(p).toEqual({ role: 'mentee' });
+    // user_id is the database id (= the distinct id), so PostHog can show and search by it.
+    expect(p).toEqual({ user_id: 'u1', role: 'mentee' });
   });
 });
 

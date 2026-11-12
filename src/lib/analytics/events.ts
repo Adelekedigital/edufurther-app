@@ -115,6 +115,13 @@ export type AnalyticsEvent = keyof AnalyticsEvents;
  * source breakdowns read these; it filters internal accounts itself.
  */
 export type PersonProperties = {
+  /**
+   * The account's users.id, the same as the distinct id: PostHog's Persons list
+   * shows its own internal id, so this is what the owner sets as the person's
+   * display name and searches by (owner, 2026-11-12). An id, not personal data;
+   * the backend's server events set the same name.
+   */
+  user_id: string;
   role: Role;
   signup_source?: Schemas['SignupSource'];
   signup_channel?: Schemas['SignupChannel'] | null;
