@@ -117,6 +117,15 @@ export const OVERVIEW = {
     vsBefore: (prev: string) => `vs ${prev} at the end of the period before`,
     split: (mentees: string, mentors: string) => `Mentees ${mentees} · Mentors ${mentors}`,
     /** The role filter (owner, 2026-11-12): All · Mentees · Mentors; the words follow it. */
+    /**
+     * No trend to draw (owner, 2026-11-12): the page's empty pattern in the
+     * chart's place. A point needs a full week of history.
+     */
+    noTrendTitle: 'No trend yet',
+    noTrendBody: (firstDay: string | null) =>
+      `Weekly active members need a full week of history.${firstDay ? ` The trend starts on ${firstDay}.` : ''}`,
+    beforeHistoryTitle: 'No history for these dates',
+    beforeHistoryBody: (from: string) => `Active member history starts on ${from}.`,
     roleLabel: 'Role',
     roles: { all: 'All', mentee: 'Mentees', mentor: 'Mentors' },
     who: { all: 'members', mentee: 'mentees', mentor: 'mentors' },

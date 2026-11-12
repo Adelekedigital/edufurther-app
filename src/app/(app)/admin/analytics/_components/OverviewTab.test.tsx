@@ -129,7 +129,7 @@ describe('OverviewTab', () => {
     expect(onRole).toHaveBeenCalledWith('mentee');
   });
 
-  it('a window wholly before history (every point a gap) draws no chart (review on PR 585)', () => {
+  it('every point a gap in the first week: the empty pattern says when the trend starts, no chart', () => {
     const d = data();
     const gaps = d.activeMembers.series!.map((pt) => ({
       ...pt,
@@ -137,10 +137,108 @@ describe('OverviewTab', () => {
       previous: null,
       byRole: null,
     }));
-    show({ ...d, activeMembers: { ...d.activeMembers, series: gaps } }, true, vi.fn(), 'active');
+    show(
+      {
+        ...d,
+        to: '2026-11-12',
+        activeMembers: { ...d.activeMembers, historyFrom: '2026-11-13', series: gaps },
+      },
+      true,
+      vi.fn(),
+      'active',
+    );
     const card = screen.getByRole('region', { name: 'Platform health' });
-    expect(within(card).queryByRole('img')).toBeNull();
+    expect(within(card).queryByRole('img', { name: /Weekly active/ })).toBeNull();
     expect(within(card).queryByText(/from 0 to 0/)).toBeNull();
+    expect(
+      within(card).getByRole('heading', { level: 3, name: 'No trend yet' }),
+    ).toBeInTheDocument();
+    // 13 Nov plus a week: the first full 7 days end on 19 Nov.
+    expect(
+      within(card).getByText(
+        'Weekly active members need a full week of history. The trend starts on Nov 19.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('a role with no points while the totals have some: no chart, and never "No trend yet"', () => {
+    const d = data();
+    const noSplit = d.activeMembers.series!.map((pt) => ({ ...pt, byRole: null }));
+    show(
+      { ...d, activeMembers: { ...d.activeMembers, series: noSplit } },
+      true,
+      vi.fn(),
+      'active',
+      vi.fn(),
+      'mentee',
+    );
+    const card = screen.getByRole('region', { name: 'Platform health' });
+    expect(within(card).queryByRole('img', { name: /Weekly active/ })).toBeNull();
+    expect(within(card).queryByText('No trend yet')).toBeNull();
+  });
+
+  it('the first recorded day (history_from minus 1) is the first week, not before history', () => {
+    const d = data();
+    const gaps = d.activeMembers.series!.map((pt) => ({
+      ...pt,
+      value: null,
+      previous: null,
+      byRole: null,
+    }));
+    show(
+      {
+        ...d,
+        to: '2026-11-11',
+        activeMembers: { ...d.activeMembers, historyFrom: '2026-11-13', series: gaps },
+      },
+      true,
+      vi.fn(),
+      'active',
+    );
+    // 11 Nov is before the first recorded day (12 Nov): before history.
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'No history for these dates' }),
+    ).toBeInTheDocument();
+  });
+
+  it('a window wholly before history says from when members are recorded', () => {
+    const d = data();
+    const gaps = d.activeMembers.series!.map((pt) => ({
+      ...pt,
+      value: null,
+      previous: null,
+      byRole: null,
+    }));
+    show(
+      {
+        ...d,
+        to: '2024-06-30',
+        activeMembers: { ...d.activeMembers, historyFrom: '2026-11-13', series: gaps },
+      },
+      true,
+      vi.fn(),
+      'active',
+    );
+    const card = screen.getByRole('region', { name: 'Platform health' });
+    expect(
+      within(card).getByRole('heading', { level: 3, name: 'No history for these dates' }),
+    ).toBeInTheDocument();
+    expect(
+      within(card).getByText('Active member history starts on 13 Nov 2026.'),
+    ).toBeInTheDocument();
+  });
+
+  it('no series and no history date: no trend yet, without a date', () => {
+    const d = data();
+    show(
+      { ...d, activeMembers: { historyFrom: null, byRole: null, series: null } },
+      true,
+      vi.fn(),
+      'active',
+    );
+    expect(
+      screen.getByText('Weekly active members need a full week of history.', { exact: true }),
+    ).toBeInTheDocument();
   });
 
   it('the note takes its history date from the server; without one it says no date', () => {
@@ -199,7 +297,7 @@ describe('OverviewTab', () => {
       'active',
     );
     const card = screen.getByRole('region', { name: 'Platform health' });
-    expect(within(card).queryByRole('img')).toBeNull();
+    expect(within(card).queryByRole('img', { name: /Weekly active/ })).toBeNull();
     expect(within(card).queryByText(/at the end of the period before/)).toBeNull();
     expect(within(card).queryByText('weekly active members')).toBeNull();
     for (const label of ['Weekly active members', 'Monthly active members']) {

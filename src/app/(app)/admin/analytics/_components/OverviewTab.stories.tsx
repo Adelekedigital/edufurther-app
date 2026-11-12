@@ -26,5 +26,30 @@ export const ActiveMentors: Story = {
   args: { data: data(true), compare: true, show: 'active', role: 'mentor' },
 };
 
+/** The first week (every trend point a gap): the empty pattern says when the trend starts. */
+export const ActiveFirstWeek: Story = {
+  args: {
+    compare: false,
+    show: 'active',
+    data: (() => {
+      const d = data(false);
+      return {
+        ...d,
+        to: '2026-11-12',
+        activeMembers: {
+          ...d.activeMembers,
+          historyFrom: '2026-11-13',
+          series: d.activeMembers.series!.map((p) => ({
+            ...p,
+            value: null,
+            previous: null,
+            byRole: null,
+          })),
+        },
+      };
+    })(),
+  },
+};
+
 /** Compare off: values only. */
 export const NoCompare: Story = { args: { data: data(false), compare: false } };
