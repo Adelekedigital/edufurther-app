@@ -5,7 +5,6 @@ import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Select } from '@/components/atoms/Select/Select';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
-import { Notice } from '@/components/molecules/Notice/Notice';
 import { RadioChips } from '@/components/molecules/RadioChips/RadioChips';
 import {
   isFunnelName,
@@ -163,16 +162,27 @@ export function BehaviourTab({
   eventsQuery: TabQuery<Behaviour>;
 }) {
   const byId = useId();
-  const down = [funnelQuery, eventsQuery].some(
+  const downQueries = [funnelQuery, eventsQuery].filter(
     (q) => q.status === 'error' && isUpstreamDown(q.error),
   );
+  const down = downQueries.length > 0;
   const copy = FUNNEL_COPY[funnel];
   const replays = safeReplayUrl(eventsQuery.data?.replaysUrl);
 
   return (
     <Section title={BEHAVIOUR.heading} source="posthog" label="Funnels">
       {down ? (
-        <Notice tone="brand">{BEHAVIOUR.down}</Notice>
+        // PostHog isn't answering: the admin failed-to-load state (owner,
+        // 2026-11-12), in the section's place, with Try again for what failed.
+        <AdminLoadError
+          framed
+          illustration="dashboard"
+          title={BEHAVIOUR.downTitle}
+          body={BEHAVIOUR.down}
+          retryLabel={ANALYTICS_STATES.retry}
+          onRetry={() => downQueries.forEach((q) => q.onRetry())}
+          retrying={downQueries.some((q) => q.retrying)}
+        />
       ) : (
         <>
           <div className={styles.funnelCard}>
