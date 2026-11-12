@@ -14,6 +14,7 @@ import { useMentorStatus } from '@/lib/api/data/mentorStatus';
 import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
 import { track } from '@/lib/analytics/track';
 import { inSentence, viewerZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useCopyText } from '@/lib/utils/useCopyText';
 import type { Viewer } from '@/types/mentor';
 import { ApprovedToast } from './ApprovedToast';
@@ -114,7 +115,7 @@ function DashboardError({ onRetry }: { onRetry: () => void }) {
 }
 
 function MentorHome({ member }: { member: Member }) {
-  const accountZone = viewerZone(member.timeZone);
+  const accountZone = viewerZone(member.timeZone, useDeviceTimeZone() ?? FIRST_PAINT_ZONE);
   const [shared, setShared] = useState(() => readShared(member.id));
   // Keyed so a repeated identical message still re-announces (LiveRegion).
   const [announce, setAnnounce] = useState<{ text: string; id: number } | null>(null);

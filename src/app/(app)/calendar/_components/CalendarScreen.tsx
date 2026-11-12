@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { cardClass } from '@/components/atoms/Card/Card';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -48,7 +48,7 @@ import {
   VIDEO_ROW_COPY,
   videoRowTitle,
 } from '@/lib/copy/calendar';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { focusIfShown } from '@/lib/utils/focus';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { supportMailto } from '@/lib/utils/mailto';
@@ -85,7 +85,8 @@ export function CalendarScreen() {
   // A locked page (the setup lock) fetches nothing it won't show.
   const locked = access.locked.has('Calendar');
   const mentorId = isMentor && !locked ? member!.id : null;
-  const deviceZone = useMemo(() => deviceTimeZone(), []);
+  // Read after hydration: the server renders in UTC (E2E issue 574).
+  const deviceZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
   const monthTitleId = useId();
 
   const weekly = useWeeklyHours(mentorId);

@@ -53,7 +53,8 @@ import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useSessionRoom } from '@/lib/api/data/sessionRoom';
 import { useViewer } from '@/lib/api/data/viewer';
 import { canCancel } from '@/lib/utils/bookings';
-import { dayLabel, deviceTimeZone, viewerZone } from '@/lib/utils/format';
+import { dayLabel, viewerZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { presenceOf } from '@/lib/utils/presence';
 import {
   ENTER_PARAM,
@@ -151,7 +152,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const router = useRouter();
   const member = viewer.kind === 'member' ? viewer : null;
   const userId = member?.id ?? null;
-  const deviceZone = useMemo(() => deviceTimeZone(), []);
+  // Read after hydration: the server renders in UTC (E2E issue 574).
+  const deviceZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
   // The switcher under the date line: every time on the page follows it.
   const [zone, setZone] = useState<string | null>(null);
   const timeZone = zone ?? viewerZone(member?.timeZone, deviceZone);

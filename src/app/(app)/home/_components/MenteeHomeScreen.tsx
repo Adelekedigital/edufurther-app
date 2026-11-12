@@ -23,7 +23,8 @@ import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/m
 import { ProfileSaveError, useSaveMenteeProfile } from '@/lib/api/data/settings';
 import { GETTING_STARTED, MENTORS_FOR_GOAL, NEW_SUBLINE, PROFILE_SHEET } from '@/lib/copy/home';
 import { useDeviceFlag } from '@/lib/utils/deviceFlag';
-import { deviceTimeZone, viewerZone } from '@/lib/utils/format';
+import { viewerZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
@@ -54,8 +55,7 @@ const UNDO_MS = 5000;
 export function MenteeHomeScreen() {
   const { viewer, member } = useAppShell();
   const router = useRouter();
-  // deviceTimeZone is a lazy initializer; read it once (as the other screens do).
-  const [browserZone] = useState(deviceTimeZone);
+  const browserZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
   const phone = useMediaQuery('(max-width: 767px)');
 
   // A minute tick so the next-session card's join state advances while the tab

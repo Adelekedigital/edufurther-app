@@ -18,7 +18,7 @@ import { useViewer } from '@/lib/api/data/viewer';
 import { requestAssist } from '@/lib/api/data/writingAssist';
 import { FLOW_COPY, STEP_ORDER } from '@/lib/copy/mentorOnboarding';
 import { FIELD_SUGGESTIONS } from '@/lib/copy/onboarding';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { useDeviceFlag } from '@/lib/utils/deviceFlag';
 import {
@@ -163,7 +163,7 @@ export function useMentorOnboardingFlow() {
   const topics = useTopics();
   const fields = useFieldsOfStudy(userId !== null);
   const photo = useAvatarUpload(app.state?.handle ?? '', userId);
-  const [deviceZone] = useState(deviceTimeZone);
+  const deviceZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
 
   const [form, setForm] = useState<Form | null>(null);
   // What the server holds, as the form last matched it: the leave guard's baseline.
