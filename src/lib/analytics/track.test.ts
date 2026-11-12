@@ -15,12 +15,12 @@ beforeEach(() => resetForTests());
 describe('track', () => {
   it('waits in memory until consent, then sends in order', () => {
     track('mentor_profile_viewed', { source: 'explore' });
-    identify('u1', { role: 'mentee' });
+    identify('u1', { user_id: 'u1', role: 'mentee' });
     const s = sink();
     setConsent(true, s);
     expect(s.calls).toEqual([
       ['capture', 'mentor_profile_viewed', { source: 'explore' }],
-      ['identify', 'u1', { role: 'mentee' }],
+      ['identify', 'u1', { user_id: 'u1', role: 'mentee' }],
     ]);
     track('pwa_installed', {});
     expect(s.calls.at(-1)).toEqual(['capture', 'pwa_installed', {}]);
@@ -47,7 +47,7 @@ describe('track', () => {
     setConsent(true, s);
     setBlocked(() => true);
     track('pwa_installed', {});
-    identify('u1', { role: 'mentee' });
+    identify('u1', { user_id: 'u1', role: 'mentee' });
     expect(s.calls).toEqual([]);
   });
 
