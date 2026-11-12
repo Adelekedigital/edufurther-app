@@ -15,6 +15,40 @@
   justify-content: space-between;
   gap: var(--space-3);
 }
+/* Right of the title: the Show switch, then the window (or "As of"). */
+.headEnd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  max-width: 100%;
+}
+.show {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+/* The select shrinks to the card on a phone (design: min-width 0, max-width 100%). */
+.showSelect {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 100%;
+}
+.showLabel {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-600);
+}
+/* "weekly active members" beside the headline. */
+.unit {
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-700);
+}
 .titles {
   display: flex;
   flex-direction: column;
@@ -69,7 +103,7 @@
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
 }
-/* Six sub-tracks: three a row, two on phones, so none is left alone on a row. */
+/* Three sub-tracks a row at every width (the design's repeat(3, minmax(0, 1fr))). */
 .subs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -175,9 +209,4 @@
   border-top: var(--border-hairline) solid var(--ink-100);
   font-size: var(--text-p-xs);
   color: var(--ink-600);
-}
-@media (max-width: 767px) {
-  .subs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }

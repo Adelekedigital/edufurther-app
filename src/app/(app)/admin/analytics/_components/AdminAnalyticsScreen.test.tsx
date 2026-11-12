@@ -165,6 +165,19 @@ describe('Admin Analytics: the page', () => {
     expect(screen.getByRole('radio', { name: '30 days' })).toBeChecked();
   });
 
+  it('Show is in the URL: ?show=active opens on Active members, and North Star clears it', async () => {
+    serve();
+    h.params = new URLSearchParams('show=active');
+    renderScreen(<AdminAnalyticsScreen />);
+    expect(await screen.findByRole('region', { name: 'Platform health' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('combobox', { name: 'Show' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Completed sessions (North Star)' }));
+    expect(replace).toHaveBeenLastCalledWith('/admin/analytics', { scroll: false });
+    await userEvent.click(screen.getByRole('combobox', { name: 'Show' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Active members' }));
+    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?show=active', { scroll: false });
+  });
+
   it('a tab moves the URL', async () => {
     serve();
     renderScreen(<AdminAnalyticsScreen />);

@@ -37,7 +37,7 @@ import { CreditsTab, isCreditsEmpty } from './CreditsTab';
 import { AlertsButton } from './AlertsButton';
 import { DateRangeDialog } from './DateRangeDialog';
 import { GrowthTab, isGrowthEmpty } from './GrowthTab';
-import { isOverviewEmpty, OverviewTab } from './OverviewTab';
+import { isOverviewEmpty, OverviewTab, type OverviewShow } from './OverviewTab';
 import { isSessionsEmpty, SessionsTab } from './SessionsTab';
 import { isSupplyEmpty, SupplyTab } from './SupplyTab';
 import { TabState } from './TabState';
@@ -99,6 +99,8 @@ export function AdminAnalyticsScreen() {
   // A breakdown the funnel doesn't offer is never asked for: it reads as the whole audience.
   const rawBy = params.get('by');
   const by = FUNNEL_COPY[funnel].by.some(([v]) => v === rawBy) ? rawBy! : 'all';
+  // Overview's Show switch (owner pick B, 2026-11-12): in the address like the funnel, so it survives a reload.
+  const show: OverviewShow = params.get('show') === 'active' ? 'active' : 'northStar';
 
   const [win, setWin] = useState<AnalyticsWindow>(DEFAULT_WINDOW);
   const [compare, setCompare] = useState(true);
@@ -142,9 +144,15 @@ export function AdminAnalyticsScreen() {
   if (alertKeys !== said.keys) setSaid({ keys: alertKeys, n: said.n + 1 });
   const alertNews = alertKeys ? { text: ALERTS.firing(alerts.length), id: said.n } : null;
 
-  const go = (next: { tab: AnalyticsTab; funnel?: FunnelName; by?: string }) => {
+  const go = (next: {
+    tab: AnalyticsTab;
+    funnel?: FunnelName;
+    by?: string;
+    show?: OverviewShow;
+  }) => {
     const q = new URLSearchParams();
     if (next.tab !== 'overview') q.set('tab', next.tab);
+    if (next.tab === 'overview' && next.show === 'active') q.set('show', 'active');
     if (next.tab === 'funnels') {
       if (next.funnel && next.funnel !== 'signup') q.set('funnel', next.funnel);
       if (next.by && next.by !== 'all') q.set('by', next.by);
@@ -197,6 +205,8 @@ export function AdminAnalyticsScreen() {
               data={d}
               compare={compare}
               windowLabel={windowLabel(win)}
+              show={show}
+              onShow={(s) => go({ tab: 'overview', show: s })}
               onOpen={(t) => go({ tab: t })}
             />
           ))}
