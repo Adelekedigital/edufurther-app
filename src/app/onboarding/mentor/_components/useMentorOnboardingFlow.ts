@@ -56,6 +56,8 @@ const FUNNEL_STEP: Partial<Record<MentorStep, MentorApplicationStep>> = {
 
 /** Room above a focused field, so the pinned footer never covers it on phones. */
 const FOCUS_OFFSET = 96;
+/** How long a press waits for a gap that is about to clear on its own. */
+const HOLD_MS = 1500;
 
 type Form = {
   step: MentorStep;
@@ -353,14 +355,28 @@ export function useMentorOnboardingFlow() {
     setForm((f) => (f ? { ...f, step: first.step } : f));
   };
 
+  // A Continue pressed while the step couldn't go ahead yet (see goNext).
+  const held = useRef(0);
+  const goNextRef = useRef<() => Promise<void>>(async () => {});
+  // A step change ends any held press.
+  useEffect(() => {
+    held.current = 0;
+  }, [step]);
+
   const goNext = async () => {
     if (!form || save.isPending || submit.isPending || leaving) return;
     const standing = state ?? form.base;
     if (gaps.length || drafting) {
       setTried(true);
+      // Held, not dropped: the press goes ahead once the draft settles, or once
+      // a gap clears on its own straight away (an answer still landing, like a
+      // picked school's country). Before, the line vanished with the gap and
+      // the press was simply lost (E2E issue 573).
+      held.current = drafting ? Infinity : Date.now() + HOLD_MS;
       if (gaps[0]) focusField(gapField(gaps[0], form.answers));
       return;
     }
+    held.current = 0;
     setTried(false);
     setServerGaps([]);
     const from = form.step;
@@ -404,6 +420,19 @@ export function useMentorOnboardingFlow() {
       // Otherwise shown from submit.error; Submit tries again.
     }
   };
+  useEffect(() => {
+    goNextRef.current = goNext;
+  });
+  // After the sync above (effects run in order), so it calls this render's goNext.
+  useEffect(() => {
+    if (!held.current || drafting) return;
+    if (gaps.length) {
+      if (Date.now() > held.current) held.current = 0; // a real gap: it stays blocked
+      return;
+    }
+    held.current = 0;
+    void goNextRef.current();
+  }, [drafting, gaps.length]);
 
   // Error before empty, and only before the form exists: a failed refetch later keeps the form.
   const loadError = !form && (!!app.error || !!topics.error);

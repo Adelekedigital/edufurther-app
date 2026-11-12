@@ -829,3 +829,45 @@ describe('MentorOnboardingScreen: PRD 30 application funnel', () => {
     ]);
   });
 });
+
+describe('MentorOnboardingScreen: a Continue pressed too early is held, not lost (E2E issue 573)', () => {
+  const aboutReady = () =>
+    stateWith({
+      lastStep: 'education',
+      hasProfile: true,
+      answers: answers({
+        helpIds: ['o-docs'],
+        photoUrl: 'https://cdn.test/p.jpg',
+        originId: 'c-ng',
+        linkedin: 'https://www.linkedin.com/in/gbenga',
+      }),
+    });
+
+  it('goes ahead by itself once the About draft settles', async () => {
+    appState = aboutReady();
+    let settle: (v: { text: string; promptVersion: string }) => void = () => {};
+    requestAssist.mockReturnValueOnce(new Promise((resolve) => (settle = resolve)));
+    render(<MentorOnboardingScreen />);
+    await screen.findByRole('heading', { level: 1, name: 'About you' });
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.getByText('Drafting your About. One moment…')).toBeInTheDocument();
+    settle({ text: 'I studied microbiology.', promptVersion: 'v1' });
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0]![0]).toBe('about');
+  });
+
+  it('a real gap still blocks, and says so', async () => {
+    appState = stateWith({
+      ...aboutReady(),
+      answers: { ...aboutReady().answers, linkedin: '' },
+    });
+    render(<MentorOnboardingScreen />);
+    await screen.findByRole('heading', { level: 1, name: 'About you' });
+    // The draft lands first (the default mock resolves), so only the gap blocks.
+    await screen.findByDisplayValue('I studied…');
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('Fill in the required fields to continue.')).toBeInTheDocument();
+    expect(save).not.toHaveBeenCalled();
+  });
+});
