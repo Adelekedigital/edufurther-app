@@ -10,7 +10,7 @@ import {
   useUploadIntakeFile,
 } from '@/lib/api/data/booking';
 import type { EntryPoint } from '@/lib/analytics/events';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import type { Mentor } from '@/types/mentor';
 
 type BookingLauncherProps = {
@@ -59,7 +59,7 @@ export function BookingLauncher({
   timeZone,
 }: BookingLauncherProps) {
   const [typeIdState, setTypeIdState] = useState<string | null>(null);
-  const [deviceZone] = useState(deviceTimeZone);
+  const deviceZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
   const zone = timeZone ?? deviceZone;
   const sessionTypes = useSessionTypes(mentor?.id ?? null);
   // The offering being booked: the one picked in the modal, else the one

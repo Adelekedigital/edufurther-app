@@ -21,7 +21,7 @@ import {
   stepLabel,
   type MissingKey,
 } from '@/lib/copy/onboarding';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { basedOnLine } from '@/lib/utils/matchReason';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -59,7 +59,7 @@ export function OnboardingScreen() {
   const router = useRouter();
   const phone = useMediaQuery('(max-width: 767px)');
   const online = useOnline();
-  const [zone] = useState(deviceTimeZone);
+  const zone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
   const [bookMentor, setBookMentor] = useState<Mentor | null>(null);
   const [sheetMentor, setSheetMentor] = useState<Mentor | null>(null);
   const subId = useId();

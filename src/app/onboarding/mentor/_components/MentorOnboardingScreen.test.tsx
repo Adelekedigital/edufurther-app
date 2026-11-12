@@ -829,3 +829,100 @@ describe('MentorOnboardingScreen: PRD 30 application funnel', () => {
     ]);
   });
 });
+
+describe('MentorOnboardingScreen: a Continue pressed too early is held, not lost (E2E issue 573)', () => {
+  const aboutReady = () =>
+    stateWith({
+      lastStep: 'education',
+      hasProfile: true,
+      answers: answers({
+        helpIds: ['o-docs'],
+        photoUrl: 'https://cdn.test/p.jpg',
+        originId: 'c-ng',
+        linkedin: 'https://www.linkedin.com/in/gbenga',
+      }),
+    });
+
+  it('goes ahead by itself once the About draft settles', async () => {
+    appState = aboutReady();
+    let settle: (v: { text: string; promptVersion: string }) => void = () => {};
+    requestAssist.mockReturnValueOnce(new Promise((resolve) => (settle = resolve)));
+    render(<MentorOnboardingScreen />);
+    await screen.findByRole('heading', { level: 1, name: 'About you' });
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.getByText('Drafting your About. One moment…')).toBeInTheDocument();
+    settle({ text: 'I studied microbiology.', promptVersion: 'v1' });
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save.mock.calls[0]![0]).toBe('about');
+  });
+
+  it('a real gap still blocks, and says so', async () => {
+    appState = stateWith({
+      ...aboutReady(),
+      answers: { ...aboutReady().answers, linkedin: '' },
+    });
+    render(<MentorOnboardingScreen />);
+    await screen.findByRole('heading', { level: 1, name: 'About you' });
+    // The draft lands first (the default mock resolves), so only the gap blocks.
+    await screen.findByDisplayValue('I studied…');
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    expect(await screen.findByText('Fill in the required fields to continue.')).toBeInTheDocument();
+    expect(save).not.toHaveBeenCalled();
+    // Filled in by hand, it waits for the next press: never a surprise save.
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'LinkedIn profile' }),
+      'https://www.linkedin.com/in/gbenga',
+    );
+    expect(save).not.toHaveBeenCalled();
+  });
+});
+
+describe('MentorOnboardingScreen: a held Continue never fires late (E2E issue 573)', () => {
+  const hoursReady = () =>
+    stateWith({
+      lastStep: 'about',
+      hasProfile: true,
+      answers: answers({
+        helpIds: ['o-docs'],
+        photoUrl: 'https://cdn.test/p.jpg',
+        originId: 'c-ng',
+        linkedin: 'https://www.linkedin.com/in/gbenga',
+        about: 'Mine',
+      }),
+    });
+
+  it('on the hours step, ticking a day right after a blocked press does not submit', async () => {
+    appState = hoursReady();
+    render(<MentorOnboardingScreen />);
+    await screen.findByRole('heading', { level: 1, name: 'When can you mentor?' });
+    await userEvent.click(screen.getByRole('button', { name: 'Submit application' }));
+    expect(await screen.findByText('Fill in the required fields to continue.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Monday' }));
+    expect(save).not.toHaveBeenCalled();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('a press during a draft that then fails does not advance; the note shows first', async () => {
+    appState = stateWith({
+      lastStep: 'education',
+      hasProfile: true,
+      answers: answers({
+        helpIds: ['o-docs'],
+        photoUrl: 'https://cdn.test/p.jpg',
+        originId: 'c-ng',
+        linkedin: 'https://www.linkedin.com/in/gbenga',
+      }),
+    });
+    let fail: (e: Error) => void = () => {};
+    requestAssist.mockReturnValueOnce(new Promise((_, reject) => (fail = reject)));
+    render(<MentorOnboardingScreen />);
+    await screen.findByRole('heading', { level: 1, name: 'About you' });
+    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fail(new Error('down'));
+    await waitFor(() =>
+      expect(screen.getAllByText(/We couldn’t draft your About/).length).toBeGreaterThan(0),
+    );
+    expect(save).not.toHaveBeenCalled();
+  });
+});

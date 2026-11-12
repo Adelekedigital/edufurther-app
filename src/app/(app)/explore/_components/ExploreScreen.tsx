@@ -23,7 +23,7 @@ import { useInviteLookup } from '@/lib/api/data/invite';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
 import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
-import { deviceTimeZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { storedInviteCode } from '@/lib/utils/inviteCode';
 import { personCover } from '@/lib/utils/person';
 import { useHydrated } from '@/lib/utils/useHydrated';
@@ -80,8 +80,7 @@ export function ExploreScreen() {
   // Mentors can't book (product, 2026-09-29): nothing opens the flow for them.
   const setBooking = (m: Mentor | null) => setBookingState(canBook ? m : null);
   const [bookingTypeId, setBookingTypeId] = useState<string | null>(null);
-  // Cards only render after a client fetch, so reading the device zone here is safe.
-  const [timeZone] = useState(deviceTimeZone);
+  const timeZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
 
   useEffect(() => {
     const t = setTimeout(() => setQ(input.trim()), SEARCH_DEBOUNCE_MS);

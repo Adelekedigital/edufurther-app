@@ -36,6 +36,7 @@ import {
   MENTOR_TABS_LABEL,
 } from '@/lib/copy/adminMentors';
 import { viewerZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { MentorBulkBar } from './MentorBulkBar';
 import { MentorDialogs, type MentorDialog } from './MentorDialogs';
 import { MentorDrawer, type DrawerAction } from './MentorDrawer';
@@ -59,7 +60,7 @@ export function AdminMentorsScreen() {
   const viewer = useViewer();
   const member = viewer.kind === 'member' ? viewer : null;
   const adminId = member?.isAdmin ? member.id : null;
-  const zone = viewerZone(member?.timeZone);
+  const zone = viewerZone(member?.timeZone, useDeviceTimeZone() ?? FIRST_PAINT_ZONE);
   // limited_access reads everything but decides nothing (backend reply A1).
   const canDecide = !!member?.isAdmin && member.adminRole !== 'limited_access';
 
