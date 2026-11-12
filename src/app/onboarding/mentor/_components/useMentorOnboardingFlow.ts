@@ -56,8 +56,6 @@ const FUNNEL_STEP: Partial<Record<MentorStep, MentorApplicationStep>> = {
 
 /** Room above a focused field, so the pinned footer never covers it on phones. */
 const FOCUS_OFFSET = 96;
-/** How long a press waits for a gap that is about to clear on its own. */
-const HOLD_MS = 1500;
 
 type Form = {
   step: MentorStep;
@@ -355,12 +353,12 @@ export function useMentorOnboardingFlow() {
     setForm((f) => (f ? { ...f, step: first.step } : f));
   };
 
-  // A Continue pressed while the step couldn't go ahead yet (see goNext).
-  const held = useRef(0);
+  // A Continue pressed while the About draft runs, with nothing else missing (see goNext).
+  const held = useRef(false);
   const goNextRef = useRef<() => Promise<void>>(async () => {});
   // A step change ends any held press.
   useEffect(() => {
-    held.current = 0;
+    held.current = false;
   }, [step]);
 
   const goNext = async () => {
@@ -368,17 +366,15 @@ export function useMentorOnboardingFlow() {
     const standing = state ?? form.base;
     if (gaps.length || drafting) {
       setTried(true);
-      // Held, not dropped: the press goes ahead once the draft settles, or once
-      // a gap clears on its own straight away (an answer still landing, like a
-      // picked school's country). Before, the line vanished with the gap and
-      // the press was simply lost (E2E issue 573).
-      // Only a press blocked by the draft alone waits for it; any gap gets the
-      // short deadline, so a real one lapses.
-      held.current = gaps.length ? Date.now() + HOLD_MS : Infinity;
+      // Blocked by the draft alone, the press is held and goes ahead once the
+      // draft lands: before, the line vanished with the draft and the press was
+      // lost (E2E issue 573). A gap is never held: it is the person's to fill,
+      // and their next press decides.
+      held.current = !gaps.length;
       if (gaps[0]) focusField(gapField(gaps[0], form.answers));
       return;
     }
-    held.current = 0;
+    held.current = false;
     setTried(false);
     setServerGaps([]);
     const from = form.step;
@@ -428,19 +424,9 @@ export function useMentorOnboardingFlow() {
   // After the sync above (effects run in order), so it calls this render's goNext.
   useEffect(() => {
     if (!held.current || drafting) return;
-    // A failed draft shows its note first; the next press goes ahead.
-    if (draftFailed) {
-      held.current = 0;
-      return;
-    }
-    // Past its deadline, the press is spent: a gap filled later by hand never
-    // submits on its own.
-    if (Date.now() > held.current) {
-      held.current = 0;
-      return;
-    }
-    if (gaps.length) return;
-    held.current = 0;
+    held.current = false;
+    // A failed draft shows its note first, and a gap its line: the next press decides.
+    if (draftFailed || gaps.length) return;
     void goNextRef.current();
   }, [drafting, draftFailed, gaps.length]);
 

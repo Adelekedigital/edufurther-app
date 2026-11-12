@@ -869,15 +869,12 @@ describe('MentorOnboardingScreen: a Continue pressed too early is held, not lost
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
     expect(await screen.findByText('Fill in the required fields to continue.')).toBeInTheDocument();
     expect(save).not.toHaveBeenCalled();
-    // Filled in later by hand, it waits for the next press: never a surprise save.
-    const now = Date.now();
-    const later = vi.spyOn(Date, 'now').mockReturnValue(now + 10_000);
+    // Filled in by hand, it waits for the next press: never a surprise save.
     await userEvent.type(
       screen.getByRole('textbox', { name: 'LinkedIn profile' }),
       'https://www.linkedin.com/in/gbenga',
     );
     expect(save).not.toHaveBeenCalled();
-    later.mockRestore();
   });
 });
 
@@ -895,17 +892,15 @@ describe('MentorOnboardingScreen: a held Continue never fires late (E2E issue 57
       }),
     });
 
-  it('on the hours step, ticking a day long after a blocked press does not submit', async () => {
+  it('on the hours step, ticking a day right after a blocked press does not submit', async () => {
     appState = hoursReady();
     render(<MentorOnboardingScreen />);
     await screen.findByRole('heading', { level: 1, name: 'When can you mentor?' });
     await userEvent.click(screen.getByRole('button', { name: 'Submit application' }));
     expect(await screen.findByText('Fill in the required fields to continue.')).toBeInTheDocument();
-    const later = vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 10_000);
     await userEvent.click(screen.getByRole('button', { name: 'Monday' }));
     expect(save).not.toHaveBeenCalled();
     expect(submit).not.toHaveBeenCalled();
-    later.mockRestore();
   });
 
   it('a press during a draft that then fails does not advance; the note shows first', async () => {
