@@ -299,7 +299,12 @@ export function OverviewTab({
               labels={auLabels}
             />
           ) : (
-            <NoTrend historyFrom={am.historyFrom} windowEnd={data.to} />
+            // The empty pattern only when the totals have nothing either (no
+            // history for the window): a role without points, where the
+            // totals have some, has no chart, never "No trend yet" (review on PR 590).
+            !am.series?.some((pt) => pt.value !== null) && (
+              <NoTrend historyFrom={am.historyFrom} windowEnd={data.to} />
+            )
           )
         ) : (
           <TrendChart

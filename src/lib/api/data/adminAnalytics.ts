@@ -106,7 +106,12 @@ export type Overview = AnalyticsHead & {
    * the weekly trend. Null pieces when the response doesn't carry them.
    */
   activeMembers: {
-    /** When active-member history starts here (YYYY-MM-DD), from the server; null when not sent. */
+    /**
+     * The first *full* day of recorded activity here (YYYY-MM-DD), from the
+     * server: the day after the first day recorded (backend `history_from`,
+     * domain/analytics.py). A trend point needs its 7 days on or after it, so
+     * the first one is 6 days later. Null when not sent.
+     */
     historyFrom: string | null;
     byRole: NonNullable<WireActiveMembers['by_role']> | null;
     series:

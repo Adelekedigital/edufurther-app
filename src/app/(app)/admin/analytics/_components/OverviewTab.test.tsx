@@ -161,6 +161,46 @@ describe('OverviewTab', () => {
     ).toBeInTheDocument();
   });
 
+  it('a role with no points while the totals have some: no chart, and never "No trend yet"', () => {
+    const d = data();
+    const noSplit = d.activeMembers.series!.map((pt) => ({ ...pt, byRole: null }));
+    show(
+      { ...d, activeMembers: { ...d.activeMembers, series: noSplit } },
+      true,
+      vi.fn(),
+      'active',
+      vi.fn(),
+      'mentee',
+    );
+    const card = screen.getByRole('region', { name: 'Platform health' });
+    expect(within(card).queryByRole('img', { name: /Weekly active/ })).toBeNull();
+    expect(within(card).queryByText('No trend yet')).toBeNull();
+  });
+
+  it('the first recorded day (history_from minus 1) is the first week, not before history', () => {
+    const d = data();
+    const gaps = d.activeMembers.series!.map((pt) => ({
+      ...pt,
+      value: null,
+      previous: null,
+      byRole: null,
+    }));
+    show(
+      {
+        ...d,
+        to: '2026-11-11',
+        activeMembers: { ...d.activeMembers, historyFrom: '2026-11-13', series: gaps },
+      },
+      true,
+      vi.fn(),
+      'active',
+    );
+    // 11 Nov is before the first recorded day (12 Nov): before history.
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'No history for these dates' }),
+    ).toBeInTheDocument();
+  });
+
   it('a window wholly before history says from when members are recorded', () => {
     const d = data();
     const gaps = d.activeMembers.series!.map((pt) => ({
