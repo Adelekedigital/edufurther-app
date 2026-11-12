@@ -10,7 +10,7 @@ import { Icon } from './Icon/Icon';
 import { Star } from './Star/Star';
 import { IconButton } from './IconButton/IconButton';
 import { InfoTip } from './InfoTip/InfoTip';
-import { Input } from './Input/Input';
+import { Input, Textarea } from './Input/Input';
 import { Radio } from './Radio/Radio';
 import { Select } from './Select/Select';
 import { Switch } from './Switch/Switch';
@@ -196,6 +196,12 @@ export const Inputs: Story = {
       <Input aria-label="Default" placeholder="Search mentors by name, school or program" />
       <Input aria-label="Invalid" invalid defaultValue="not-an-email" />
       <Input aria-label="Disabled" disabled defaultValue="Offline" />
+      {/* Multi-line: the same one focus look as every text field (owner, 2026-11-12). */}
+      <Textarea
+        aria-label="Multi-line"
+        rows={4}
+        defaultValue="Tell mentees what a session with you is like."
+      />
     </div>
   ),
 };

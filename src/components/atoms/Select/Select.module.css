@@ -38,9 +38,10 @@ input.control {
   border-color: var(--ink-400);
 }
 .control:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: 0;
+  /* The one text-field focus (owner, 2026-11-12): --field-focus. */
+  outline: var(--focus-ring-width) solid transparent;
   border-color: var(--border-focus);
+  box-shadow: var(--field-focus-shadow);
 }
 .control[aria-invalid='true'] {
   border-color: var(--border-danger);

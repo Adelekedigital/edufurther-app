@@ -32,7 +32,10 @@
   border-radius: var(--radius-lg);
 }
 .box:focus-within {
+  /* The one text-field focus (owner, 2026-11-12): --field-focus. */
+  outline: var(--focus-ring-width) solid transparent;
   border-color: var(--border-focus);
+  box-shadow: var(--field-focus-shadow);
 }
 .input {
   flex: 1;
