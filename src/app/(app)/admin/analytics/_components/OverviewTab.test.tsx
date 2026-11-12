@@ -129,6 +129,20 @@ describe('OverviewTab', () => {
     expect(onRole).toHaveBeenCalledWith('mentee');
   });
 
+  it('a window wholly before history (every point a gap) draws no chart (review on PR 585)', () => {
+    const d = data();
+    const gaps = d.activeMembers.series!.map((pt) => ({
+      ...pt,
+      value: null,
+      previous: null,
+      byRole: null,
+    }));
+    show({ ...d, activeMembers: { ...d.activeMembers, series: gaps } }, true, vi.fn(), 'active');
+    const card = screen.getByRole('region', { name: 'Platform health' });
+    expect(within(card).queryByRole('img')).toBeNull();
+    expect(within(card).queryByText(/from 0 to 0/)).toBeNull();
+  });
+
   it('a role the response does not split reads No data', () => {
     const d = data();
     show(

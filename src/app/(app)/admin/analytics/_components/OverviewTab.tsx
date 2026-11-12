@@ -250,7 +250,8 @@ export function OverviewTab({
           )}
         </div>
         {active ? (
-          auSeries && (
+          // No chart when every point is a gap (a window before history): absent, never 0.
+          auSeries?.some((pt) => pt.value !== null) && (
             <TrendChart
               series={auSeries}
               unit={ns.unit}
