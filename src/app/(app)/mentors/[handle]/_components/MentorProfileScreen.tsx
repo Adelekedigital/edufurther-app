@@ -36,7 +36,8 @@ import { NOT_TAKING_TITLE, SHARE_NOTE } from '@/lib/copy/profile';
 import { useMentorsFreeSoon } from '@/lib/api/data/freeSoon';
 import { SIMILAR_SHOWN, useSimilarMentors } from '@/lib/api/data/similar';
 import { personCover } from '@/lib/utils/person';
-import { deviceTimeZone, movedBetween, viewerZone } from '@/lib/utils/format';
+import { movedBetween, viewerZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { CompletenessCode } from '@/types/mentor';
 import { useOnline } from '@/lib/utils/useOnline';
@@ -175,8 +176,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const reviewsTab =
     hasReviews || (viewer.kind !== 'guest' && viewer.kind !== 'loading' && !isOwner);
   const { tab, setTab } = useProfileTab(sessionsTab, reviewsTab);
-  // Cards only render after a client fetch, so reading the device zone here is safe.
-  const [deviceZone] = useState(deviceTimeZone);
+  const deviceZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
   // The account's zone, as Bookings and the dashboard show times.
   const timeZone = viewerZone(member?.timeZone, deviceZone);
   // The profile only exists after a client fetch, so `window` is there by then.

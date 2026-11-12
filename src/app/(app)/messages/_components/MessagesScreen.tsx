@@ -9,6 +9,7 @@ import { usePreview } from '@/lib/api/data/preview';
 import { EMPTY_INBOX_COPY, LIST_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
 import { viewerZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { lockedPageGate, memberGate, MESSAGES_GATE } from '@/app/_shell/MentorGate';
@@ -35,7 +36,7 @@ export function MessagesScreen() {
   const isPhone = useMediaQuery('(max-width: 767px)');
   const locked = access.locked.has('Messages');
   const chats = useChats(!!member && !locked);
-  const timeZone = useMemo(() => viewerZone(member?.timeZone), [member?.timeZone]);
+  const timeZone = viewerZone(member?.timeZone, useDeviceTimeZone() ?? FIRST_PAINT_ZONE);
   const mentee = !!member && !member.isMentor;
 
   const [q, setQ] = useState('');
