@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { toOverview, type Overview } from '@/lib/api/data/adminAnalytics';
 import { mockSection, mockWindow } from '@/lib/api/mock/adminAnalytics';
 import { formatDay } from '@/lib/utils/format';
-import { isOverviewEmpty, OverviewTab, type OverviewShow } from './OverviewTab';
+import { isOverviewEmpty, OverviewTab, type OverviewRole, type OverviewShow } from './OverviewTab';
 
 const data = (compare = true): Overview =>
   toOverview(mockSection('overview', mockWindow({ compare: String(compare) })!, false));
@@ -14,6 +14,8 @@ const show = (
   onOpen = vi.fn(),
   view: OverviewShow = 'northStar',
   onShow = vi.fn(),
+  role: OverviewRole = 'all',
+  onRole = vi.fn(),
 ) =>
   render(
     <OverviewTab
@@ -22,6 +24,8 @@ const show = (
       windowLabel="Last 30 days"
       show={view}
       onShow={onShow}
+      role={role}
+      onRole={onRole}
       onOpen={onOpen}
     />,
   );
@@ -94,6 +98,51 @@ describe('OverviewTab', () => {
     ).toBeInTheDocument();
     // The North Star's sub-tracks are not in this view.
     expect(within(card).queryByText('Unique mentees served')).toBeNull();
+  });
+
+  it('Role filter: Mentors swaps every figure, the words and the trend, and drops the split', () => {
+    const d = data();
+    show(d, true, vi.fn(), 'active', vi.fn(), 'mentor');
+    const card = screen.getByRole('region', { name: 'Platform health' });
+    expect(within(card).getByRole('radio', { name: 'Mentors' })).toBeChecked();
+    expect(within(card).getByText('weekly active mentors')).toBeInTheDocument();
+    // Mentors: 42 vs 41.
+    expect(within(card).getByText('vs 41 at the end of the period before')).toBeInTheDocument();
+    const tile = (label: string) => within(card).getByText(label).parentElement!;
+    expect(tile('Weekly active mentors').children[1]).toHaveTextContent('42');
+    expect(tile('Monthly active mentors').children[1]).toHaveTextContent('91');
+    expect(tile('Stickiness (weekly of monthly)').children[1]).toHaveTextContent('46.2%');
+    expect(within(card).getByText('Monthly mentors back this week')).toBeInTheDocument();
+    expect(within(card).queryByText(/Mentees \d+ · Mentors/)).toBeNull();
+    expect(
+      within(card).getByRole('img', { name: /^Weekly active mentors per week, last 30 days/ }),
+    ).toBeInTheDocument();
+  });
+
+  it('the role control shows only in Active members, and picking one reports it', async () => {
+    const onRole = vi.fn();
+    const { unmount } = show(data(), true, vi.fn(), 'northStar', vi.fn(), 'all', onRole);
+    expect(screen.queryByRole('radiogroup', { name: 'Role' })).toBeNull();
+    unmount();
+    show(data(), true, vi.fn(), 'active', vi.fn(), 'all', onRole);
+    await userEvent.click(screen.getByRole('radio', { name: 'Mentees' }));
+    expect(onRole).toHaveBeenCalledWith('mentee');
+  });
+
+  it('a role the response does not split reads No data', () => {
+    const d = data();
+    show(
+      { ...d, activeMembers: { ...d.activeMembers, byRole: null } },
+      true,
+      vi.fn(),
+      'active',
+      vi.fn(),
+      'mentee',
+    );
+    const card = screen.getByRole('region', { name: 'Platform health' });
+    expect(
+      within(card).getByText('Weekly active mentees').parentElement!.children[1],
+    ).toHaveTextContent('No data');
   });
 
   it('Active members with no split, no trend and no figures: No data, no change, no chart', () => {

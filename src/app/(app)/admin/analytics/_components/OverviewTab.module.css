@@ -38,6 +38,10 @@
   min-width: 0;
   max-width: 100%;
 }
+/* The role filter: its own row above the headline, left aligned. */
+.role {
+  align-self: flex-start;
+}
 .showLabel {
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);

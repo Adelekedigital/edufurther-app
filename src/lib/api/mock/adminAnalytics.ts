@@ -173,10 +173,23 @@ function overview(c: Ctx): WireOverview & WireActiveMembersField {
       // WAU at each North Star point; the first is before history began (a gap).
       series: series.map((pt, i) => {
         const wau = i === 0 ? null : Math.round(221 + ((246 - 221) * i) / Math.max(1, n - 1));
+        const value = i === n - 1 ? 246 : wau;
+        const previous = c.compare && value !== null ? Math.round(value * 0.9) : null;
+        // mentee + mentor = value; null with it (the backend's rule).
+        const part = (v: number | null, share: number) =>
+          v === null ? null : Math.round(v * share);
+        const mentee = { value: part(value, 204 / 246), previous: part(previous, 204 / 246) };
         return {
           start: pt.start,
-          value: i === n - 1 ? 246 : wau,
-          previous: c.compare && wau !== null ? Math.round(wau * 0.9) : null,
+          value,
+          previous,
+          by_role: {
+            mentee,
+            mentor: {
+              value: value === null ? null : value - mentee.value!,
+              previous: previous === null ? null : previous - mentee.previous!,
+            },
+          },
         };
       }),
     },

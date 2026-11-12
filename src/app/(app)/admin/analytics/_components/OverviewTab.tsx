@@ -1,7 +1,8 @@
 import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
-import type { AnalyticsTab, Overview } from '@/lib/api/data/adminAnalytics';
+import { SegmentedControl } from '@/components/molecules/SegmentedControl/SegmentedControl';
+import type { ActiveRole, AnalyticsTab, Overview } from '@/lib/api/data/adminAnalytics';
 import { FEATURES, OVERVIEW } from '@/lib/copy/adminAnalytics';
 import { changeWhen, formatRate, type Metric } from '@/lib/utils/analytics';
 import { formatCount, formatDay } from '@/lib/utils/format';
@@ -26,9 +27,13 @@ export const isOverviewEmpty = (d: Overview) =>
 
 /** What the Overview card shows (Admin Analytics.dc.html `metric`: ns | au). */
 export type OverviewShow = 'northStar' | 'active';
+/** Active members' role filter (design `auRole`). */
+export type OverviewRole = 'all' | ActiveRole;
 
 type Sub = {
   key: keyof typeof OVERVIEW.subTracks;
+  /** Overrides the key's label (the role filter's words). */
+  label?: string;
   m: Metric | null;
   f: (n: number) => string;
   kind: 'count' | 'rate';
@@ -43,7 +48,7 @@ function SubTiles({ subs, compare }: { subs: Sub[]; compare: boolean }) {
         const c = s.m && s.m.value !== null ? changeWhen(compare, s.m, s.kind) : null;
         return (
           <div key={s.key} className={styles.sub}>
-            <span className={styles.muted}>{OVERVIEW.subTracks[s.key]}</span>
+            <span className={styles.muted}>{s.label ?? OVERVIEW.subTracks[s.key]}</span>
             <span className={styles.subValue}>{orNoData(s.m?.value ?? null, s.f)}</span>
             {c && <ChangeText change={c} />}
             {s.note && <span className={styles.muted}>{s.note}</span>}
@@ -80,6 +85,8 @@ export function OverviewTab({
   windowLabel,
   show = 'northStar',
   onShow,
+  role = 'all',
+  onRole,
   onOpen,
 }: {
   data: Overview;
@@ -87,6 +94,9 @@ export function OverviewTab({
   windowLabel: string;
   show?: OverviewShow;
   onShow: (show: OverviewShow) => void;
+  /** Active members' role filter (owner, 2026-11-12): the totals, or one role. */
+  role?: OverviewRole;
+  onRole: (role: OverviewRole) => void;
   onOpen: (tab: AnalyticsTab) => void;
 }) {
   const ids = useId();
@@ -94,6 +104,27 @@ export function OverviewTab({
   const st = data.subTracks;
   const am = data.activeMembers;
   const active = show === 'active';
+  const A = OVERVIEW.active;
+  const who = A.who[role];
+  // One role's figures, or the totals; a role the response doesn't split reads No data.
+  const empty: Metric = { value: null, previous: null };
+  const fig =
+    role === 'all'
+      ? { weekly: st.weeklyActive, monthly: st.monthlyActive, stickiness: st.stickiness }
+      : (am.byRole?.[role] ?? { weekly: empty, monthly: empty, stickiness: empty });
+  const auSeries =
+    am.series &&
+    (role === 'all'
+      ? am.series
+      : am.series.map((p) => ({
+          value: p.byRole?.[role].value ?? null,
+          previous: p.byRole?.[role].previous ?? null,
+        })));
+  const auLabels = {
+    chartLabel: A.chartLabel(who),
+    point: A.point(who),
+    legendThis: A.legendThis(who),
+  };
 
   const head = active
     ? {
@@ -101,8 +132,8 @@ export function OverviewTab({
         eyebrow: OVERVIEW.active.eyebrow,
         heading: OVERVIEW.active.heading,
         when: OVERVIEW.active.asOf(formatDay(data.to).date),
-        metric: st.weeklyActive ?? { value: null, previous: null },
-        unit: OVERVIEW.active.unit as string | null,
+        metric: fig.weekly ?? empty,
+        unit: A.unit(who) as string | null,
         vsBefore: OVERVIEW.active.vsBefore,
       }
     : {
@@ -117,26 +148,29 @@ export function OverviewTab({
   const change = head.metric.value === null ? null : changeWhen(compare, head.metric, 'count');
   const subs: Sub[] = active
     ? [
+        // The Mentees · Mentors split shows only under All.
         {
           key: 'weeklyActive',
-          m: st.weeklyActive,
+          label: A.weekly(who),
+          m: fig.weekly,
           f: formatCount,
           kind: 'count',
-          note: roleSplit(am.byRole, 'weekly'),
+          note: role === 'all' ? roleSplit(am.byRole, 'weekly') : undefined,
         },
         {
           key: 'monthlyActive',
-          m: st.monthlyActive,
+          label: A.monthly(who),
+          m: fig.monthly,
           f: formatCount,
           kind: 'count',
-          note: roleSplit(am.byRole, 'monthly'),
+          note: role === 'all' ? roleSplit(am.byRole, 'monthly') : undefined,
         },
         {
           key: 'stickiness',
-          m: st.stickiness,
+          m: fig.stickiness,
           f: formatRate,
           kind: 'rate',
-          note: OVERVIEW.active.stickinessNote,
+          note: A.stickinessNote(who),
         },
       ]
     : [
@@ -185,6 +219,22 @@ export function OverviewTab({
             <span className={styles.muted}>{head.when}</span>
           </div>
         </div>
+        {active && (
+          // Its own row above the headline, left aligned (owner, 2026-11-12).
+          <SegmentedControl<OverviewRole>
+            look="track"
+            size="md"
+            layout="hug"
+            label={A.roleLabel}
+            className={styles.role}
+            options={(['all', 'mentee', 'mentor'] as const).map((r) => ({
+              value: r,
+              label: A.roles[r],
+            }))}
+            value={role}
+            onChange={onRole}
+          />
+        )}
         <div className={styles.valueRow}>
           <span className={styles.value}>{orNoData(head.metric.value, formatCount)}</span>
           {head.unit && head.metric.value !== null && (
@@ -200,13 +250,13 @@ export function OverviewTab({
           )}
         </div>
         {active ? (
-          am.series && (
+          auSeries && (
             <TrendChart
-              series={am.series}
+              series={auSeries}
               unit={ns.unit}
               compare={compare}
               windowLabel={windowLabel}
-              labels={OVERVIEW.active}
+              labels={auLabels}
             />
           )
         ) : (

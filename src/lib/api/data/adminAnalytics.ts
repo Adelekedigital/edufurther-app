@@ -80,6 +80,9 @@ const toHead = (w: { window: { from: string; to: string }; alerts: WireAnalytics
 
 // ---- Sections ---------------------------------------------------------------
 
+/** The Active members role filter (owner, 2026-11-12): `all` is the totals. */
+export type ActiveRole = 'mentee' | 'mentor';
+
 export type Overview = AnalyticsHead & {
   northStar: {
     completed: Metric;
@@ -105,7 +108,15 @@ export type Overview = AnalyticsHead & {
    */
   activeMembers: {
     byRole: NonNullable<WireActiveMembers['by_role']> | null;
-    series: { start: string; value: number | null; previous: number | null }[] | null;
+    series:
+      | {
+          start: string;
+          value: number | null;
+          previous: number | null;
+          /** The point split by role (the role filter); null when not sent. */
+          byRole: Record<ActiveRole, { value: number | null; previous: number | null }> | null;
+        }[]
+      | null;
   };
   features: {
     key: WireFeatureKey;
@@ -130,7 +141,17 @@ export const toOverview = (w: WireOverview & WireActiveMembersField): Overview =
   },
   activeMembers: (() => {
     const am = w.active_members;
-    return { byRole: am?.by_role ?? null, series: am?.series?.length ? am.series : null };
+    return {
+      byRole: am?.by_role ?? null,
+      series: am?.series?.length
+        ? am.series.map((p) => ({
+            start: p.start,
+            value: p.value,
+            previous: p.previous,
+            byRole: p.by_role ?? null,
+          }))
+        : null,
+    };
   })(),
   features: w.features,
 });
