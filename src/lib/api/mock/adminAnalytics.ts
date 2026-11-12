@@ -158,6 +158,7 @@ function overview(c: Ctx): WireOverview & WireActiveMembersField {
     },
     // Backend edufurtherbe-5e's agreed shape (2026-11-12) and mock values.
     active_members: {
+      history_from: '2026-11-12',
       by_role: {
         mentee: {
           weekly: metric(c, 204, 180),

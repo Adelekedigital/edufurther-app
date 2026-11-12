@@ -59,6 +59,15 @@ function SubTiles({ subs, compare }: { subs: Sub[]; compare: boolean }) {
   );
 }
 
+/** "12 Nov 2026", for a calendar date (a YYYY-MM-DD string, in no zone). */
+const longDate = (iso: string) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
 /** "Mentees 204 · Mentors 42", or nothing when the response has no split. */
 const roleSplit = (
   byRole: Overview['activeMembers']['byRole'],
@@ -272,7 +281,7 @@ export function OverviewTab({
         {active && (
           <p className={styles.note}>
             <Icon name="info" size={16} className={styles.noteIcon} />
-            {OVERVIEW.activeNote}
+            {OVERVIEW.activeNote(am.historyFrom && longDate(am.historyFrom))}
           </p>
         )}
       </section>

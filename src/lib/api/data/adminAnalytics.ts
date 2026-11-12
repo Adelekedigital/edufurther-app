@@ -107,6 +107,8 @@ export type Overview = AnalyticsHead & {
    * the weekly trend. Null pieces when the response doesn't carry them.
    */
   activeMembers: {
+    /** When active-member history starts here (YYYY-MM-DD), from the server; null when not sent. */
+    historyFrom: string | null;
     byRole: NonNullable<WireActiveMembers['by_role']> | null;
     series:
       | {
@@ -142,6 +144,7 @@ export const toOverview = (w: WireOverview & WireActiveMembersField): Overview =
   activeMembers: (() => {
     const am = w.active_members;
     return {
+      historyFrom: am?.history_from ?? null,
       byRole: am?.by_role ?? null,
       series: am?.series?.length
         ? am.series.map((p) => ({

@@ -99,8 +99,12 @@ export const OVERVIEW = {
     monthlyActive: 'Monthly active members',
     stickiness: 'Stickiness (weekly of monthly)',
   },
-  activeNote:
-    'Members who used the app while signed in; history starts on 12 Nov 2026. Weekly = last 7 days, monthly = last 30 days, both up to the last day of the window.',
+  /**
+   * The start comes from the server (`active_members.history_from`): it
+   * differs by environment, so it is never written here. No date, no clause.
+   */
+  activeNote: (from: string | null) =>
+    `Members who used the app while signed in${from ? `; history starts on ${from}` : ''}. Weekly = last 7 days, monthly = last 30 days, both up to the last day of the window.`,
   /** The card's Show switch (Admin Analytics.dc.html `metric`, owner pick B, 2026-11-12). */
   show: 'Show',
   showNorthStar: 'Completed sessions (North Star)',

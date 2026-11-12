@@ -143,6 +143,28 @@ describe('OverviewTab', () => {
     expect(within(card).queryByText(/from 0 to 0/)).toBeNull();
   });
 
+  it('the note takes its history date from the server; without one it says no date', () => {
+    const d = data();
+    const { unmount } = show(
+      { ...d, activeMembers: { ...d.activeMembers, historyFrom: '2026-11-13' } },
+      true,
+      vi.fn(),
+      'active',
+    );
+    expect(screen.getByText(/history starts on 13 Nov 2026\. Weekly/)).toBeInTheDocument();
+    unmount();
+    show(
+      { ...d, activeMembers: { ...d.activeMembers, historyFrom: null } },
+      true,
+      vi.fn(),
+      'active',
+    );
+    expect(screen.queryByText(/history starts on/)).toBeNull();
+    expect(
+      screen.getByText(/^Members who used the app while signed in\. Weekly = last 7 days/),
+    ).toBeInTheDocument();
+  });
+
   it('a role the response does not split reads No data', () => {
     const d = data();
     show(
@@ -170,7 +192,7 @@ describe('OverviewTab', () => {
           monthlyActive: null,
           stickiness: { value: null, previous: 66.7 },
         },
-        activeMembers: { byRole: null, series: null },
+        activeMembers: { historyFrom: null, byRole: null, series: null },
       },
       true,
       vi.fn(),

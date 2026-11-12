@@ -31,6 +31,8 @@ export type WireFeatureKey = WireOverview['features'][number]['key'];
  */
 type WireRoleActive = { weekly: WireMetric; monthly: WireMetric; stickiness: WireMetric };
 export type WireActiveMembers = {
+  /** The first full day of recorded activity in this environment (YYYY-MM-DD); null before any. */
+  history_from?: string | null;
   by_role?: { mentee: WireRoleActive; mentor: WireRoleActive } | null;
   /**
    * WAU per north_star point; null before the first full day of history.
