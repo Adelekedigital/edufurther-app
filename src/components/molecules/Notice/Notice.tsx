@@ -7,11 +7,14 @@ import styles from './Notice.module.css';
 
 type NoticeProps = {
   /**
-   * warning: the DS onboarding callout (Mentee Onboarding v5 `unavailable`). It
-   * always shows the DS's trailing `error` icon, so `icon` is ignored.
+   * neutral, info: the app's notices (a leading `icon`, no ring).
+   * brand: the DS Notice's `info` tone (brand-50 ground, 2px brand-600 ring,
+   * the trailing `info` icon). It replaces the DS `warning` (amber) tone,
+   * retired 2026-11-12 (owner): an outage or a not-set-up state.
    * danger: the same DS callout in red (Mentor Onboarding `submitErr`).
+   * The DS tones always show their own trailing icon, so `icon` is ignored.
    */
-  tone: 'neutral' | 'info' | 'warning' | 'danger';
+  tone: 'neutral' | 'info' | 'brand' | 'danger';
   /** Omit for a plain tip (Session Types' "Every extra question lowers bookings"). */
   icon?: IconName;
   /** Bold lead-in, e.g. "You're offline." */
@@ -26,7 +29,7 @@ type NoticeProps = {
    * regions saying one thing read it twice.
    */
   live?: boolean;
-  /** DS `show-icon`: false drops the warning / danger tones' trailing icon (SecuritySettings delete warning). */
+  /** DS `show-icon`: false drops the brand / danger tones' trailing icon (SecuritySettings delete warning). */
   showIcon?: boolean;
 };
 
@@ -41,7 +44,7 @@ export function Notice({
   live = true,
   showIcon = true,
 }: NoticeProps) {
-  const ds = tone === 'warning' || tone === 'danger';
+  const ds = tone === 'brand' || tone === 'danger';
   return (
     <div
       id={id}
@@ -52,7 +55,9 @@ export function Notice({
       <p className={styles.text}>
         {title && <strong>{title}</strong>} {children}
       </p>
-      {ds && showIcon && <Icon name="error" size={24} className={styles.icon} />}
+      {ds && showIcon && (
+        <Icon name={tone === 'brand' ? 'info' : 'error'} size={24} className={styles.icon} />
+      )}
       {onDismiss && <IconButton icon="close" size="sm" aria-label="Dismiss" onClick={onDismiss} />}
     </div>
   );

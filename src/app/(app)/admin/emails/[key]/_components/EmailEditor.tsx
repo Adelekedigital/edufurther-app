@@ -186,7 +186,7 @@ export function EmailEditor({ email, known, save, saving, onReload }: Props) {
         </p>
       </div>
 
-      {locked && <Notice tone="warning">{C.notSetUp}</Notice>}
+      {locked && <Notice tone="brand">{C.notSetUp}</Notice>}
 
       {multi && (
         <div className={styles.variants}>
