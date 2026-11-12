@@ -31,6 +31,47 @@ describe('OverviewTab', () => {
     );
   });
 
+  it('active members (backend release 661): weekly, monthly and stickiness tiles, with the note', () => {
+    show(data());
+    const ns = screen.getByRole('region', { name: 'Platform North Star' });
+    const tile = (label: string) => within(ns).getByText(label).parentElement!;
+    expect(tile('Weekly active members').children[1]).toHaveTextContent(/^\d+$/);
+    expect(tile('Monthly active members').children[1]).toHaveTextContent(/^\d+$/);
+    // A percent, its change in points (40.0 vs 66.7).
+    expect(tile('Stickiness (weekly of monthly)').children[1]).toHaveTextContent('40%');
+    expect(
+      within(tile('Stickiness (weekly of monthly)')).getByText(/26\.7 pts/),
+    ).toBeInTheDocument();
+    expect(
+      within(ns).getByText(
+        'Members who used the app while signed in; history starts on 12 Nov 2026.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('active members missing from the response (or stickiness with no monthly members) read No data, no change', () => {
+    const d = data();
+    show({
+      ...d,
+      subTracks: {
+        ...d.subTracks,
+        weeklyActive: null,
+        monthlyActive: null,
+        stickiness: { value: null, previous: 66.7 },
+      },
+    });
+    const ns = screen.getByRole('region', { name: 'Platform North Star' });
+    for (const label of [
+      'Weekly active members',
+      'Monthly active members',
+      'Stickiness (weekly of monthly)',
+    ]) {
+      const t = within(ns).getByText(label).parentElement!;
+      expect(t.children[1]).toHaveTextContent('No data');
+      expect(t.children).toHaveLength(2);
+    }
+  });
+
   it('with Compare off hides every change line and the dashed line', () => {
     show(data(false), false);
     expect(screen.queryByText(/the period before/)).toBeNull();
@@ -94,6 +135,8 @@ describe('OverviewTab', () => {
         ...d.subTracks,
         uniqueMentees: { value: 0, previous: 1 },
         mentorsDelivered: { value: 0, previous: 1 },
+        weeklyActive: { value: 0, previous: 1 },
+        monthlyActive: null,
       },
     };
     // A quiet week still has Mentor supply and the other feature numbers.
@@ -101,6 +144,15 @@ describe('OverviewTab', () => {
     expect(
       isOverviewEmpty({ ...quiet, features: quiet.features.map((f) => ({ ...f, value: null })) }),
     ).toBe(true);
+    // Members active with nothing else to read (review on PR 575): still a number to show.
+    const noFeatures = quiet.features.map((f) => ({ ...f, value: null }));
+    expect(
+      isOverviewEmpty({
+        ...quiet,
+        features: noFeatures,
+        subTracks: { ...quiet.subTracks, monthlyActive: { value: 12, previous: null } },
+      }),
+    ).toBe(false);
     // A real 0% (no listed mentor free) is a number, not an absence.
     expect(
       isOverviewEmpty({
