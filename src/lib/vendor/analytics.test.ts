@@ -67,7 +67,7 @@ describe('the PostHog seam', () => {
   it('cookieless: captures, never identifies, never records', async () => {
     const v = await loadAnalytics('k', '/ingest');
     v.sink.capture('$pageview', { route: '/explore' });
-    v.sink.identify('u1', { role: 'mentee' });
+    v.sink.identify('u1', { user_id: 'u1', role: 'mentee' });
     v.setReplay(true);
     expect(ph.capture).toHaveBeenCalledWith('$pageview', { route: '/explore' });
     expect(ph.identify).not.toHaveBeenCalled();
@@ -78,8 +78,8 @@ describe('the PostHog seam', () => {
     const v = await loadAnalytics('k', '/ingest');
     v.setMode('identified');
     expect(ph.opt_in_capturing).toHaveBeenCalledWith({ captureEventName: false });
-    v.sink.identify('u1', { role: 'mentor' });
-    expect(ph.identify).toHaveBeenCalledWith('u1', { role: 'mentor' });
+    v.sink.identify('u1', { user_id: 'u1', role: 'mentor' });
+    expect(ph.identify).toHaveBeenCalledWith('u1', { user_id: 'u1', role: 'mentor' });
     v.setReplay(true);
     v.setReplay(true);
     // The recorder is our own import, loaded on the first start only.
@@ -113,7 +113,7 @@ describe('the PostHog seam', () => {
     expect(ph.opt_out_capturing).toHaveBeenCalled();
     expect(ph.persistence.remove).toHaveBeenCalled();
     expect(ph.sessionPersistence.remove).toHaveBeenCalled();
-    v.sink.identify('u1', { role: 'mentee' });
+    v.sink.identify('u1', { user_id: 'u1', role: 'mentee' });
     expect(ph.identify).not.toHaveBeenCalled();
   });
 
