@@ -68,7 +68,11 @@ export async function signIn(context, { accounts, ref, frontendUrl, projectRef }
   page.on('framenavigated', (frame) => {
     if (frame === page.mainFrame() && !session) session = sessionFromHash(frame.url());
   });
-  await page.goto(link, { waitUntil: 'commit' });
+  // A failed navigation's message quotes the URL, which is the link: never pass it on.
+  await page.goto(link, { waitUntil: 'commit' }).catch(async () => {
+    await page.close();
+    throw new Error(`sign-in link for ${ref} could not be opened`);
+  });
   await page
     .waitForURL((u) => u.hash.includes('access_token'), { timeout: 30_000 })
     .catch(() => {});

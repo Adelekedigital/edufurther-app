@@ -123,9 +123,10 @@ async function expectOne(page, raw, scope) {
       });
   }
   if (want.count !== undefined && want.target) {
-    const n = await page
-      .getByRole(want.target.role, { name: nameOf(want.target.name ?? ''), exact: true })
-      .count();
+    const all = want.target.label
+      ? page.getByLabel(nameOf(want.target.label), { exact: true })
+      : page.getByRole(want.target.role, { name: nameOf(want.target.name), exact: true });
+    const n = await all.count();
     if (n !== want.count)
       throw new Error(`count of ${describe(want.target)} is ${n}, expected ${want.count}`);
   } else if (want.value !== undefined && want.target) {

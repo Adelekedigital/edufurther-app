@@ -68,7 +68,13 @@ export async function runApiStep(step, scope, { apiUrl, accounts }) {
     const why = await check(pointer(json, ptr), expected, scope);
     if (why) problems.push(`${ptr}: ${why}`);
   }
-  for (const [name, ptr] of Object.entries(step.save ?? {})) scope.save(name, pointer(json, ptr));
+  for (const [name, ptr] of Object.entries(step.save ?? {})) {
+    // A pointer that misses saves nothing, so a later ${name} fails loudly
+    // instead of reading as the text "undefined".
+    const value = pointer(json, ptr);
+    if (value === undefined) problems.push(`save ${name}: ${ptr} is absent`);
+    else scope.save(name, value);
+  }
   // Remember who /me is while the account exists (ACCT-001 deletes it).
   if (step.path === '/api/v1/me' && res.ok && json?.id && viewer && viewer !== 'anonymous')
     accounts.remember(viewer, json.id);

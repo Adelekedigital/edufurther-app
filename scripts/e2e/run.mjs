@@ -63,7 +63,13 @@ function loadScenarios() {
 
 mkdirSync(outDir, { recursive: true });
 const statePath = join(outDir, 'state.json');
-const state = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : {};
+const state = existsSync(statePath) ? JSON.parse(readFileSync(statePath, 'utf8')) : { run };
+// Saved ids belong to one run's accounts: another tag in the same folder would
+// act on the wrong people.
+if (state.run !== run) {
+  console.error(`${statePath} belongs to run ${state.run}; use another --out for ${run}`);
+  process.exit(2);
+}
 state.ids ??= {};
 const accounts = createAccounts({ beRepo, run, apiUrl, known: state.ids });
 
@@ -97,7 +103,13 @@ function makeScope(key, each) {
   };
 }
 
+// Job steps go through a shell on Windows: only plain script paths and flags.
+const SAFE_ARG = /^[A-Za-z0-9_./=-]+$/;
+
 function runJob(step) {
+  const bad = [step.script, ...(step.args ?? [])].find((x) => !SAFE_ARG.test(String(x)));
+  if (bad !== undefined)
+    return { ok: false, detail: `refused job argument ${JSON.stringify(bad)}` };
   const a = [
     'run',
     '--environment',
@@ -141,6 +153,7 @@ for (const scenario of doc.scenarios) {
     const scope = makeScope(key, each);
     let started = !from || !from.startsWith(`${scenario.id}:`);
     const row = { id: key, result: 'pass', step: null, defect: null, steps: [] };
+    let checked = 0;
     for (const step of [
       ...scenario.steps,
       ...(scenario.assertions ?? []).map((a) => ({ ...a, kind: `assert-${a.check}` })),
@@ -151,6 +164,7 @@ for (const scenario of doc.scenarios) {
       }
       if (stop.includes(`${scenario.id}:${step.id}`)) {
         row.steps.push({ id: step.id, result: 'pending', detail: 'second sitting' });
+        row.pending = step.id;
         break;
       }
       let r;
@@ -178,6 +192,7 @@ for (const scenario of doc.scenarios) {
       if (!r) continue;
       const result = r.skipped ? 'skipped' : r.blocked ? 'blocked' : r.ok ? 'pass' : 'fail';
       row.steps.push({ id: step.id, kind: step.kind, result, detail: r.detail });
+      if (result !== 'skipped') checked += 1;
       console.log(`${key.padEnd(34)} ${step.id.padEnd(22)} ${result.padEnd(7)} ${r.detail}`);
       if ((result === 'fail' || result === 'blocked') && row.result === 'pass') {
         row.result = result;
@@ -185,6 +200,13 @@ for (const scenario of doc.scenarios) {
       }
       writeFileSync(statePath, JSON.stringify(state, null, 2));
     }
+    // A row is a pass only when something was checked and nothing is still due.
+    if (row.result === 'pass' && checked === 0) {
+      row.result = 'skipped';
+      row.detail = from?.startsWith(`${scenario.id}:`)
+        ? `--from ${from} matched no step`
+        : 'nothing ran';
+    } else if (row.result === 'pass' && row.pending) row.result = 'partial';
     results.push(row);
   }
 }
@@ -200,6 +222,8 @@ const report = {
 };
 const name = `results-${Date.now()}.json`;
 writeFileSync(join(outDir, name), JSON.stringify(report, null, 2));
+const count = (r) => results.filter((x) => x.result === r).length;
 console.log(
-  `\n${results.filter((r) => r.result === 'pass').length}/${results.length} pass. Report: ${join(outDir, name)}`,
+  `\n${count('pass')} pass, ${count('partial')} partial (a sitting due), ${count('fail')} fail, ${count('blocked')} blocked, ${count('skipped')} skipped. Report: ${join(outDir, name)}`,
 );
+process.exitCode = count('fail') || count('blocked') ? 1 : 0;
