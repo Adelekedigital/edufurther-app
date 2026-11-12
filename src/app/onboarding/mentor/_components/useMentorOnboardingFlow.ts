@@ -353,14 +353,28 @@ export function useMentorOnboardingFlow() {
     setForm((f) => (f ? { ...f, step: first.step } : f));
   };
 
+  // A Continue pressed while the About draft runs, with nothing else missing (see goNext).
+  const held = useRef(false);
+  const goNextRef = useRef<() => Promise<void>>(async () => {});
+  // A step change ends any held press.
+  useEffect(() => {
+    held.current = false;
+  }, [step]);
+
   const goNext = async () => {
     if (!form || save.isPending || submit.isPending || leaving) return;
     const standing = state ?? form.base;
     if (gaps.length || drafting) {
       setTried(true);
+      // Blocked by the draft alone, the press is held and goes ahead once the
+      // draft lands: before, the line vanished with the draft and the press was
+      // lost (E2E issue 573). A gap is never held: it is the person's to fill,
+      // and their next press decides.
+      held.current = !gaps.length;
       if (gaps[0]) focusField(gapField(gaps[0], form.answers));
       return;
     }
+    held.current = false;
     setTried(false);
     setServerGaps([]);
     const from = form.step;
@@ -404,6 +418,17 @@ export function useMentorOnboardingFlow() {
       // Otherwise shown from submit.error; Submit tries again.
     }
   };
+  useEffect(() => {
+    goNextRef.current = goNext;
+  });
+  // After the sync above (effects run in order), so it calls this render's goNext.
+  useEffect(() => {
+    if (!held.current || drafting) return;
+    held.current = false;
+    // A failed draft shows its note first, and a gap its line: the next press decides.
+    if (draftFailed || gaps.length) return;
+    void goNextRef.current();
+  }, [drafting, draftFailed, gaps.length]);
 
   // Error before empty, and only before the form exists: a failed refetch later keeps the form.
   const loadError = !form && (!!app.error || !!topics.error);
