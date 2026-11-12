@@ -20,7 +20,6 @@ import type {
   WireNoShowReason,
   WireOverview,
   WireActiveMembers,
-  WireActiveMembersField,
   WireProfileViewSource,
   WireSections,
   WireSessions,
@@ -130,7 +129,7 @@ export type Overview = AnalyticsHead & {
   }[];
 };
 
-export const toOverview = (w: WireOverview & WireActiveMembersField): Overview => ({
+export const toOverview = (w: WireOverview): Overview => ({
   ...toHead(w),
   northStar: w.north_star,
   subTracks: {
