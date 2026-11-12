@@ -149,6 +149,10 @@ function overview(c: Ctx): WireOverview {
       unique_mentees: count(c, 163, 148),
       mentors_delivered: metric(c, 41, 38),
       sessions_per_mentee: metric(c, 1.31, 1.29),
+      // Backend release 661's mock values (decision 342).
+      weekly_active_users: count(c, 2, 4),
+      monthly_active_users: count(c, 5, 6),
+      stickiness: metric(c, 40.0, 66.7),
     },
     features: [
       rate('booking', 71, 68, null, 0),

@@ -2,7 +2,7 @@ import { useId } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { AnalyticsTab, Overview } from '@/lib/api/data/adminAnalytics';
 import { FEATURES, OVERVIEW } from '@/lib/copy/adminAnalytics';
-import { changeWhen, formatRate } from '@/lib/utils/analytics';
+import { changeWhen, formatRate, type Metric } from '@/lib/utils/analytics';
 import { formatCount } from '@/lib/utils/format';
 import { ChangeText, orNoData, SourceBadge } from './parts';
 import { TrendChart } from './TrendChart';
@@ -10,15 +10,17 @@ import { sparkPath } from './trendModel';
 import styles from './OverviewTab.module.css';
 
 /**
- * Nothing to read in the window: no completed session, no one served, and no
- * feature with a number (Mentor supply is a "now" number, so a quiet week
- * still shows the cards).
+ * Nothing to read in the window: no completed session, no one served, no
+ * active member, and no feature with a number (Mentor supply is a "now"
+ * number, so a quiet week still shows the cards).
  */
 export const isOverviewEmpty = (d: Overview) =>
   !d.northStar.completed.value &&
   d.northStar.series.every((p) => p.value === 0) &&
   !d.subTracks.uniqueMentees.value &&
   !d.subTracks.mentorsDelivered.value &&
+  !d.subTracks.weeklyActive?.value &&
+  !d.subTracks.monthlyActive?.value &&
   d.features.every((f) => f.value?.value == null);
 
 /**
@@ -40,15 +42,20 @@ export function OverviewTab({
   const ids = useId();
   const ns = data.northStar;
   const nsChange = changeWhen(compare, ns.completed, 'count');
-  const subs = [
-    { key: 'uniqueMentees', m: data.subTracks.uniqueMentees, f: formatCount },
-    { key: 'mentorsDelivered', m: data.subTracks.mentorsDelivered, f: formatCount },
-    {
-      key: 'sessionsPerMentee',
-      m: data.subTracks.sessionsPerMentee,
-      f: (n: number) => n.toFixed(2),
-    },
-  ] as const;
+  const st = data.subTracks;
+  const subs: {
+    key: keyof typeof OVERVIEW.subTracks;
+    m: Metric | null;
+    f: (n: number) => string;
+    kind: 'count' | 'rate';
+  }[] = [
+    { key: 'uniqueMentees', m: st.uniqueMentees, f: formatCount, kind: 'count' },
+    { key: 'mentorsDelivered', m: st.mentorsDelivered, f: formatCount, kind: 'count' },
+    { key: 'sessionsPerMentee', m: st.sessionsPerMentee, f: (n) => n.toFixed(2), kind: 'count' },
+    { key: 'weeklyActive', m: st.weeklyActive, f: formatCount, kind: 'count' },
+    { key: 'monthlyActive', m: st.monthlyActive, f: formatCount, kind: 'count' },
+    { key: 'stickiness', m: st.stickiness, f: formatRate, kind: 'rate' },
+  ];
   return (
     <>
       <section aria-label={OVERVIEW.eyebrow} className={styles.card}>
@@ -78,16 +85,20 @@ export function OverviewTab({
         <TrendChart series={ns.series} unit={ns.unit} compare={compare} windowLabel={windowLabel} />
         <div className={styles.subs}>
           {subs.map((s) => {
-            const c = changeWhen(compare, s.m, 'count');
+            const c = s.m && s.m.value !== null ? changeWhen(compare, s.m, s.kind) : null;
             return (
               <div key={s.key} className={styles.sub}>
                 <span className={styles.muted}>{OVERVIEW.subTracks[s.key]}</span>
-                <span className={styles.subValue}>{orNoData(s.m.value, s.f)}</span>
+                <span className={styles.subValue}>{orNoData(s.m?.value ?? null, s.f)}</span>
                 {c && <ChangeText change={c} />}
               </div>
             );
           })}
         </div>
+        <p className={styles.note}>
+          <Icon name="info" size={16} className={styles.noteIcon} />
+          {OVERVIEW.activeNote}
+        </p>
       </section>
 
       <section aria-label={OVERVIEW.featuresHeading} className={styles.features}>

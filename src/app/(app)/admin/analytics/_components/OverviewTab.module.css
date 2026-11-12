@@ -43,6 +43,20 @@
   font-size: var(--text-p-xs);
   color: var(--ink-600);
 }
+/* The active-members note under the sub-tracks: what they count, and since when. */
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
+.noteIcon {
+  flex: none;
+  color: var(--ink-500);
+}
 .valueRow {
   display: flex;
   flex-wrap: wrap;
@@ -55,9 +69,10 @@
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
 }
+/* Six sub-tracks: three a row, two on phones, so none is left alone on a row. */
 .subs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
   padding-top: var(--space-4);
   border-top: var(--border-hairline) solid var(--ink-100);
@@ -160,4 +175,9 @@
   border-top: var(--border-hairline) solid var(--ink-100);
   font-size: var(--text-p-xs);
   color: var(--ink-600);
+}
+@media (max-width: 767px) {
+  .subs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

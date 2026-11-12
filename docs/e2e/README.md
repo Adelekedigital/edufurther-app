@@ -4,21 +4,21 @@
 how to write and run the `kind: ui` steps against this app. Read this first,
 then the backend's plan.
 
-| What | Where |
-|---|---|
-| Scenarios (fill the `actions` / `expect` marked `TODO(frontend)`) | backend repo `docs/e2e/scenarios.yaml` |
-| The shape of a step | backend repo `docs/e2e/scenario.schema.json` |
-| QA plan: roles, entry and exit criteria, DoD, severity, defects | backend repo `docs/e2e/README.md` |
-| YAML check (schema, routes, viewers, `after`, no secrets) | backend repo `tests/unit/test_e2e_scenarios.py`. Run it after every edit. |
-| The team's human checklist (same ids) | https://claude.ai/artifact/UHnFMufd4mYK1KJaEbcRhy |
+| What                                                              | Where                                                                     |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Scenarios (fill the `actions` / `expect` marked `TODO(frontend)`) | backend repo `docs/e2e/scenarios.yaml`                                    |
+| The shape of a step                                               | backend repo `docs/e2e/scenario.schema.json`                              |
+| QA plan: roles, entry and exit criteria, DoD, severity, defects   | backend repo `docs/e2e/README.md`                                         |
+| YAML check (schema, routes, viewers, `after`, no secrets)         | backend repo `tests/unit/test_e2e_scenarios.py`. Run it after every edit. |
+| The team's human checklist (same ids)                             | https://claude.ai/artifact/UHnFMufd4mYK1KJaEbcRhy                         |
 
 ## Target (founder-confirmed)
 
-| Part | Value |
-|---|---|
+| Part     | Value                                                                           |
+| -------- | ------------------------------------------------------------------------------- |
 | Frontend | https://edufurther-app.vercel.app (its Production deploy runs on **test data**) |
-| Backend | `edufurtherbe-dev` (Railway `development`) |
-| Supabase | `hitgxzhrimuhivlfamhj` (the dev project) |
+| Backend  | `edufurtherbe-dev` (Railway `development`)                                      |
+| Supabase | `hitgxzhrimuhivlfamhj` (the dev project)                                        |
 
 Never run signed-in or writing steps against any other project. Production
 smoke runs (`SMOKE-001`) are GET-only and signed out.
@@ -43,8 +43,12 @@ founder sets nothing.
 
 Two values are the **operator's**, given on the command line for each run and
 never stored on Railway or in the repo: `E2E_ALLOW=1` and
-`E2E_SUPABASE_PROJECT=hitgxzhrimuhivlfamhj`. The API runner also needs
-`E2E_API_URL` and `E2E_FRONTEND_URL` on the operator's machine. Each run starts
+`E2E_SUPABASE_PROJECT=hitgxzhrimuhivlfamhj`. The runner also needs
+`E2E_API_URL` and `E2E_FRONTEND_URL` on the operator's machine. **Both are the
+app's address** (`https://edufurther-app.vercel.app`): the backend is
+origin-locked and answers 403 to anything that doesn't come through the app's
+`/api/v1` proxy (`src/proxy.ts`, backend #426). Only `/health` and `/ready` are
+open on Railway directly. Each run starts
 with its seed, which creates the `e2e-` accounts under a new tag (1–16
 lowercase letters or digits):
 
@@ -56,10 +60,16 @@ The seed accounts (`E2E_ACCOUNTS`) are a list in the backend's code
 (`infra/db/demo_seed.py`), not a setting. The Railway CLI on this machine is
 logged in and linked (project Edufurther, environment development).
 
-Open the printed link in Playwright. `/auth/callback` (`src/app/auth/callback/route.ts`)
-sets the session cookies, then goes to `next`, sanitised by `safeReturnTo`.
-Without `next` it lands on the login flow. Migrated-account and Google
-sign-in are **`human_only`**.
+**Opening the printed link is not enough** (found in the first run, 2026-11-12).
+The admin `generate_link` makes an implicit-flow link, so Supabase returns the
+session in the URL **hash**. `/auth/callback` only takes a PKCE `code`, on
+purpose: a session taken from a hash would let anyone sign a victim into the
+sender's account. Such a link lands on `/login` signed out. The runner
+(`scripts/e2e/lib/signin.mjs`) opens the link in a throwaway page, reads the
+session from the hash, and writes the cookie `@supabase/ssr` would write
+(`sb-<project>-auth-token`, `base64-` + base64url JSON, chunked at 3180). The
+app itself is unchanged. Migrated-account and Google sign-in are
+**`human_only`**.
 
 ## Writing a `ui` step
 
@@ -68,23 +78,24 @@ The fields agreed with the backend:
 ```yaml
 - kind: ui
   id: book_ui
-  viewer: mentee_with_credits      # a seed account ref, never credentials
-  viewport: [390, 1440]            # run each width
-  flags: []                        # NEXT_PUBLIC_* the step needs (see Flags)
-  route: "/mentors/${mentor_listed.id}"
+  viewer: mentee_with_credits # a seed account ref, never credentials
+  viewport: [390, 1440] # run each width
+  flags: [] # NEXT_PUBLIC_* the step needs (see Flags)
+  route: '/mentors/${mentor_listed.id}'
   actions:
-    - {do: click, target: {role: button, name: "Book a session"}}
-    - {do: click, target: {role: radio, name: "9:00 am"}}
-    - {do: fill, target: {label: "What do you want to cover?"}, value: "Essay review"}
+    - { do: click, target: { role: button, name: 'Book a session' } }
+    - { do: click, target: { role: radio, name: '9:00 am' } }
+    - { do: fill, target: { label: 'What do you want to cover?' }, value: 'Essay review' }
   expect:
-    - {visible: {role: dialog, name: "Book a session"}}
-    - {url: "/bookings"}
+    - { visible: { role: dialog, name: 'Book a session' } }
+    - { url: '/bookings' }
   screenshot: true
-  a11y: true                       # axe on P0 screens
-  after: create_slots              # an earlier step id (API or UI)
+  a11y: true # axe on P0 screens
+  after: create_slots # an earlier step id (API or UI)
 ```
 
 **Rules:**
+
 - **Accessible role and name only, never CSS selectors.** The app is built so
   every control has one: the atoms label themselves, and the screen tests in
   `src/**/*.test.tsx` query the same way. To find a name, read the screen's
@@ -105,6 +116,7 @@ The fields agreed with the backend:
 ```
 
 **Check the draft YAML against this list.** A few drafted routes don't exist:
+
 - There is no `/sessions` list page. A mentor declines or accepts a request
   from **`/bookings`** (or the **`/dashboard`** pending card).
 - There is no `/reviews` page. A review opens from the session (`/sessions/[id]`)
@@ -166,26 +178,59 @@ the step if not, reporting it as blocked.
 
 ## UI-only journeys (P1/P2 stubs: `steps: []`, yours to write)
 
-| Stub | What it covers |
-|---|---|
-| GUEST | Book before sign-up (onboarding guest path), finish sign-up, the booking resumes |
-| INVITE | Invite landing `/invite/[code]` → sign-up attributed as invite |
-| LINK | Deep links from email and push (`/sessions/[id]/enter`, return after sign-in) |
-| OAUTH | Calendar and video-provider connect (`/integrations`, `/calendar`). `human_only` where Google consent is needed. |
-| PUSH | Push permission prompt and opening a notification |
-| TZ | Times shown in the viewer's time zone (booking, sessions) |
-| FILE | Private file upload and the viewer (intake answers, message files) |
-| ERROR | Offline banner, 5xx with Try again |
-| CONSENT-002 | Withdraw in Settings; no PostHog id left on the device |
-| KEYBOARD | Keyboard-only booking on a P0 path (focus never lost) |
-| PWA | Install, service-worker update, offline state |
-| LANDING | Mentors never land on Explore (start URL `/`) |
-| LAYOUT | 390px layout on P0 screens (no horizontal scroll) |
+| Stub        | What it covers                                                                                                   |
+| ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| GUEST       | Book before sign-up (onboarding guest path), finish sign-up, the booking resumes                                 |
+| INVITE      | Invite landing `/invite/[code]` → sign-up attributed as invite                                                   |
+| LINK        | Deep links from email and push (`/sessions/[id]/enter`, return after sign-in)                                    |
+| OAUTH       | Calendar and video-provider connect (`/integrations`, `/calendar`). `human_only` where Google consent is needed. |
+| PUSH        | Push permission prompt and opening a notification                                                                |
+| TZ          | Times shown in the viewer's time zone (booking, sessions)                                                        |
+| FILE        | Private file upload and the viewer (intake answers, message files)                                               |
+| ERROR       | Offline banner, 5xx with Try again                                                                               |
+| CONSENT-002 | Withdraw in Settings; no PostHog id left on the device                                                           |
+| KEYBOARD    | Keyboard-only booking on a P0 path (focus never lost)                                                            |
+| PWA         | Install, service-worker update, offline state                                                                    |
+| LANDING     | Mentors never land on Explore (start URL `/`)                                                                    |
+| LAYOUT      | 390px layout on P0 screens (no horizontal scroll)                                                                |
 
 ## Running locally (Windows)
 
-- The repo's Playwright driver is `scripts/review-page.mjs` (screenshots, axe,
-  vitals). There's no scenario runner yet; build it under `scripts/e2e/` if needed.
+- **The scenario runner is `scripts/e2e/run.mjs`.** It runs the backend YAML's
+  `api` steps over HTTP, its `ui` steps in Playwright at each viewport
+  (screenshots, axe on `a11y: true`), and `job` steps with `--jobs`. `check: db`
+  assertions are the backend agent's and are reported as skipped. Saved values
+  and account ids persist in `<out>/state.json`, so a second sitting picks up
+  the ids the first one booked.
+
+  ```
+  E2E_SUPABASE_PROJECT=hitgxzhrimuhivlfamhj \
+  E2E_API_URL=https://edufurther-app.vercel.app \
+  E2E_FRONTEND_URL=https://edufurther-app.vercel.app \
+  node scripts/e2e/run.mjs --be ../edufurtherBE --run <tag> --out <scratch dir> \
+    [--only BOOK-001,MSG-001] [--kinds api,ui] [--jobs] \
+    [--stop BOOK-001:mentee_joins] [--from BOOK-001:mentee_joins]
+  ```
+
+  `--be` must be a checkout where `railway` is linked (it signs in and runs
+  jobs from there); `--scenarios` reads the YAML from another checkout.
+
+- **What the runner does for you:** it pins the browser to `Europe/London` (the
+  seed mentor's zone), so slot names are stable. It clicks radios on the input,
+  because slot and choice radios are visually hidden inside a styled label. It
+  hides the analytics consent banner when it covers a target. Answering it would
+  write consent to the account (`AnalyticsRoot` syncs a device answer at
+  sign-in) and break CONSENT-001, so a step about consent sets `consent: true`.
+- **Steps stop before the write the API step makes** (the API step owns the
+  assertions): `book_ui` stops at **Request …**, `decline_ui` at **Decline
+  request**, `delete_ui` at **Delete my account**. MENTOR-001's
+  `complete_application` is the exception: it presses **Submit application**,
+  because saving the hours is what creates the Intro chat type.
+- **Names to know:** Select comboboxes need a click and then the option. Help
+  areas, cancel reasons and intake chips are toggle buttons, not radios. Copy
+  uses ’ (U+2019). The phone booking sheet is named "Pick a date and time", not
+  "Book …". The preview option's name is `<email> <name> · <role>`.
+- `scripts/review-page.mjs` is still the single-page driver (vitals, focus trace).
 - **Git Bash rewrites leading-slash arguments** into Windows paths: prefix
   commands with `MSYS_NO_PATHCONV=1` (routes, `NEXT_PUBLIC_API_BASE_URL=/api/mock`).
 - A local mock run needs no backend:
