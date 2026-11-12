@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { Select } from '@/components/atoms/Select/Select';
 import { monthCells, monthStart, monthsBetween, type MonthCell } from '@/lib/utils/calendar';
 import { addDays } from '@/lib/utils/slots';
 import { cx } from '@/lib/utils/cx';
@@ -49,7 +50,18 @@ type MonthPickerProps = {
   showLegend?: boolean;
   /** The month shown changed (YYYY-MM-01): the page can load what it needs for it. */
   onMonthChange?: (month: string) => void;
+  /**
+   * The heading is a month and a year select, so a far month is one pick away,
+   * not a click per month (a reporting range, owner 2026-11-12). Needs `max`.
+   */
+  jump?: boolean;
+  /** Moves the view to this month (any day in it) whenever it changes: a typed date. */
+  showMonth?: string;
 };
+
+const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
+  new Date(Date.UTC(2026, i, 1)).toLocaleString('en-US', { month: 'long', timeZone: 'UTC' }),
+);
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEEKDAY_NAMES = [
@@ -115,6 +127,8 @@ export function MonthPicker({
   onPick,
   showLegend = false,
   onMonthChange,
+  jump = false,
+  showMonth,
 }: MonthPickerProps) {
   // Months shown, as offsets from today's: back to min's month only when min
   // is earlier than today (a reporting range); forward to max's, else open.
@@ -126,6 +140,12 @@ export function MonthPicker({
   const [offset, setOffset] = useState(() =>
     clamp(initialMonth ? monthsBetween(today, initialMonth) : 0),
   );
+  // A new showMonth moves the view, adjusted while rendering (no effect).
+  const [shownFor, setShownFor] = useState(showMonth);
+  if (showMonth !== shownFor) {
+    setShownFor(showMonth);
+    if (showMonth) setOffset(clamp(monthsBetween(today, showMonth)));
+  }
   const [focusIso, setFocusIso] = useState<string | null>(null);
   const moved = useRef(false);
   const dayRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -160,6 +180,18 @@ export function MonthPicker({
   useEffect(() => {
     onMonthChange?.(month);
   }, [month, onMonthChange]);
+
+  // The jump selects: every year in range, and that year's months in range.
+  const year = Number(month.slice(0, 4));
+  const yearOf = (o: number) => Number(monthStart(today, o).slice(0, 4));
+  const firstYear = yearOf(lo);
+  const lastYear = yearOf(Number.isFinite(hi) ? hi : lo + 24);
+  const years = Array.from({ length: lastYear - firstYear + 1 }, (_, i) => String(firstYear + i));
+  const offsetOf = (y: number, m: number) =>
+    monthsBetween(today, `${y}-${String(m + 1).padStart(2, '0')}-01`);
+  const months = MONTH_NAMES.map((label, m) => ({ value: String(m), label })).filter(
+    (o) => offsetOf(year, Number(o.value)) >= lo && offsetOf(year, Number(o.value)) <= hi,
+  );
 
   useEffect(() => {
     if (!moved.current || !focusIso) return;
@@ -199,9 +231,33 @@ export function MonthPicker({
   return (
     <div className={cx(styles.picker, grey && styles.pickerGrey)}>
       <div className={styles.head}>
-        <span id={headingId} className={styles.month} aria-live="polite">
+        <span id={headingId} className={cx(styles.month, jump && 'sr-only')} aria-live="polite">
           {monthLabel(month)}
         </span>
+        {jump && (
+          <div className={styles.jump}>
+            <Select
+              aria-label="Month"
+              width={136}
+              density="compact"
+              text="sm"
+              options={months}
+              value={String(Number(month.slice(5, 7)) - 1)}
+              onChange={(e) => setOffset(clamp(offsetOf(year, Number(e.target.value))))}
+            />
+            <Select
+              aria-label="Year"
+              width={96}
+              density="compact"
+              text="sm"
+              options={years.map((y) => ({ value: y, label: y }))}
+              value={String(year)}
+              onChange={(e) =>
+                setOffset(clamp(offsetOf(Number(e.target.value), Number(month.slice(5, 7)) - 1)))
+              }
+            />
+          </div>
+        )}
         {/* aria-disabled, not disabled: a button that disables itself while
             focused would drop focus to the page. At an end a press does nothing. */}
         <div className={styles.nav}>
