@@ -30,8 +30,8 @@
   text-decoration: underline;
 }
 
-/* DS Notice `warning` (Mentee Onboarding v5 `unavailable`) and `danger`
-   (Mentor Onboarding `submitErr`): 18px padding, the icon trailing 48px off,
+/* DS Notice `info` (as tone `brand`) and `danger` (Mentor Onboarding
+   `submitErr`): 18px padding, the icon trailing 48px off,
    a 2px inset ring, 12/18 copy in navy-900. */
 .ds {
   gap: var(--space-12);
@@ -46,12 +46,15 @@
 .ds .text {
   line-height: var(--lh-notice);
 }
-.warning {
-  background: var(--gold-subtle);
-  box-shadow: inset 0 0 0 2px var(--warning-ring);
+/* The DS Notice `info` tone, which replaced the retired amber `warning`. The DS
+   draws it in the legacy brand ramp, banned in product UI, so it takes the blue
+   ramp: blue-50 ground, blue-700 ring and icon. */
+.brand {
+  background: var(--surface-info-subtle);
+  box-shadow: inset 0 0 0 2px var(--blue-700);
 }
-.warning .icon {
-  color: var(--warning-ring);
+.brand .icon {
+  color: var(--blue-700);
 }
 .danger {
   background: var(--red-50);

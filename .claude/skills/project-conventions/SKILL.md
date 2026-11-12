@@ -296,6 +296,7 @@ at a time.
 | DS tokens | Warning ramp has only `--yellow-900`; Plus uses literal `#e3b42b`/`#3d2a00`/`#fef6e7` | Add as _our_ tokens, recorded in `design-divergence.md` |
 | DS `--text-placeholder` | `#98a2b3` on white is 2.58:1 | Use `--ink-500` for placeholders; record divergence |
 | DS focus | Readme says inputs focus to a 2px orange ring | We use `--border-focus` (blue-500); record divergence |
+| DS Notice `info` | Drawn in `--brand-50` / `--brand-600` (banned ramp). Since the amber `warning` tone was retired (owner, 2026-11-12) it is the app's `tone="brand"` | Built in the blue ramp: `--surface-info-subtle` ground, `--blue-700` ring and icon (FE PR 569) |
 | App icons | 192/512 icons are placeholders | Replace when brand icon lands |
 
 ---

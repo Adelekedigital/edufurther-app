@@ -35,6 +35,27 @@ python scripts/e2e_session.py --env staging --run <tag> --account <ref> --link \
   --redirect "https://edufurther-app.vercel.app/auth/callback?next=/home"
 ```
 
+It runs through `railway run` against Railway's **development** environment,
+so it reads that environment's own variables: `SUPABASE_URL` (the dev project),
+the Supabase service-role key, `EDUFURTHER_ENVIRONMENT=staging`, and for
+BOOK-001 the Daily keys. All are set there (backend check, 2026-11-12); the
+founder sets nothing.
+
+Two values are the **operator's**, given on the command line for each run and
+never stored on Railway or in the repo: `E2E_ALLOW=1` and
+`E2E_SUPABASE_PROJECT=hitgxzhrimuhivlfamhj`. The API runner also needs
+`E2E_API_URL` and `E2E_FRONTEND_URL` on the operator's machine. Each run starts
+with its seed, which creates the `e2e-` accounts under a new tag (1–16
+lowercase letters or digits):
+
+```
+E2E_ALLOW=1 railway run --environment development --service edufurtherbe-dev   uv run python scripts/seed_demo_mentors.py --e2e <tag>
+```
+
+The seed accounts (`E2E_ACCOUNTS`) are a list in the backend's code
+(`infra/db/demo_seed.py`), not a setting. The Railway CLI on this machine is
+logged in and linked (project Edufurther, environment development).
+
 Open the printed link in Playwright. `/auth/callback` (`src/app/auth/callback/route.ts`)
 sets the session cookies, then goes to `next`, sanitised by `safeReturnTo`.
 Without `next` it lands on the login flow. Migrated-account and Google
@@ -98,19 +119,48 @@ The fields agreed with the backend:
   the mentee and the mentor must each **actually enter the Daily room**, or
   settlement marks a no-show. Agent runs use Daily (`SETUP-001` sets it); humans
   also run BOOK-001 on Google Meet.
-- **Admin Analytics** counts whole **UTC** days (`ANALYTICS-001`). An action at
-  23:00 in UTC-5 lands on the next UTC day. Admin and demo accounts are left
-  out of every figure.
+- **Signed out on a members-only page (since 12 Nov, FE #565):** the proxy
+  answers with a **307 to `/login?next=<page>`** (the query kept) before
+  anything is drawn, and after logging in the person lands back on the page.
+  Open to guests: `/`, `/explore`, `/mentors/[handle]`, `/invite/[code]`,
+  `/login`, `/signup`. An unknown path is still the **404** error page, never a
+  login. A step that opens a members-only page signed out expects that redirect,
+  not an in-page "Log in" box (that box is now only the fallback when the
+  session check itself fails). LINK's "return after sign-in" is this redirect.
+- **Error pages (FE #558):** a 404 and a 500 share one page (`Error 404` /
+  `Error 500` above the title). A 500 quotes a support reference `EF-XXXXXX`
+  only when error tracking sent the report. Try again reloads the route's data.
+- **Admin Analytics** days follow the **viewer's account time zone** (else the
+  device's), with UTC selectable beside Compare (`ANALYTICS-001`; FE #555).
+  Monthly totals and alerts stay UTC. Admin and demo accounts are left out of
+  every figure.
 - **Preview as user** blocks writes in the browser and shows a banner (`PREVIEW-001`).
 - **Analytics consent (`CONSENT-001`/`-002`):** the banner shows only when
   `NEXT_PUBLIC_ANALYTICS_ENABLED` and `NEXT_PUBLIC_CONSENT_BANNER_ENABLED` are on.
   Buttons are "Allow analytics" and "Decline". The Settings › Security switch
   withdraws. The cookie is `ef_consent=<version>.<1|0>.<unix ms>`.
 
+## Working with the founder (founder, 2026-11-12)
+
+Do everything an agent can do **without the founder first**: every scenario,
+every `ui` step, every fix round. Batch what needs a person into **one
+check-in**, at a time the founder chooses, and don't stop the run to wait.
+Mark each such step `human_only` and list them in the run report, ready to do
+in one sitting:
+
+- Google sign-in, and Google consent for calendar or video connect (OAUTH);
+- logging in with a migrated account;
+- push notifications on a real phone (PUSH), and installing the app (PWA) on one;
+- BOOK-001 on Google Meet (agents run it on Daily).
+
+Secrets are never typed in chat or written in a step. The sign-in script reads
+them from Railway (`railway run`); see "Signing in an agent".
+
 ## Flags (`NEXT_PUBLIC_*`, set on the Vercel deploy)
 
 `NEXT_PUBLIC_ANALYTICS_ENABLED`, `NEXT_PUBLIC_CONSENT_BANNER_ENABLED`,
-`NEXT_PUBLIC_ADMIN_ANALYTICS_ENABLED`, `NEXT_PUBLIC_MESSAGES_ENABLED`. A step that
+`NEXT_PUBLIC_ADMIN_ANALYTICS_ENABLED`, `NEXT_PUBLIC_MESSAGES_ENABLED`, and for
+error tracking `NEXT_PUBLIC_SENTRY_ENABLED`, `NEXT_PUBLIC_POSTHOG_ERRORS_ENABLED`. A step that
 needs one lists it in `flags`. The runner checks the deploy has it and skips
 the step if not, reporting it as blocked.
 

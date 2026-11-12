@@ -172,7 +172,7 @@ export function BehaviourTab({
   return (
     <Section title={BEHAVIOUR.heading} source="posthog" label="Funnels">
       {down ? (
-        <Notice tone="warning">{BEHAVIOUR.down}</Notice>
+        <Notice tone="brand">{BEHAVIOUR.down}</Notice>
       ) : (
         <>
           <div className={styles.funnelCard}>

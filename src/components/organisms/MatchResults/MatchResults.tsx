@@ -99,7 +99,7 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
       </div>
 
       {unavailable && !p.isLoading && !p.error && matches.length > 0 && (
-        <Notice tone="warning" title={GUEST_COPY.unavailableNotice(g.firstName)} live={false}>
+        <Notice tone="brand" title={GUEST_COPY.unavailableNotice(g.firstName)} live={false}>
           {GUEST_COPY.unavailableBody}
         </Notice>
       )}

@@ -86,6 +86,7 @@ export const MonthPastRange: Story = {
           today="2026-11-09"
           min="2024-06-01"
           max="2026-11-09"
+          jump
           selected={sel}
           selectedLabel={null}
           onPick={(d) => setSel([d])}
