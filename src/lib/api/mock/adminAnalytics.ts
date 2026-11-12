@@ -7,7 +7,6 @@ import type {
   WireGrowth,
   WireMetric,
   WireOverview,
-  WireActiveMembersField,
   WireSections,
   WireSessions,
   WireSupply,
@@ -109,7 +108,7 @@ const count = (c: Ctx, value: number, previous: number) =>
   metric(c, scale(c, value), scale(c, previous));
 const head = (c: Ctx) => ({ window: c.window, alerts: c.alerts ? ALERTS : [] });
 
-function overview(c: Ctx): WireOverview & WireActiveMembersField {
+function overview(c: Ctx): WireOverview {
   const unit = c.days <= 14 ? 'day' : 'week';
   const n = unit === 'day' ? c.days : Math.ceil(c.days / 7);
   const base = unit === 'day' ? 6 : 42;
@@ -156,7 +155,7 @@ function overview(c: Ctx): WireOverview & WireActiveMembersField {
       monthly_active_users: metric(c, 612, 575),
       stickiness: metric(c, 40.2, 38.4),
     },
-    // Backend edufurtherbe-5e's agreed shape (2026-11-12) and mock values.
+    // Backend #666's shape and mock values.
     active_members: {
       history_from: '2026-11-12',
       by_role: {
