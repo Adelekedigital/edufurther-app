@@ -69,6 +69,12 @@
   font-size: var(--text-field);
   color: var(--text-primary);
 }
+/* The box draws the focus; the field inside never does. `:focus-visible` here
+   outranks the global ring whatever order the stylesheets load in (in
+   production the global sheet came last and drew a second ring). */
+.search:focus-visible {
+  outline: none;
+}
 .search::-webkit-search-cancel-button {
   display: none;
 }

@@ -45,6 +45,12 @@
   color: var(--text-primary);
   caret-color: var(--caret);
 }
+/* The box draws the focus; the field inside never does. `:focus-visible` here
+   outranks the global ring whatever order the stylesheets load in (in
+   production the global sheet came last and drew a second ring). */
+.input:focus-visible {
+  outline: none;
+}
 @media (max-width: 767px) {
   /* Phones: 44px, as the Input atom. */
   .box {

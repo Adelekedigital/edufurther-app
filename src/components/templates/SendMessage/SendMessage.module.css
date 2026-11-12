@@ -79,6 +79,12 @@
   color: var(--ink-900);
   field-sizing: content;
 }
+/* The box draws the focus; the field inside never does. `:focus-visible` here
+   outranks the global ring whatever order the stylesheets load in (in
+   production the global sheet came last and drew a second ring). */
+.field:focus-visible {
+  outline: none;
+}
 
 .fileRow {
   padding: 0 var(--space-3) var(--space-2);
