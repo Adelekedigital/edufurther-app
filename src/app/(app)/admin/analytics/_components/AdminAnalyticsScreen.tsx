@@ -30,8 +30,8 @@ import {
   type AnalyticsWindow,
 } from '@/lib/utils/analytics';
 import { todayIn } from '@/lib/utils/calendar';
-import { deviceTimeZone, viewerZone } from '@/lib/utils/format';
-import { useHydrated } from '@/lib/utils/useHydrated';
+import { viewerZone } from '@/lib/utils/format';
+import { useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { BehaviourTab, type TabQuery } from './BehaviourTab';
 import { CreditsTab, isCreditsEmpty } from './CreditsTab';
 import { AlertsButton } from './AlertsButton';
@@ -107,9 +107,9 @@ export function AdminAnalyticsScreen() {
   // device's: viewerZone, as on every screen); UTC or any zone on request, to
   // compare with PostHog (owner, 2026-11-11). Unknown until hydrated, and
   // nothing is asked until then: never a read in the server's zone.
-  const hydrated = useHydrated();
+  const deviceZone = useDeviceTimeZone();
   const member = viewer.kind === 'member' ? viewer : null;
-  const ownZone = hydrated ? viewerZone(member?.timeZone) : null;
+  const ownZone = deviceZone ? viewerZone(member?.timeZone, deviceZone) : null;
   const [chosenZone, setChosenZone] = useState<string | null>(null);
   const tz = chosenZone ?? ownZone;
   const today = todayIn(tz ?? 'UTC');
@@ -178,7 +178,7 @@ export function AdminAnalyticsScreen() {
             onCustom={() => setPicking(true)}
             onCompare={setCompare}
             zone={tz}
-            deviceZone={hydrated ? deviceTimeZone() : null}
+            deviceZone={deviceZone}
             onZone={setZone}
           />
         }

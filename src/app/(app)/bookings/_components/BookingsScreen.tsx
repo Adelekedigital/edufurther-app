@@ -21,7 +21,8 @@ import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
 import { BOOKINGS_COPY } from '@/lib/copy/bookings';
-import { deviceTimeZone, formatTime, viewerZone } from '@/lib/utils/format';
+import { formatTime, viewerZone } from '@/lib/utils/format';
+import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
@@ -81,7 +82,8 @@ export function BookingsScreen() {
   }, []);
   const now = useMemo(() => new Date(clock), [clock]);
 
-  const deviceZone = useMemo(() => deviceTimeZone(), []);
+  // Read after hydration: the server renders in UTC (E2E issue 574).
+  const deviceZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
   // The account's zone is what the backend judges dates in; the picker is the
   // viewer's own override for this visit.
   const [zone, setZone] = useState<string | null>(null);
