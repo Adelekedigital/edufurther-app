@@ -101,7 +101,12 @@ export type AnalyticsEvents = {
   link_shared: { kind: ShareKind; method: ShareMethod; own: boolean };
 
   // Push reach.
-  pwa_installed: Record<string, never>;
+  /**
+   * A device's first launch of the installed app, on every platform (owner,
+   * 2026-11-12; lib/analytics/install). `method` tells it from the earlier
+   * Chromium-only `appinstalled` events, which carried none.
+   */
+  pwa_installed: { method: 'standalone_launch' };
   push_permission_granted: Record<string, never>;
 
   /** Error rate by screen: the rate, never the message. */
