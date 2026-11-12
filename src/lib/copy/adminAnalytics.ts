@@ -99,7 +99,41 @@ export const OVERVIEW = {
     monthlyActive: 'Monthly active members',
     stickiness: 'Stickiness (weekly of monthly)',
   },
-  activeNote: 'Members who used the app while signed in; history starts on 12 Nov 2026.',
+  /**
+   * The start comes from the server (`active_members.history_from`): it
+   * differs by environment, so it is never written here. No date, no clause.
+   */
+  activeNote: (from: string | null) =>
+    `Members who used the app while signed in${from ? `; history starts on ${from}` : ''}. Weekly = last 7 days, monthly = last 30 days, both up to the last day of the window.`,
+  /** The card's Show switch (Admin Analytics.dc.html `metric`, owner pick B, 2026-11-12). */
+  show: 'Show',
+  showNorthStar: 'Completed sessions (North Star)',
+  showActive: 'Active members',
+  /** The Active members view of the card. */
+  active: {
+    eyebrow: 'Platform health',
+    heading: 'Active members',
+    asOf: (day: string) => `As of ${day}`,
+    vsBefore: (prev: string) => `vs ${prev} at the end of the period before`,
+    split: (mentees: string, mentors: string) => `Mentees ${mentees} · Mentors ${mentors}`,
+    /** The role filter (owner, 2026-11-12): All · Mentees · Mentors; the words follow it. */
+    roleLabel: 'Role',
+    roles: { all: 'All', mentee: 'Mentees', mentor: 'Mentors' },
+    who: { all: 'members', mentee: 'mentees', mentor: 'mentors' },
+    unit: (who: string) => `weekly active ${who}`,
+    weekly: (who: string) => `Weekly active ${who}`,
+    monthly: (who: string) => `Monthly active ${who}`,
+    stickinessNote: (who: string) => `Monthly ${who} back this week`,
+    legendThis: (who: string) => ({
+      day: `Weekly active ${who}, each day`,
+      week: `Weekly active ${who}, each week`,
+    }),
+    point: (who: string) => (unit: 'day' | 'week', i: number, n: number, prev: number | null) =>
+      `${unit === 'day' ? 'Day' : 'Week'} ${i}: ${n} weekly active ${who}${prev === null ? '' : ` (previous period ${prev})`}`,
+    chartLabel:
+      (who: string) => (unit: 'day' | 'week', window: string, first: number, last: number) =>
+        `Weekly active ${who} per ${unit}, ${window.replace(/^Last /, 'last ').replace(/^On /, 'on ')}, from ${first} to ${last}`,
+  },
   featuresHeading: 'Feature North Stars',
   featuresHint: 'Each feature on its own terms. Select one for its detail.',
   feeds: (s: string) => `Feeds sessions: ${s}`,

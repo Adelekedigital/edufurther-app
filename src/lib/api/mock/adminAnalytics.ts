@@ -7,6 +7,7 @@ import type {
   WireGrowth,
   WireMetric,
   WireOverview,
+  WireActiveMembersField,
   WireSections,
   WireSessions,
   WireSupply,
@@ -108,7 +109,7 @@ const count = (c: Ctx, value: number, previous: number) =>
   metric(c, scale(c, value), scale(c, previous));
 const head = (c: Ctx) => ({ window: c.window, alerts: c.alerts ? ALERTS : [] });
 
-function overview(c: Ctx): WireOverview {
+function overview(c: Ctx): WireOverview & WireActiveMembersField {
   const unit = c.days <= 14 ? 'day' : 'week';
   const n = unit === 'day' ? c.days : Math.ceil(c.days / 7);
   const base = unit === 'day' ? 6 : 42;
@@ -149,10 +150,49 @@ function overview(c: Ctx): WireOverview {
       unique_mentees: count(c, 163, 148),
       mentors_delivered: metric(c, 41, 38),
       sessions_per_mentee: metric(c, 1.31, 1.29),
-      // Backend release 661's mock values (decision 342).
-      weekly_active_users: count(c, 2, 4),
-      monthly_active_users: count(c, 5, 6),
-      stickiness: metric(c, 40.0, 66.7),
+      // Rolling counts on the window's last day (decision 342): they don't
+      // scale with the window. The backend's mock values; the split below adds up.
+      weekly_active_users: metric(c, 246, 221),
+      monthly_active_users: metric(c, 612, 575),
+      stickiness: metric(c, 40.2, 38.4),
+    },
+    // Backend edufurtherbe-5e's agreed shape (2026-11-12) and mock values.
+    active_members: {
+      history_from: '2026-11-12',
+      by_role: {
+        mentee: {
+          weekly: metric(c, 204, 180),
+          monthly: metric(c, 521, 490),
+          stickiness: metric(c, 39.2, 36.7),
+        },
+        mentor: {
+          weekly: metric(c, 42, 41),
+          monthly: metric(c, 91, 85),
+          stickiness: metric(c, 46.2, 48.2),
+        },
+      },
+      // WAU at each North Star point; the first is before history began (a gap).
+      series: series.map((pt, i) => {
+        const wau = i === 0 ? null : Math.round(221 + ((246 - 221) * i) / Math.max(1, n - 1));
+        const value = i === n - 1 ? 246 : wau;
+        const previous = c.compare && value !== null ? Math.round(value * 0.9) : null;
+        // mentee + mentor = value; null with it (the backend's rule).
+        const part = (v: number | null, share: number) =>
+          v === null ? null : Math.round(v * share);
+        const mentee = { value: part(value, 204 / 246), previous: part(previous, 204 / 246) };
+        return {
+          start: pt.start,
+          value,
+          previous,
+          by_role: {
+            mentee,
+            mentor: {
+              value: value === null ? null : value - mentee.value!,
+              previous: previous === null ? null : previous - mentee.previous!,
+            },
+          },
+        };
+      }),
     },
     features: [
       rate('booking', 71, 68, null, 0),
