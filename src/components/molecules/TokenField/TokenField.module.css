@@ -55,6 +55,10 @@
   border-color: var(--border-focus);
   box-shadow: var(--field-focus-shadow);
 }
+/* The error border wins over the focus border, as on every other field. */
+.input[aria-invalid='true']:focus-visible {
+  border-color: var(--border-danger);
+}
 .chip {
   border-radius: var(--radius-xs);
   background: var(--blue-50);
