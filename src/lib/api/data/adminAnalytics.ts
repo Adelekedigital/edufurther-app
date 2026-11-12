@@ -19,6 +19,8 @@ import type {
   WireGrowth,
   WireNoShowReason,
   WireOverview,
+  WireActiveMembers,
+  WireActiveMembersField,
   WireProfileViewSource,
   WireSections,
   WireSessions,
@@ -78,6 +80,9 @@ const toHead = (w: { window: { from: string; to: string }; alerts: WireAnalytics
 
 // ---- Sections ---------------------------------------------------------------
 
+/** The Active members role filter (owner, 2026-11-12): `all` is the totals. */
+export type ActiveRole = 'mentee' | 'mentor';
+
 export type Overview = AnalyticsHead & {
   northStar: {
     completed: Metric;
@@ -97,6 +102,24 @@ export type Overview = AnalyticsHead & {
     monthlyActive: Metric | null;
     stickiness: Metric | null;
   };
+  /**
+   * The Active members view (owner pick B, 2026-11-12): the split by role and
+   * the weekly trend. Null pieces when the response doesn't carry them.
+   */
+  activeMembers: {
+    /** When active-member history starts here (YYYY-MM-DD), from the server; null when not sent. */
+    historyFrom: string | null;
+    byRole: NonNullable<WireActiveMembers['by_role']> | null;
+    series:
+      | {
+          start: string;
+          value: number | null;
+          previous: number | null;
+          /** The point split by role (the role filter); null when not sent. */
+          byRole: Record<ActiveRole, { value: number | null; previous: number | null }> | null;
+        }[]
+      | null;
+  };
   features: {
     key: WireFeatureKey;
     /** Null: its source isn't answering (PostHog). */
@@ -107,7 +130,7 @@ export type Overview = AnalyticsHead & {
   }[];
 };
 
-export const toOverview = (w: WireOverview): Overview => ({
+export const toOverview = (w: WireOverview & WireActiveMembersField): Overview => ({
   ...toHead(w),
   northStar: w.north_star,
   subTracks: {
@@ -118,6 +141,21 @@ export const toOverview = (w: WireOverview): Overview => ({
     monthlyActive: w.sub_tracks.monthly_active_users ?? null,
     stickiness: w.sub_tracks.stickiness ?? null,
   },
+  activeMembers: (() => {
+    const am = w.active_members;
+    return {
+      historyFrom: am?.history_from ?? null,
+      byRole: am?.by_role ?? null,
+      series: am?.series?.length
+        ? am.series.map((p) => ({
+            start: p.start,
+            value: p.value,
+            previous: p.previous,
+            byRole: p.by_role ?? null,
+          }))
+        : null,
+    };
+  })(),
   features: w.features,
 });
 

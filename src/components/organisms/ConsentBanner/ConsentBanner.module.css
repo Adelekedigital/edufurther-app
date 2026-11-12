@@ -14,9 +14,12 @@
   box-sizing: border-box;
   width: calc(100% - var(--space-8));
   max-width: 760px;
+  /* The copy, then the buttons under it, at every width (owner, 2026-11-12):
+     the copy gets the card's full width. */
   display: flex;
-  align-items: center;
-  gap: var(--space-6);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-4);
   padding: var(--space-5) var(--space-6);
   border-radius: var(--radius-2xl);
   background: var(--surface-card);
@@ -58,9 +61,11 @@
   border-radius: var(--radius-xs);
 }
 
+/* Right-aligned under the copy, as a dialog's buttons are. */
 .actions {
   display: flex;
   flex-shrink: 0;
+  justify-content: flex-end;
   gap: var(--space-3);
 }
 
@@ -74,9 +79,6 @@
 /* Phones: the buttons share the card's width under the text, half each. */
 @media (max-width: 767px) {
   .banner {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--space-4);
     padding: var(--space-4);
     width: calc(100% - var(--space-4) * 2);
   }

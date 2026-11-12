@@ -76,4 +76,23 @@ describe('sparkPath', () => {
     expect(d.match(/M/g)).toHaveLength(2);
     expect(d.startsWith('M0 ')).toBe(true);
   });
+
+  it('a null value is a gap: the line breaks, no hover point, and the scale ignores it', () => {
+    const m = trendModel(
+      [
+        { value: null, previous: null },
+        { value: 10, previous: 8 },
+        { value: null, previous: null },
+        { value: 12, previous: 9 },
+        { value: 14, previous: 11 },
+      ],
+      true,
+    );
+    // Two runs: a lone point, then two joined.
+    expect(m.cur.match(/M/g)).toHaveLength(2);
+    expect(m.pts.map((p) => p.i)).toEqual([1, 3, 4]);
+    // Previous still draws: every point with a value has one.
+    expect(m.prev).not.toBeNull();
+    expect(Number(m.yLabels.at(-1))).toBeLessThanOrEqual(8);
+  });
 });

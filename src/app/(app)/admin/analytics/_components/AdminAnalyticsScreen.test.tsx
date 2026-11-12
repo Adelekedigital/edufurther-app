@@ -63,21 +63,23 @@ beforeEach(() => {
 });
 
 describe('Admin Analytics: the page', () => {
-  it('shows the header, the window (30 days), Compare on, the tabs and the footer', async () => {
+  it('shows the header, the window (30 days), Compare off (owner, 2026-11-12), the tabs and the footer', async () => {
     serve();
     renderScreen(<AdminAnalyticsScreen />);
     expect(screen.getByRole('heading', { level: 1, name: 'Analytics' })).toBeInTheDocument();
     const windows = screen.getByRole('radiogroup', { name: 'Time window' });
     expect(within(windows).getByRole('radio', { name: '30 days' })).toBeChecked();
-    expect(screen.getByRole('checkbox', { name: 'Compare with previous period' })).toBeChecked();
+    expect(
+      screen.getByRole('checkbox', { name: 'Compare with previous period' }),
+    ).not.toBeChecked();
     expect(screen.getByRole('tab', { name: 'Credits', selected: true })).toBeInTheDocument();
     expect(screen.getByText(/Days follow the time zone above/)).toBeInTheDocument();
     await screen.findByRole('heading', { level: 2, name: 'Credits' });
     // Days follow the viewer's own zone by default: the account's (owner, 2026-11-11).
-    expect(calls('credits')[0]).toEqual({ window: '30d', compare: 'true', tz: 'Africa/Lagos' });
+    expect(calls('credits')[0]).toEqual({ window: '30d', compare: 'false', tz: 'Africa/Lagos' });
   });
 
-  it('asks again for 7 days, and with Compare off', async () => {
+  it('asks again for 7 days, and with Compare on', async () => {
     serve();
     renderScreen(<AdminAnalyticsScreen />);
     await screen.findByRole('heading', { level: 2, name: 'Credits' });
@@ -85,7 +87,7 @@ describe('Admin Analytics: the page', () => {
     await waitFor(() =>
       expect(calls('credits')).toContainEqual({
         window: '7d',
-        compare: 'true',
+        compare: 'false',
         tz: 'Africa/Lagos',
       }),
     );
@@ -93,7 +95,7 @@ describe('Admin Analytics: the page', () => {
     await waitFor(() =>
       expect(calls('credits')).toContainEqual({
         window: '7d',
-        compare: 'false',
+        compare: 'true',
         tz: 'Africa/Lagos',
       }),
     );
@@ -115,7 +117,7 @@ describe('Admin Analytics: the page', () => {
     await waitFor(() =>
       expect(calls('credits')).toContainEqual({
         window: '30d',
-        compare: 'true',
+        compare: 'false',
         tz: 'UTC',
       }),
     );
@@ -143,7 +145,7 @@ describe('Admin Analytics: the page', () => {
       expect(calls('credits')).toContainEqual({
         from: today,
         to: today,
-        compare: 'true',
+        compare: 'false',
         tz: 'Africa/Lagos',
       }),
     );
@@ -163,6 +165,33 @@ describe('Admin Analytics: the page', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('radio', { name: '30 days' })).toBeChecked();
+  });
+
+  it('Show is in the URL: ?show=active opens on Active members, and North Star clears it', async () => {
+    serve();
+    h.params = new URLSearchParams('show=active');
+    renderScreen(<AdminAnalyticsScreen />);
+    expect(await screen.findByRole('region', { name: 'Platform health' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('combobox', { name: 'Show' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Completed sessions (North Star)' }));
+    expect(replace).toHaveBeenLastCalledWith('/admin/analytics', { scroll: false });
+    await userEvent.click(screen.getByRole('combobox', { name: 'Show' }));
+    await userEvent.click(screen.getByRole('option', { name: 'Active members' }));
+    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?show=active', { scroll: false });
+  });
+
+  it('the role filter is in the URL with Show, and the North Star drops it', async () => {
+    serve();
+    h.params = new URLSearchParams('show=active&role=mentor');
+    renderScreen(<AdminAnalyticsScreen />);
+    const card = await screen.findByRole('region', { name: 'Platform health' });
+    expect(within(card).getByRole('radio', { name: 'Mentors' })).toBeChecked();
+    await userEvent.click(within(card).getByRole('radio', { name: 'Mentees' }));
+    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?show=active&role=mentee', {
+      scroll: false,
+    });
+    await userEvent.click(within(card).getByRole('radio', { name: 'All' }));
+    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?show=active', { scroll: false });
   });
 
   it('a tab moves the URL', async () => {
