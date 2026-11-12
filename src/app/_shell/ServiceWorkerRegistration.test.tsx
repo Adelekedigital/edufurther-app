@@ -38,16 +38,17 @@ describe('ServiceWorkerRegistration: a tapped notification', () => {
 });
 
 describe('ServiceWorkerRegistration: pwa_installed (PRD 30)', () => {
-  it('the browser’s appinstalled, once, under Strict Mode; none after unmount', () => {
+  it('reports the install once per app start, under Strict Mode once in all, and no longer hears appinstalled', () => {
     track.mockClear();
-    const { unmount } = render(
+    localStorage.clear();
+    track.mockReturnValue(true);
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as never;
+    render(
       <StrictMode>
         <ServiceWorkerRegistration />
       </StrictMode>,
     );
-    window.dispatchEvent(new Event('appinstalled'));
-    expect(track.mock.calls).toEqual([['pwa_installed', {}]]);
-    unmount();
+    expect(track.mock.calls).toEqual([['pwa_installed', { method: 'standalone_launch' }]]);
     window.dispatchEvent(new Event('appinstalled'));
     expect(track).toHaveBeenCalledTimes(1);
   });

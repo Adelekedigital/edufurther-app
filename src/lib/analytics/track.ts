@@ -30,12 +30,17 @@ let sink: Sink | null = null;
 let queue: Queued[] = [];
 let blocked: () => boolean = () => false;
 
-/** One event, typed by the schema. A no-op while blocked; queued until a sink connects. */
-export function track<K extends AnalyticsEvent>(event: K, props: AnalyticsEvents[K]): void {
-  if (blocked()) return;
+/**
+ * One event, typed by the schema. A no-op while blocked; queued until a sink
+ * connects. True when it was taken (sent or queued), false while blocked: a
+ * once-only event (`pwa_installed`) marks itself sent only on true.
+ */
+export function track<K extends AnalyticsEvent>(event: K, props: AnalyticsEvents[K]): boolean {
+  if (blocked()) return false;
   const p = props as Record<string, unknown>;
   if (sink) sink.capture(event, p);
   else enqueue({ kind: 'capture', event, props: p });
+  return true;
 }
 
 /** Links this device's anonymous id to the account: `users.id`, never an email or name. */

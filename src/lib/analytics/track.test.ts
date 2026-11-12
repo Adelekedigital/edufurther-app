@@ -22,12 +22,12 @@ describe('track', () => {
       ['capture', 'mentor_profile_viewed', { source: 'explore' }],
       ['identify', 'u1', { user_id: 'u1', role: 'mentee' }],
     ]);
-    track('pwa_installed', {});
-    expect(s.calls.at(-1)).toEqual(['capture', 'pwa_installed', {}]);
+    track('pwa_installed', { method: 'standalone_launch' });
+    expect(s.calls.at(-1)).toEqual(['capture', 'pwa_installed', { method: 'standalone_launch' }]);
   });
 
   it('a decline drops what waited and sends nothing after', () => {
-    track('pwa_installed', {});
+    track('pwa_installed', { method: 'standalone_launch' });
     setConsent(false);
     const s = sink();
     setConsent(true, s);
@@ -38,7 +38,7 @@ describe('track', () => {
     const s = sink();
     setConsent(true, s);
     setConsent(false);
-    track('pwa_installed', {});
+    track('pwa_installed', { method: 'standalone_launch' });
     expect(s.calls).toEqual([]);
   });
 
@@ -46,7 +46,7 @@ describe('track', () => {
     const s = sink();
     setConsent(true, s);
     setBlocked(() => true);
-    track('pwa_installed', {});
+    track('pwa_installed', { method: 'standalone_launch' });
     identify('u1', { user_id: 'u1', role: 'mentee' });
     expect(s.calls).toEqual([]);
   });
