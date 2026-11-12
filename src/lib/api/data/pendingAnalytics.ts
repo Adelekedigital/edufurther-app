@@ -24,34 +24,11 @@ export type WireOverview = Schemas['AnalyticsOverviewRead'];
 export type WireFeatureKey = WireOverview['features'][number]['key'];
 
 /**
- * Pending: `active_members` on the overview (backend edufurtherbe-5e, shape
- * agreed 2026-11-12, released after the FE's "ready"). Optional, so the
- * overview reads it as `WireOverview & WireActiveMembersField`; once the spec
- * carries it, alias the schema here. The headline totals stay in `sub_tracks`.
+ * Shipped (backend #666, released in #668): `active_members` on the overview,
+ * the role split, the weekly-active series and `history_from`. The headline
+ * totals stay in `sub_tracks`.
  */
-type WireRoleActive = { weekly: WireMetric; monthly: WireMetric; stickiness: WireMetric };
-export type WireActiveMembers = {
-  /** The first full day of recorded activity in this environment (YYYY-MM-DD); null before any. */
-  history_from?: string | null;
-  by_role?: { mentee: WireRoleActive; mentor: WireRoleActive } | null;
-  /**
-   * WAU per north_star point; null before the first full day of history.
-   * `by_role` splits each point (mentee + mentor = value); not drawn yet, as
-   * the design has no role filter.
-   */
-  series?:
-    | {
-        start: string;
-        value: number | null;
-        previous: number | null;
-        by_role?: Record<
-          'mentee' | 'mentor',
-          { value: number | null; previous: number | null }
-        > | null;
-      }[]
-    | null;
-};
-export type WireActiveMembersField = { active_members?: WireActiveMembers | null };
+export type WireActiveMembers = Schemas['ActiveMembersRead'];
 
 /** Acceptance, median reply and request expiry count decisions on requests only (a moved session going back for approval is not a second one). */
 export type WireSessions = Schemas['AnalyticsSessionsRead'];
@@ -96,7 +73,7 @@ export type WireProfileViewSource = WireBehaviour['profile_views_by_source'][num
 
 /** The section routes and what each returns. */
 export type WireSections = {
-  overview: WireOverview & WireActiveMembersField;
+  overview: WireOverview;
   sessions: WireSessions;
   supply: WireSupply;
   credits: WireCredits;
