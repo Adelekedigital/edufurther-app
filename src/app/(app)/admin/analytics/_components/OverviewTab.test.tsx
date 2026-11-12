@@ -135,6 +135,8 @@ describe('OverviewTab', () => {
         ...d.subTracks,
         uniqueMentees: { value: 0, previous: 1 },
         mentorsDelivered: { value: 0, previous: 1 },
+        weeklyActive: { value: 0, previous: 1 },
+        monthlyActive: null,
       },
     };
     // A quiet week still has Mentor supply and the other feature numbers.
@@ -142,6 +144,15 @@ describe('OverviewTab', () => {
     expect(
       isOverviewEmpty({ ...quiet, features: quiet.features.map((f) => ({ ...f, value: null })) }),
     ).toBe(true);
+    // Members active with nothing else to read (review on PR 575): still a number to show.
+    const noFeatures = quiet.features.map((f) => ({ ...f, value: null }));
+    expect(
+      isOverviewEmpty({
+        ...quiet,
+        features: noFeatures,
+        subTracks: { ...quiet.subTracks, monthlyActive: { value: 12, previous: null } },
+      }),
+    ).toBe(false);
     // A real 0% (no listed mentor free) is a number, not an absence.
     expect(
       isOverviewEmpty({

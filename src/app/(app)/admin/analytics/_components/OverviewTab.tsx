@@ -10,15 +10,17 @@ import { sparkPath } from './trendModel';
 import styles from './OverviewTab.module.css';
 
 /**
- * Nothing to read in the window: no completed session, no one served, and no
- * feature with a number (Mentor supply is a "now" number, so a quiet week
- * still shows the cards).
+ * Nothing to read in the window: no completed session, no one served, no
+ * active member, and no feature with a number (Mentor supply is a "now"
+ * number, so a quiet week still shows the cards).
  */
 export const isOverviewEmpty = (d: Overview) =>
   !d.northStar.completed.value &&
   d.northStar.series.every((p) => p.value === 0) &&
   !d.subTracks.uniqueMentees.value &&
   !d.subTracks.mentorsDelivered.value &&
+  !d.subTracks.weeklyActive?.value &&
+  !d.subTracks.monthlyActive?.value &&
   d.features.every((f) => f.value?.value == null);
 
 /**
