@@ -238,7 +238,7 @@ export function MonthPicker({
           <div className={styles.jump}>
             <Select
               aria-label="Month"
-              width={136}
+              className={styles.jumpMonth}
               density="compact"
               text="sm"
               options={months}
@@ -247,7 +247,7 @@ export function MonthPicker({
             />
             <Select
               aria-label="Year"
-              width={96}
+              className={styles.jumpYear}
               density="compact"
               text="sm"
               options={years.map((y) => ({ value: y, label: y }))}

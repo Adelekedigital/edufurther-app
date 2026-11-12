@@ -212,6 +212,10 @@ describe('Admin Analytics: what loads, and the keyboard', () => {
     expect(apply).toBeDisabled();
     fireEvent.change(end, { target: { value: '2025-11-30' } });
     expect(apply).toBeEnabled();
+    // An end alone is one day too.
+    fireEvent.change(start, { target: { value: '' } });
+    fireEvent.change(end, { target: { value: '2025-10-01' } });
+    expect(apply).toBeEnabled();
     fireEvent.change(start, { target: { value: '2023-01-01' } });
     expect(within(dialog).getByText('Pick a day from June 1, 2024 to today.')).toBeInTheDocument();
     expect(apply).toBeDisabled();

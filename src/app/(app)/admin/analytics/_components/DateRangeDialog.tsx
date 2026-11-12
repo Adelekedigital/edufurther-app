@@ -52,11 +52,13 @@ export function DateRangeDialog({
     (ISO.test(start) && ISO.test(end) && end < start ? DATE_PICKER.endBeforeStart : undefined);
   const startOk = ISO.test(start) && !startError;
   const endOk = ISO.test(end) && !endError;
-  // A start alone is one day, as a single click on the calendar is.
-  const draft: Range | null = startOk
-    ? { from: start, to: endOk ? end : end === '' ? start : '' }
-    : null;
-  const valid = draft && draft.to !== '' ? draft : null;
+  // One field alone is one day, as a single click on the calendar is.
+  const valid: Range | null =
+    startOk && (endOk || end === '')
+      ? { from: start, to: endOk ? end : start }
+      : endOk && start === ''
+        ? { from: end, to: end }
+        : null;
 
   const pick = (day: string) => {
     const next = nextDraft(valid, day);
