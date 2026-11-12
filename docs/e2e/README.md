@@ -36,11 +36,25 @@ python scripts/e2e_session.py --env staging --run <tag> --account <ref> --link \
 ```
 
 It runs through `railway run` against Railway's **development** environment,
-so it reads that environment's own variables: `SUPABASE_URL`, the Supabase
-service-role key, `EDUFURTHER_ENVIRONMENT=staging` and `E2E_SUPABASE_PROJECT`
-(`hitgxzhrimuhivlfamhj`). `E2E_ALLOW=1` is given on the command line for each
-run, never stored. The machine running it needs the Railway CLI logged in
-(`railway login`, done once by the founder) and linked to the backend project.
+so it reads that environment's own variables: `SUPABASE_URL` (the dev project),
+the Supabase service-role key, `EDUFURTHER_ENVIRONMENT=staging`, and for
+BOOK-001 the Daily keys. All are set there (backend check, 2026-11-12); the
+founder sets nothing.
+
+Two values are the **operator's**, given on the command line for each run and
+never stored on Railway or in the repo: `E2E_ALLOW=1` and
+`E2E_SUPABASE_PROJECT=hitgxzhrimuhivlfamhj`. The API runner also needs
+`E2E_API_URL` and `E2E_FRONTEND_URL` on the operator's machine. Each run starts
+with its seed, which creates the `e2e-` accounts under a new tag (1–16
+lowercase letters or digits):
+
+```
+E2E_ALLOW=1 railway run --environment development --service edufurtherbe-dev   uv run python scripts/seed_demo_mentors.py --e2e <tag>
+```
+
+The seed accounts (`E2E_ACCOUNTS`) are a list in the backend's code
+(`infra/db/demo_seed.py`), not a setting. The Railway CLI on this machine is
+logged in and linked (project Edufurther, environment development).
 
 Open the printed link in Playwright. `/auth/callback` (`src/app/auth/callback/route.ts`)
 sets the session cookies, then goes to `next`, sanitised by `safeReturnTo`.
