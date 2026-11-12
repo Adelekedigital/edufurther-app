@@ -372,7 +372,9 @@ export function useMentorOnboardingFlow() {
       // a gap clears on its own straight away (an answer still landing, like a
       // picked school's country). Before, the line vanished with the gap and
       // the press was simply lost (E2E issue 573).
-      held.current = drafting ? Infinity : Date.now() + HOLD_MS;
+      // Only a press blocked by the draft alone waits for it; any gap gets the
+      // short deadline, so a real one lapses.
+      held.current = gaps.length ? Date.now() + HOLD_MS : Infinity;
       if (gaps[0]) focusField(gapField(gaps[0], form.answers));
       return;
     }
@@ -426,13 +428,21 @@ export function useMentorOnboardingFlow() {
   // After the sync above (effects run in order), so it calls this render's goNext.
   useEffect(() => {
     if (!held.current || drafting) return;
-    if (gaps.length) {
-      if (Date.now() > held.current) held.current = 0; // a real gap: it stays blocked
+    // A failed draft shows its note first; the next press goes ahead.
+    if (draftFailed) {
+      held.current = 0;
       return;
     }
+    // Past its deadline, the press is spent: a gap filled later by hand never
+    // submits on its own.
+    if (Date.now() > held.current) {
+      held.current = 0;
+      return;
+    }
+    if (gaps.length) return;
     held.current = 0;
     void goNextRef.current();
-  }, [drafting, gaps.length]);
+  }, [drafting, draftFailed, gaps.length]);
 
   // Error before empty, and only before the form exists: a failed refetch later keeps the form.
   const loadError = !form && (!!app.error || !!topics.error);
