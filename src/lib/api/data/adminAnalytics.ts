@@ -84,7 +84,19 @@ export type Overview = AnalyticsHead & {
     unit: 'day' | 'week';
     series: { start: string; value: number; previous: number | null }[];
   };
-  subTracks: { uniqueMentees: Metric; mentorsDelivered: Metric; sessionsPerMentee: Metric };
+  subTracks: {
+    uniqueMentees: Metric;
+    mentorsDelivered: Metric;
+    sessionsPerMentee: Metric;
+    /**
+     * Active members from the platform's own records (backend decision 342,
+     * release 661): optional on the wire, null when absent. Stickiness is
+     * WAU / MAU as a percent; its value is null when MAU is 0.
+     */
+    weeklyActive: Metric | null;
+    monthlyActive: Metric | null;
+    stickiness: Metric | null;
+  };
   features: {
     key: WireFeatureKey;
     /** Null: its source isn't answering (PostHog). */
@@ -102,6 +114,9 @@ export const toOverview = (w: WireOverview): Overview => ({
     uniqueMentees: w.sub_tracks.unique_mentees,
     mentorsDelivered: w.sub_tracks.mentors_delivered,
     sessionsPerMentee: w.sub_tracks.sessions_per_mentee,
+    weeklyActive: w.sub_tracks.weekly_active_users ?? null,
+    monthlyActive: w.sub_tracks.monthly_active_users ?? null,
+    stickiness: w.sub_tracks.stickiness ?? null,
   },
   features: w.features,
 });
