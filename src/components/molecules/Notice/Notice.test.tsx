@@ -9,11 +9,17 @@ describe('Notice', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Saved.');
   });
 
-  it('brand: the DS Notice info tone (it replaced the retired amber warning), with its trailing info icon', () => {
-    const { container } = render(<Notice tone="brand">PostHog isn’t answering.</Notice>);
+  it('brand: the DS Notice info tone (it replaced the retired amber warning), with its trailing icon', () => {
+    const { container } = render(
+      <Notice tone="brand" icon="cloud_off">
+        PostHog isn’t answering.
+      </Notice>,
+    );
     const box = container.firstElementChild!;
     expect(box).toHaveClass('ds', 'brand');
     expect(box).not.toHaveClass('warning');
-    expect(box.textContent).toContain('info');
+    // One trailing DS icon; the passed icon is ignored, as for danger.
+    expect(box.querySelectorAll('.icon')).toHaveLength(1);
+    expect(box.lastElementChild).toHaveClass('icon');
   });
 });

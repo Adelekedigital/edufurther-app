@@ -8,8 +8,8 @@ import styles from './Notice.module.css';
 type NoticeProps = {
   /**
    * neutral, info: the app's notices (a leading `icon`, no ring).
-   * brand: the DS Notice's `info` tone (brand-50 ground, 2px brand-600 ring,
-   * the trailing `info` icon). It replaces the DS `warning` (amber) tone,
+   * brand: the DS Notice's `info` tone (a 2px ring, the trailing `info` icon),
+   * in the blue ramp since the DS's brand ramp is banned in product UI. It replaces the DS `warning` (amber) tone,
    * retired 2026-11-12 (owner): an outage or a not-set-up state.
    * danger: the same DS callout in red (Mentor Onboarding `submitErr`).
    * The DS tones always show their own trailing icon, so `icon` is ignored.

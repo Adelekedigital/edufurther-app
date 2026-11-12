@@ -46,13 +46,15 @@
 .ds .text {
   line-height: var(--lh-notice);
 }
-/* The DS Notice `info` tone, which replaced the retired amber `warning`. */
+/* The DS Notice `info` tone, which replaced the retired amber `warning`. The DS
+   draws it in the legacy brand ramp, banned in product UI, so it takes the blue
+   ramp: blue-50 ground, blue-700 ring and icon. */
 .brand {
-  background: var(--brand-50);
-  box-shadow: inset 0 0 0 2px var(--brand-600);
+  background: var(--surface-info-subtle);
+  box-shadow: inset 0 0 0 2px var(--blue-700);
 }
 .brand .icon {
-  color: var(--brand-600);
+  color: var(--blue-700);
 }
 .danger {
   background: var(--red-50);
