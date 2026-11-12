@@ -245,6 +245,15 @@ describe('BehaviourTab: PostHog down', () => {
     expect(screen.queryByRole('link', { name: /Open replays/ })).toBeNull();
   });
 
+  it('Try again retries every failed read, not only the PostHog one (review on PR 581)', async () => {
+    const funnelQuery = failed<never>(upstream);
+    const eventsQuery = failed<never>(new ApiError(500, 'Server error'));
+    renderTab({ funnelQuery, eventsQuery });
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(funnelQuery.onRetry).toHaveBeenCalledTimes(1);
+    expect(eventsQuery.onRetry).toHaveBeenCalledTimes(1);
+  });
+
   it('a plain 503 (a proxy, not PostHog) is an ordinary failure with Try again', () => {
     renderTab({ funnelQuery: failed<never>(new ApiError(503, 'Service Unavailable')) });
     expect(screen.queryByText(/They come from PostHog/)).toBeNull();

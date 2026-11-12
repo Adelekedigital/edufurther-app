@@ -162,10 +162,8 @@ export function BehaviourTab({
   eventsQuery: TabQuery<Behaviour>;
 }) {
   const byId = useId();
-  const downQueries = [funnelQuery, eventsQuery].filter(
-    (q) => q.status === 'error' && isUpstreamDown(q.error),
-  );
-  const down = downQueries.length > 0;
+  const failedQueries = [funnelQuery, eventsQuery].filter((q) => q.status === 'error');
+  const down = failedQueries.some((q) => isUpstreamDown(q.error));
   const copy = FUNNEL_COPY[funnel];
   const replays = safeReplayUrl(eventsQuery.data?.replaysUrl);
 
@@ -173,15 +171,16 @@ export function BehaviourTab({
     <Section title={BEHAVIOUR.heading} source="posthog" label="Funnels">
       {down ? (
         // PostHog isn't answering: the admin failed-to-load state (owner,
-        // 2026-11-12), in the section's place, with Try again for what failed.
+        // 2026-11-12), in the section's place, with Try again for every read that failed.
         <AdminLoadError
           framed
           illustration="dashboard"
           title={BEHAVIOUR.downTitle}
           body={BEHAVIOUR.down}
           retryLabel={ANALYTICS_STATES.retry}
-          onRetry={() => downQueries.forEach((q) => q.onRetry())}
-          retrying={downQueries.some((q) => q.retrying)}
+          // Every read that failed, PostHog's or not: the state hides them all.
+          onRetry={() => failedQueries.forEach((q) => q.onRetry())}
+          retrying={failedQueries.some((q) => q.retrying)}
         />
       ) : (
         <>
