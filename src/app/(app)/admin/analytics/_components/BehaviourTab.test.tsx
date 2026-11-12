@@ -225,19 +225,38 @@ describe('BehaviourTab: PostHog down', () => {
   it.each([
     ['the funnel', { funnelQuery: failed<never>(upstream) }],
     ['the events', { eventsQuery: failed<never>(upstream) }],
-  ])('%s answering 503 shows the notice and hides the rest', (_, over) => {
+  ])('%s answering 503 shows the failed-to-load state and hides the rest', async (_, over) => {
     renderTab(over);
+    // The admin failed-to-load state (owner, 2026-11-12), not a notice, inside the Funnels region.
+    const region = screen.getByRole('region', { name: 'Funnels' });
     expect(
-      screen.getByText(/Funnels come from PostHog, which isn’t answering/),
+      within(region).getByRole('heading', { name: 'Funnels aren’t available right now' }),
     ).toBeInTheDocument();
+    expect(
+      within(region).getByText(/They come from PostHog, which isn’t answering/),
+    ).toBeInTheDocument();
+    expect(within(region).queryByRole('note')).toBeNull();
+    // Try again retries what failed.
+    await userEvent.click(within(region).getByRole('button', { name: 'Try again' }));
+    const q = Object.values(over)[0] as TabQuery<never>;
+    expect(q.onRetry).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('radiogroup', { name: 'Funnel' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Log-in codes' })).toBeNull();
     expect(screen.queryByRole('link', { name: /Open replays/ })).toBeNull();
   });
 
+  it('Try again retries every failed read, not only the PostHog one (review on PR 581)', async () => {
+    const funnelQuery = failed<never>(upstream);
+    const eventsQuery = failed<never>(new ApiError(500, 'Server error'));
+    renderTab({ funnelQuery, eventsQuery });
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(funnelQuery.onRetry).toHaveBeenCalledTimes(1);
+    expect(eventsQuery.onRetry).toHaveBeenCalledTimes(1);
+  });
+
   it('a plain 503 (a proxy, not PostHog) is an ordinary failure with Try again', () => {
     renderTab({ funnelQuery: failed<never>(new ApiError(503, 'Service Unavailable')) });
-    expect(screen.queryByText(/Funnels come from PostHog/)).toBeNull();
+    expect(screen.queryByText(/They come from PostHog/)).toBeNull();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
   });
 

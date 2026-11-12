@@ -318,7 +318,8 @@ export const BEHAVIOUR = {
   figuresLabel: (name: string) => `${name}: beside the funnel`,
   days: (n: string) => `${n} ${n === '1' ? 'day' : 'days'}`,
   percent: (n: string) => `${n}%`,
-  down: 'Funnels come from PostHog, which isn’t answering right now. Database numbers on this page are up to date. Try again in a few minutes.',
+  downTitle: 'Funnels aren’t available right now',
+  down: 'They come from PostHog, which isn’t answering. Database numbers on this page are up to date. Try again in a few minutes.',
   replays: 'Session replays (onboarding and booking only, inputs masked) open in PostHog:',
   replaysLink: 'Open replays in PostHog',
 } as const;

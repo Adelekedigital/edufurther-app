@@ -50,8 +50,14 @@
   color: var(--ink-500);
 }
 .input:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: 0;
+  /* The one text-field focus (owner, 2026-11-12): --field-focus. */
+  outline: var(--focus-ring-width) solid transparent;
+  border-color: var(--border-focus);
+  box-shadow: var(--field-focus-shadow);
+}
+/* The error border wins over the focus border, as on every other field. */
+.input[aria-invalid='true']:focus-visible {
+  border-color: var(--border-danger);
 }
 .chip {
   border-radius: var(--radius-xs);

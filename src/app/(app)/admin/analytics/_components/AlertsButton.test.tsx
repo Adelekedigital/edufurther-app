@@ -6,7 +6,7 @@ import { AlertsButton } from './AlertsButton';
 const alert = (over: Partial<AnalyticsAlert> = {}): AnalyticsAlert => ({
   key: 'no_signups',
   title: 'No sign-ups',
-  body: 'No one has signed up in the last 24 hours.',
+  body: 'No one has signed up in the last 7 days.',
   link: { tab: 'funnels', funnel: 'signup' },
   ...over,
 });

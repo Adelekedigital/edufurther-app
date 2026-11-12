@@ -8,6 +8,12 @@
   --focus-ring-color: var(--border-focus);
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
+  /* Text fields (input, multi-line, select, the boxes that wrap one): the
+     border turns blue and grows 1px outward, 2px in all, the DS's focused-
+     field weight. Not a border plus a separate 2px outline, which drew two
+     rings and read too bold (owner, 2026-11-12). The outline stays, transparent,
+     so forced-colors mode still shows focus. */
+  --field-focus-shadow: 0 0 0 1px var(--border-focus);
 
   /* Placeholder text. DS --text-placeholder (--ink-400) is 2.58:1 on white. */
   --text-placeholder: var(--ink-500);

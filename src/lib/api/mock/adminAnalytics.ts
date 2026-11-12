@@ -84,14 +84,14 @@ const ALERTS: WireAnalyticsAlert[] = [
   {
     key: 'no_booking_requests',
     title: 'No booking requests',
-    body: 'No one has asked for a session in the last 24 hours.',
+    body: 'No one has asked for a session in the last 7 days.',
     link: { tab: 'sessions' },
     raised_at: '2026-11-09T07:00:00Z',
   },
   {
     key: 'no_signups',
     title: 'No sign-ups',
-    body: 'No one has signed up in the last 24 hours.',
+    body: 'No one has signed up in the last 7 days.',
     link: { tab: 'funnels', funnel: 'signup' },
     raised_at: '2026-11-09T06:00:00Z',
   },

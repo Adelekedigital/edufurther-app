@@ -217,7 +217,7 @@ describe('the flags', () => {
         <AnalyticsRoot />
       </>,
     );
-    screen.getByRole('button', { name: 'Decline' }).focus();
+    screen.getByRole('button', { name: CONSENT_COPY.decline }).focus();
     await userEvent.keyboard('{Enter}');
     await waitFor(() =>
       expect(screen.getByRole('heading', { name: 'Join EduFurther' })).toHaveFocus(),
@@ -233,7 +233,7 @@ describe('the flags', () => {
         <AnalyticsRoot />
       </>,
     );
-    const decline = screen.getByRole('button', { name: 'Decline' });
+    const decline = screen.getByRole('button', { name: CONSENT_COPY.decline });
     decline.focus();
     await userEvent.keyboard('{Enter}');
     expect(screen.queryByRole('region')).toBeNull();
@@ -242,7 +242,7 @@ describe('the flags', () => {
 
   it('Decline records the answer and keeps cookieless', async () => {
     render(<AnalyticsRoot />);
-    await userEvent.click(screen.getByRole('button', { name: 'Decline' }));
+    await userEvent.click(screen.getByRole('button', { name: CONSENT_COPY.decline }));
     expect(readConsentCookie()?.granted).toBe(false);
     expect(screen.queryByRole('region')).toBeNull();
     expect(vendor.setMode).not.toHaveBeenCalledWith('identified');
