@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockSection, mockWindow } from '@/lib/api/mock/adminAnalytics';
 import { todayIn } from '@/lib/utils/calendar';
@@ -191,6 +191,34 @@ describe('Admin Analytics: what loads, and the keyboard', () => {
     await userEvent.keyboard('{ArrowRight}');
     await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
     expect(await screen.findByRole('dialog', { name: 'Choose dates' })).toBeInTheDocument();
+  });
+
+  it('Choose dates: a typed start and end make the range; a wrong one says why and blocks Apply', async () => {
+    serve();
+    renderScreen(<AdminAnalyticsScreen />);
+    await screen.findByRole('heading', { level: 2, name: 'Credits' });
+    await userEvent.click(screen.getByRole('radio', { name: 'Custom' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Choose dates' });
+    const start = within(dialog).getByLabelText('Start date');
+    const end = within(dialog).getByLabelText('End date');
+    const apply = within(dialog).getByRole('button', { name: 'Apply dates' });
+    fireEvent.change(start, { target: { value: '2025-01-01' } });
+    // The calendar follows the typed day.
+    expect(within(dialog).getByRole('grid', { name: 'January 2025' })).toBeInTheDocument();
+    // A start alone is one day.
+    expect(apply).toBeEnabled();
+    fireEvent.change(end, { target: { value: '2024-12-01' } });
+    expect(within(dialog).getByText('The end date is before the start date.')).toBeInTheDocument();
+    expect(apply).toBeDisabled();
+    fireEvent.change(end, { target: { value: '2025-11-30' } });
+    expect(apply).toBeEnabled();
+    // An end alone is one day too.
+    fireEvent.change(start, { target: { value: '' } });
+    fireEvent.change(end, { target: { value: '2025-10-01' } });
+    expect(apply).toBeEnabled();
+    fireEvent.change(start, { target: { value: '2023-01-01' } });
+    expect(within(dialog).getByText('Pick a day from June 1, 2024 to today.')).toBeInTheDocument();
+    expect(apply).toBeDisabled();
   });
 
   it('arrowing over Custom selects nothing and opens nothing; Enter opens the picker', async () => {

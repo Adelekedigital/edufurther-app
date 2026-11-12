@@ -337,3 +337,57 @@ describe('MonthPicker, a reporting range (min in the past, max today)', () => {
     expect(screen.getByRole('button', { name: 'Friday, October 9' })).toHaveFocus();
   });
 });
+
+// The chosen row carries a check icon (a ligature): not part of its name.
+const optionNames = () =>
+  screen.getAllByRole('option').map((o) => o.textContent?.replace('check_circle', ''));
+
+describe('MonthPicker, jump (a reporting range, owner 2026-11-12)', () => {
+  const user = () => userEvent.setup();
+  const range = (extra = {}) => (
+    <MonthPicker
+      today="2026-11-12"
+      min="2024-06-01"
+      max="2026-11-12"
+      jump
+      onPick={() => {}}
+      {...extra}
+    />
+  );
+
+  it('jumps straight to a far month with the month and year selects', async () => {
+    const u = user();
+    render(range());
+    expect(screen.getByRole('grid', { name: 'November 2026' })).toBeInTheDocument();
+    await u.click(screen.getByRole('combobox', { name: 'Month' }));
+    await u.click(screen.getByRole('option', { name: 'January' }));
+    expect(screen.getByRole('grid', { name: 'January 2026' })).toBeInTheDocument();
+    await u.click(screen.getByRole('combobox', { name: 'Year' }));
+    await u.click(screen.getByRole('option', { name: '2025' }));
+    expect(screen.getByRole('grid', { name: 'January 2025' })).toBeInTheDocument();
+  });
+
+  it('offers only the years and months in range', async () => {
+    const u = user();
+    render(range());
+    await u.click(screen.getByRole('combobox', { name: 'Year' }));
+    expect(optionNames()).toEqual(['2024', '2025', '2026']);
+    await u.click(screen.getByRole('option', { name: '2024' }));
+    // November 2024 exists; June is the first month of 2024 in range.
+    await u.click(screen.getByRole('combobox', { name: 'Month' }));
+    const months = optionNames();
+    expect(months[0]).toBe('June');
+    expect(months).toHaveLength(7);
+  });
+
+  it('a typed date moves the view to its month', () => {
+    const { rerender } = render(range());
+    rerender(range({ showMonth: '2025-03-14' }));
+    expect(screen.getByRole('grid', { name: 'March 2025' })).toBeInTheDocument();
+  });
+
+  it('without jump the heading stays text, no selects', () => {
+    render(<MonthPicker today="2026-11-12" onPick={() => {}} />);
+    expect(screen.queryByRole('combobox')).toBeNull();
+  });
+});

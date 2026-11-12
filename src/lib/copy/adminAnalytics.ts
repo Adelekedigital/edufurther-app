@@ -36,7 +36,11 @@ export const ANALYTICS_TABS: { value: AnalyticsTab; label: string }[] = [
 
 export const DATE_PICKER = {
   title: 'Choose dates',
-  subtitle: 'Pick one day, or a first and last day.',
+  subtitle: 'Type or pick one day, or a first and last day.',
+  start: 'Start date',
+  end: 'End date',
+  outOfRange: 'Pick a day from June 1, 2024 to today.',
+  endBeforeStart: 'The end date is before the start date.',
   cancel: 'Cancel',
   apply: 'Apply dates',
 } as const;
