@@ -23,7 +23,7 @@ export type Sink = {
 const MAX_QUEUED = 100;
 
 type Queued =
-  | { kind: 'capture'; event: string; props: Record<string, unknown> }
+  | { kind: 'capture'; event: string; props: Record<string, unknown>; onSent?: () => void }
   | { kind: 'identify'; userId: string; props: PersonProperties };
 
 let sink: Sink | null = null;
@@ -32,15 +32,22 @@ let blocked: () => boolean = () => false;
 
 /**
  * One event, typed by the schema. A no-op while blocked; queued until a sink
- * connects. True when it was taken (sent or queued), false while blocked: a
- * once-only event (`pwa_installed`) marks itself sent only on true.
+ * connects. `onSent` runs once the event reaches the vendor: at once with a
+ * sink, else when the queue is sent; never if it's blocked or the queue is
+ * dropped (off, a preview, a decline before load). A once-only event
+ * (`pwa_installed`) marks itself sent there.
  */
-export function track<K extends AnalyticsEvent>(event: K, props: AnalyticsEvents[K]): boolean {
-  if (blocked()) return false;
+export function track<K extends AnalyticsEvent>(
+  event: K,
+  props: AnalyticsEvents[K],
+  onSent?: () => void,
+): void {
+  if (blocked()) return;
   const p = props as Record<string, unknown>;
-  if (sink) sink.capture(event, p);
-  else enqueue({ kind: 'capture', event, props: p });
-  return true;
+  if (sink) {
+    sink.capture(event, p);
+    onSent?.();
+  } else enqueue({ kind: 'capture', event, props: p, onSent });
 }
 
 /** Links this device's anonymous id to the account: `users.id`, never an email or name. */
@@ -66,8 +73,10 @@ export function setConsent(granted: boolean, connect?: Sink): void {
     const waiting = queue;
     queue = [];
     for (const q of waiting) {
-      if (q.kind === 'capture') connect.capture(q.event, q.props);
-      else connect.identify(q.userId, q.props);
+      if (q.kind === 'capture') {
+        connect.capture(q.event, q.props);
+        q.onSent?.();
+      } else connect.identify(q.userId, q.props);
     }
     return;
   }

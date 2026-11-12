@@ -87,4 +87,20 @@ describe('replay scopes (PRD 30: booking records while its modal is open)', () =
     expect(heard).toHaveBeenCalledTimes(2);
     resetForTests();
   });
+
+  it('onSent runs when the event reaches the vendor: at once, at the flush, never when dropped', () => {
+    resetForTests();
+    const sent = vi.fn();
+    track('pwa_installed', { method: 'standalone_launch' }, sent);
+    expect(sent).not.toHaveBeenCalled();
+    setConsent(false);
+    expect(sent).not.toHaveBeenCalled();
+    track('pwa_installed', { method: 'standalone_launch' }, sent);
+    const sink = { capture: vi.fn(), identify: vi.fn(), reset: vi.fn() };
+    setConsent(true, sink);
+    expect(sink.capture).toHaveBeenCalledTimes(1);
+    expect(sent).toHaveBeenCalledTimes(1);
+    track('pwa_installed', { method: 'standalone_launch' }, sent);
+    expect(sent).toHaveBeenCalledTimes(2);
+  });
 });
