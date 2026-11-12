@@ -4,7 +4,9 @@ import {
   SESSION_HINT_HEADER,
   refreshSessionCookies,
 } from '@/lib/vendor/supabase/server';
+import { authConfigured } from '@/lib/vendor/supabase/config';
 import { isEnterPath } from '@/lib/utils/sessionEnter';
+import { loginPathFor, loginRequired } from '@/lib/utils/loginRequired';
 import { PROXY_SECRET_HEADER, backendOrigin, proxySecret } from '@/lib/backend';
 import { posthogHosts } from '@/lib/posthogHost';
 import {
@@ -89,6 +91,18 @@ export function proxy(request: NextRequest) {
   if (slash) return slash;
   if (path === '/api/v1' || path.startsWith('/api/v1/')) return forwardToBackend(request);
   return refreshSessionCookies(request, ({ userId, accessToken }) => {
+    // Signed out (verified: null, not a failed check) on a members-only page:
+    // to log in before any of it is drawn, then back here (owner, 2026-11-12).
+    // A failed check (undefined) leaves it to the page's own gate, and so does
+    // a build with no sign-in at all (the mock viewer, CI's page review), where
+    // there is no session to have.
+    if (authConfigured && userId === null && loginRequired(path)) {
+      const res = NextResponse.redirect(
+        new URL(loginPathFor(path, request.nextUrl.search), request.url),
+      );
+      res.headers.set('cache-control', 'no-store');
+      return res;
+    }
     // A mentor landing on Explore goes home before any of it is drawn (owner,
     // 2026-11-01; lib/utils/landingHint). Only for the user just verified.
     if (

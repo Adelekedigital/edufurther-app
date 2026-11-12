@@ -98,7 +98,9 @@ describe('proxy: the session hint for the render', () => {
         }),
       );
       expect(forwarded(res, 'x-ef-access-token'), path).toBeNull();
-      expect(res.headers.get('x-middleware-override-headers'), path).not.toContain(
+      // A signed-out members-only page (/sessions/b1) is a redirect to log in:
+      // nothing is forwarded to a render at all.
+      expect(res.headers.get('x-middleware-override-headers') ?? '', path).not.toContain(
         'x-ef-access-token',
       );
     }
@@ -112,6 +114,44 @@ describe('proxy: the session hint for the render', () => {
       }),
     );
     expect(forwarded(res, 'x-ef-access-token')).toBe('tok-fresh');
+  });
+});
+
+describe('proxy: a signed-out visitor on a members-only page goes to log in (owner, 2026-11-12)', () => {
+  it('signed out on /bookings: to log in, and back to the page with its query after', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    const res = await proxy(new NextRequest('https://app.test/bookings?tab=past'));
+    expect(res.status).toBe(307);
+    expect(res.headers.get('location')).toBe(
+      'https://app.test/login?next=%2Fbookings%3Ftab%3Dpast',
+    );
+    expect(res.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('signed out on a public page (Explore, a mentor profile, an invite): no redirect', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    for (const path of ['/explore', '/mentors/ada-l', '/invite/damilola-7k2x', '/login']) {
+      const res = await proxy(new NextRequest(`https://app.test${path}`));
+      expect(res.headers.get('location')).toBeNull();
+    }
+  });
+
+  it('an unknown path is not a page: the 404, never a login', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    const res = await proxy(new NextRequest('https://app.test/no-such-page'));
+    expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('a failed check: never sent away (a signed-in member isn’t logged out by a blip)', async () => {
+    getClaims.mockResolvedValue({ data: null, error: new Error('fetch failed') });
+    const res = await proxy(new NextRequest('https://app.test/bookings'));
+    expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('signed in: the page as usual', async () => {
+    getClaims.mockResolvedValue({ data: { claims: { sub: 'u1' } }, error: null });
+    const res = await proxy(new NextRequest('https://app.test/bookings'));
+    expect(res.headers.get('location')).toBeNull();
   });
 });
 
