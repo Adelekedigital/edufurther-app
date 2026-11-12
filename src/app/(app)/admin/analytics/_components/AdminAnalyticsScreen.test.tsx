@@ -293,7 +293,7 @@ describe('Admin Analytics: states', () => {
             {
               key: 'no_booking_requests',
               title: 'No booking requests',
-              body: 'No booking requests in the last 24 hours.',
+              body: 'No booking requests in the last 7 days.',
               link: { tab: 'sessions' },
               raised_at: '2026-11-08T06:00:00Z',
             },
@@ -333,7 +333,7 @@ describe('Admin Analytics: states', () => {
     await userEvent.click(await screen.findByRole('button', { name: '2 alerts' }));
     const list = screen.getByRole('dialog', { name: 'Alerts' });
     expect(list).toHaveTextContent('No sign-ups');
-    expect(list).toHaveTextContent('No one has signed up in the last 24 hours.');
+    expect(list).toHaveTextContent('No one has signed up in the last 7 days.');
     await userEvent.click(within(list).getByRole('button', { name: 'See the sign-up funnel' }));
     expect(replace).toHaveBeenLastCalledWith('/admin/analytics?tab=funnels', { scroll: false });
   });
