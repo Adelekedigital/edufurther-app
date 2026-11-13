@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { lookupInviterOnServer } from '@/lib/api/data/inviteServer';
 import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
 import { InviteLanding } from './_components/InviteLanding';
-import { requestOrigin } from './requestOrigin';
+import { requestOrigin } from '@/lib/utils/requestOrigin';
 
 const PREVIEW = INVITE_LANDING_COPY.preview;
 

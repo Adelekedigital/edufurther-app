@@ -26,9 +26,9 @@ describe('ShareMenu', () => {
     expect(button).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
     await user.keyboard('{ArrowDown}');
-    expect(
-      screen.getByRole('menuitem', { name: 'Share on LinkedIn (opens in a new tab)' }),
-    ).toHaveFocus();
+    expect(screen.getByRole('menuitem', { name: 'Copy message' })).toHaveFocus();
+    await user.keyboard('{End}');
+    expect(screen.getByRole('menuitem', { name: 'Share by email' })).toHaveFocus();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
     expect(button).toHaveFocus();
@@ -226,5 +226,86 @@ describe('ShareMenu', () => {
     // 16px inside the screen: slid right by 81px.
     expect(screen.getByRole('menu').parentElement).toHaveStyle({ transform: 'translateX(81px)' });
     rect.mockRestore();
+  });
+
+  describe('the message (own profile vs someone else’s)', () => {
+    const URL_ = 'https://edufurther.com/mentors/g?x=1';
+    const OWN =
+      'I’m a mentor on EduFurther. I’ve been through the grad school application process, and I’d be glad to help you with yours. Book a 1:1 session with me:';
+    const OTHER =
+      'Gbenga Elufisan is a mentor on EduFurther and has been through the grad school application process. Book a 1:1 session:';
+    const hrefOf = (name: string) =>
+      new URL(screen.getByRole('menuitem', { name }).getAttribute('href')!);
+
+    it.each([
+      ['own', true, OWN],
+      ['someone else’s', false, OTHER],
+    ])('%s: WhatsApp, X and email carry the message and the link', async (_, own, text) => {
+      const user = userEvent.setup();
+      render(<ShareMenu url={URL_} name="Gbenga Elufisan" own={own} />);
+      await user.click(screen.getByRole('button', { name: 'Share profile' }));
+
+      const wa = hrefOf('Share on WhatsApp (opens in a new tab)');
+      expect(wa.origin + wa.pathname).toBe('https://wa.me/');
+      expect(wa.searchParams.get('text')).toBe(`${text}\n${URL_}`);
+
+      const x = hrefOf('Share on X (opens in a new tab)');
+      expect(x.origin + x.pathname).toBe('https://x.com/intent/post');
+      expect(x.searchParams.get('text')).toBe(text);
+      expect(x.searchParams.get('url')).toBe(URL_);
+
+      const mail = screen.getByRole('menuitem', { name: 'Share by email' }).getAttribute('href')!;
+      expect(mail.startsWith('mailto:?')).toBe(true);
+      const q = new URLSearchParams(mail.slice('mailto:?'.length));
+      expect(q.get('subject')).toBe('Gbenga Elufisan on EduFurther');
+      expect(q.get('body')).toBe(`${text}\n${URL_}`);
+
+      // LinkedIn takes the URL only: its share page drops any text.
+      const li = hrefOf('Share on LinkedIn (opens in a new tab)');
+      expect([...li.searchParams.keys()]).toEqual(['url']);
+      expect(li.searchParams.get('url')).toBe(URL_);
+    });
+
+    it.each([
+      ['own', true, OWN],
+      ['someone else’s', false, OTHER],
+    ])('%s: Copy message copies the message and the link, and counts it', async (_, own, text) => {
+      const user = userEvent.setup();
+      const onCopied = vi.fn();
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      render(<ShareMenu url={URL_} name="Gbenga Elufisan" own={own} onCopied={onCopied} />);
+      await user.click(screen.getByRole('button', { name: 'Share profile' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Copy message' }));
+      expect(writeText).toHaveBeenCalledWith(`${text}\n${URL_}`);
+      expect(await screen.findByRole('status')).toHaveTextContent('Message copied');
+      expect(onCopied).toHaveBeenCalledTimes(1);
+      expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'copy_message', own }]);
+    });
+
+    it('a failed Copy message says so and counts nothing', async () => {
+      const user = userEvent.setup();
+      Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true });
+      render(<ShareMenu url={URL_} name="Gbenga Elufisan" />);
+      await user.click(screen.getByRole('button', { name: 'Share profile' }));
+      await user.click(screen.getByRole('menuitem', { name: 'Copy message' }));
+      expect(await screen.findByRole('status')).toHaveTextContent('Couldn’t copy the message');
+      expect(shares()).toEqual([]);
+    });
+
+    it('counts WhatsApp and X by their method', async () => {
+      const user = userEvent.setup();
+      render(<ShareMenu url={URL_} name="Gbenga Elufisan" own />);
+      for (const name of ['Share on WhatsApp', 'Share on X']) {
+        await user.click(screen.getByRole('button', { name: 'Share profile' }));
+        const item = screen.getByRole('menuitem', { name: `${name} (opens in a new tab)` });
+        item.addEventListener('click', (e) => e.preventDefault());
+        await user.click(item);
+      }
+      expect(shares()).toEqual([
+        { kind: 'mentor_profile', method: 'whatsapp', own: true },
+        { kind: 'mentor_profile', method: 'x', own: true },
+      ]);
+    });
   });
 });
