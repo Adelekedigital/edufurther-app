@@ -4,6 +4,7 @@ import type { MetMentor } from '@/lib/api/data/metMentors';
 import { NOT_TAKING_TITLE } from '@/lib/copy/profile';
 import { cx } from '@/lib/utils/cx';
 import { dayLabel } from '@/lib/utils/format';
+import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
 import styles from './MentorRow.module.css';
 
 type MentorRowProps = {
@@ -11,6 +12,8 @@ type MentorRowProps = {
   timeZone: string;
   /** Opens the booking flow for a bookable mentor (bookability "open"). */
   onBook: (mentor: MetMentor) => void;
+  /** Opens SendMessage to them; absent while Messages is off (design messageBtn hide). */
+  onMessage?: (mentor: MetMentor) => void;
   /**
    * `list`: a Book again row (48px photo, a medium button). `modal`: a row in
    * Mentors you've met (40px photo, small buttons, a note when they can't be booked).
@@ -48,12 +51,29 @@ function unavailableNote(m: MetMentor): string {
  * Mentors you've met). The action follows the backend's `bookability`: open →
  * "Book again" (the booking flow in place, never the profile); has_upcoming /
  * pending → "View booking" in Bookings; unavailable → a note, no button.
- * "Message" waits for Messages (messageBtn hide).
+ * "Message" (text) shows once Messages is on: after the action in a Book again
+ * row, before it in the modal, as drawn.
  */
-export function MentorRow({ mentor: m, timeZone, onBook, variant = 'list' }: MentorRowProps) {
+export function MentorRow({
+  mentor: m,
+  timeZone,
+  onBook,
+  onMessage,
+  variant = 'list',
+}: MentorRowProps) {
   const modal = variant === 'modal';
   const size = modal ? 'small' : 'medium';
   const degreeLine = [m.degree, m.institution].filter(Boolean).join(' · ');
+  const message = onMessage && (
+    <Button
+      variant="text"
+      size={size}
+      aria-label={MESSAGE_BUTTON_COPY.to(m.firstName)}
+      onClick={() => onMessage(m)}
+    >
+      {MESSAGE_BUTTON_COPY.short}
+    </Button>
+  );
   return (
     <div className={cx(styles.row, modal && styles.modalRow)}>
       <div className={styles.who}>
@@ -72,6 +92,7 @@ export function MentorRow({ mentor: m, timeZone, onBook, variant = 'list' }: Men
         </span>
       </div>
       <div className={styles.cta}>
+        {modal && message}
         {canBookAgain(m) ? (
           <Button
             variant="secondary-outlined"
@@ -94,6 +115,7 @@ export function MentorRow({ mentor: m, timeZone, onBook, variant = 'list' }: Men
         ) : (
           <span className={styles.note}>{unavailableNote(m)}</span>
         )}
+        {!modal && message}
       </div>
     </div>
   );

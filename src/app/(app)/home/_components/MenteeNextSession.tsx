@@ -1,10 +1,11 @@
 'use client';
 
 import { useId, useLayoutEffect, useRef, useState } from 'react';
-import { ButtonLink } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { DateChip } from '@/components/molecules/DateChip/DateChip';
 import { DashboardNextSession } from '@/components/organisms/DashboardNextSession/DashboardNextSession';
+import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
 import { cx } from '@/lib/utils/cx';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { joinState, nextSessionWhen, timeRange } from '@/lib/utils/bookings';
@@ -19,6 +20,8 @@ type MenteeNextSessionProps = {
   /** The viewer's zone: all times and the date chip read in it. */
   timeZone: string;
   now?: Date;
+  /** Opens SendMessage to the mentor; absent while Messages is off or there's no one to write to. */
+  onMessage?: () => void;
 };
 
 const HOUR = 60 * 60_000;
@@ -58,13 +61,15 @@ export function startsSoon(b: Booking, now: Date, timeZone: string): boolean {
  * DateChip, #417); the prep list and Tips are the mentee's own. Not the Bookings
  * hero (organisms/NextSessionCard), a different design, though it reuses the
  * same join/time helpers, so the two never disagree.
- * "Send a message" is omitted until Messages ships (messageBtn hide): a dead
- * control teaches people the page is broken.
+ * "Send a message" (text) follows Join once Messages is on (design
+ * messageBtn show); off, it isn't drawn, as a dead control would teach people
+ * the page is broken.
  */
 export function MenteeNextSession({
   booking: b,
   timeZone,
   now = new Date(),
+  onMessage,
 }: MenteeNextSessionProps) {
   const prepId = useId();
   const [prepOpen, setPrepOpen] = useState(false);
@@ -104,14 +109,26 @@ export function MenteeNextSession({
   // Never greyed out and never swapped for "View details" (owner, 26 Oct): the
   // session page shows the countdown, lobby or outcome for every phase.
   const action = (
-    <ButtonLink
-      href={`/sessions/${encodeURIComponent(b.id)}`}
-      prefetch={false}
-      variant="primary"
-      size="medium"
-    >
-      Join session
-    </ButtonLink>
+    <>
+      <ButtonLink
+        href={`/sessions/${encodeURIComponent(b.id)}`}
+        prefetch={false}
+        variant="primary"
+        size="medium"
+      >
+        Join session
+      </ButtonLink>
+      {onMessage && (
+        <Button
+          variant="text"
+          size="medium"
+          aria-label={`${MESSAGE_BUTTON_COPY.send} to ${b.other.firstName}`}
+          onClick={onMessage}
+        >
+          {MESSAGE_BUTTON_COPY.send}
+        </Button>
+      )}
+    </>
   );
 
   return (

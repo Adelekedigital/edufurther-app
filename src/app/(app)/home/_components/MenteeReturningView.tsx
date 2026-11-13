@@ -25,6 +25,8 @@ type MenteeReturningViewProps = {
   zone: string;
   now: Date;
   phone: boolean;
+  /** The next session's "Send a message"; absent while Messages is off. */
+  onMessageNext?: () => void;
   /** Book again / Recommended. */
   children: ReactNode;
 };
@@ -83,6 +85,7 @@ export function MenteeReturningView(p: MenteeReturningViewProps) {
           booking={p.nextBooking}
           timeZone={p.zone}
           now={p.now}
+          onMessage={p.onMessageNext}
         />
       ) : p.hasPending ? (
         <MenteeEmptyCard

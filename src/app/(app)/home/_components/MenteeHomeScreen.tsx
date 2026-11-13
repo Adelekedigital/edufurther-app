@@ -9,6 +9,7 @@ import { Snackbar, toastHasFocus } from '@/components/molecules/Snackbar/Snackba
 import { FloatingHelp } from '@/components/organisms/FloatingHelp/FloatingHelp';
 import { InviteModal } from '@/components/templates/InviteModal/InviteModal';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
+import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
 import { EducationEditor } from '@/app/_profile/EducationEditor';
@@ -21,13 +22,16 @@ import { useMentorMatches } from '@/lib/api/data/mentorMatches';
 import { useTopics } from '@/lib/api/data/mentors';
 import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/metMentors';
 import { ProfileSaveError, useSaveMenteeProfile } from '@/lib/api/data/settings';
+import { MESSAGES_LIVE } from '@/lib/config/messages';
 import { GETTING_STARTED, MENTORS_FOR_GOAL, NEW_SUBLINE, PROFILE_SHEET } from '@/lib/copy/home';
+import { bookingRecipient, recipientFromMetMentor } from '@/lib/utils/messageRecipient';
 import { useDeviceFlag } from '@/lib/utils/deviceFlag';
 import { viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
+import type { MessageRecipient } from '@/types/messages';
 import { MENTORS_ID, MenteeMentorsSection, RECOMMENDED_ID, SHOWN } from './MenteeMentorsSection';
 import { MenteeNewView } from './MenteeNewView';
 import { MenteeReturningView, KpiSkeleton, NextSkeleton } from './MenteeReturningView';
@@ -130,6 +134,8 @@ export function MenteeHomeScreen() {
   const [metOpen, setMetOpen] = useState(false);
   const [toast, setToast] = useState(0);
   const [booking, setBooking] = useState<{ mentor: Mentor; ratingUnknown: boolean } | null>(null);
+  // SendMessage's recipient while it is open (PRD Messages, Message buttons).
+  const [messaging, setMessaging] = useState<MessageRecipient | null>(null);
   const saveProfile = useSaveMenteeProfile(userId);
 
   const friendJoinedRead = useReferrals(userId, candidate || inviteOpen);
@@ -238,6 +244,12 @@ export function MenteeHomeScreen() {
   const bookMet = (m: MetMentor) => setBooking({ mentor: toBookingMentor(m), ratingUnknown: true });
   const bookMatched = (m: Mentor) => setBooking({ mentor: m, ratingUnknown: false });
   const nextBooking = upcoming.data?.find((b) => b.side === 'mentee') ?? null;
+  // Off, no Message button is drawn (design messageBtn hide).
+  const nextTo = MESSAGES_LIVE && nextBooking ? bookingRecipient(nextBooking) : null;
+  const messageNext = nextTo ? () => setMessaging(nextTo) : undefined;
+  const messageMet = MESSAGES_LIVE
+    ? (m: MetMentor) => setMessaging(recipientFromMetMentor(m))
+    : undefined;
   const monthly = member.credits?.monthly;
   const freeLeft = monthly?.unlocked ? monthly.balance : null;
   const metShown = metOpen && (metMentors.data?.length ?? 0) > 0;
@@ -320,6 +332,7 @@ export function MenteeHomeScreen() {
       offline={!online}
       bookBlocked={bookBlockedFor(viewer)}
       onBook={bookMet}
+      onMessage={messageMet}
       onBookMentor={bookMatched}
       onSeeAll={() => setMetOpen(true)}
       showRecommended={recRequest}
@@ -399,6 +412,7 @@ export function MenteeHomeScreen() {
                 booking={nextBooking}
                 timeZone={zone}
                 now={now}
+                onMessage={messageNext}
               />
             )}
             {mentors}
@@ -415,6 +429,7 @@ export function MenteeHomeScreen() {
           zone={zone}
           now={now}
           phone={phone}
+          onMessageNext={messageNext}
         >
           {mentors}
         </MenteeReturningView>
@@ -429,6 +444,14 @@ export function MenteeHomeScreen() {
             setMetOpen(false);
             bookMet(m);
           }}
+          onMessage={
+            messageMet &&
+            ((m) => {
+              // As with booking: close the list first, so SendMessage isn't stacked on it.
+              setMetOpen(false);
+              messageMet(m);
+            })
+          }
           onClose={() => setMetOpen(false)}
         />
       )}
@@ -502,6 +525,7 @@ export function MenteeHomeScreen() {
         ratingUnknown={booking?.ratingUnknown ?? false}
         onClose={() => setBooking(null)}
       />
+      <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />
     </div>
   );
 }
