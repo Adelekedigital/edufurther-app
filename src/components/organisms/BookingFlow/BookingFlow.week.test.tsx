@@ -139,8 +139,9 @@ describe('BookingFlow week view (7 days at a time)', () => {
     unmount();
 
     render(<Page initialTime="2026-10-02T15:00:00Z" />);
-    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
-      'That time was just taken. Here’s what’s open.',
+    expect(screen.getByText('That time was just taken. Here’s what’s open.')).toHaveAttribute(
+      'role',
+      'status',
     );
     // Back on the first offering, nothing picked.
     expect(screen.getByRole('combobox')).toHaveValue('st1');

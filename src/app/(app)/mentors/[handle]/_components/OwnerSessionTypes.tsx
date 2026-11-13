@@ -15,14 +15,15 @@ import {
 import { SessionTypeQuickEdit } from '@/components/organisms/SessionTypeQuickEdit/SessionTypeQuickEdit';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useQuickEditSessionType, type QuickEdit } from '@/lib/api/data/sessionTypeQuick';
+import { useSessionTypeDeletes } from '@/lib/api/data/sessionTypeDeletes';
 import {
-  useDeleteSessionType,
   useMentorDefaults,
   useOwnSessionTypes,
   useSetLive,
   type MentorDefaults,
 } from '@/lib/api/data/sessionTypes';
 import { formatShortDate } from '@/lib/utils/format';
+import { nextRemaining } from '@/lib/utils/nextRemaining';
 import { resolveDefaults } from '@/lib/utils/sessionTypeDraft';
 import { stageText } from '@/lib/utils/stageText';
 import { useLatest } from '@/lib/utils/useLatest';
@@ -110,25 +111,29 @@ export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say, 
   // A card that leaves (hidden, deleted or scheduled) takes its buttons with
   // it: focus the next card's Edit, or the "New session type" tile. By id, so
   // two types with one name can't confuse it; a count, so two in a row still
-  // move focus.
-  const [focusAfter, setFocusAfter] = useState<{ id: string | null; n: number } | null>(null);
+  // move focus. The next card is worked out from the cards left when focus
+  // moves: another delete out meanwhile may have taken the one beside it
+  // (issue 128).
+  type FocusAfter = { removed: string; order: string[] };
+  const [focusAfter, setFocusAfter] = useState<(FocusAfter & { n: number }) | null>(null);
+  const cardIds = useLatest((list ?? []).map((x) => x.id));
   useEffect(() => {
     if (!focusAfter) return;
     // Any dialog open, the page's own included (Remove photo): focus is in it,
     // and it returns focus itself when it closes (Codex on PR 130).
     if (document.querySelector('[aria-modal="true"]')) return;
+    const next = nextRemaining(focusAfter.order, focusAfter.removed, cardIds.current);
     const card = [...document.querySelectorAll<HTMLElement>('[data-session-type-id]')].find(
-      (c) => c.dataset.sessionTypeId === focusAfter.id,
+      (c) => c.dataset.sessionTypeId === next,
     );
     const edit = card?.querySelector<HTMLElement>('button[aria-label^="Edit "]');
     (edit ?? document.querySelector<HTMLElement>(`a[href="${NEW_HREF}"]`))?.focus();
-  }, [focusAfter]);
-  const nextOf = (id: string) => {
-    const rows = list ?? [];
-    const i = rows.findIndex((x) => x.id === id);
-    return (rows[i + 1] ?? rows[i - 1])?.id ?? null;
-  };
-  const focusOn = (next: string | null) => setFocusAfter((f) => ({ id: next, n: (f?.n ?? 0) + 1 }));
+  }, [focusAfter, cardIds]);
+  const nextOf = (id: string): FocusAfter => ({
+    removed: id,
+    order: (list ?? []).map((x) => x.id),
+  });
+  const focusOn = (after: FocusAfter) => setFocusAfter((f) => ({ ...after, n: (f?.n ?? 0) + 1 }));
   const leaving = (t: OwnSessionType, text: string) => {
     setUnconfirmed((u) => (u?.id === t.id ? null : u));
     focusOn(nextOf(t.id));
@@ -172,19 +177,17 @@ export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say, 
       },
     });
 
-  const del = useDeleteSessionType();
+  // By card: in flight, and refused (issue 128).
+  const del = useSessionTypeDeletes();
+  const { pendingIds: pendingDeletes, refusals, clearRefusal } = del;
   const [deleting, setDeleting] = useState<OwnSessionType | null>(null);
   // Mid-delete, the × dismisses the confirm: the delete carries on and the
   // live region says how it went, a refusal included (product, 2026-10-01;
-  // as Session types). By card, as is what's still out: the hook tracks only
-  // its latest call.
+  // as Session types). By card.
   const dismissed = useRef(new Set<string>());
-  const [deleteFor, setDeleteFor] = useState<string | null>(null);
-  const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
-  const settleDelete = (id: string) => setPendingDeletes((ids) => ids.filter((x) => x !== id));
   const closeDelete = () => {
+    if (deleting) clearRefusal(deleting.id);
     setDeleting(null);
-    del.reset();
   };
   const dismissDelete = () => {
     if (deleting) dismissed.current.add(deleting.id);
@@ -205,7 +208,7 @@ export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say, 
   );
   // A delete that couldn't be confirmed: if the refetched list no longer has
   // it, focus moves on as after a delete (adjusted during render).
-  const [unconfirmed, setUnconfirmed] = useState<{ id: string; next: string | null } | null>(null);
+  const [unconfirmed, setUnconfirmed] = useState<{ id: string; next: FocusAfter } | null>(null);
   if (unconfirmed && list && !list.some((x) => x.id === unconfirmed.id)) {
     setUnconfirmed(null);
     if (!deleting && !hiding && !target) focusOn(unconfirmed.next);
@@ -214,7 +217,7 @@ export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say, 
   // refusal, already said, isn't shown again); one still out owns its outcome
   // again, so it isn't said twice (review of PR 130).
   const askDelete = (id: string) => {
-    if (!pendingDeletes.includes(id)) setDeleteFor((f) => (f === id ? null : f));
+    if (!pendingDeletes.includes(id)) clearRefusal(id);
     dismissed.current.delete(id);
     setDeleting(list?.find((x) => x.id === id) ?? null);
   };
@@ -222,12 +225,9 @@ export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say, 
     const next = nextOf(t.id);
     setUnconfirmed((u) => (u?.id === t.id ? null : u));
     dismissed.current.delete(t.id);
-    setDeleteFor(t.id);
-    setPendingDeletes((ids) => [...ids, t.id]);
     void del
       .remove(t.id)
       .then((r) => {
-        settleDelete(t.id);
         dismissed.current.delete(t.id);
         // Only this card's confirm: another may have opened since a dismiss.
         const open = openNow.current;
@@ -252,8 +252,7 @@ export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say, 
         move(`${when} Hidden from mentees now. Manage it in Sessions.`);
       })
       .catch((e: DeleteError) => {
-        settleDelete(t.id);
-        // The confirm shows a refusal; once dismissed, the live region does.
+        // The confirm shows a refusal (del.refusals); once dismissed, the live region does.
         if (dismissed.current.delete(t.id)) say(`“${t.name}” wasn’t deleted. ${e.message}`);
       });
   };
@@ -364,7 +363,7 @@ export function OwnerSessionTypes({ mentorId, shown, onActiveCount, onSay: say, 
           renderShell={confirmShell}
           type={deleting}
           busy={pendingDeletes.includes(deleting.id)}
-          error={deleteFor === deleting.id ? del.error : null}
+          error={refusals[deleting.id] ?? null}
           // Mid-delete, "Keep it" does nothing (closing can't stop the
           // request); the × or Escape dismisses it and the delete carries on.
           onKeep={() => {

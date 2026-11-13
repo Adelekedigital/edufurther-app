@@ -58,8 +58,8 @@ describe('AdminMentorsScreen: states', () => {
     const user = userEvent.setup();
     renderScreen(<AdminMentorsScreen />);
     expect(await screen.findByText('No applications waiting')).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: /Paused and suspended/ }));
-    expect(await screen.findByText('No paused or suspended mentors')).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: /Inactive/ }));
+    expect(await screen.findByText('No inactive mentors')).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Not approved' }));
     expect(await screen.findByText('No declined applications')).toBeInTheDocument();
     // A search typed into an empty tab still gets the tab's own words.
@@ -127,12 +127,50 @@ describe('AdminMentorsScreen: the list', () => {
   it('paused rows give the admin reason, or say the mentor paused themselves', async () => {
     const user = userEvent.setup();
     renderScreen(<AdminMentorsScreen />);
-    await user.click(await screen.findByRole('tab', { name: /Paused and suspended/ }));
+    await user.click(await screen.findByRole('tab', { name: /Inactive/ }));
     await screen.findByRole('button', { name: 'Open Chidi Okonkwo' });
     expect(screen.getByText('Paused by the mentor')).toBeInTheDocument();
     expect(
       screen.getByText('Missed 3 sessions in September. Paused until we talk.'),
     ).toBeInTheDocument();
+  });
+
+  it('Inactive: an admin pause reads Suspended; a self-pause says only they can resume', async () => {
+    const user = userEvent.setup();
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('tab', { name: /Inactive/ }));
+    await screen.findByRole('button', { name: 'Open Chidi Okonkwo' });
+    expect(within(table()).getAllByText('Suspended').length).toBeGreaterThan(0);
+    expect(screen.getByText('Only they can resume')).toBeInTheDocument();
+  });
+
+  it('Approved: email has its own column, and Copy emails copies every email on screen', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('tab', { name: /Approved/ }));
+    await screen.findAllByRole('button', { name: /^Open / });
+    expect(within(table()).getByRole('columnheader', { name: 'Email' })).toBeInTheDocument();
+    const button = screen.getByRole('button', { name: /^Copy \d+ emails?$/ });
+    await user.click(button);
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copied = writeText.mock.calls[0]![0] as string;
+    expect(copied.split(', ').every((e) => e.includes('@'))).toBe(true);
+    expect(await screen.findByText(/copied\. Paste them into an email\./)).toBeInTheDocument();
+  });
+
+  it('Copy emails says so visibly when the clipboard refuses', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('tab', { name: /Approved/ }));
+    await screen.findAllByRole('button', { name: /^Open / });
+    await user.click(screen.getByRole('button', { name: /^Copy \d+ emails?$/ }));
+    expect(
+      await screen.findByText('Couldn’t copy. Select the Email column and copy it instead.'),
+    ).toBeVisible();
   });
 });
 

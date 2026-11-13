@@ -1,6 +1,10 @@
 import type { ComponentProps } from 'react';
 import { DayTimePicker } from '@/components/molecules/DayTimePicker/DayTimePicker';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
+import { Notice } from '@/components/molecules/Notice/Notice';
 import { TimezonePicker } from '@/components/molecules/TimezonePicker/TimezonePicker';
+import { EARLY_TIME_NOTE } from '@/lib/copy/booking';
+import { isEarlyMorning } from '@/lib/utils/slots';
 import type { Remote } from '@/types/mentor';
 import { FlowSkeleton, LoadError, NoTimes } from './FlowStates';
 import styles from './BookingFlow.module.css';
@@ -23,6 +27,8 @@ type Props = {
 
 /** Step 1: the time zone, then the week's days and times (or why there are none). */
 export function TimeStep(p: Props) {
+  const showsPicker = !p.slots.isLoading && !p.seeking && !p.slots.error && !p.noOpenDays;
+  const early = showsPicker && !!p.picker.time && isEarlyMorning(p.picker.time, p.picker.timeZone);
   return (
     <>
       <TimezonePicker value={p.zone} onChange={p.onZoneChange} deviceZone={p.deviceZone} />
@@ -41,6 +47,14 @@ export function TimeStep(p: Props) {
       ) : (
         <DayTimePicker {...p.picker} />
       )}
+      {/* Gentle and never blocking: early slots had far more no-shows. */}
+      {early && (
+        <Notice tone="info" icon="bedtime" live={false}>
+          {EARLY_TIME_NOTE}
+        </Notice>
+      )}
+      {/* Said through a region that is always there: the note mounts with its text in it. */}
+      <LiveRegion message={early ? { text: EARLY_TIME_NOTE, id: 1 } : null} />
     </>
   );
 }

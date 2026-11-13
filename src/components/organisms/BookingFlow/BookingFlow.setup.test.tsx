@@ -101,7 +101,9 @@ describe('BookingFlow: finish setup before booking', () => {
     );
     render(<BookingFlow {...props({ requestError: refused })} />);
     await toQuestions();
-    expect(screen.getByRole('alert')).toHaveTextContent('Finish setting up your account before booking.');
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Finish setting up your account before booking.',
+    );
     expect(screen.queryByRole('region', { name: /Finish setting up/ })).toBeNull();
   });
 
@@ -138,8 +140,8 @@ describe('BookingFlow: finish setup before booking', () => {
       );
     }
     render(<Page />);
-    expect(screen.getByRole('status', { name: '' })).toHaveTextContent(
-      'That time was just booked. Pick another one. Your answers are saved.',
-    );
+    expect(
+      screen.getByText('That time was just booked. Pick another one. Your answers are saved.'),
+    ).toHaveAttribute('role', 'status');
   });
 });

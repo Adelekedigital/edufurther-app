@@ -222,6 +222,27 @@ describe('EducationPanel', () => {
     expect(addEducation).not.toHaveBeenCalled();
   });
 
+  it('an open editor isn’t flipped to a load error by a list refetch (issue 95)', async () => {
+    const other = entry({ id: 'e2', values: { ...entry().values, degree: 'MSc', course: 'Data' } });
+    ready([entry(), other]);
+    const user = userEvent.setup();
+    const { rerender } = render(<EducationPanel userId="u1" />);
+    await user.click(screen.getByRole('button', { name: 'Edit BSc, Microbiology' }));
+    // The owner's list refetches right after a delete, and that answer
+    // doesn't carry the degree being edited for a moment.
+    ready([other]);
+    rerender(<EducationPanel userId="u1" />);
+    const dialog = screen.getByRole('dialog', { name: 'Edit education' });
+    expect(within(dialog).queryByText(/We couldn’t load your education/)).toBeNull();
+    const course = within(dialog).getByRole('textbox', { name: 'Course of study' });
+    await user.clear(course);
+    await user.type(course, 'Biochemistry');
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
+    // Still an edit of the degree it opened on, never an add.
+    expect(editEducation).toHaveBeenCalledWith('e1', { study_course: 'Biochemistry' });
+    expect(addEducation).not.toHaveBeenCalled();
+  });
+
   it('Edit opens it filled in; saving sends the change and says "Education updated"', async () => {
     ready();
     const user = userEvent.setup();

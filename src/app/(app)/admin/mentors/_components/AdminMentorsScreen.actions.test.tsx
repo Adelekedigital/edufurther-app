@@ -50,7 +50,7 @@ describe('the drawer', () => {
     await waitFor(() => expect(opener).toHaveFocus());
   });
 
-  it('approved: stats, recent bookings, Email and Pause', async () => {
+  it('approved: stats, recent bookings, Email and Suspend', async () => {
     const user = userEvent.setup();
     renderScreen(<AdminMentorsScreen />);
     await user.click(await screen.findByRole('tab', { name: /^Approved/ }));
@@ -63,13 +63,13 @@ describe('the drawer', () => {
       'href',
       'mailto:joshua.lorell@example.com',
     );
-    expect(within(d).getByRole('button', { name: 'Pause' })).toBeInTheDocument();
+    expect(within(d).getByRole('button', { name: 'Suspend' })).toBeInTheDocument();
   });
 
   it('a mentor who paused themselves: the reason says so, and only Email', async () => {
     const user = userEvent.setup();
     renderScreen(<AdminMentorsScreen />);
-    await user.click(await screen.findByRole('tab', { name: /Paused/ }));
+    await user.click(await screen.findByRole('tab', { name: /Inactive/ }));
     await user.click(await screen.findByRole('button', { name: 'Open Chidi Okonkwo' }));
     const d = await drawer('Chidi Okonkwo');
     expect(await within(d).findByText('Paused by the mentor')).toBeInTheDocument();
@@ -159,17 +159,19 @@ describe('the confirms', () => {
     });
   });
 
-  it('pause needs the reason; a failed one changes nothing and says so', async () => {
+  it('suspend needs the reason; a failed one changes nothing and says so', async () => {
     const user = userEvent.setup();
     h.POST.mockResolvedValue(res(null, 500));
     renderScreen(<AdminMentorsScreen />);
     await user.click(await screen.findByRole('tab', { name: /^Approved/ }));
     await user.click(await screen.findByRole('button', { name: 'Open Natasha Rebel' }));
-    await user.click(within(await drawer('Natasha Rebel')).getByRole('button', { name: 'Pause' }));
-    await user.click(within(confirmBox()).getByRole('button', { name: 'Pause' }));
+    await user.click(
+      within(await drawer('Natasha Rebel')).getByRole('button', { name: 'Suspend' }),
+    );
+    await user.click(within(confirmBox()).getByRole('button', { name: 'Suspend' }));
     expect(within(confirmBox()).getByText('Add a reason for other admins.')).toBeInTheDocument();
     await user.type(within(confirmBox()).getByRole('textbox'), 'No-shows');
-    await user.click(within(confirmBox()).getByRole('button', { name: 'Pause' }));
+    await user.click(within(confirmBox()).getByRole('button', { name: 'Suspend' }));
     expect(await screen.findByText(FAILED)).toBeInTheDocument();
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     // The drawer stays open on a failure: nothing changed.
@@ -180,7 +182,7 @@ describe('the confirms', () => {
     const user = userEvent.setup();
     h.POST.mockResolvedValue(res({ type: '/problems/mentor-paused-themselves' }, 409));
     renderScreen(<AdminMentorsScreen />);
-    await user.click(await screen.findByRole('tab', { name: /Paused/ }));
+    await user.click(await screen.findByRole('tab', { name: /Inactive/ }));
     await user.click(await screen.findByRole('button', { name: 'Open Femi Ade' }));
     await user.click(within(await drawer('Femi Ade')).getByRole('button', { name: 'Resume' }));
     await user.click(within(confirmBox()).getByRole('button', { name: 'Resume' }));

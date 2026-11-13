@@ -104,6 +104,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Desktop Approved: the email moved to its own column. */
+.emailInColumn {
+  display: none;
+}
+/* Above the stretched opener, so dragging selects the text instead of opening the row. */
+.copyable {
+  position: relative;
+  z-index: 1;
+  cursor: text;
+  user-select: text;
+}
 .meta {
   display: none;
   margin-top: 2px;
@@ -187,6 +198,9 @@
     display: none;
   }
   .meta {
+    display: block;
+  }
+  .emailInColumn {
     display: block;
   }
 }

@@ -16,6 +16,7 @@ import {
 import { useInstitutionSearch } from '@/lib/api/data/mentorApplication';
 import type { EducationAudience } from '@/lib/copy/education';
 import { levelCodeFor } from '@/lib/utils/degrees';
+import type { EducationEntry } from '@/types/mentor';
 
 // The form has no country row (the meta shows the school's country), so no ids to map.
 const NO_COUNTRIES: never[] = [];
@@ -60,7 +61,13 @@ export function EducationEditor({ userId, id, onClose, onSaved, audience }: Prop
     edu.reset();
     onClose();
   };
-  const entry = id ? own.entries.find((e) => e.id === id) : undefined;
+  // The degree as last found in the owner's list, kept while the editor is
+  // open: a refetch that lacks it (right after a delete) can't flip the form
+  // to a load error, or turn Save into an add (issue 95).
+  const found = id ? own.entries.find((e) => e.id === id) : undefined;
+  const [kept, setKept] = useState<EducationEntry | undefined>(found);
+  if (found && found !== kept) setKept(found);
+  const entry = found ?? kept;
   const loaded = own.status === 'ready' && levels.status === 'ready';
   // A degree removed elsewhere since the page loaded reads as a failed load.
   const status =

@@ -119,7 +119,13 @@ export function MentorDetail({ mentor: m, zone }: { mentor: AdminMentorDetail; z
       {m.status === 'paused' && m.paused && (
         <div className={cx(styles.callout, styles.amber)}>
           <span className={styles.calloutTitle}>
-            {m.paused.at ? D.paused.title(d(m.paused.at)) : D.paused.titleUndated}
+            {m.paused.by === 'mentor'
+              ? m.paused.at
+                ? D.paused.selfTitle(d(m.paused.at))
+                : D.paused.selfTitleUndated
+              : m.paused.at
+                ? D.paused.title(d(m.paused.at))
+                : D.paused.titleUndated}
           </span>
           <div className={styles.line}>
             <span>{D.paused.reason}</span>

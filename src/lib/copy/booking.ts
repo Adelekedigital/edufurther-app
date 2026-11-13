@@ -1,3 +1,7 @@
+/** Under the time grid when the chosen time is early morning in the mentee's zone (never blocks). */
+export const EARLY_TIME_NOTE =
+  'This is early morning for you. Choose it if you’ll be awake and ready to join.';
+
 /**
  * Booking copy for a signed-in mentee who hasn't finished onboarding
  * (BookingModal.dc.html round 4: `setupState=unfinished`, `gateCopy=clear`,

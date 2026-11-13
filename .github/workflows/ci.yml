@@ -118,6 +118,11 @@ jobs:
       - name: No em dashes in product copy
         run: pnpm check:copy
 
+      # The bundle secret scan's own tests: a planted key is caught, the
+      # Supabase SDK's text is not. Seconds, before the spec pull and the build.
+      - name: Bundle secret scan tests
+        run: node --test scripts/check-bundle-secrets.test.mjs
+
       # The spec comes from the backend: its CI publishes openapi.json on every
       # merge to main (release "openapi-latest"; the backend repo is public, so no
       # token, no secret; fork PRs run the same as ours).
@@ -151,18 +156,10 @@ jobs:
         run: pnpm build
 
       # Secrets do not belong in a client bundle, and removing the variable later
-      # does not un-publish the old build. Add your own patterns.
-      - name: Grep the bundle for secrets
-        run: |
-          set -euo pipefail
-          PATTERNS='sk_live_|sk_test_|-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{20,}'
-          DIRS=$(ls -d .next/static dist build out 2>/dev/null || true)
-          if [ -z "$DIRS" ]; then echo "no build output found to scan"; exit 0; fi
-          if grep -rIEl "$PATTERNS" $DIRS; then
-            echo "A secret pattern is present in the build output. Rotate it."
-            exit 1
-          fi
-          echo "clean"
+      # does not un-publish the old build. Add patterns in the script, which also
+      # catches Supabase secret and service-role keys by their shape (issue 173).
+      - name: Scan the bundle for secrets
+        run: node scripts/check-bundle-secrets.mjs
 
   # The suite in parallel shards. Each records coverage into a blob; no
   # thresholds here (VITEST_SHARD), so no shard can pass or fail on its own share.
