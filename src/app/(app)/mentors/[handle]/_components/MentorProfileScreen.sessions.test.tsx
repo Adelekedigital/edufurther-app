@@ -546,6 +546,62 @@ describe('MentorProfileScreen — the owner’s session types (active only)', ()
     });
   });
 
+  describe('several deletes out at once (issue 128)', () => {
+    // Each delete's answer, held by card.
+    const holdDeletes = () => {
+      const out = new Map<string, { ok: (v: unknown) => void; fail: (e: unknown) => void }>();
+      removeType.mockImplementation(
+        (id: string) => new Promise((ok, fail) => void out.set(id, { ok, fail })),
+      );
+      return out;
+    };
+    const essay = ownType({ id: 'st3', name: 'Essay coaching' });
+    const openDelete = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+      await user.click(screen.getByRole('button', { name: `Delete ${name}` }));
+      return screen.getByRole('alertdialog', { name: 'Delete this session?' });
+    };
+    const sendThenClose = async (user: ReturnType<typeof userEvent.setup>, name: string) => {
+      const confirm = await openDelete(user, name);
+      await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      await user.click(within(confirm).getByRole('button', { name: 'Close' }));
+    };
+
+    it('finishing out of order: focus lands on a card that still exists', async () => {
+      onSessions([essay, ownType(), cv]);
+      const out = holdDeletes();
+      const user = userEvent.setup();
+      const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
+      await sendThenClose(user, 'SOP draft review');
+      // CV review is last: at its click the card before it was SOP draft review.
+      const confirm = await openDelete(user, 'CV review');
+      await user.click(within(confirm).getByRole('button', { name: 'Delete' }));
+      h.ownTypes = remote([essay, cv]);
+      await act(async () => out.get('st1')!.ok({ kind: 'deleted' }));
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      h.ownTypes = remote([essay]);
+      await act(async () => out.get('st2')!.ok({ kind: 'deleted' }));
+      rerender(<MentorProfileScreen handle="gbenga" />);
+      expect(screen.getByRole('button', { name: 'Edit Essay coaching' })).toHaveFocus();
+    });
+
+    it('a refusal shows in its card’s reopened confirm while another card’s delete is out', async () => {
+      onSessions([ownType(), cv]);
+      const out = holdDeletes();
+      const user = userEvent.setup();
+      render(<MentorProfileScreen handle="gbenga" />);
+      await sendThenClose(user, 'SOP draft review');
+      await sendThenClose(user, 'CV review');
+      const confirm = await openDelete(user, 'SOP draft review'); // its delete still out
+      // The hook's own error is its latest call's (CV review, still out): null.
+      await act(async () =>
+        out.get('st1')!.fail({ kind: 'server', message: 'We couldn’t delete it. Try again.' }),
+      );
+      expect(within(confirm).getByRole('alert')).toHaveTextContent(
+        'We couldn’t delete it. Try again.',
+      );
+    });
+  });
+
   describe('a dismissed delete beyond the tab (Codex on PR 130)', () => {
     const deferred = () => {
       let settle!: { ok: (v: unknown) => void; fail: (e: unknown) => void };

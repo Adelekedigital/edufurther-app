@@ -384,6 +384,85 @@ describe('SessionTypesScreen', () => {
     remove.mockResolvedValue({ kind: 'deleted' });
   });
 
+  // Several deletes out at once (issue 128): each answer is held by row.
+  const holdDeletes = () => {
+    const out = new Map<
+      string,
+      { finish: (r: { kind: 'deleted' }) => void; refuse: (e: DeleteError) => void }
+    >();
+    remove.mockImplementation(
+      (id: string) =>
+        new Promise((finish, refuse) => {
+          out.set(id, { finish, refuse });
+        }),
+    );
+    return out;
+  };
+
+  it('deletes finishing out of order: focus lands on a row that still exists', async () => {
+    viewer = mentor;
+    const essay = { ...TYPE, id: 'c', name: 'Essay coaching' };
+    const visa = { ...TYPE, id: 'b', name: 'Visa prep' };
+    list = idle({ data: [essay, TYPE, visa] });
+    const out = holdDeletes();
+    const user = userEvent.setup({ delay: null });
+    const { rerender } = render(<SessionTypesScreen />);
+    const confirmDelete = async (name: string) => {
+      await user.click(screen.getByRole('button', { name: `More actions for ${name}` }));
+      await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+      await user.click(
+        within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }),
+      );
+    };
+    await confirmDelete('SOP draft review');
+    await user.keyboard('{Escape}'); // dismissed; its delete carries on
+    // Visa prep is last: at its click the row before it was SOP draft review.
+    await confirmDelete('Visa prep');
+    list = idle({ data: [essay, visa] });
+    await act(async () => out.get('a')!.finish({ kind: 'deleted' }));
+    rerender(<SessionTypesScreen />);
+    list = idle({ data: [essay] });
+    await act(async () => out.get('b')!.finish({ kind: 'deleted' }));
+    rerender(<SessionTypesScreen />);
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'More actions for Essay coaching' })).toHaveFocus(),
+    );
+    remove.mockResolvedValue({ kind: 'deleted' });
+  });
+
+  it('a refusal shows in its row’s reopened confirm while another row’s delete is out', async () => {
+    viewer = mentor;
+    list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
+    const out = holdDeletes();
+    const user = userEvent.setup({ delay: null });
+    render(<SessionTypesScreen />);
+    const openDelete = async (name: string) => {
+      await user.click(screen.getByRole('button', { name: `More actions for ${name}` }));
+      await user.click(screen.getByRole('menuitem', { name: /Delete/ }));
+    };
+    const sendDelete = () =>
+      user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+    await openDelete('SOP draft review');
+    await sendDelete();
+    await user.keyboard('{Escape}');
+    await openDelete('Visa prep');
+    await sendDelete();
+    await user.keyboard('{Escape}');
+    await openDelete('SOP draft review'); // reopened before its delete answers
+    // The hook's own error is its latest call's (Visa prep, still out): null.
+    await act(async () =>
+      out.get('a')!.refuse({
+        kind: 'server',
+        message: 'We couldn’t delete it. Something went wrong. Try again.',
+      }),
+    );
+    const dialog = screen.getByRole('alertdialog', { name: 'Delete this session?' });
+    expect(within(dialog).getByRole('alert')).toHaveTextContent(
+      'We couldn’t delete it. Something went wrong. Try again.',
+    );
+    remove.mockResolvedValue({ kind: 'deleted' });
+  });
+
   it('a delete that lands while the visibility confirm is open leaves focus in it', async () => {
     viewer = mentor;
     list = idle({ data: [TYPE, { ...TYPE, id: 'b', name: 'Visa prep' }] });
