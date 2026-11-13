@@ -172,22 +172,42 @@ const VITALS_SCRIPT = `
   } catch {}
 `;
 
-/** Sum transfer weight from content-length, bucketed by resource type. */
+/**
+ * Sum transfer weight, bucketed by resource type. The body's size on the wire
+ * comes from the browser (request.sizes), not content-length: `next start`
+ * gzips and streams with no content-length, so counting the header alone read
+ * every script as 0kB and the JS budget never fired.
+ */
 function makeWeightTracker(page) {
   const weight = { totalBytes: 0, jsBytes: 0, cssBytes: 0, imgBytes: 0, unmeasured: 0 };
+  const pending = [];
   page.on('response', (res) => {
-    const headers = res.headers();
-    const len = Number(headers['content-length'] ?? NaN);
     const type = res.request().resourceType();
-    if (!Number.isFinite(len)) {
-      weight.unmeasured += 1;
-      return;
-    }
-    weight.totalBytes += len;
-    if (type === 'script') weight.jsBytes += len;
-    else if (type === 'stylesheet') weight.cssBytes += len;
-    else if (type === 'image') weight.imgBytes += len;
+    const header = Number(res.headers()['content-length'] ?? NaN);
+    pending.push(
+      res
+        .request()
+        .sizes()
+        .then((s) => s.responseBodySize)
+        .catch(() => NaN)
+        .then((size) => {
+          const len = Number.isFinite(size) && size > 0 ? size : header;
+          if (!Number.isFinite(len)) {
+            weight.unmeasured += 1;
+            return;
+          }
+          weight.totalBytes += len;
+          if (type === 'script') weight.jsBytes += len;
+          else if (type === 'stylesheet') weight.cssBytes += len;
+          else if (type === 'image') weight.imgBytes += len;
+        }),
+    );
   });
+  // Every size settles once its body has arrived; call before reading weight.
+  // A body still streaming after 5s (an event stream) stays uncounted rather than
+  // hanging the run.
+  weight.settle = () =>
+    Promise.race([Promise.all(pending), new Promise((r) => setTimeout(r, 5000))]);
   return weight;
 }
 
@@ -372,7 +392,9 @@ async function reviewWidth(width) {
     lcp: window.__vitals?.lcp ?? null,
     cls: window.__vitals?.cls ?? null,
   }));
-  result.weight = { ...weight };
+  await weight.settle();
+  const { settle: _settle, ...measured } = weight;
+  result.weight = measured;
 
   const kb = (b) => Math.round(b / 1024);
   const b = cfg.budgets;
