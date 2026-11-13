@@ -173,6 +173,19 @@ vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', () => ({
     ) : null,
 }));
 
+// Messages' flag, read at render: off by default, as in production today.
+// Hoisted: vi.mock's factory runs before the file's own lines.
+const flags = vi.hoisted(() => ({ messagesLive: false }));
+vi.mock('@/lib/config/messages', () => ({
+  get MESSAGES_LIVE() {
+    return flags.messagesLive;
+  },
+}));
+// SendMessage has its own tests; here it only needs to say whom it writes to.
+vi.mock('@/app/_shell/SendMessageLauncher', () => ({
+  SendMessageLauncher: ({ to }: { to: { id: string; firstName: string } | null }) =>
+    to ? <div data-testid="message-open" data-to={to.id} data-first={to.firstName} /> : null,
+}));
 const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
   isLoading: false,
@@ -293,6 +306,7 @@ beforeEach(() => {
   fresh = freshWith();
   window.localStorage.clear();
   metMentors = remote([]);
+  flags.messagesLive = false;
 });
 
 describe('MenteeHomeScreen', () => {
@@ -829,5 +843,50 @@ describe('MenteeHomeScreen', () => {
     expect(
       screen.getByRole('complementary', { name: 'Not sure where to start?' }),
     ).toBeInTheDocument();
+  });
+
+  describe('Message buttons (Messages on)', () => {
+    beforeEach(() => {
+      flags.messagesLive = true;
+    });
+
+    it('the next session offers Send a message, which writes to its mentor', async () => {
+      render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Send a message to Olajuwon' }));
+      expect(screen.getByTestId('message-open')).toHaveAttribute('data-to', 'p1');
+    });
+
+    it('a deleted mentor gets no Send a message: there is no one to write to', () => {
+      upcoming = remote([booking({ other: { ...party(), deleted: true } })]);
+      render(<MenteeHomeScreen />);
+      expect(screen.queryByRole('button', { name: /Send a message/ })).not.toBeInTheDocument();
+    });
+
+    it('each Book again row offers Message, which writes to that mentor', async () => {
+      metMentors = remote([metMentor()]);
+      render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Message Mariam' }));
+      expect(screen.getByTestId('message-open')).toHaveAttribute('data-to', 'm1');
+    });
+
+    it('Message from Mentors you’ve met closes the list first, even for a mentor who can’t be booked', async () => {
+      metMentors = remote([
+        metMentor(),
+        metMentor({ id: 'm2', name: 'Efua Owusu', firstName: 'Efua', bookability: 'unavailable' }),
+      ]);
+      render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'See all mentors' }));
+      const dialog = screen.getByRole('dialog', { name: 'Mentors you’ve met' });
+      await userEvent.click(within(dialog).getByRole('button', { name: 'Message Efua' }));
+      expect(screen.queryByRole('dialog', { name: 'Mentors you’ve met' })).not.toBeInTheDocument();
+      expect(screen.getByTestId('message-open')).toHaveAttribute('data-to', 'm2');
+    });
+  });
+
+  it('with Messages off, Home draws no Message buttons', () => {
+    metMentors = remote([metMentor()]);
+    render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('button', { name: /Send a message/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Message / })).not.toBeInTheDocument();
   });
 });
