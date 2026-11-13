@@ -14,7 +14,14 @@ import { tierLine, waitLine } from './mentorLines';
 import { tierTone, waitTone } from './mentorList';
 import styles from './MentorTable.module.css';
 
-type Cell = { text: string; sub?: string; tag?: Parameters<typeof Tag>[0]['tone']; tone?: Tone };
+type Cell = {
+  text: string;
+  sub?: string;
+  tag?: Parameters<typeof Tag>[0]['tone'];
+  tone?: Tone;
+  /** Text an admin selects and copies (the Email column): above the row's stretched button. */
+  copyable?: boolean;
+};
 type Tone = 'danger' | 'warning' | 'success' | 'pending' | null;
 
 /** The three columns by tab (Admin.dc.html `cellsFor`; the Type column is later). */
@@ -33,6 +40,8 @@ function cellsFor(tab: MentorTab, m: AdminMentorRow, zone: string): Cell[] {
   }
   if (tab === 'approved') {
     return [
+      // Its own column (owner, 13 Nov 2026) so an admin can copy the emails.
+      { text: m.email, copyable: true },
       { text: d(m.approvedAt) },
       { text: T.completed(m.completed), sub: T.upcoming(m.upcoming) },
       { text: tierLine(m.showUpRate, m.showUpTier), tag: tierTone(m.showUpTier) },
@@ -40,9 +49,11 @@ function cellsFor(tab: MentorTab, m: AdminMentorRow, zone: string): Cell[] {
   }
   if (tab === 'paused') {
     return [
-      { text: T.paused, tag: 'warning' },
+      m.pausedBy === 'mentor'
+        ? { text: T.pausedByMentor, tag: 'neutral' }
+        : { text: T.suspended, tag: 'warning' },
       { text: d(m.pausedAt) },
-      { text: m.pausedBy === 'mentor' ? T.pausedByMentor : (m.pausedReason ?? '') },
+      { text: m.pausedBy === 'mentor' ? T.onlyTheyResume : (m.pausedReason ?? '') },
     ];
   }
   return [{ text: d(m.decidedAt) }, { text: m.declineReason ?? '' }, { text: d(m.submittedAt) }];
@@ -57,8 +68,14 @@ function metaFor(tab: MentorTab, m: AdminMentorRow, zone: string): { text: strin
       tone: tierTone(m.showUpTier),
     };
   const date = tab === 'paused' ? m.pausedAt : m.decidedAt;
+  const status =
+    tab === 'paused'
+      ? m.pausedBy === 'mentor'
+        ? T.pausedByMentor
+        : T.suspended
+      : MENTOR_STATUS[tab];
   return {
-    text: [MENTOR_STATUS[tab], date && formatShortDate(date, zone)].filter(Boolean).join(' · '),
+    text: [status, date && formatShortDate(date, zone)].filter(Boolean).join(' · '),
     tone: null,
   };
 }
@@ -66,7 +83,7 @@ function metaFor(tab: MentorTab, m: AdminMentorRow, zone: string): { text: strin
 /** Desktop columns (Admin.dc.html `grid`): Applications has two, so one track fewer. */
 const COLUMNS: Record<MentorTab, string> = {
   applications: 'minmax(0,2fr) minmax(0,1.1fr) minmax(0,1.5fr) 24px',
-  approved: 'minmax(0,2fr) minmax(0,1.1fr) minmax(0,1.5fr) minmax(0,1.2fr) 24px',
+  approved: 'minmax(0,1.6fr) minmax(0,1.6fr) minmax(0,0.9fr) minmax(0,1.1fr) minmax(0,1.1fr) 24px',
   paused: 'minmax(0,2fr) minmax(0,1.1fr) minmax(0,1.5fr) minmax(0,1.2fr) 24px',
   notApproved: 'minmax(0,2fr) minmax(0,1.1fr) minmax(0,1.5fr) minmax(0,1.2fr) 24px',
 };
@@ -183,14 +200,17 @@ export function MentorTable({
                   >
                     {m.name}
                   </button>
-                  <span className={styles.email}>{m.email}</span>
+                  {/* Approved shows email in its own column on desktop; phones keep it here. */}
+                  <span className={cx(styles.email, tab === 'approved' && styles.emailInColumn)}>
+                    {m.email}
+                  </span>
                   <span className={cx(styles.meta, meta.tone && styles[meta.tone])}>
                     {meta.text}
                   </span>
                 </div>
               </div>
               {cellsFor(tab, m, zone).map((c, i) => (
-                <div key={i} role="cell" className={styles.cell}>
+                <div key={i} role="cell" className={cx(styles.cell, c.copyable && styles.copyable)}>
                   {c.tag ? (
                     <Tag tone={c.tag} className={styles.pill}>
                       {c.text}

@@ -34,7 +34,8 @@ export const MENTOR_CARDS = {
 export const MENTOR_TAB_LABELS: Record<MentorTab, string> = {
   applications: 'Applications',
   approved: 'Approved',
-  paused: 'Paused and suspended',
+  // One tab for both kinds (owner, 13 Nov 2026): each row says which.
+  paused: 'Inactive',
   notApproved: 'Not approved',
 };
 export const MENTOR_TABS_LABEL = 'Mentor lists';
@@ -91,7 +92,7 @@ export const MENTOR_TABLE = {
   mentor: 'Mentor',
   heads: {
     applications: ['Waiting', 'Education'],
-    approved: ['Approved', 'Sessions', 'Show-up rate'],
+    approved: ['Email', 'Approved', 'Sessions', 'Show-up rate'],
     paused: ['Status', 'Since', 'Reason'],
     notApproved: ['Decided', 'Comment', 'Applied'],
   } satisfies Record<MentorTab, string[]>,
@@ -103,8 +104,14 @@ export const MENTOR_TABLE = {
   notAdded: 'Not added',
   completed: (n: number) => `${n} completed`,
   upcoming: (n: number) => `${n} upcoming`,
-  paused: 'Paused',
+  /** An admin took them off Explore (the backend's `paused` by an admin). */
+  suspended: 'Suspended',
   pausedByMentor: 'Paused by the mentor',
+  /** The Reason cell for a mentor who paused themselves. */
+  onlyTheyResume: 'Only they can resume',
+  copyEmails: (n: number) => `Copy ${plural(n, 'email')}`,
+  copiedEmails: (n: number) => `${plural(n, 'email')} copied. Paste them into an email.`,
+  copyEmailsFailed: 'Couldn’t copy. Select the Email column and copy it instead.',
   sessions: (n: number) => plural(n, 'session'),
   loading: 'Loading mentors',
 };
@@ -128,7 +135,7 @@ export const MENTOR_BULK = {
 export const MENTOR_STATUS: Record<MentorTab, string> = {
   applications: 'Application',
   approved: 'Approved',
-  paused: 'Paused',
+  paused: 'Inactive',
   notApproved: 'Not approved',
 };
 
@@ -147,8 +154,10 @@ export const MENTOR_DRAWER = {
   appliedWaiting: (date: string, days: number) =>
     days === 0 ? `${date} · applied today` : `${date} · waiting ${plural(days, 'day')}`,
   paused: {
-    title: (date: string) => `Paused since ${date}`,
-    titleUndated: 'Paused',
+    title: (date: string) => `Suspended since ${date}`,
+    titleUndated: 'Suspended',
+    selfTitle: (date: string) => `Paused by the mentor since ${date}`,
+    selfTitleUndated: 'Paused by the mentor',
     reason: 'Reason (admins only)',
     meaning: 'What this means',
     meaningBody: 'Hidden on Explore. They can log in and keep sessions already booked.',
@@ -193,7 +202,7 @@ export const MENTOR_DRAWER = {
   email: (first: string) => `Email ${first}`,
   approve: 'Approve',
   decline: 'Not approved',
-  pause: 'Pause',
+  pause: 'Suspend',
   resume: 'Resume',
   loading: 'Loading mentor',
   loadFailed: 'We couldn’t load this mentor',
@@ -229,13 +238,13 @@ export const MENTOR_DIALOGS = {
     done: (name: string) => `${name} marked not approved`,
   },
   pause: {
-    title: (name: string) => `Pause ${name}?`,
+    title: (name: string) => `Suspend ${name}?`,
     body: 'They’ll be hidden on Explore. They can still log in and keep sessions already booked.',
     label: 'Reason (admins only)',
     help: 'Other admins see this. The mentor doesn’t.',
     error: 'Add a reason for other admins.',
-    ok: 'Pause',
-    done: (name: string) => `${name} paused and hidden on Explore`,
+    ok: 'Suspend',
+    done: (name: string) => `${name} suspended and hidden on Explore`,
   },
   resume: {
     title: (name: string) => `Resume ${name}?`,
@@ -262,7 +271,7 @@ export const MENTOR_STATES = {
       title: 'No approved mentors yet',
       body: 'Approve an application and the mentor shows up here.',
     },
-    paused: { title: 'No paused or suspended mentors', body: 'Everyone approved is live.' },
+    paused: { title: 'No inactive mentors', body: 'Everyone approved is live.' },
     notApproved: {
       title: 'No declined applications',
       body: 'Applications you decide not to approve show up here.',
