@@ -159,6 +159,19 @@ describe('AdminMentorsScreen: the list', () => {
     expect(copied.split(', ').every((e) => e.includes('@'))).toBe(true);
     expect(await screen.findByText(/copied\. Paste them into an email\./)).toBeInTheDocument();
   });
+
+  it('Copy emails says so visibly when the clipboard refuses', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('tab', { name: /Approved/ }));
+    await screen.findAllByRole('button', { name: /^Open / });
+    await user.click(screen.getByRole('button', { name: /^Copy \d+ emails?$/ }));
+    expect(
+      await screen.findByText('Couldn’t copy. Select the Email column and copy it instead.'),
+    ).toBeVisible();
+  });
 });
 
 describe('AdminMentorsScreen: limited_access', () => {

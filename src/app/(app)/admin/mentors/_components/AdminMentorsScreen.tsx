@@ -113,12 +113,15 @@ export function AdminMentorsScreen() {
   // email's To line (owner, 13 Nov 2026). Follows the search and filters.
   const { copy: copyText } = useCopyText(3000);
   const emails = tab === 'approved' ? visible.map((r) => r.email).filter(Boolean) : [];
-  const copyEmails = async () => {
-    const ok = await copyText(emails.join(', '));
-    say(ok ? MENTOR_TABLE.copiedEmails(emails.length) : MENTOR_TABLE.copyEmailsFailed);
-  };
   const show = (text: string, tone: Toast['tone']) =>
     setToast((t) => ({ text, tone, stamp: (t?.stamp ?? 0) + 1 }));
+  // The outcome is a toast (seen and announced), never only a screen-reader
+  // line: an admin must not paste an old clipboard thinking it holds these.
+  const copyEmails = async () => {
+    const ok = await copyText(emails.join(', '));
+    if (ok) show(MENTOR_TABLE.copiedEmails(emails.length), 'success');
+    else show(MENTOR_TABLE.copyEmailsFailed, 'error');
+  };
 
   const setTab = (t: MentorTab) => {
     setTabState(t);
