@@ -39,6 +39,8 @@ type MenteeMentorsSectionProps = {
   offline: boolean;
   bookBlocked: string | null;
   onBook: (mentor: MetMentor) => void;
+  /** A Book again row's "Message"; absent while Messages is off. */
+  onMessage?: (mentor: MetMentor) => void;
   onBookMentor: (mentor: Mentor) => void;
   /** Opens Mentors you've met (the screen owns it). */
   onSeeAll: () => void;
@@ -189,7 +191,13 @@ function BookAgainPanel(
       ) : (
         <div className={styles.list}>
           {p.eligible.map((m) => (
-            <MentorRow key={m.id} mentor={m} timeZone={p.timeZone} onBook={p.onBook} />
+            <MentorRow
+              key={m.id}
+              mentor={m}
+              timeZone={p.timeZone}
+              onBook={p.onBook}
+              onMessage={p.onMessage}
+            />
           ))}
         </div>
       )}

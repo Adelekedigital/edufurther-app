@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
-import { CreditsBar } from '@/components/molecules/CreditsSummary/CreditsSummary';
+import { CreditsBar, CreditsStatus } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import { StepChecklist } from '@/components/molecules/StepChecklist/StepChecklist';
 import { BottomSheet } from '@/components/templates/BottomSheet/BottomSheet';
 import { cx } from '@/lib/utils/cx';
@@ -141,6 +141,7 @@ function CreditsDetails({ credits, onClose }: { credits: CreditsView; onClose: (
 
   return (
     <div className={cx(styles.details, isLow(credits) && styles.low)}>
+      <CreditsStatus credits={credits} />
       <CreditsBar credits={credits} />
       {rows.length > 0 && (
         <div className={styles.rows}>

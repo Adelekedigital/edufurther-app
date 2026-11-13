@@ -128,7 +128,8 @@ describe('AppShell: a mentee’s credits', () => {
     const how = within(group).getByRole('menuitem', { name: 'How credits work' });
     // Opening the menu focuses its first item: the credits one.
     expect(how).toHaveFocus();
-    expect(how).toHaveAccessibleDescription('4 credits left Resets Nov 1');
+    // The status line is read with the title (a full month plus a bonus).
+    expect(how).toHaveAccessibleDescription('4 credits left You’re on track Resets Nov 1');
     await user.keyboard('{Enter}');
     expect(screen.getByRole('dialog', { name: 'Your credits' })).toBeInTheDocument();
     expect(screen.queryByRole('menu')).toBeNull();

@@ -7,6 +7,8 @@ type MetMentorsModalProps = {
   mentors: MetMentor[];
   timeZone: string;
   onBook: (mentor: MetMentor) => void;
+  /** Opens SendMessage; absent while Messages is off. */
+  onMessage?: (mentor: MetMentor) => void;
   onClose: () => void;
 };
 
@@ -15,7 +17,13 @@ type MetMentorsModalProps = {
  * screen on phones): every mentor with a completed session, each with Book
  * again, View booking, or a note when they can't be booked.
  */
-export function MetMentorsModal({ mentors, timeZone, onBook, onClose }: MetMentorsModalProps) {
+export function MetMentorsModal({
+  mentors,
+  timeZone,
+  onBook,
+  onMessage,
+  onClose,
+}: MetMentorsModalProps) {
   return (
     <ModalShell
       title="Mentors you’ve met"
@@ -27,7 +35,14 @@ export function MetMentorsModal({ mentors, timeZone, onBook, onClose }: MetMento
     >
       <div className={styles.list}>
         {mentors.map((m) => (
-          <MentorRow key={m.id} mentor={m} timeZone={timeZone} onBook={onBook} variant="modal" />
+          <MentorRow
+            key={m.id}
+            mentor={m}
+            timeZone={timeZone}
+            onBook={onBook}
+            onMessage={onMessage}
+            variant="modal"
+          />
         ))}
       </div>
     </ModalShell>

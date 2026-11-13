@@ -25,6 +25,15 @@
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
 }
+/* The status line (the legacy card's tiers): a hint under the title, above
+   the bar, read in the same grey as the reset line. */
+.status {
+  margin-top: calc(var(--space-1) * -1);
+  font-family: var(--font-ui);
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--ink-600);
+}
 .bar {
   display: flex;
   gap: 3px;

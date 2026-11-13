@@ -1,7 +1,11 @@
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import { MESSAGES_LIVE } from '@/lib/config/messages';
 import styles from './MenteeTipsModal.module.css';
 
-/** The four session tips (Mentee Dashboard v2.dc.html tips modal, messageBtn hide). */
+/**
+ * The four session tips (Mentee Dashboard v2.dc.html tips modal). "Share
+ * drafts early" follows messageBtn: with Messages on, drafts go in a message.
+ */
 const TIPS = [
   {
     title: 'Take notes',
@@ -13,7 +17,9 @@ const TIPS = [
   },
   {
     title: 'Share drafts early',
-    body: 'Attach your CV or statement when you book so your mentor can read it first.',
+    body: MESSAGES_LIVE
+      ? 'Send your CV or statement in a message before the session so your mentor can read it first.'
+      : 'Attach your CV or statement when you book so your mentor can read it first.',
   },
   {
     title: 'Follow up',

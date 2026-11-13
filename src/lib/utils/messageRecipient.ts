@@ -1,4 +1,5 @@
 import type { BookingParty, BookingSide, BookingStatus } from '@/types/booking';
+import type { MetMentor } from '@/lib/api/data/metMentors';
 import type { Mentor } from '@/types/mentor';
 import type { MessageRecipient } from '@/types/messages';
 
@@ -56,6 +57,25 @@ export function recipientFromMentor(m: Mentor): MessageRecipient {
     initials: m.initials,
     avatarUrl: m.photoUrl,
     avatarFocus: m.photoFocus,
+    cover: m.cover,
+    role: 'mentor',
+    institution: m.institution,
+  };
+}
+
+/**
+ * A mentor the mentee has met (Home's Book again and Mentors you've met), as
+ * SendMessage's recipient. Met means a completed session, so the two are
+ * connected (PRD M0); `id` is the mentor's user id, as the chat needs.
+ */
+export function recipientFromMetMentor(m: MetMentor): MessageRecipient {
+  return {
+    id: m.id,
+    name: m.name,
+    firstName: m.firstName,
+    initials: m.initials,
+    avatarUrl: m.avatarUrl,
+    avatarFocus: m.avatarFocus,
     cover: m.cover,
     role: 'mentor',
     institution: m.institution,
