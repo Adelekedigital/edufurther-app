@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
@@ -36,6 +37,7 @@ import {
   MENTOR_TABS_LABEL,
 } from '@/lib/copy/adminMentors';
 import { viewerZone } from '@/lib/utils/format';
+import { useCopyText } from '@/lib/utils/useCopyText';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { MentorBulkBar } from './MentorBulkBar';
 import { MentorDialogs, type MentorDialog } from './MentorDialogs';
@@ -107,8 +109,19 @@ export function AdminMentorsScreen() {
   const openRow = rows.find((r) => r.id === openId) ?? null;
 
   const say = (text: string) => setSaid((s) => ({ text, id: (s?.id ?? 0) + 1 }));
+  // Approved: every email on screen in one copy, ready to paste into an
+  // email's To line (owner, 13 Nov 2026). Follows the search and filters.
+  const { copy: copyText } = useCopyText(3000);
+  const emails = tab === 'approved' ? visible.map((r) => r.email).filter(Boolean) : [];
   const show = (text: string, tone: Toast['tone']) =>
     setToast((t) => ({ text, tone, stamp: (t?.stamp ?? 0) + 1 }));
+  // The outcome is a toast (seen and announced), never only a screen-reader
+  // line: an admin must not paste an old clipboard thinking it holds these.
+  const copyEmails = async () => {
+    const ok = await copyText(emails.join(', '));
+    if (ok) show(MENTOR_TABLE.copiedEmails(emails.length), 'success');
+    else show(MENTOR_TABLE.copyEmailsFailed, 'error');
+  };
 
   const setTab = (t: MentorTab) => {
     setTabState(t);
@@ -265,6 +278,18 @@ export function AdminMentorsScreen() {
           active={active}
           onClear={() => changeFilters(NO_FILTERS)}
         />
+        {listStatus === 'ready' && emails.length > 0 && (
+          <div className={styles.copyRow}>
+            <Button
+              variant="secondary-outlined"
+              size="small"
+              icon="content_copy"
+              onClick={copyEmails}
+            >
+              {MENTOR_TABLE.copyEmails(emails.length)}
+            </Button>
+          </div>
+        )}
         {selectable && liveChecked.length > 0 && (
           <MentorBulkBar
             count={liveChecked.length}

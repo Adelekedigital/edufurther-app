@@ -9,6 +9,12 @@
   flex: 0 1 320px;
   min-width: 220px;
 }
+/* Approved: "Copy {n} emails" sits at the end of the filter row's line. */
+.copyRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: calc(var(--space-3) * -1);
+}
 .panel {
   display: flex;
   flex-direction: column;

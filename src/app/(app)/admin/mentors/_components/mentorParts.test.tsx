@@ -34,13 +34,13 @@ describe('MentorDialogs', () => {
     );
     const dlg = screen.getByRole('alertdialog');
     const box = within(dlg).getByRole('textbox', { name: 'Reason (admins only)' });
-    await user.click(within(dlg).getByRole('button', { name: 'Pause' }));
+    await user.click(within(dlg).getByRole('button', { name: 'Suspend' }));
     expect(onConfirm).not.toHaveBeenCalled();
     expect(within(dlg).getByText('Add a reason for other admins.')).toBeInTheDocument();
     expect(box).toHaveAttribute('aria-invalid', 'true');
     expect(box).toHaveFocus();
     await user.type(box, '   No-shows  ');
-    await user.click(within(dlg).getByRole('button', { name: 'Pause' }));
+    await user.click(within(dlg).getByRole('button', { name: 'Suspend' }));
     expect(onConfirm).toHaveBeenCalledWith('No-shows');
   });
 
@@ -85,13 +85,13 @@ function drawer(
 }
 
 describe('MentorDrawer footer', () => {
-  it('canDecide off: no Approve, Not approved, Pause or Resume', () => {
+  it('canDecide off: no Approve, Not approved, Suspend or Resume', () => {
     const { unmount } = drawer(byId('m-jm'), 'applications', false);
     for (const name of ['Approve', 'Not approved'])
       expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
     unmount();
     const b = drawer(byId('m-ia'), 'approved', false);
-    expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Suspend' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Email Ibrahim' })).toBeInTheDocument();
     b.unmount();
     drawer(byId('m-fa'), 'paused', false);
