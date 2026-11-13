@@ -61,9 +61,9 @@ export function startsSoon(b: Booking, now: Date, timeZone: string): boolean {
  * DateChip, #417); the prep list and Tips are the mentee's own. Not the Bookings
  * hero (organisms/NextSessionCard), a different design, though it reuses the
  * same join/time helpers, so the two never disagree.
- * "Send a message" (text) follows Join once Messages is on (design
- * messageBtn show); off, it isn't drawn, as a dead control would teach people
- * the page is broken.
+ * "Send a message" (ghost, as in Session Join's lobby) follows Join once
+ * Messages is on (design messageBtn show). Off, it isn't drawn: a dead control
+ * would teach people the page is broken.
  */
 export function MenteeNextSession({
   booking: b,
@@ -120,7 +120,7 @@ export function MenteeNextSession({
       </ButtonLink>
       {onMessage && (
         <Button
-          variant="text"
+          variant="ghost"
           size="medium"
           aria-label={`${MESSAGE_BUTTON_COPY.send} to ${b.other.firstName}`}
           onClick={onMessage}

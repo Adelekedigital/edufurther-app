@@ -51,8 +51,8 @@ function unavailableNote(m: MetMentor): string {
  * Mentors you've met). The action follows the backend's `bookability`: open →
  * "Book again" (the booking flow in place, never the profile); has_upcoming /
  * pending → "View booking" in Bookings; unavailable → a note, no button.
- * "Message" (text) shows once Messages is on: after the action in a Book again
- * row, before it in the modal, as drawn.
+ * "Message" (ghost, as in Session Join's lobby) shows once Messages is on:
+ * after the action in a Book again row, before it in the modal, as drawn.
  */
 export function MentorRow({
   mentor: m,
@@ -66,7 +66,7 @@ export function MentorRow({
   const degreeLine = [m.degree, m.institution].filter(Boolean).join(' · ');
   const message = onMessage && (
     <Button
-      variant="text"
+      variant="ghost"
       size={size}
       aria-label={MESSAGE_BUTTON_COPY.to(m.firstName)}
       onClick={() => onMessage(m)}
