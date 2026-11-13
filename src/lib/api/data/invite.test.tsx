@@ -5,13 +5,13 @@ import {
   claimInvite,
   toInviteLink,
   CLAIM_TIMEOUT_MS,
-  inviterPhoto,
   toInviter,
   useInviteLink,
   useInviteLookup,
   useReferrals,
 } from './invite';
 import { previewStore, resetPreviewStoreForTests } from './previewStore';
+import { publicPhoto } from '@/lib/utils/publicPhoto';
 
 const get = vi.fn();
 const post = vi.fn();
@@ -182,17 +182,22 @@ describe('useReferrals', () => {
 });
 
 describe('useInviteLookup', () => {
+  afterEach(() => vi.unstubAllEnvs());
   it('names the inviter of a code it is given', async () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://x.supabase.co');
     get.mockResolvedValue(
       resp(200, {
-        inviter: { first_name: ' Damilola ', avatar_url: 'https://x.supabase.co/p.jpg' },
+        inviter: {
+          first_name: ' Damilola ',
+          avatar_url: 'https://x.supabase.co/storage/v1/object/public/avatars/p.jpg',
+        },
       }),
     );
     const { result } = renderHook(() => useInviteLookup('damilola-7k2x'), { wrapper });
     await waitFor(() =>
       expect(result.current.data).toEqual({
         firstName: 'Damilola',
-        photoUrl: 'https://x.supabase.co/p.jpg',
+        photoUrl: 'https://x.supabase.co/storage/v1/object/public/avatars/p.jpg',
       }),
     );
     expect(get).toHaveBeenCalledWith('/api/v1/invites/{code}', {
@@ -213,15 +218,22 @@ describe('useInviteLookup', () => {
     expect(get).not.toHaveBeenCalled();
   });
 
-  it('only loads a photo from our image host', () => {
+  it('only loads a photo from our own project’s public storage', () => {
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://abc.supabase.co');
     const ours = 'https://abc.supabase.co/storage/v1/object/public/avatars/p.jpg';
-    expect(inviterPhoto(ours)).toBe(ours);
-    expect(inviterPhoto('https://tracker.example/p.gif')).toBeNull();
-    expect(inviterPhoto('http://abc.supabase.co/p.jpg')).toBeNull();
-    expect(inviterPhoto('https://supabase.co.evil.test/p.jpg')).toBeNull();
-    expect(inviterPhoto('javascript:alert(1)')).toBeNull();
-    expect(inviterPhoto('not a url')).toBeNull();
-    expect(inviterPhoto(null)).toBeNull();
+    expect(publicPhoto(ours)).toBe(ours);
+    expect(toInviter({ inviter: { first_name: 'D', avatar_url: ours } })?.photoUrl).toBe(ours);
+    expect(publicPhoto('https://other.supabase.co/storage/v1/object/public/a/p.jpg')).toBeNull();
+    expect(publicPhoto('https://abc.supabase.co/storage/v1/object/sign/a/p.jpg')).toBeNull();
+    expect(publicPhoto('https://abc.supabase.co/auth/v1/user')).toBeNull();
+    expect(publicPhoto('https://tracker.example/p.gif')).toBeNull();
+    expect(publicPhoto('http://abc.supabase.co/storage/v1/object/public/a/p.jpg')).toBeNull();
+    expect(publicPhoto('https://supabase.co.evil.test/p.jpg')).toBeNull();
+    expect(publicPhoto('javascript:alert(1)')).toBeNull();
+    expect(publicPhoto('not a url')).toBeNull();
+    expect(publicPhoto(null)).toBeNull();
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', '');
+    expect(publicPhoto(ours)).toBeNull();
   });
 
   it('answers no inviter when rate-limited (429), without retrying', async () => {

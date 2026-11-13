@@ -92,9 +92,14 @@ export function OgFace({
   );
 }
 
-/** The swoosh mark of a fallback preview (128×55 source, 64px tall). */
-export function OgMark({ mark }: { mark: string }) {
-  return <img src={mark} alt="" height={64} width={149} />;
+/** A fallback preview: the swoosh mark (128×55 source, 64px tall) over the generic lines. */
+export function OgFallback({ mark, title, body }: { mark: string; title: string; body: string }) {
+  return (
+    <div style={{ ...OG_STACK, gap: 16 }}>
+      <img src={mark} alt="" height={64} width={149} />
+      <OgLines title={title} body={body} gap={16} />
+    </div>
+  );
 }
 
 export function OgLines({ title, body, gap = 12 }: { title: string; body: string; gap?: number }) {

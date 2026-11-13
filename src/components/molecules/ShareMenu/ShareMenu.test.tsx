@@ -258,7 +258,7 @@ describe('ShareMenu', () => {
       expect(mail.startsWith('mailto:?')).toBe(true);
       const q = new URLSearchParams(mail.slice('mailto:?'.length));
       expect(q.get('subject')).toBe('Gbenga Elufisan on EduFurther');
-      expect(q.get('body')).toBe(`${text}\n${URL_}`);
+      expect(q.get('body')).toBe(`${text}\r\n${URL_}`);
 
       // LinkedIn takes the URL only: its share page drops any text.
       const li = hrefOf('Share on LinkedIn (opens in a new tab)');

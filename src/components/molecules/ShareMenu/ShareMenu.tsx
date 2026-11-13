@@ -179,7 +179,7 @@ export function ShareMenu({
       key: 'email',
       label: MENU.email,
       icon: 'mail',
-      href: `mailto:?subject=${enc(MENTOR_SHARE_COPY.emailSubject(name))}&body=${enc(withLink)}`,
+      href: `mailto:?subject=${enc(MENTOR_SHARE_COPY.emailSubject(name))}&body=${enc(MENTOR_SHARE_COPY.emailBody(own, name, url))}`,
       newTab: false,
     },
   ];

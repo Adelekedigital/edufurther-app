@@ -31,8 +31,10 @@ export const MENTOR_SHARE_COPY = {
     messageFailed: 'Couldn’t copy the message',
   },
   message,
-  /** Copy message, WhatsApp and the email body: the message, then the link on its own line. */
+  /** Copy message and WhatsApp: the message, then the link on its own line. */
   withLink: (own: boolean, name: string, url: string) => `${message(own, name)}\n${url}`,
+  /** The email body: the same, with the CRLF line break a mailto body takes (RFC 6068). */
+  emailBody: (own: boolean, name: string, url: string) => `${message(own, name)}\r\n${url}`,
   emailSubject: (name: string) => `${name} on EduFurther`,
   /** The link preview (og: lines and opengraph-image). */
   preview: {
