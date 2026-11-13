@@ -41,7 +41,7 @@ export function CreditsStatus({ credits, id }: { credits: CreditsView; id?: stri
  * The credits block at the top of the account menu and the More sheet
  * (AppShell.dc.html creditMenu, creditSplit on): "3 credits left", how that
  * stands ("You’re on track"), the bar,
- * "Resets Nov 1" (or "For your first session" before the monthly grant) and
+ * "Resets Nov 1" (nothing in setup, which has no monthly part) and
  * "How credits work", which opens "Your credits".
  */
 export function CreditsSummary({
