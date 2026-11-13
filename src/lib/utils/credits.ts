@@ -157,6 +157,22 @@ export function creditsTitle(v: CreditsView): string {
 }
 
 /**
+ * The line under the title (owner, 2026-11-13: the legacy card's tiers, kept).
+ * Measured against what the month pays, not a fixed five: a level pays 1 to 3,
+ * so "1 left" can also be a full month, and then it is the last one (the card
+ * is yellow from 1, so the words match the colour). Every credit ends on the
+ * 1st (decision 308), so "this month" is true for bonus ones too. None in
+ * setup (no monthly part): there is no month to be on track with.
+ * Reviewed with edufurther-ux-writer.
+ */
+export function creditsStatus(v: CreditsView): string | null {
+  if (!v.showMonthly) return null;
+  if (isOut(v)) return 'All used up for this month';
+  if (v.left === 1) return 'Last one this month. Make it count';
+  return v.left >= v.monthlyTotal ? 'You’re on track' : 'Use them with intention';
+}
+
+/**
  * The bar, one segment per credit (design creditSegs): bonus first (blue),
  * then monthly left (green), then monthly spent (grey). Low: all filled ones
  * yellow (CSS). No monthly part for a mentee without the grant.
