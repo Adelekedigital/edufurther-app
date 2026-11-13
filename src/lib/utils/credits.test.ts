@@ -3,6 +3,7 @@ import {
   creditRows,
   refundPolicy,
   creditSegments,
+  creditsStatus,
   creditsTitle,
   creditsView,
   isLow,
@@ -171,6 +172,21 @@ describe('copy (design creditSplit on)', () => {
     expect(creditsAria(three)).toBe('3 credits left: 2 monthly, 1 bonus, monthly resets Nov 1');
     expect(creditsAria(v(3))).toBe('3 credits left, monthly resets Nov 1');
     expect(creditsAria(v(0))).toBe('No credits left, monthly resets Nov 1');
+  });
+
+  it('status follows what is left against what the month pays, not a fixed five', () => {
+    expect(creditsStatus(v(3))).toBe('You’re on track');
+    // A bonus credit on top of a full month is still on track.
+    expect(creditsStatus(v(4, starter))).toBe('You’re on track');
+    expect(creditsStatus(v(2))).toBe('Use them with intention');
+    expect(creditsStatus(v(1))).toBe('Last one this month. Make it count');
+    expect(creditsStatus(v(0))).toBe('All used up for this month');
+    // A level that pays 1: a full month is also the last one (the card is yellow).
+    expect(creditsStatus({ ...v(1), monthlyTotal: 1 })).toBe('Last one this month. Make it count');
+    expect(creditsStatus({ ...v(2), monthlyTotal: 2 })).toBe('You’re on track');
+    // Setup (no monthly part): no month to be on track with.
+    expect(creditsStatus({ ...v(1, starter), showMonthly: false })).toBeNull();
+    expect(creditsStatus({ ...v(0), showMonthly: false })).toBeNull();
   });
 
   it('bar: bonus first, then monthly left, then monthly spent', () => {

@@ -5,6 +5,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
 import {
   creditSegments,
+  creditsStatus,
   creditsTitle,
   isLow,
   summarySub,
@@ -24,9 +25,23 @@ export function CreditsBar({ credits }: { credits: CreditsView }) {
 }
 
 /**
+ * The line under the title ("You’re on track"), the same in the menu and the
+ * explainer. Nothing in setup, where there is no monthly part.
+ */
+export function CreditsStatus({ credits, id }: { credits: CreditsView; id?: string }) {
+  const status = creditsStatus(credits);
+  return status ? (
+    <span id={id} className={styles.status}>
+      {status}
+    </span>
+  ) : null;
+}
+
+/**
  * The credits block at the top of the account menu and the More sheet
- * (AppShell.dc.html creditMenu, creditSplit on): "3 credits left", the bar,
- * "Resets Nov 1" (or "For your first session" before the monthly grant) and
+ * (AppShell.dc.html creditMenu, creditSplit on): "3 credits left", how that
+ * stands ("You’re on track"), the bar,
+ * "Resets Nov 1" (nothing in setup, which has no monthly part) and
  * "How credits work", which opens "Your credits".
  */
 export function CreditsSummary({
@@ -45,6 +60,7 @@ export function CreditsSummary({
 }) {
   const id = useId();
   const sub = summarySub(credits);
+  const status = creditsStatus(credits);
   return (
     <div
       className={cx(styles.summary, isLow(credits) && styles.low)}
@@ -57,6 +73,7 @@ export function CreditsSummary({
           {creditsTitle(credits)}
         </span>
       </div>
+      <CreditsStatus credits={credits} id={`${id}-s`} />
       <CreditsBar credits={credits} />
       <div className={styles.foot}>
         {sub ? (
@@ -74,7 +91,9 @@ export function CreditsSummary({
             ref: asMenuItem.ref,
             role: 'menuitem',
             tabIndex: -1,
-            'aria-describedby': [`${id}-t`, sub && `${id}-r`].filter(Boolean).join(' '),
+            'aria-describedby': [`${id}-t`, status && `${id}-s`, sub && `${id}-r`]
+              .filter(Boolean)
+              .join(' '),
           })}
         >
           How credits work
