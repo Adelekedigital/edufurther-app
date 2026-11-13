@@ -13,8 +13,8 @@ import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useRouter } from 'next/navigation';
 import { useTopics } from '@/lib/api/data/mentors';
 import { useDuplicateSessionType } from '@/lib/api/data/sessionTypeEdit';
+import { useSessionTypeDeletes } from '@/lib/api/data/sessionTypeDeletes';
 import {
-  useDeleteSessionType,
   useOwnSessionTypes,
   useRestoreSessionType,
   useSetFeatured,
@@ -22,6 +22,7 @@ import {
 } from '@/lib/api/data/sessionTypes';
 import { formatShortDate } from '@/lib/utils/format';
 import { SESSION_TEMPLATES, templateHint } from '@/lib/utils/sessionTemplates';
+import { nextRemaining } from '@/lib/utils/nextRemaining';
 import { useLatest } from '@/lib/utils/useLatest';
 import type { Remote } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
@@ -37,6 +38,20 @@ const TEMPLATES = SESSION_TEMPLATES.map((t) => ({
   name: t.name,
   hint: templateHint(t),
 }));
+
+/**
+ * Where focus goes once a row is removed: which row, and the row order at the
+ * click. Resolved against the rows left when it applies (nextRemaining).
+ */
+type FocusAfter = { removed: string; order: string[] };
+const focusTarget = (f: FocusAfter, rows: OwnSessionType[]): { menuOf: string } | 'create' => {
+  const next = nextRemaining(
+    f.order,
+    f.removed,
+    rows.map((x) => x.id),
+  );
+  return next ? { menuOf: next } : 'create';
+};
 
 const confirmShell = (shell: ConfirmShell, body: ReactNode) => (
   <ModalShell {...shell} size="sm" mobile="sheet">
@@ -148,30 +163,24 @@ export function SessionTypesScreen() {
   const [confirming, setConfirming] = useState<OwnSessionType | null>(null);
   // Read when a delete answers: another row's confirm may be open by then.
   const confirmingRef = useLatest(confirming);
-  const del = useDeleteSessionType();
+  // By row: in flight, and refused (issue 128).
+  const del = useSessionTypeDeletes();
+  const { pendingIds: pendingDeletes, refusals, clearRefusal } = del;
   const closeConfirm = () => {
+    if (confirming) clearRefusal(confirming.id);
     setConfirming(null);
-    del.reset();
   };
   // Closed (×) while its delete was out: the delete carries on, and the row
   // says how it went, a refusal included (product, 2026-10-01).
   // By row: a dismissed delete must not close, or show its state in, another
   // row's confirm opened meanwhile.
   const dismissed = useRef(new Set<string>());
-  // The row the delete hook's refusal belongs to, and every delete still out,
-  // by row: the hook only tracks its latest call, and a reset (another row's
-  // Keep it) would make a row whose delete is still out look idle.
-  const [deleteFor, setDeleteFor] = useState<string | null>(null);
-  const [pendingDeletes, setPendingDeletes] = useState<string[]>([]);
-  const settleDelete = (id: string) => setPendingDeletes((ids) => ids.filter((x) => x !== id));
   const dismissConfirm = () => {
     if (confirming) dismissed.current.add(confirming.id);
     setConfirming(null);
   };
   // A removed row takes its buttons with it: focus the next row's "⋯", or Create.
-  const [focusAfterRemoval, setFocusAfterRemoval] = useState<{ menuOf: string } | 'create' | null>(
-    null,
-  );
+  const [focusAfterRemoval, setFocusAfterRemoval] = useState<FocusAfter | null>(null);
   const onFocused = useCallback(() => setFocusAfterRemoval(null), []);
   // Focus moves on after a removal, unless a dialog is open: another row's
   // delete confirm, or the visibility or feature confirm. Focus is in that
@@ -179,8 +188,8 @@ export function SessionTypesScreen() {
   // Behind the visibility or feature confirm the target waits and applies when
   // it closes: that dialog's own row may be the one removed.
   const otherDialogRef = useLatest(!!visibility || !!featuring);
-  const [deferredFocus, setDeferredFocus] = useState<{ menuOf: string } | 'create' | null>(null);
-  const moveFocusAfter = (after: { menuOf: string } | 'create', id: string) => {
+  const [deferredFocus, setDeferredFocus] = useState<FocusAfter | null>(null);
+  const moveFocusAfter = (after: FocusAfter, id: string) => {
     if (confirmingRef.current && confirmingRef.current.id !== id) return;
     if (otherDialogRef.current) setDeferredFocus(after);
     else setFocusAfterRemoval(after);
@@ -189,7 +198,7 @@ export function SessionTypesScreen() {
   // it, focus moves on as after a delete (adjusted during render).
   const [unconfirmed, setUnconfirmed] = useState<{
     id: string;
-    after: { menuOf: string } | 'create';
+    after: FocusAfter;
   } | null>(null);
   if (unconfirmed && list.data && !list.data.some((x) => x.id === unconfirmed.id)) {
     setUnconfirmed(null);
@@ -201,23 +210,18 @@ export function SessionTypesScreen() {
     setDeferredFocus(null);
     setFocusAfterRemoval(deferredFocus);
   }
-  const neighbour = (id: string): { menuOf: string } | 'create' => {
-    const rows = list.data ?? [];
-    const i = rows.findIndex((x) => x.id === id);
-    const next = rows[i + 1] ?? rows[i - 1];
-    return next ? { menuOf: next.id } : 'create';
-  };
+  const neighbour = (id: string): FocusAfter => ({
+    removed: id,
+    order: (list.data ?? []).map((x) => x.id),
+  });
   const onDelete = (t: OwnSessionType) => {
     const after = neighbour(t.id);
     // A new delete replaces any earlier unconfirmed one's focus target.
     setUnconfirmed((u) => (u?.id === t.id ? null : u));
     dismissed.current.delete(t.id);
-    setDeleteFor(t.id);
-    setPendingDeletes((ids) => [...ids, t.id]);
     void del
       .remove(t.id)
       .then((r) => {
-        settleDelete(t.id);
         // Only this row's confirm: another may have opened since a dismiss.
         setConfirming((c) => (c?.id === t.id ? null : c));
         dismissed.current.delete(t.id);
@@ -237,10 +241,9 @@ export function SessionTypesScreen() {
           );
       })
       .catch((e: DeleteError) => {
-        settleDelete(t.id);
-        // The confirm shows a refusal; once dismissed, the row does.
-        if (!dismissed.current.delete(t.id)) return;
-        say(t.id, e.message, false);
+        // The confirm shows a refusal (del.refusals, reopened too); once
+        // dismissed, the row does.
+        if (dismissed.current.delete(t.id)) say(t.id, e.message, false);
       });
   };
 
@@ -268,7 +271,7 @@ export function SessionTypesScreen() {
   };
   // Name and focus target per row, taken at the click: a row the hourly job
   // already deleted is gone from the list by the time its answer arrives.
-  const keeping = useRef(new Map<string, { name: string; after: { menuOf: string } | 'create' }>());
+  const keeping = useRef(new Map<string, { name: string; after: FocusAfter }>());
   const restore = useRestoreSessionType(
     (id, e) => {
       keeping.current.delete(id);
@@ -314,7 +317,7 @@ export function SessionTypesScreen() {
         // Reopened with nothing out: an earlier refusal (shown on the row
         // after a dismiss) isn't the dialog's to show again. With its delete
         // still out, the reopened confirm owns that delete's outcome.
-        if (!pendingDeletes.includes(t.id)) setDeleteFor((f) => (f === t.id ? null : f));
+        if (!pendingDeletes.includes(t.id)) clearRefusal(t.id);
         dismissed.current.delete(t.id);
         setConfirming(t);
       }}
@@ -322,7 +325,7 @@ export function SessionTypesScreen() {
       onFeature={onFeature}
       onRestore={onRestore}
       restoringIds={restore.pendingIds}
-      focusAfterRemoval={focusAfterRemoval}
+      focusAfterRemoval={focusAfterRemoval && focusTarget(focusAfterRemoval, list.data ?? [])}
       onFocused={onFocused}
       onDuplicate={onDuplicate}
       shareUrl={shareUrl}
@@ -365,7 +368,7 @@ export function SessionTypesScreen() {
           renderShell={confirmShell}
           type={confirming}
           busy={pendingDeletes.includes(confirming.id)}
-          error={deleteFor === confirming.id ? del.error : null}
+          error={refusals[confirming.id] ?? null}
           onKeep={closeConfirm}
           onDismiss={dismissConfirm}
           onDelete={() => onDelete(confirming)}
