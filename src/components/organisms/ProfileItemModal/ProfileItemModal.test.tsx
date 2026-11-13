@@ -507,6 +507,31 @@ describe('ProfileItemModal — education', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 
+  it('once the form shows, a list refetch never flips it to an error or a skeleton (issue 95)', () => {
+    const props = {
+      kind: 'education' as const,
+      editing: true,
+      initial: saved,
+      thisYear: 2026,
+      hasOther: false,
+      audience: 'mentor' as const,
+      schools: { ...schools, onQueryChange: vi.fn() },
+      saving: false,
+      error: null,
+      onSave: vi.fn(),
+      onClose: vi.fn(),
+      renderShell: shell,
+    };
+    const { rerender } = render(
+      <ProfileItemModal {...props} catalog={{ status: 'ready', onRetry: vi.fn() }} />,
+    );
+    for (const status of ['error', 'loading'] as const) {
+      rerender(<ProfileItemModal {...props} catalog={{ status, onRetry: vi.fn() }} />);
+      expect(screen.queryByText(/We couldn’t load your education/)).toBeNull();
+      expect(screen.getByRole('textbox', { name: 'Course of study' })).toHaveValue('Sociology');
+    }
+  });
+
   it('School is announced as required, like Course of study', () => {
     education();
     expect(school()).toHaveAttribute('aria-required', 'true');

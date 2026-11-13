@@ -160,7 +160,11 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
     formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
   }, [problemsKey]);
 
-  const ready = catalog.status === 'ready';
+  // Once the form has shown, it stays: a refetch of what it's built from (the
+  // owner's list, a catalog) never swaps it for an error or a skeleton while
+  // it's open (issue 95). Before that, the catalog's own state shows.
+  const status = seeded ? 'ready' : catalog.status;
+  const ready = status === 'ready';
   const empty =
     ready &&
     (props.kind === 'topics'
@@ -247,14 +251,14 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
             };
 
   const fields =
-    catalog.status === 'loading' ? (
+    status === 'loading' ? (
       <div className={styles.loading} role="status">
         <span className="sr-only">Loading…</span>
         <Skeleton height="12px" width="40%" />
         <Skeleton height="40px" radius="lg" />
         <Skeleton height="40px" radius="lg" />
       </div>
-    ) : catalog.status === 'error' ? (
+    ) : status === 'error' ? (
       <p className={styles.state}>
         {props.kind === 'topics'
           ? 'We couldn’t load the topics.'
