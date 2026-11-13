@@ -2,6 +2,8 @@ import { formatDay } from './format';
 import {
   dayKey,
   groupSlotsByDay,
+  hourIn,
+  isEarlyMorning,
   slotWindow,
   visibleDays,
   weekIndexOf,
@@ -145,5 +147,30 @@ describe('weekIndexOf', () => {
     const lateOct = new Date('2026-10-24T12:00:00Z');
     expect(weekIndexOf('2026-10-31T10:00:00Z', 'Europe/London', lateOct)).toBe(1);
     expect(weekIndexOf('2026-10-30T23:30:00Z', 'Europe/London', lateOct)).toBe(0);
+  });
+});
+
+describe('isEarlyMorning (00:00 to 08:59 in the viewer’s zone)', () => {
+  // Lagos is UTC+1 all year.
+  it.each([
+    ['2026-09-29T23:00:00Z', true], // 00:00 Lagos
+    ['2026-09-30T07:59:00Z', true], // 08:59 Lagos
+    ['2026-09-30T08:00:00Z', false], // 09:00 Lagos
+    ['2026-09-30T22:59:00Z', false], // 23:59 Lagos
+  ])('%s in Lagos → %s', (at, expected) => {
+    expect(isEarlyMorning(at, 'Africa/Lagos')).toBe(expected);
+  });
+
+  it('reads the mentee’s own zone, not Lagos', () => {
+    // 10:00 in Lagos is 05:00 in New York (EDT): early there, not in Lagos.
+    const at = '2026-09-30T09:00:00Z';
+    expect(isEarlyMorning(at, 'Africa/Lagos')).toBe(false);
+    expect(isEarlyMorning(at, 'America/New_York')).toBe(true);
+    // 04:00 in Lagos is 12:00 in Tokyo.
+    expect(isEarlyMorning('2026-09-30T03:00:00Z', 'Asia/Tokyo')).toBe(false);
+  });
+
+  it('counts midnight as hour 0', () => {
+    expect(hourIn('2026-09-29T23:00:00Z', 'Africa/Lagos')).toBe(0);
   });
 });
