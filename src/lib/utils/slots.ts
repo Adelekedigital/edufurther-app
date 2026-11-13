@@ -15,6 +15,28 @@ export function dayKey(isoInstant: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date(isoInstant));
 }
 
+/** The hour of an instant in `timeZone`, 0–23 (h23, so midnight is 0, never 24). */
+export function hourIn(isoInstant: string, timeZone: string): number {
+  return Number(
+    new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hourCycle: 'h23', timeZone }).format(
+      new Date(isoInstant),
+    ),
+  );
+}
+
+/**
+ * Early-morning hours, start inclusive, end exclusive (00:00 to 08:59). Legacy
+ * data: sessions at 00:00 to 09:00 Lagos time had 68% no-shows, so the booking
+ * modal flags a time in this window, in the mentee's own zone (roadmap, 2026-11-13).
+ */
+export const EARLY_MORNING_HOURS = { from: 0, to: 9 } as const;
+
+/** Whether an instant falls in `EARLY_MORNING_HOURS` in `timeZone`. */
+export function isEarlyMorning(isoInstant: string, timeZone: string): boolean {
+  const h = hourIn(isoInstant, timeZone);
+  return h >= EARLY_MORNING_HOURS.from && h < EARLY_MORNING_HOURS.to;
+}
+
 /**
  * Bookable instants → days, in the viewer's zone (the zone picker's value, not
  * the mentor's). The same instant can sit on different days for the mentor and

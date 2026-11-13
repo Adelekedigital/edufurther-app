@@ -4,6 +4,7 @@
  * the same rule can be tested directly and used in a row, a hero or a panel.
  */
 import { formatTime } from '@/lib/utils/format';
+import { dayKey, hourIn } from '@/lib/utils/slots';
 import type { Booking, BookingStatus, BookingParty } from '@/types/booking';
 import { REMINDER_SENT } from '@/lib/copy/reminder';
 
@@ -418,20 +419,6 @@ function cityOf(zone: string): string {
   return (zone.split('/')[1] ?? '').replace(/_/g, ' ');
 }
 
-/** The hour of an instant in a given zone, 0–23. */
-function hourIn(isoInstant: string, zone: string): number {
-  return Number(
-    new Intl.DateTimeFormat('en-GB', { hour: '2-digit', hour12: false, timeZone: zone }).format(
-      new Date(isoInstant),
-    ),
-  );
-}
-
-/** The calendar date of an instant in a zone, for spotting a day that differs. */
-function dayIn(isoInstant: string, zone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(isoInstant));
-}
-
 /**
  * What time this is for the other person — "9:00 am to 10:00 am for Amara in
  * Lagos", with "· late for Amara" outside 7am–10pm, and their date in front
@@ -452,7 +439,7 @@ export function otherTimeLine(
   const city = cityOf(zone);
   const hour = hourIn(b.startsAt, zone);
   const odd = hour < 7 || hour >= 22;
-  const shifted = dayIn(b.startsAt, zone) !== dayIn(b.startsAt, viewerZone);
+  const shifted = dayKey(b.startsAt, zone) !== dayKey(b.startsAt, viewerZone);
   const date = shifted
     ? `${new Intl.DateTimeFormat('en-US', {
         weekday: 'short',
