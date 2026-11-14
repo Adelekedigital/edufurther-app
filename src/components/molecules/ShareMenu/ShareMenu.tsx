@@ -5,7 +5,9 @@ import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
+import type { ShareMethod } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/track';
+import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
 import { useCopyText } from '@/lib/utils/useCopyText';
 import { useClampIntoView } from '@/lib/utils/useEdgeFlip';
 import styles from './ShareMenu.module.css';
@@ -13,7 +15,7 @@ import styles from './ShareMenu.module.css';
 type ShareMenuProps = {
   /** Absolute URL of the profile. */
   url: string;
-  /** Mentor's name, for the email subject. */
+  /** Mentor's full name, for the message and the email subject. */
   name: string;
   /**
    * When set, the trigger is a labelled secondary-outlined button with this
@@ -27,9 +29,12 @@ type ShareMenuProps = {
    * which is still fully usable.
    */
   note?: string;
-  /** After "Copy profile link" lands (Mentor Home marks its Share moves done). */
+  /** After a copy (link or message) lands (Mentor Home marks its Share moves done). */
   onCopied?: () => void;
-  /** The viewer's own profile (link_shared `own`): only own shares count toward activation. */
+  /**
+   * The viewer's own profile: the message is in the first person, and
+   * link_shared `own` (only own shares count toward activation).
+   */
   own?: boolean;
 } & (
   | {
@@ -44,13 +49,18 @@ type ShareMenuProps = {
   | { open?: undefined; onOpenChange?: undefined }
 );
 
-type Item = { key: 'copy' | 'linkedin' | 'email'; label: string; icon: IconName } & (
-  { href: string; onSelect?: never } | { onSelect: () => void; href?: never }
+type Item = { key: ShareMethod; label: string; icon: IconName } & (
+  | { href: string; newTab: boolean; onSelect?: never }
+  | { onSelect: () => void; href?: never; newTab?: never }
 );
+
+const MENU = MENTOR_SHARE_COPY.menu;
+const STATUS = MENTOR_SHARE_COPY.status;
 
 /**
  * Share button + menu (Mentor Profile.dc.html). "Copy link page" is not
- * offered: link pages don't exist (design-divergence.md). WAI-ARIA menu button,
+ * offered: link pages don't exist (design-divergence.md). Copy message,
+ * WhatsApp and X carry a ready-made message (owner, 2026-11-13; not drawn yet). WAI-ARIA menu button,
  * as AccountMenu: arrows / Home / End move, Escape and Tab close, focus
  * returns to the button. Copying is announced ("Link copied").
  */
@@ -115,33 +125,62 @@ export function ShareMenu({
     }
   };
 
+  const text = MENTOR_SHARE_COPY.message(own, name);
+  const withLink = MENTOR_SHARE_COPY.withLink(own, name, url);
+  const enc = encodeURIComponent;
+
+  // useCopyText reads no clipboard API (plain-http previews, some webviews)
+  // as a failure, said rather than silent.
+  const copyItem =
+    (method: 'copy' | 'copy_message', value: string, done: string, failed: string) => () => {
+      void copy(value).then((ok) => {
+        setStatus(ok ? done : failed);
+        if (!ok) return;
+        track('link_shared', { kind: 'mentor_profile', method, own });
+        onCopied?.();
+      });
+    };
+
   const items: Item[] = [
     {
       key: 'copy',
-      label: 'Copy profile link',
+      label: MENU.copyLink,
       icon: 'link',
-      onSelect: () => {
-        // useCopyText reads no clipboard API (plain-http previews, some
-        // webviews) as a failure, said rather than silent.
-        void copy(url).then((ok) => {
-          setStatus(ok ? 'Link copied' : 'Couldn’t copy the link');
-          if (!ok) return;
-          track('link_shared', { kind: 'mentor_profile', method: 'copy', own });
-          onCopied?.();
-        });
-      },
+      onSelect: copyItem('copy', url, STATUS.linkCopied, STATUS.linkFailed),
+    },
+    {
+      key: 'copy_message',
+      label: MENU.copyMessage,
+      icon: 'content_copy',
+      onSelect: copyItem('copy_message', withLink, STATUS.messageCopied, STATUS.messageFailed),
+    },
+    {
+      key: 'whatsapp',
+      label: MENU.whatsapp,
+      icon: 'chat',
+      href: `https://wa.me/?text=${enc(withLink)}`,
+      newTab: true,
+    },
+    {
+      key: 'x',
+      label: MENU.x,
+      icon: 'alternate_email',
+      href: `https://x.com/intent/post?text=${enc(text)}&url=${enc(url)}`,
+      newTab: true,
     },
     {
       key: 'linkedin',
-      label: 'Share on LinkedIn',
+      label: MENU.linkedin,
       icon: 'share',
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`,
+      newTab: true,
     },
     {
       key: 'email',
-      label: 'Share by email',
+      label: MENU.email,
       icon: 'mail',
-      href: `mailto:?subject=${encodeURIComponent(`${name} on EduFurther`)}&body=${encodeURIComponent(url)}`,
+      href: `mailto:?subject=${enc(MENTOR_SHARE_COPY.emailSubject(name))}&body=${enc(MENTOR_SHARE_COPY.emailBody(own, name, url))}`,
+      newTab: false,
     },
   ];
 
@@ -237,7 +276,7 @@ export function ShareMenu({
                   className={styles.item}
                   href={it.href}
                   label={it.label}
-                  newTab={it.key === 'linkedin'}
+                  newTab={it.newTab}
                   onClick={() => {
                     // A share target opened: the intent is the share (the
                     // site's own send is out of our sight).
