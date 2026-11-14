@@ -24,6 +24,8 @@ import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import { typeLength, weeklySummary, type Draft } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { lockedPageGate, memberGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
+// Bundled, not lazy: they are the only word that a save or a publish went
+// through (and which hours didn't), so they must never fail to show.
 import { PublishedModal, SavedModal } from './SessionTypeFormModals';
 import styles from './SessionTypesScreen.module.css';
 import { useLeaveGuard, useSessionTypeDraft, type EditTarget } from './useSessionTypeDraft';

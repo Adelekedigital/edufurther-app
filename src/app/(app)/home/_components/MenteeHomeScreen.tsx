@@ -1,18 +1,17 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { Snackbar, toastHasFocus } from '@/components/molecules/Snackbar/Snackbar';
 import { FloatingHelp } from '@/components/organisms/FloatingHelp/FloatingHelp';
-import { InviteModal } from '@/components/templates/InviteModal/InviteModal';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
 import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
-import { EducationEditor } from '@/app/_profile/EducationEditor';
 import { useUpcomingBookings } from '@/lib/api/data/bookings';
 import { useDegreeLevels } from '@/lib/api/data/catalog';
 import { useMenteeGoals } from '@/lib/api/data/goals';
@@ -36,13 +35,29 @@ import { MENTORS_ID, MenteeMentorsSection, RECOMMENDED_ID, SHOWN } from './Mente
 import { MenteeNewView } from './MenteeNewView';
 import { MenteeReturningView, KpiSkeleton, NextSkeleton } from './MenteeReturningView';
 import { MenteeNextSession, startsSoon } from './MenteeNextSession';
-import { MetMentorsModal } from './MetMentorsModal';
-import { ProfileSheet } from './ProfileSheet';
 import { stageFor, stepsDone, targetText } from './newMentee';
 import { goalLineFrom, recommendedFrom } from './recommended';
 import { useNewMentee } from './useNewMentee';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import styles from './MenteeHomeScreen.module.css';
+
+// Each opens from a button (or ?invite=open), never at first paint: they load
+// on open (performance budget, 350kB first-load JS) and mount whole, so their
+// focus handling is unchanged.
+const InviteModal = lazyPart(
+  () => import('@/components/templates/InviteModal/InviteModal').then((m) => m.InviteModal),
+  { close: (p) => p.onClose() },
+);
+const EducationEditor = lazyPart(
+  () => import('@/app/_profile/EducationEditor').then((m) => m.EducationEditor),
+  { close: (p) => p.onClose() },
+);
+const MetMentorsModal = lazyPart(() => import('./MetMentorsModal').then((m) => m.MetMentorsModal), {
+  close: (p) => p.onClose(),
+});
+const ProfileSheet = lazyPart(() => import('./ProfileSheet').then((m) => m.ProfileSheet), {
+  close: (p) => p.onClose(),
+});
 
 /** Getting started leaves this long after its last step is done (design gsDone). */
 const FINISH_MS = 1500;

@@ -1,15 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { Button } from '@/components/atoms/Button/Button';
+import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
-import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
-import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
-import { IntroEditForm } from '@/components/molecules/IntroEditForm/IntroEditForm';
 import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
@@ -21,9 +20,12 @@ import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
 import { recipientFromMentor } from '@/lib/utils/messageRecipient';
 import type { MessageRecipient } from '@/types/messages';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
+import { openPhotoInput } from '@/components/molecules/ProfilePhoto/ProfilePhoto';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
-import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
-import { SessionTypeList } from '@/components/organisms/SessionTypeList/SessionTypeList';
+import {
+  SessionTypeList,
+  SessionTypeListSkeleton,
+} from '@/components/organisms/SessionTypeList/SessionTypeList';
 import { SimilarMentorsCard } from '@/components/organisms/SimilarMentorsCard/SimilarMentorsCard';
 import { TrackRecordCard } from '@/components/organisms/TrackRecordCard/TrackRecordCard';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
@@ -42,14 +44,7 @@ import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { CompletenessCode } from '@/types/mentor';
 import { useOnline } from '@/lib/utils/useOnline';
 import styles from './MentorProfileScreen.module.css';
-import {
-  OwnerEntryDelete,
-  OwnerItemEditor,
-  type ItemKind,
-  type ItemOutcome,
-  type ItemTarget,
-} from '@/app/_profile/OwnerItemEditor';
-import { RemovePhotoConfirm } from '@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm';
+import type { ItemKind, ItemOutcome, ItemTarget } from '@/app/_profile/OwnerItemEditor';
 import {
   NotTakingEmpty,
   NotTakingNote,
@@ -57,11 +52,8 @@ import {
   PREVIEW_TOGGLE_ID,
   ProfileSkeleton,
 } from './ProfileParts';
-import { ProfileMissing } from './ProfileMissing';
-import { ReviewsTab } from './ReviewsTab';
 import { strengthTips } from './strengthTips';
 import { listLabel } from './suggestions';
-import { OwnerSessionTypes } from './OwnerSessionTypes';
 import { useOwnerEditing } from './useOwnerEditing';
 import { useBookLink } from './useBookLink';
 import { useProfileBooking } from './useProfileBooking';
@@ -70,6 +62,60 @@ import { useProfileTab } from './useProfileTab';
 import { useProfileViewed } from './useProfileViewed';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { focusIfShown } from '@/lib/utils/focus';
+
+// Dialogs a visitor opens from a button (the review) or only the owner ever
+// sees (the item editors, remove photo): each loads on open, not with the
+// profile (performance budget, 350kB first-load JS), and mounts whole, so its
+// focus handling is unchanged.
+// The owner's own Sessions tab (with its quick editor): only the owner ever
+// sees it, so visitors never load it. The wait shows the tab's loading skeleton.
+const OwnerSessionTypes = lazyPart(
+  () => import('./OwnerSessionTypes').then((m) => m.OwnerSessionTypes),
+  { loading: () => <SessionTypeListSkeleton count={1} label="Loading your sessions" /> },
+);
+// The "isn't available" page and its mentor cards: only a missing profile
+// shows it, so a found one never loads them. The wait keeps the loading skeleton.
+const ProfileMissing = lazyPart(() => import('./ProfileMissing').then((m) => m.ProfileMissing), {
+  loading: () => <ProfileSkeleton />,
+});
+// The owner's cover tools: only the owner sees them, in a slot that sits over
+// the cover (absolute), so arriving a moment later moves nothing.
+const CoverPicker = lazyPart(() =>
+  import('@/components/molecules/CoverPicker/CoverPicker').then((m) => m.CoverPicker),
+);
+// The Reviews tab (its list, summary and guest sign-in) draws only when picked.
+const ReviewsTab = lazyPart(() => import('./ReviewsTab').then((m) => m.ReviewsTab), {
+  loading: () => <Skeleton height="240px" radius="xl" />,
+});
+// The owner's About and intro editors open from Edit: they load then too.
+// A failed load closes them (Cancel), so Edit works again.
+const AboutEditor = lazyPart(
+  () => import('@/components/molecules/AboutEditor/AboutEditor').then((m) => m.AboutEditor),
+  { close: (p) => p.onCancel() },
+);
+const IntroEditForm = lazyPart(
+  () => import('@/components/molecules/IntroEditForm/IntroEditForm').then((m) => m.IntroEditForm),
+  { close: (p) => p.onCancel() },
+);
+const ReviewDialog = lazyPart(
+  () => import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
+  { close: (p) => p.onClose() },
+);
+const OwnerItemEditor = lazyPart(
+  () => import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerItemEditor),
+  { close: (p) => p.onClose() },
+);
+const OwnerEntryDelete = lazyPart(
+  () => import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerEntryDelete),
+  { close: (p) => p.onClose() },
+);
+const RemovePhotoConfirm = lazyPart(
+  () =>
+    import('@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm').then(
+      (m) => m.RemovePhotoConfirm,
+    ),
+  { close: (p) => p.onKeep() },
+);
 
 // Tests import it from here.
 export { suggestionsLine } from './suggestions';
@@ -728,7 +774,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         tips={strengthTips(completeness.missing, {
                           hoursHref: HOURS_HREF,
                           typesHref: TYPES_HREF,
-                          openPhoto: () => document.getElementById(PHOTO_INPUT)?.click(),
+                          openPhoto: () => openPhotoInput(PHOTO_INPUT),
                           openIntro: owner.openIntro,
                           openAbout: () => {
                             setAboutFocus((n) => n + 1);

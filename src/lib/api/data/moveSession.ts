@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MOVE_COPY } from '@/lib/copy/session';
 import type { Booking } from '@/types/booking';
 import type { AppError } from '@/types/mentor';
-import { keyForAttempt } from './booking';
+import { keyForAttempt } from './attempt';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';

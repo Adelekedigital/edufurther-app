@@ -1,14 +1,25 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
-import { SendMessage } from '@/components/templates/SendMessage/SendMessage';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useAttachedFile } from '@/lib/api/data/attachedFile';
 import { isFileExpired, messageViewerFile } from '@/lib/utils/files';
 import { useChatStatus } from '@/lib/api/data/messages';
 import { outboxItem, useOutbox, useSendMessage } from '@/lib/api/data/messageSend';
 import { COMPOSER_COPY, SEND_MESSAGE_COPY as C } from '@/lib/copy/messages';
 import type { MessageRecipient } from '@/types/messages';
+
+// The dialog and the file viewer load when a Message button opens them, not
+// with the page (performance budget, 350kB first-load JS). Each mounts whole,
+// so its focus handling is unchanged.
+const SendMessage = lazyPart(
+  () => import('@/components/templates/SendMessage/SendMessage').then((m) => m.SendMessage),
+  { close: (p) => p.onClose() },
+);
+const FileViewerLauncher = lazyPart(
+  () => import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
+  { close: (p) => p.onClose() },
+);
 
 type SendMessageLauncherProps = {
   /** Who it writes to; null keeps it closed. */

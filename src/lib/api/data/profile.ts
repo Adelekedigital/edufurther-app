@@ -18,7 +18,7 @@ import type {
   Remote,
   SocialKind,
 } from '@/types/mentor';
-import { toSessionType } from './booking';
+import { toSessionType } from './sessionTypeRead';
 import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
