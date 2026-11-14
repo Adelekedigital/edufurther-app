@@ -179,7 +179,7 @@ describe('the flags', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
     expect(screen.queryByRole('region')).toBeNull();
     await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('identified'));
-    expect(readConsentCookie()?.granted).toBe(true);
+    expect(readConsentCookie()).toMatchObject({ granted: true, method: 'accept' });
     // A guest has no account to store it on.
     expect(PUT).not.toHaveBeenCalled();
   });
@@ -243,12 +243,12 @@ describe('the flags', () => {
   it('Decline records the answer and keeps cookieless', async () => {
     render(<AnalyticsRoot />);
     await userEvent.click(screen.getByRole('button', { name: CONSENT_COPY.decline }));
-    expect(readConsentCookie()?.granted).toBe(false);
+    expect(readConsentCookie()).toMatchObject({ granted: false, method: 'decline' });
     expect(screen.queryByRole('region')).toBeNull();
     expect(vendor.setMode).not.toHaveBeenCalledWith('identified');
   });
 
-  it('the X answers exactly as Essential only: the same cookie, and focus to the heading', async () => {
+  it('the X answers as Essential only, recorded as close, and focus goes to the heading', async () => {
     render(
       <>
         <main id="main">
@@ -259,7 +259,7 @@ describe('the flags', () => {
     );
     screen.getByRole('button', { name: CONSENT_COPY.close }).focus();
     await userEvent.keyboard('{Enter}');
-    expect(readConsentCookie()?.granted).toBe(false);
+    expect(readConsentCookie()).toMatchObject({ granted: false, method: 'close' });
     expect(screen.queryByRole('region')).toBeNull();
     expect(vendor.setMode).not.toHaveBeenCalledWith('identified');
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Log in' })).toHaveFocus());
@@ -370,18 +370,60 @@ describe('members', () => {
     render(<AnalyticsRoot />);
     await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
     expect(PUT).toHaveBeenCalledWith('/api/v1/me/consents/analytics', {
-      body: { granted: true, version: CONSENT_VERSION },
+      body: { granted: true, version: CONSENT_VERSION, method: 'accept' },
     });
   });
 
-  it("a member's X saves Essential only on the account, as Decline does", async () => {
+  it("a member's Essential only is saved as decline", async () => {
+    env.viewer = member();
+    render(<AnalyticsRoot />);
+    await userEvent.click(screen.getByRole('button', { name: CONSENT_COPY.decline }));
+    expect(PUT).toHaveBeenCalledWith('/api/v1/me/consents/analytics', {
+      body: { granted: false, version: CONSENT_VERSION, method: 'decline' },
+    });
+  });
+
+  it("a member's X saves Essential only on the account, recorded as close", async () => {
     env.viewer = member();
     render(<AnalyticsRoot />);
     await userEvent.click(screen.getByRole('button', { name: CONSENT_COPY.close }));
     expect(PUT).toHaveBeenCalledWith('/api/v1/me/consents/analytics', {
-      body: { granted: false, version: CONSENT_VERSION },
+      body: { granted: false, version: CONSENT_VERSION, method: 'close' },
     });
   });
+
+  it("a guest's answer goes to the account at sign-in with how it was given", async () => {
+    render(<AnalyticsRoot />);
+    await userEvent.click(screen.getByRole('button', { name: CONSENT_COPY.close }));
+    expect(PUT).not.toHaveBeenCalled();
+    expect(readConsentCookie()?.method).toBe('close');
+    // Signing in loads a new page: only the cookie remains.
+    resetConsentStoreForTests();
+    env.viewer = member();
+    render(<AnalyticsRoot />);
+    await waitFor(() =>
+      expect(PUT).toHaveBeenCalledWith('/api/v1/me/consents/analytics', {
+        body: { granted: false, version: CONSENT_VERSION, method: 'close' },
+      }),
+    );
+  });
+
+  it.each([
+    [true, 'accept'],
+    [false, 'decline'],
+  ] as const)(
+    'a guest answer stored before methods (granted %s) is sent as %s',
+    async (granted, method) => {
+      document.cookie = `${CONSENT_COOKIE}=${CONSENT_VERSION}.${granted ? 1 : 0}.${Date.now() - 500}; Path=/`;
+      env.viewer = member();
+      render(<AnalyticsRoot />);
+      await waitFor(() =>
+        expect(PUT).toHaveBeenCalledWith('/api/v1/me/consents/analytics', {
+          body: { granted, version: CONSENT_VERSION, method },
+        }),
+      );
+    },
+  );
 
   it("an account's answer hides the banner and comes to this device", async () => {
     env.viewer = member({
@@ -497,7 +539,7 @@ describe('a withdrawal always wins in the session', () => {
     // Settings' switch off: the same store the banner and Settings share.
     const { consentStore } = await import('@/lib/analytics/consentStore');
     act(() => {
-      consentStore.answer(false);
+      consentStore.answer(false, 'settings');
     });
     rerender(<AnalyticsRoot />);
     await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless'));

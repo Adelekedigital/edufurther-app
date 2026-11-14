@@ -292,9 +292,10 @@ export function AnalyticsRoot() {
   // Answering removes the banner, and with it the focused button: focus goes
   // to the page heading, never to <body> (a keyboard user keeps their place).
   const answeredHere = useRef(false);
-  const answerFromBanner = (granted: boolean) => {
+  // Allow grants; Essential only and the X don't, each recorded as itself.
+  const answerFromBanner = (method: 'accept' | 'decline' | 'close') => {
     answeredHere.current = !!bannerRef.current?.contains(document.activeElement);
-    void choose(granted);
+    void choose(method === 'accept', method);
   };
   useEffect(() => {
     if (show || !answeredHere.current) return;
@@ -315,13 +316,11 @@ export function AnalyticsRoot() {
     <ConsentBanner
       ref={bannerRef}
       signedIn={viewer.kind === 'member'}
-      onAccept={() => answerFromBanner(true)}
-      onDecline={() => answerFromBanner(false)}
-      // The X is "Essential only": the same answer, cookie and server save,
-      // and focus to the heading after. No consent event carries a method
-      // (the answer itself is the record), so close and decline aren't told
-      // apart; doing so needs a new event agreed with the backend.
-      onClose={() => answerFromBanner(false)}
+      onAccept={() => answerFromBanner('accept')}
+      onDecline={() => answerFromBanner('decline')}
+      // The X is "Essential only" (the same answer, cookie and focus to the
+      // heading after), recorded as `close` so it stays apart from a chosen decline.
+      onClose={() => answerFromBanner('close')}
     />
   );
 }

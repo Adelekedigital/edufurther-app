@@ -5,6 +5,7 @@ import {
   writeConsentCookie,
   CONSENT_VERSION,
   type ConsentAnswer,
+  type ConsentMethod,
 } from './consent';
 
 /**
@@ -63,10 +64,14 @@ export const consentStore = {
       listeners.delete(listener);
     };
   },
-  /** A fresh answer from the banner or Settings, to the text in force. */
-  answer(granted: boolean, now = Date.now()): ConsentAnswer {
+  /**
+   * A fresh answer from the banner or Settings, to the text in force, with how
+   * it was given: the cookie keeps the method, so a guest's goes to the account
+   * at sign-up.
+   */
+  answer(granted: boolean, method: ConsentMethod, now = Date.now()): ConsentAnswer {
     ensureLoaded();
-    const next = { granted, version: CONSENT_VERSION, answeredAt: now };
+    const next = { granted, version: CONSENT_VERSION, answeredAt: now, method };
     set({ ...state, answer: next, here: true });
     return next;
   },
@@ -85,7 +90,8 @@ export const consentStore = {
     ensureLoaded();
     const a = state.answer;
     if (!a || a.granted !== stored.granted || a.version !== stored.version) return;
-    set({ ...state, answer: stored });
+    // A server that doesn't echo the method yet keeps the one given here.
+    set({ ...state, answer: { ...stored, method: stored.method ?? a.method ?? null } });
   },
   /**
    * A session ended (Logout, or expired or revoked): the marker is written and

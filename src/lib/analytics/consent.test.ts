@@ -7,6 +7,7 @@ import {
   CONSENT_COOKIE,
   CONSENT_VERSION,
   cookieDomain,
+  consentMethod,
   formatConsent,
   fromServer,
   isCurrent,
@@ -18,8 +19,19 @@ import {
 import { consentStore, resetConsentStoreForTests } from './consentStore';
 
 const at = (s: number) => s * 1000;
-const yes = (t = 100) => ({ granted: true, version: CONSENT_VERSION, answeredAt: at(t) });
-const no = (t = 100) => ({ granted: false, version: CONSENT_VERSION, answeredAt: at(t) });
+// No method: as read back from a cookie or an account that doesn't carry one.
+const yes = (t = 100) => ({
+  granted: true,
+  version: CONSENT_VERSION,
+  answeredAt: at(t),
+  method: null,
+});
+const no = (t = 100) => ({
+  granted: false,
+  version: CONSENT_VERSION,
+  answeredAt: at(t),
+  method: null,
+});
 
 afterEach(() => {
   document.cookie = `${CONSENT_COOKIE}=; Path=/; Max-Age=0`;
@@ -44,6 +56,43 @@ describe('the consent cookie value', () => {
     expect(isCurrent(yes())).toBe(true);
     expect(isCurrent({ ...yes(), version: 'older' })).toBe(false);
     expect(isCurrent(null)).toBe(false);
+  });
+});
+
+describe('how it was answered (method)', () => {
+  it.each(['accept', 'decline', 'close', 'settings'] as const)(
+    'the cookie keeps %s with the answer, under the same version',
+    (method) => {
+      const a = { ...(method === 'accept' ? yes(1700000000) : no(1700000000)), method };
+      expect(formatConsent(a)).toBe(
+        `${CONSENT_VERSION}.${a.granted ? 1 : 0}.1700000000000.${method}`,
+      );
+      expect(parseConsent(formatConsent(a))).toEqual(a);
+    },
+  );
+
+  it('an older cookie without a method, or with one it does not know, still reads (method null)', () => {
+    expect(parseConsent(`${CONSENT_VERSION}.1.1700000000000`)).toEqual(yes(1700000000));
+    expect(parseConsent(`${CONSENT_VERSION}.0.1700000000000.bogus`)).toEqual(no(1700000000));
+  });
+
+  it('sends the method given, when it fits the answer', () => {
+    expect(consentMethod({ granted: true, method: 'accept' })).toBe('accept');
+    expect(consentMethod({ granted: false, method: 'decline' })).toBe('decline');
+    expect(consentMethod({ granted: false, method: 'close' })).toBe('close');
+    expect(consentMethod({ granted: true, method: 'settings' })).toBe('settings');
+    expect(consentMethod({ granted: false, method: 'settings' })).toBe('settings');
+  });
+
+  it('an answer stored without one is sent as the button that gives it (never a 422, never null)', () => {
+    expect(consentMethod({ granted: true, method: null })).toBe('accept');
+    expect(consentMethod({ granted: false })).toBe('decline');
+  });
+
+  it('a method that does not fit the answer (an edited cookie) falls back the same way', () => {
+    expect(consentMethod({ granted: true, method: 'close' })).toBe('accept');
+    expect(consentMethod({ granted: true, method: 'decline' })).toBe('accept');
+    expect(consentMethod({ granted: false, method: 'accept' })).toBe('decline');
   });
 });
 
@@ -79,8 +128,8 @@ describe('reading and writing the cookie', () => {
     const heard = vi.fn();
     consentStore.subscribe(heard);
     expect(consentStore.get()).toBeNull();
-    const a = consentStore.answer(true, at(1700000000));
-    expect(a).toEqual(yes(1700000000));
+    const a = consentStore.answer(true, 'accept', at(1700000000));
+    expect(a).toEqual({ ...yes(1700000000), method: 'accept' });
     expect(heard).toHaveBeenCalledTimes(1);
     expect(readConsentCookie()).toEqual(a);
     expect(consentStore.snapshotServer().answer).toBeNull();
@@ -121,8 +170,16 @@ describe('reconcile: the newest answer wins', () => {
 
   it('reads the account answer from /me', () => {
     expect(fromServer({ granted: true, version: 'v', answeredAt: '1970-01-01T00:01:40Z' })).toEqual(
-      { granted: true, version: 'v', answeredAt: 100_000 },
+      { granted: true, version: 'v', answeredAt: 100_000, method: null },
     );
+    expect(
+      fromServer({
+        granted: false,
+        version: 'v',
+        answeredAt: '1970-01-01T00:01:40Z',
+        method: 'close',
+      })?.method,
+    ).toBe('close');
     expect(fromServer(null)).toBeNull();
     expect(fromServer(undefined)).toBeNull();
   });
@@ -148,17 +205,21 @@ describe('an answer given on this page', () => {
   });
 
   it('is kept when the server confirms it with its own time, and not when they changed their mind', () => {
-    consentStore.answer(false, at(100));
+    consentStore.answer(false, 'decline', at(100));
     consentStore.confirm(no(90));
-    expect(consentStore.snapshot()).toMatchObject({ answer: no(90), here: true });
+    // A server that doesn't echo the method keeps the one given here.
+    expect(consentStore.snapshot()).toMatchObject({
+      answer: { ...no(90), method: 'decline' },
+      here: true,
+    });
     consentStore.confirm(yes(95));
-    expect(consentStore.get()).toEqual(no(90));
+    expect(consentStore.get()).toEqual({ ...no(90), method: 'decline' });
   });
 
   it('is not replaced by adopting the account answer', () => {
-    consentStore.answer(false, at(100));
+    consentStore.answer(false, 'settings', at(100));
     consentStore.adopt(yes(200));
-    expect(consentStore.get()).toEqual(no(100));
+    expect(consentStore.get()).toEqual({ ...no(100), method: 'settings' });
   });
 });
 
@@ -172,7 +233,12 @@ describe('shared device: the last log-out', () => {
 
   it('an answer 200 ms after a sign-out survives the cookie round trip', () => {
     markSignedOut(1_700_000_000_400);
-    const answer = { granted: true, version: CONSENT_VERSION, answeredAt: 1_700_000_000_600 };
+    const answer = {
+      granted: true,
+      version: CONSENT_VERSION,
+      answeredAt: 1_700_000_000_600,
+      method: 'accept' as const,
+    };
     const back = parseConsent(formatConsent(answer));
     expect(back).toEqual(answer);
     expect(stillValid(back, readSignedOut(1_800_000_000_000))).toEqual(answer);

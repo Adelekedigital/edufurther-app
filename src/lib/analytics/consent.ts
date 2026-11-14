@@ -2,7 +2,7 @@
  * The analytics consent answer (PRD 30), asked once across the app and the
  * landing site: one cookie on `.edufurther.org`, which both read and write.
  *
- *   ef_consent=<version>.<1|0>.<unix milliseconds>
+ *   ef_consent=<version>.<1|0>.<unix milliseconds>[.<method>]
  *
  * THE CONTRACT for the landing site (PRD 30 PR 4, not built yet): write and
  * read milliseconds. A 10-digit value (unix seconds, the first format) is
@@ -11,7 +11,10 @@
  *
  * `version` names the consent text that was answered; an answer to another
  * version is no answer (the banner asks again). The time lets the newest of
- * the cookie and the account's stored answer win. Nothing else is in it: no
+ * the cookie and the account's stored answer win. `method` is how it was
+ * answered (ConsentMethod below), kept with the answer so a guest's travels to
+ * the account at sign-up; a value without one (written before it existed, or
+ * by a writer that doesn't know it) still reads. Nothing else is in it: no
  * id, no name.
  */
 
@@ -23,9 +26,52 @@ export const CONSENT_COOKIE = 'ef_consent';
 /** Twelve months, then asked again. */
 const MAX_AGE_S = 365 * 24 * 60 * 60;
 
-export type ConsentAnswer = { granted: boolean; version: string; answeredAt: number };
+/**
+ * How an answer was given (the contract's `ConsentMethod`, PUT
+ * /me/consents/analytics): the banner's Allow (`accept`), Essential only
+ * (`decline`), its X (`close`), or the Settings switch (`settings`).
+ */
+export type ConsentMethod = 'accept' | 'decline' | 'close' | 'settings';
 
-const SHAPE = /^([A-Za-z0-9-]{1,32})\.([01])\.(\d{1,15})$/;
+const METHODS: ReadonlySet<string> = new Set<ConsentMethod>([
+  'accept',
+  'decline',
+  'close',
+  'settings',
+]);
+
+/** A method as stored or received, or null for anything else. */
+export function toConsentMethod(v: unknown): ConsentMethod | null {
+  return typeof v === 'string' && METHODS.has(v) ? (v as ConsentMethod) : null;
+}
+
+/** `method`: how it was answered; null when not known (an older stored answer). */
+export type ConsentAnswer = {
+  granted: boolean;
+  version: string;
+  answeredAt: number;
+  method?: ConsentMethod | null;
+};
+
+/**
+ * The method to send with an answer. The backend refuses (422) a method that
+ * doesn't fit the answer: `accept` grants, `decline` and `close` don't,
+ * `settings` may be either. One without a method, or with one that doesn't
+ * fit (an edited cookie), is sent as the banner button that gives that answer:
+ * granted is `accept`, not granted is `decline`. Always a method, never
+ * omitted: an answer without one resets the stored method to null.
+ */
+export function consentMethod(a: Pick<ConsentAnswer, 'granted' | 'method'>): ConsentMethod {
+  const m = a.method;
+  return m && methodFits(m, a.granted) ? m : a.granted ? 'accept' : 'decline';
+}
+
+/** Whether the backend takes this method with this answer (else 422). */
+export function methodFits(m: ConsentMethod, granted: boolean): boolean {
+  return m === 'settings' || (m === 'accept') === granted;
+}
+
+const SHAPE = /^([A-Za-z0-9-]{1,32})\.([01])\.(\d{1,15})(?:\.([a-z]{1,16}))?$/;
 
 /** A cookie value, or null when it isn't one of ours. */
 export function parseConsent(raw: string | null | undefined): ConsentAnswer | null {
@@ -34,12 +80,18 @@ export function parseConsent(raw: string | null | undefined): ConsentAnswer | nu
   if (!m) return null;
   // Milliseconds; a value from before that change (seconds, 10 digits) is read as seconds.
   const n = Number(m[3]);
-  return { version: m[1]!, granted: m[2] === '1', answeredAt: n < 1e11 ? n * 1000 : n };
+  return {
+    version: m[1]!,
+    granted: m[2] === '1',
+    answeredAt: n < 1e11 ? n * 1000 : n,
+    method: toConsentMethod(m[4]),
+  };
 }
 
 export function formatConsent(a: ConsentAnswer): string {
   // Milliseconds, like the sign-out marker: an answer right after a sign-out stays after it.
-  return `${a.version}.${a.granted ? '1' : '0'}.${Math.floor(a.answeredAt)}`;
+  const base = `${a.version}.${a.granted ? '1' : '0'}.${Math.floor(a.answeredAt)}`;
+  return a.method ? `${base}.${a.method}` : base;
 }
 
 /** An answer to the consent text in force; any other is treated as unanswered. */
@@ -123,13 +175,24 @@ export function stillValid(
 }
 
 /** The account's stored answer (`/me` analytics_consent), as an answer. */
-export function fromServer(
-  c: { granted: boolean; version: string; answeredAt: string } | null | undefined,
-): ConsentAnswer | null {
+export function fromServer(c: ServerConsent | null | undefined): ConsentAnswer | null {
   if (!c) return null;
   const at = Date.parse(c.answeredAt);
-  return { granted: c.granted, version: c.version, answeredAt: Number.isNaN(at) ? 0 : at };
+  return {
+    granted: c.granted,
+    version: c.version,
+    answeredAt: Number.isNaN(at) ? 0 : at,
+    method: c.method ?? null,
+  };
 }
+
+/** The account's answer as the data layer maps it (`AnalyticsConsentRead`). */
+export type ServerConsent = {
+  granted: boolean;
+  version: string;
+  answeredAt: string;
+  method?: ConsentMethod | null;
+};
 
 /**
  * What a member's device should hold, from the cookie and the account's
@@ -159,7 +222,7 @@ export function effectiveConsent(i: {
   here: boolean;
   signedOutAt: number | null;
   /** A member's `/me` answer; undefined for a guest. */
-  server?: { granted: boolean; version: string; answeredAt: string } | null;
+  server?: ServerConsent | null;
   member: boolean;
 }): { answer: ConsentAnswer | null; push: boolean; write: boolean } {
   if (i.here) return { answer: i.stored, push: false, write: false };

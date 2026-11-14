@@ -1,5 +1,6 @@
 /** Domain types. Components are typed on these, never on the wire shape. */
 
+import type { ServerConsent } from '@/lib/analytics/consent';
 import type { EntryPoint } from '@/lib/analytics/events';
 import type { CoverArt, CoverKey } from '@/lib/utils/cover';
 
@@ -257,7 +258,7 @@ export type Viewer =
        * The account's answer to analytics cookies (`/me` analytics_consent):
        * null until answered, absent when not known (the mock viewers).
        */
-      analyticsConsent?: { granted: boolean; version: string; answeredAt: string } | null;
+      analyticsConsent?: ServerConsent | null;
       /** Sessions had as a mentee; drives the match prompt (≤ 2 → shown). */
       completedSessions: number;
       /** When the account was made (`/me` created_at). Absent: not known. */
