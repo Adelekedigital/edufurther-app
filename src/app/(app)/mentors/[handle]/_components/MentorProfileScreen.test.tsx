@@ -231,9 +231,11 @@ describe('MentorProfileScreen — the four states', () => {
     );
     await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(sessionTypesArgs).toHaveBeenLastCalledWith(null);
+    // Closed, the flow and its queries are gone: nothing asks for s1 again.
+    sessionTypesArgs.mockClear();
     // Another suggestion: the booking follows.
     await user.click(screen.getByRole('button', { name: 'See availability' }));
+    expect(sessionTypesArgs).not.toHaveBeenCalledWith('s1');
     expect(sessionTypesArgs).toHaveBeenLastCalledWith('s2');
     expect(screen.getByRole('dialog')).toHaveTextContent('Muhammad Kabir Musa');
   });
@@ -245,9 +247,11 @@ describe('MentorProfileScreen — the four states', () => {
     await user.click(screen.getByRole('button', { name: 'Book session with Oluwakemi' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     h.viewerIsMentor = true;
+    sessionTypesArgs.mockClear();
     rerender(<MentorProfileScreen handle="hidden-mentor" />);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(sessionTypesArgs).toHaveBeenLastCalledWith(null);
+    // Closed, the flow and its queries unmount: nothing is asked for.
+    expect(sessionTypesArgs).not.toHaveBeenCalled();
   });
 
   it('a found profile asks for no suggestions when a mentor is looking', () => {

@@ -1,7 +1,8 @@
 import type { ComponentProps } from 'react';
 import type { SessionLobby } from '@/components/organisms/SessionLobby/SessionLobby';
 import type { GuideTip } from '@/components/organisms/SessionPrep/SessionPrep';
-import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
+// From its source, not TimezonePicker's re-export, which pulls the whole picker in.
+import { zoneLabel } from '@/lib/utils/timezones';
 import { formatTime } from '@/lib/utils/format';
 import {
   entryFor,

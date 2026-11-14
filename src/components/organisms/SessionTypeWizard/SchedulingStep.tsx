@@ -3,7 +3,8 @@ import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Select } from '@/components/atoms/Select/Select';
 import { RadioCards } from '@/components/molecules/RadioCards/RadioCards';
-import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
+// From its source, not TimezonePicker's re-export, which pulls the whole picker in.
+import { zoneLabel } from '@/lib/utils/timezones';
 import { BookingRulesRows } from '@/components/organisms/BookingRulesRows/BookingRulesRows';
 import { BOOKING_COPY, approvalShort } from '@/lib/copy/mentorSettings';
 import { RULES_COPY, venueLabel } from '@/lib/copy/sessionTypes';

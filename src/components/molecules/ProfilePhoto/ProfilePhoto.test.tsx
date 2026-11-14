@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ProfilePhoto } from './ProfilePhoto';
+import { openPhotoInput, ProfilePhoto } from './ProfilePhoto';
 
 const upload = () => ({
   accept: 'image/jpeg,image/png,image/webp',
@@ -99,5 +99,14 @@ describe('ProfilePhoto', () => {
   it('the file input takes the id the page opens it by', () => {
     render(<ProfilePhoto size={88} person={person} upload={upload()} inputId="mo-photo" />);
     expect(screen.getByLabelText('Add photo')).toHaveAttribute('id', 'mo-photo');
+  });
+
+  it('opening the file dialog from elsewhere waits for the picker to be drawn (review of PR 606)', async () => {
+    const click = vi.fn();
+    // Asked before the picker is on the page (its code still loading)…
+    openPhotoInput('later-photo-input');
+    // …then it arrives: the click still reaches its file input.
+    render(<input id="later-photo-input" type="file" aria-label="Photo" onClick={click} />);
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(1));
   });
 });

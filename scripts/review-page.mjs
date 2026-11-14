@@ -172,22 +172,50 @@ const VITALS_SCRIPT = `
   } catch {}
 `;
 
-/** Sum transfer weight from content-length, bucketed by resource type. */
+/**
+ * Sum transfer weight, bucketed by resource type. The body's size on the wire
+ * comes from the browser (request.sizes), not content-length: `next start`
+ * gzips and streams with no content-length, so counting the header alone read
+ * every script as 0kB and the JS budget never fired.
+ */
 function makeWeightTracker(page) {
   const weight = { totalBytes: 0, jsBytes: 0, cssBytes: 0, imgBytes: 0, unmeasured: 0 };
+  const pending = [];
+  let loaded = false;
   page.on('response', (res) => {
-    const headers = res.headers();
-    const len = Number(headers['content-length'] ?? NaN);
+    // The budget is the first load. What the page fetches afterwards (lazy
+    // parts preloaded on idle, the code a focused control asks for during the
+    // focus trace) is off the critical path, and not counted.
+    if (loaded) return;
     const type = res.request().resourceType();
-    if (!Number.isFinite(len)) {
-      weight.unmeasured += 1;
-      return;
-    }
-    weight.totalBytes += len;
-    if (type === 'script') weight.jsBytes += len;
-    else if (type === 'stylesheet') weight.cssBytes += len;
-    else if (type === 'image') weight.imgBytes += len;
+    const header = Number(res.headers()['content-length'] ?? NaN);
+    pending.push(
+      res
+        .request()
+        .sizes()
+        .then((s) => s.responseBodySize)
+        .catch(() => NaN)
+        .then((size) => {
+          const len = Number.isFinite(size) && size > 0 ? size : header;
+          if (!Number.isFinite(len)) {
+            weight.unmeasured += 1;
+            return;
+          }
+          weight.totalBytes += len;
+          if (type === 'script') weight.jsBytes += len;
+          else if (type === 'stylesheet') weight.cssBytes += len;
+          else if (type === 'image') weight.imgBytes += len;
+        }),
+    );
   });
+  // Every size settles once its body has arrived; call before reading weight.
+  // A body still streaming after 5s (an event stream) stays uncounted rather than
+  // hanging the run.
+  weight.stop = () => {
+    loaded = true;
+  };
+  weight.settle = () =>
+    Promise.race([Promise.all(pending), new Promise((r) => setTimeout(r, 5000))]);
   return weight;
 }
 
@@ -228,6 +256,15 @@ async function reviewWidth(width) {
     result.consoleErrors.push(`uncaught: ${err.message}`.slice(0, 300));
   });
   page.on('requestfailed', (req) => {
+    const reason = req.failure()?.errorText ?? '';
+    // Next prefetches the pages a visible link leads to (an RSC request,
+    // `_rsc=`). One still in flight when the run moves on or closes the page is
+    // aborted by the browser: timing, not a failure (it flaked the mentor home
+    // on /sessions/j-3). Only aborts of RSC requests are skipped; any other
+    // failure, and any RSC answer of 4xx/5xx, is still reported.
+    const headers = req.headers();
+    const rsc = !!headers.rsc || !!headers['next-router-prefetch'] || /[?&]_rsc=/.test(req.url());
+    if (rsc && reason.includes('ERR_ABORTED')) return;
     result.badRequests.push({
       url: req.url(),
       status: 'failed',
@@ -250,6 +287,7 @@ async function reviewWidth(width) {
   try {
     const res = await page.goto(result.url, { waitUntil: 'networkidle', timeout: 30_000 });
     if (!res) throw new Error('no response');
+    weight.stop();
     if (res.status() >= 400 && !FORCE_STATES) {
       result.badRequests.push({ url: result.url, status: res.status(), document: true });
     }
@@ -372,7 +410,9 @@ async function reviewWidth(width) {
     lcp: window.__vitals?.lcp ?? null,
     cls: window.__vitals?.cls ?? null,
   }));
-  result.weight = { ...weight };
+  await weight.settle();
+  const { settle: _settle, stop: _stop, ...measured } = weight;
+  result.weight = measured;
 
   const kb = (b) => Math.round(b / 1024);
   const b = cfg.budgets;

@@ -1,12 +1,19 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ReviewDialog } from '@/app/_reviews/ReviewDialog';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { partyToMentor } from '@/lib/utils/bookableMentor';
 import type { Booking } from '@/types/booking';
 import type { ReviewableSession } from '@/types/mentor';
+
+// The review dialog loads when someone opens it, not with the page
+// (performance budget, 350kB first-load JS); it mounts whole, focus and all.
+const ReviewDialog = lazyPart(
+  () => import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
+  { close: (p) => p.onClose() },
+);
 
 type Options = {
   /** The viewer may book at all (canBookFor): reviewing goes with booking. */

@@ -43,6 +43,7 @@ export function Snackbar({
   stamp = 0,
   action,
   tone,
+  persist = false,
 }: {
   message: string | null;
   /** Moves with each outcome, so the same words twice are shown and heard again. */
@@ -58,6 +59,12 @@ export function Snackbar({
    * check_circle; error, a red error. Absent: the plain toast.
    */
   tone?: 'success' | 'error';
+  /**
+   * An outcome that still needs acting on (a part that couldn't load, with
+   * Reload): when a newer toast leaves, this one comes back rather than
+   * staying hidden behind it for good.
+   */
+  persist?: boolean;
 }) {
   const actionRef = useRef<HTMLButtonElement>(null);
   const id = useId();
@@ -81,6 +88,10 @@ export function Snackbar({
       if (owner === id) setOwner(null);
     };
   }, [message, stamp, id]);
+  // The screen is free again (the newer toast left): a persistent one takes it back.
+  useEffect(() => {
+    if (persist && message && current === null) setOwner(id);
+  }, [persist, message, current, id]);
   const shown = message && current === id ? message : null;
   const focusAction = !!shown && !!action?.focus;
   useEffect(() => {
