@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -20,6 +20,7 @@ import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
 import { recipientFromMentor } from '@/lib/utils/messageRecipient';
 import type { MessageRecipient } from '@/types/messages';
 import { ProfileHeader } from '@/components/organisms/ProfileHeader/ProfileHeader';
+import { openPhotoInput } from '@/components/molecules/ProfilePhoto/ProfilePhoto';
 import { ProfileOverview } from '@/components/organisms/ProfileOverview/ProfileOverview';
 import {
   SessionTypeList,
@@ -68,52 +69,44 @@ import { focusIfShown } from '@/lib/utils/focus';
 // focus handling is unchanged.
 // The owner's own Sessions tab (with its quick editor): only the owner ever
 // sees it, so visitors never load it. The wait shows the tab's loading skeleton.
-const OwnerSessionTypes = dynamic(
+const OwnerSessionTypes = lazyPart(
   () => import('./OwnerSessionTypes').then((m) => m.OwnerSessionTypes),
   { loading: () => <SessionTypeListSkeleton count={1} label="Loading your sessions" /> },
 );
 // The "isn't available" page and its mentor cards: only a missing profile
 // shows it, so a found one never loads them. The wait keeps the loading skeleton.
-const ProfileMissing = dynamic(() => import('./ProfileMissing').then((m) => m.ProfileMissing), {
+const ProfileMissing = lazyPart(() => import('./ProfileMissing').then((m) => m.ProfileMissing), {
   loading: () => <ProfileSkeleton />,
 });
 // The owner's cover tools: only the owner sees them, in a slot that sits over
 // the cover (absolute), so arriving a moment later moves nothing.
-const CoverPicker = dynamic(
-  () => import('@/components/molecules/CoverPicker/CoverPicker').then((m) => m.CoverPicker),
-  { ssr: false },
+const CoverPicker = lazyPart(() =>
+  import('@/components/molecules/CoverPicker/CoverPicker').then((m) => m.CoverPicker),
 );
 // The Reviews tab (its list, summary and guest sign-in) draws only when picked.
-const ReviewsTab = dynamic(() => import('./ReviewsTab').then((m) => m.ReviewsTab), {
+const ReviewsTab = lazyPart(() => import('./ReviewsTab').then((m) => m.ReviewsTab), {
   loading: () => <Skeleton height="240px" radius="xl" />,
 });
 // The owner's About and intro editors open from Edit: they load then too.
-const AboutEditor = dynamic(
-  () => import('@/components/molecules/AboutEditor/AboutEditor').then((m) => m.AboutEditor),
-  { ssr: false },
+const AboutEditor = lazyPart(() =>
+  import('@/components/molecules/AboutEditor/AboutEditor').then((m) => m.AboutEditor),
 );
-const IntroEditForm = dynamic(
-  () => import('@/components/molecules/IntroEditForm/IntroEditForm').then((m) => m.IntroEditForm),
-  { ssr: false },
+const IntroEditForm = lazyPart(() =>
+  import('@/components/molecules/IntroEditForm/IntroEditForm').then((m) => m.IntroEditForm),
 );
-const ReviewDialog = dynamic(
-  () => import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
-  { ssr: false },
+const ReviewDialog = lazyPart(() =>
+  import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
 );
-const OwnerItemEditor = dynamic(
-  () => import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerItemEditor),
-  { ssr: false },
+const OwnerItemEditor = lazyPart(() =>
+  import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerItemEditor),
 );
-const OwnerEntryDelete = dynamic(
-  () => import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerEntryDelete),
-  { ssr: false },
+const OwnerEntryDelete = lazyPart(() =>
+  import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerEntryDelete),
 );
-const RemovePhotoConfirm = dynamic(
-  () =>
-    import('@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm').then(
-      (m) => m.RemovePhotoConfirm,
-    ),
-  { ssr: false },
+const RemovePhotoConfirm = lazyPart(() =>
+  import('@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm').then(
+    (m) => m.RemovePhotoConfirm,
+  ),
 );
 
 // Tests import it from here.
@@ -773,7 +766,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                         tips={strengthTips(completeness.missing, {
                           hoursHref: HOURS_HREF,
                           typesHref: TYPES_HREF,
-                          openPhoto: () => document.getElementById(PHOTO_INPUT)?.click(),
+                          openPhoto: () => openPhotoInput(PHOTO_INPUT),
                           openIntro: owner.openIntro,
                           openAbout: () => {
                             setAboutFocus((n) => n + 1);

@@ -3,14 +3,31 @@
 import { Avatar, type PhotoSize } from '@/components/atoms/Avatar/Avatar';
 import type { CoverKey } from '@/lib/utils/cover';
 import type { PhotoFocus } from '@/lib/utils/person';
-import dynamic from 'next/dynamic';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 
 // The camera badge and its menu: only an owner editing has them, and the badge
 // sits over the photo's corner (absolute), so it arriving a moment after the
 // photo moves nothing. Visitors' pages never load it (performance budget).
-const PhotoPicker = dynamic(() => import('../PhotoPicker/PhotoPicker').then((m) => m.PhotoPicker), {
-  ssr: false,
-});
+const PhotoPicker = lazyPart(() => import('../PhotoPicker/PhotoPicker').then((m) => m.PhotoPicker));
+
+/**
+ * Opens the picker's file dialog from elsewhere on the page (a strength tip),
+ * by its input's id. The input lives in the lazy picker: when it isn't drawn
+ * yet, this waits for its code and a few frames for it to mount, so the click
+ * is never lost (it stays inside the click's few seconds of user activation).
+ */
+export function openPhotoInput(id: string) {
+  const click = () => document.getElementById(id)?.click();
+  if (document.getElementById(id)) return click();
+  void PhotoPicker.preload().then(() => {
+    let frames = 10;
+    const tryClick = () => {
+      if (document.getElementById(id)) click();
+      else if (--frames > 0) requestAnimationFrame(tryClick);
+    };
+    requestAnimationFrame(tryClick);
+  });
+}
 
 /** Whose photo: what the circle shows. */
 export type PhotoPerson = {

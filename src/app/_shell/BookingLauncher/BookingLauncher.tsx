@@ -1,19 +1,15 @@
 'use client';
 
-import dynamic from 'next/dynamic';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import type { EntryPoint } from '@/lib/analytics/events';
 import type { Mentor } from '@/types/mentor';
 
 // The booking flow, its hooks and its modal are the heaviest thing on the
 // pages that offer them, and none of it is needed until someone presses Book:
 // it loads on open (performance budget, 350kB first-load JS) and mounts whole,
-// so its focus handling is unchanged. Every lazy part in the app passes
-// `ssr: false` or `loading`: either gives it its own Suspense boundary. Without
-// one, the load suspends the page's boundary instead, which hides the page
-// and drops the opener's focus to <body>.
-const OpenBooking = dynamic(() => import('./OpenBooking').then((m) => m.OpenBooking), {
-  ssr: false,
-});
+// so its focus handling is unchanged (lazyPart: its own Suspense and error
+// boundaries, a retry and a preload).
+const OpenBooking = lazyPart(() => import('./OpenBooking').then((m) => m.OpenBooking));
 
 export type BookingLauncherProps = {
   /** The mentor to book; null closes the flow. */

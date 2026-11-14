@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useLayoutEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { DateChip } from '@/components/molecules/DateChip/DateChip';
@@ -15,9 +15,7 @@ import type { Booking } from '@/types/booking';
 import styles from './MenteeNextSession.module.css';
 
 // Opens from a link, never at first paint: loads on open (performance budget).
-const MenteeTipsModal = dynamic(() => import('./MenteeTipsModal').then((m) => m.MenteeTipsModal), {
-  ssr: false,
-});
+const MenteeTipsModal = lazyPart(() => import('./MenteeTipsModal').then((m) => m.MenteeTipsModal));
 
 type MenteeNextSessionProps = {
   /** The soonest upcoming session — upcomingBookings[0]. */

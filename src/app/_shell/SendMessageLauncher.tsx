@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useAttachedFile } from '@/lib/api/data/attachedFile';
 import { isFileExpired, messageViewerFile } from '@/lib/utils/files';
 import { useChatStatus } from '@/lib/api/data/messages';
@@ -12,13 +12,11 @@ import type { MessageRecipient } from '@/types/messages';
 // The dialog and the file viewer load when a Message button opens them, not
 // with the page (performance budget, 350kB first-load JS). Each mounts whole,
 // so its focus handling is unchanged.
-const SendMessage = dynamic(
-  () => import('@/components/templates/SendMessage/SendMessage').then((m) => m.SendMessage),
-  { ssr: false },
+const SendMessage = lazyPart(() =>
+  import('@/components/templates/SendMessage/SendMessage').then((m) => m.SendMessage),
 );
-const FileViewerLauncher = dynamic(
-  () => import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
-  { ssr: false },
+const FileViewerLauncher = lazyPart(() =>
+  import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
 );
 
 type SendMessageLauncherProps = {

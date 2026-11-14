@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import dynamic from 'next/dynamic';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -86,13 +86,11 @@ import styles from './SessionJoinScreen.module.css';
 // Opened from a button, never needed for the first paint of the join page:
 // each loads on open (performance budget, 350kB first-load JS) and mounts
 // whole, so its focus handling is unchanged.
-const ConfirmActionDialog = dynamic(
-  () => import('@/app/_sessions/ConfirmActionDialog').then((m) => m.ConfirmActionDialog),
-  { ssr: false },
+const ConfirmActionDialog = lazyPart(() =>
+  import('@/app/_sessions/ConfirmActionDialog').then((m) => m.ConfirmActionDialog),
 );
-const FileViewerLauncher = dynamic(
-  () => import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
-  { ssr: false },
+const FileViewerLauncher = lazyPart(() =>
+  import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
 );
 
 const BACK = { href: '/bookings', label: 'Go to Bookings' };

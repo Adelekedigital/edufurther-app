@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -44,20 +44,14 @@ import styles from './MenteeHomeScreen.module.css';
 // Each opens from a button (or ?invite=open), never at first paint: they load
 // on open (performance budget, 350kB first-load JS) and mount whole, so their
 // focus handling is unchanged.
-const InviteModal = dynamic(
-  () => import('@/components/templates/InviteModal/InviteModal').then((m) => m.InviteModal),
-  { ssr: false },
+const InviteModal = lazyPart(() =>
+  import('@/components/templates/InviteModal/InviteModal').then((m) => m.InviteModal),
 );
-const EducationEditor = dynamic(
-  () => import('@/app/_profile/EducationEditor').then((m) => m.EducationEditor),
-  { ssr: false },
+const EducationEditor = lazyPart(() =>
+  import('@/app/_profile/EducationEditor').then((m) => m.EducationEditor),
 );
-const MetMentorsModal = dynamic(() => import('./MetMentorsModal').then((m) => m.MetMentorsModal), {
-  ssr: false,
-});
-const ProfileSheet = dynamic(() => import('./ProfileSheet').then((m) => m.ProfileSheet), {
-  ssr: false,
-});
+const MetMentorsModal = lazyPart(() => import('./MetMentorsModal').then((m) => m.MetMentorsModal));
+const ProfileSheet = lazyPart(() => import('./ProfileSheet').then((m) => m.ProfileSheet));
 
 /** Getting started leaves this long after its last step is done (design gsDone). */
 const FINISH_MS = 1500;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { useSendReview } from '@/lib/api/data/reviewWrite';
 import { partyToMentor } from '@/lib/utils/bookableMentor';
@@ -10,9 +10,8 @@ import type { ReviewableSession } from '@/types/mentor';
 
 // The review dialog loads when someone opens it, not with the page
 // (performance budget, 350kB first-load JS); it mounts whole, focus and all.
-const ReviewDialog = dynamic(
-  () => import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
-  { ssr: false },
+const ReviewDialog = lazyPart(() =>
+  import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
 );
 
 type Options = {
