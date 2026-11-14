@@ -1,6 +1,7 @@
 /**
- * Sharing a mentor's profile (owner, 2026-11-13): the share menu's items, the
- * message that goes with the link, and the link preview chat apps draw.
+ * Sharing a mentor's profile (owner, 2026-11-13; one Copy and the device's
+ * share sheet, owner 2026-11-14): the share modal's words, the message that
+ * goes with the link, and the link preview chat apps draw.
  * Reviewed with the EduFurther UX writer: no em dashes, peer proof, no "free"
  * promise (a booking spends a credit).
  */
@@ -12,30 +13,32 @@ function message(own: boolean, name: string): string {
     : `${name} is a mentor on EduFurther and has been through the grad school application process. Book a 1:1 session:`;
 }
 
+/** Copy's clipboard: the message, then the link on its own line. */
+const withLink = (own: boolean, name: string, url: string) => `${message(own, name)}\n${url}`;
+
 /** The help areas named in a preview, at most this many. */
 const PREVIEW_TOPICS = 3;
 
 export const MENTOR_SHARE_COPY = {
-  menu: {
-    copyLink: 'Copy profile link',
-    copyMessage: 'Copy message',
-    whatsapp: 'Share on WhatsApp',
-    x: 'Share on X',
-    linkedin: 'Share on LinkedIn',
-    email: 'Share by email',
-  },
-  status: {
-    linkCopied: 'Link copied',
-    linkFailed: 'Couldn’t copy the link',
-    messageCopied: 'Message copied',
-    messageFailed: 'Couldn’t copy the message',
+  /** The share modal (bottom sheet on phones). */
+  modal: {
+    title: (own: boolean, name: string) => (own ? 'Share your profile' : `Share ${name}’s profile`),
+    subtitle: (own: boolean) =>
+      own
+        ? 'Mentees who open the link can see your profile and book a session.'
+        : 'Send it to someone it could help.',
   },
   message,
-  /** Copy message and WhatsApp: the message, then the link on its own line. */
-  withLink: (own: boolean, name: string, url: string) => `${message(own, name)}\n${url}`,
-  /** The email body: the same, with the CRLF line break a mailto body takes (RFC 6068). */
-  emailBody: (own: boolean, name: string, url: string) => `${message(own, name)}\r\n${url}`,
-  emailSubject: (name: string) => `${name} on EduFurther`,
+  /** The profile link in LinkSharePanel: Copy and the share sheet carry the same words. */
+  panel: (own: boolean, name: string) =>
+    ({
+      kind: 'mentor_profile',
+      own,
+      copyText: (url: string) => withLink(own, name, url),
+      share: (url: string) => ({ title: `${name} on EduFurther`, text: message(own, name), url }),
+      copyLabel: 'Copy link',
+      copiedLabel: 'Link copied',
+    }) as const,
   /** The link preview (og: lines and opengraph-image). */
   preview: {
     title: (name: string) => `${name} · EduFurther mentor`,

@@ -4,7 +4,7 @@ import { fn } from 'storybook/test';
 import { Button } from '@/components/atoms/Button/Button';
 import { CoverPicker } from '@/components/molecules/CoverPicker/CoverPicker';
 import { ReviewNote } from '@/components/molecules/ReviewNote/ReviewNote';
-import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
+import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import type { CoverArt, CoverKey } from '@/lib/utils/cover';
 import { BookSessionCard } from '../BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '../FirstMenteesCard/FirstMenteesCard';
@@ -26,10 +26,12 @@ type Story = StoryObj;
 
 const wide = { maxWidth: 1120 };
 const side = { maxWidth: 420 };
+// The page's Share (MentorProfileScreen) opens a modal; here, just its place in the row.
+const share = <IconButton icon="ios_share" aria-label="Share profile" />;
 const actions = (
   <>
     <Button>Book a session</Button>
-    <ShareMenu url="https://edufurther.com/mentors/gbenga" name="Gbenga Elufisan" />
+    {share}
   </>
 );
 
@@ -44,11 +46,7 @@ export const Header: Story = {
 export const HeaderNotTaking: Story = {
   render: () => (
     <div style={wide}>
-      <ProfileHeader
-        profile={fullProfile}
-        status="Not taking bookings"
-        actions={<ShareMenu url="https://edufurther.com/mentors/gbenga" name="Gbenga Elufisan" />}
-      />
+      <ProfileHeader profile={fullProfile} status="Not taking bookings" actions={share} />
     </div>
   ),
 };

@@ -2,9 +2,10 @@ import { useId } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { StepBars } from '@/components/atoms/StepBars/StepBars';
 import {
-  InviteLinkPanel,
-  type InviteLinkPanelProps,
-} from '@/components/molecules/InviteLinkPanel/InviteLinkPanel';
+  LinkSharePanel,
+  type LinkShareState,
+} from '@/components/molecules/LinkSharePanel/LinkSharePanel';
+import { INVITE_LINK_SHARE } from '@/lib/copy/invite';
 import styles from './NextStepCard.module.css';
 
 type NextStepCardProps = {
@@ -16,7 +17,7 @@ type NextStepCardProps = {
   /** The profile meter: how many of the 4 details are done, and its line. */
   meter?: { done: number; label: string };
   /** The invite stages: the link with Copy and Share in place of an action. */
-  invite?: Omit<InviteLinkPanelProps, 'layout'>;
+  invite?: LinkShareState;
   /** The one action of the other stages. */
   action?: { label: string; onClick: () => void };
   /** Phones: the action is full width. */
@@ -55,7 +56,7 @@ export function NextStepCard({
           <span className={styles.meterLabel}>{meter.label}</span>
         </div>
       )}
-      {invite && <InviteLinkPanel {...invite} layout="card" />}
+      {invite && <LinkSharePanel {...invite} layout="card" content={INVITE_LINK_SHARE} />}
       {action && (
         <div className={styles.actions}>
           <Button variant="primary" size="large" fullWidth={phone} onClick={action.onClick}>

@@ -222,3 +222,25 @@
   border: var(--border-hairline) solid var(--ink-200);
   border-radius: var(--radius-xl);
 }
+/* The header's Share: a 48px square (CTA Hierarchy.dc.html "Header: Share
+   (icon, 48×48 square)", rule 4: an icon button in a CTA row matches the
+   row's height). Mentor Profile.dc.html still draws 32px (design request 46). */
+.shareTrigger {
+  width: var(--button-h-large);
+  height: var(--button-h-large);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--border-hairline) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.shareTrigger:hover {
+  background: var(--surface-subtle);
+}
+.shareTrigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}

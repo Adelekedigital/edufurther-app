@@ -1,0 +1,7 @@
+/* The link box over its two actions, spaced as InviteModal.dc.html. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--ink-900);
+}

@@ -2,7 +2,8 @@
 
 import { Badge } from '@/components/atoms/Badge/Badge';
 import { StepChecklist } from '@/components/molecules/StepChecklist/StepChecklist';
-import { InviteLinkPanel } from '@/components/molecules/InviteLinkPanel/InviteLinkPanel';
+import { LinkSharePanel } from '@/components/molecules/LinkSharePanel/LinkSharePanel';
+import { INVITE_LINK_SHARE } from '@/lib/copy/invite';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import styles from './InviteModal.module.css';
 
@@ -87,13 +88,14 @@ export function InviteModal({
           <StepChecklist steps={steps} label="How to get 3 free sessions every month" />
         )}
 
-        <InviteLinkPanel
+        <LinkSharePanel
           url={url}
           urlLoading={urlLoading}
           urlError={urlError}
           onRetry={onRetry}
           linkActive={linkActive}
           onShared={onShared}
+          content={INVITE_LINK_SHARE}
         />
 
         {!unlocked && <p className={styles.note}>Your friend gets a free first session.</p>}

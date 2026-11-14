@@ -6,51 +6,93 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
+import type { ShareKind } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/track';
-import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
 import { cx } from '@/lib/utils/cx';
 import { useCopyText } from '@/lib/utils/useCopyText';
-import styles from './InviteLinkPanel.module.css';
+import styles from './LinkSharePanel.module.css';
 
 /** The link as shown: host and path, no scheme. */
 export const displayUrl = (url: string) => url.replace(/^https?:\/\//, '');
 
-export type InviteLinkPanelProps = {
-  /** The full invite link; null until it has loaded. */
+/**
+ * What a shared link says and counts as: the words for one kind of link (an
+ * invite, a mentor's profile). The link's own states default to plain words;
+ * a link that can load, fail or be turned off names itself.
+ */
+export type LinkShareContent = {
+  /** link_shared `kind`. */
+  kind: ShareKind;
+  /** link_shared `own`: the viewer shares their own link. */
+  own: boolean;
+  /** What Copy (and Share without a share sheet) puts on the clipboard. */
+  copyText: (url: string) => string;
+  /** What the system share sheet carries with the link. */
+  share: (url: string) => ShareData;
+  /** The Copy button's label, and its label just after a copy. */
+  copyLabel: string;
+  copiedLabel: string;
+  /** Said while the link loads, after it failed, and while it's turned off. */
+  loading?: string;
+  failed?: string;
+  off?: { title: string; body: string };
+};
+
+/** A link the page already has (a profile's URL): nothing to load or retry. */
+type KnownLink = { url: string; urlLoading?: never; urlError?: never; onRetry?: never };
+/**
+ * A link that's fetched (the invite): null until it has loaded. One that can
+ * fail always comes with its retry, so the failed state offers Try again.
+ */
+type FetchedLink = {
   url: string | null;
   urlLoading: boolean;
   urlError: boolean;
   onRetry: () => void;
+};
+
+/** The link's own state, as a caller hands it on (layout and words set by the place). */
+export type LinkShareState = (KnownLink | FetchedLink) & {
   /** False: the link is revoked, so it shows as off and can't be shared. */
   linkActive?: boolean;
   /** Called once the link was copied or shared. */
   onShared?: () => void;
+};
+
+export type LinkSharePanelProps = LinkShareState & {
   /**
    * `modal` (InviteModal.dc.html): a grey box, then Copy and Share stacked full
    * width. `card` (Mentee Dashboard v2.dc.html next step): a white box, then
    * Copy and a text Share side by side (stacked full width on phones).
    */
   layout?: 'modal' | 'card';
+  content: LinkShareContent;
 };
 
+const COPIED = 'Link copied';
+const COPY_FAILED = 'Couldn’t copy the link. Try again.';
+
 /**
- * An invite link with its two actions, Copy invite link and Share, plus the
- * link's own loading, failed and turned-off states. One piece wherever the link
- * is offered (InviteModal, Home's next step).
+ * A link with its two actions, Copy and Share, plus the link's own loading,
+ * failed and turned-off states. The one piece wherever a link is offered to
+ * pass on (the invite modal, Home's next step, sharing a mentor's profile).
+ * Share opens the device's share sheet; where there is none, it copies.
  */
-export function InviteLinkPanel({
+export function LinkSharePanel({
   url,
-  urlLoading,
-  urlError,
+  urlLoading = false,
+  urlError = false,
   onRetry,
   linkActive = true,
   onShared,
   layout = 'modal',
-}: InviteLinkPanelProps) {
+  content,
+}: LinkSharePanelProps) {
   const { state: copyState, copy } = useCopyText(2000);
   const [said, setSaid] = useState<{ text: string; id: number } | null>(null);
   const n = useRef(0);
   const say = (text: string) => setSaid({ text, id: ++n.current });
+  const { kind, own } = content;
 
   const linkOff = url !== null && !urlLoading && !urlError && !linkActive;
   const ready = url !== null && !urlLoading && !urlError && linkActive;
@@ -58,18 +100,17 @@ export function InviteLinkPanel({
 
   const copyLink = async () => {
     if (!url) return;
-    // The same message Share sends, so a pasted invite says what EduFurther is.
-    const copied = await copy(INVITE_LANDING_COPY.message(url));
-    say(copied ? 'Link copied' : 'Couldn’t copy the link. Try again.');
+    // The same words Share sends, so a pasted link says what it is.
+    const copied = await copy(content.copyText(url));
+    say(copied ? COPIED : COPY_FAILED);
     if (!copied) return;
-    track('link_shared', { kind: 'invite', method: 'copy', own: true });
+    track('link_shared', { kind, method: 'copy', own });
     onShared?.();
   };
 
   const share = async () => {
     if (!url) return;
-    // What the share sheet carries with the link (InviteModal.dc.html).
-    const payload = { ...INVITE_LANDING_COPY.share, url };
+    const payload = content.share(url);
     // Checked first, so the fallback copy still runs inside the click: after a
     // refused share the gesture is spent and Safari would refuse the copy too.
     if (typeof navigator.share !== 'function' || navigator.canShare?.(payload) === false) {
@@ -77,7 +118,7 @@ export function InviteLinkPanel({
     }
     try {
       await navigator.share(payload);
-      track('link_shared', { kind: 'invite', method: 'native', own: true });
+      track('link_shared', { kind, method: 'native', own });
       onShared?.();
     } catch (e) {
       // Dismissing the share sheet is not a failure. Anything else falls back
@@ -89,18 +130,20 @@ export function InviteLinkPanel({
   return (
     <>
       {urlError ? (
-        <Notice tone="neutral" icon="error" title="We couldn’t load your invite link.">
-          <Button variant="text" onClick={onRetry}>
-            Try again
-          </Button>
+        <Notice tone="neutral" icon="error" title={content.failed ?? 'We couldn’t load the link.'}>
+          {onRetry && (
+            <Button variant="text" onClick={onRetry}>
+              Try again
+            </Button>
+          )}
         </Notice>
       ) : linkOff ? (
-        <Notice tone="neutral" icon="link_off" title="Your invite link is turned off.">
-          Nobody can join through it for now.
+        <Notice tone="neutral" icon="link_off" title={content.off?.title ?? 'This link is off.'}>
+          {content.off?.body ?? 'Nobody can open it for now.'}
         </Notice>
       ) : !ready ? (
         <div aria-busy={urlLoading || undefined} className={cx(card && styles.cardWidth)}>
-          {urlLoading && <span className="sr-only">Loading your invite link</span>}
+          {urlLoading && <span className="sr-only">{content.loading ?? 'Loading the link'}</span>}
           <Skeleton height="48px" radius="md" />
         </div>
       ) : (
@@ -120,7 +163,7 @@ export function InviteLinkPanel({
           unavailable={!ready}
           onClick={() => void copyLink()}
         >
-          {copyState === 'copied' ? 'Link copied' : 'Copy invite link'}
+          {copyState === 'copied' ? content.copiedLabel : content.copyLabel}
         </Button>
         <Button
           variant={card ? 'text' : 'secondary-outlined'}

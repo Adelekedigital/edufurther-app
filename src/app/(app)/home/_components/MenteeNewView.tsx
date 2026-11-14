@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { InviteLinkPanelProps } from '@/components/molecules/InviteLinkPanel/InviteLinkPanel';
+import type { LinkShareState } from '@/components/molecules/LinkSharePanel/LinkSharePanel';
 import { GETTING_STARTED as G, INVITE_COPY, NEXT_STEP, withLine } from '@/lib/copy/home';
 import { dayLabel, formatTime } from '@/lib/utils/format';
 import { GettingStarted, type GettingStartedRow, type StepState } from './GettingStarted';
@@ -22,7 +22,7 @@ type MenteeNewViewProps = NewMenteeState & {
   goal: string | null;
   timeZone: string;
   phone: boolean;
-  invite: Omit<InviteLinkPanelProps, 'layout'>;
+  invite: LinkShareState;
   onOpenProfile: () => void;
   onOpenInvite: () => void;
   onChooseMentor: () => void;
