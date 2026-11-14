@@ -330,9 +330,14 @@ jobs:
           # /session-types/new?template=sop-review: the create wizard, pre-filled.
           # /invite/…?mockViewer=guest: the invite landing, a valid and a broken link;
           # /invite/tunde-9q4z: the mock mentee on someone else's link (existing-account card).
-          for route in /explore /mentors/olajuwon-samuel /session-types "/session-types/new?template=sop-review" "/invite/damilola-7k2x?mockViewer=guest" "/invite/gone-0000?mockViewer=guest" /invite/tunde-9q4z ; do
-            node scripts/review-page.mjs "$route"
+          # Page speed budget (roadmap): the three pages a slow load costs most on.
+          # /home is the mentee's home, /dashboard?mockViewer=mentor the mentor's;
+          # /sessions/j-1 is the join page minutes before a call (sessions mock).
+          for route in /explore /home "/dashboard?mockViewer=mentor" /sessions/j-1 /mentors/olajuwon-samuel /session-types "/session-types/new?template=sop-review" "/invite/damilola-7k2x?mockViewer=guest" "/invite/gone-0000?mockViewer=guest" /invite/tunde-9q4z ; do
+            # Every route runs, so one push shows every page over budget.
+            node scripts/review-page.mjs "$route" || failed="$failed $route"
           done
+          if [ -n "${failed:-}" ]; then echo "failed:$failed"; exit 1; fi
 
       # Layout invariants at in-between widths the screenshots skip
       # (failure-modes #26). Add a check when one of those bites.
