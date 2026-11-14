@@ -71,6 +71,17 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
     };
   }, []);
 
+  // Off the code step (signed in, a name to ask, suspended): the latch from an
+  // accepted code is released, so a later return to the code step starts clean.
+  const [codeWasShowing, setCodeWasShowing] = useState(opts.codeShowing);
+  if (codeWasShowing !== opts.codeShowing) {
+    setCodeWasShowing(opts.codeShowing);
+    if (!opts.codeShowing) setVerifying(false);
+  }
+  useEffect(() => {
+    if (!opts.codeShowing) verifyingNow.current = false;
+  }, [opts.codeShowing]);
+
   // The resend countdown ticks only while there is something to count.
   useEffect(() => {
     if (!opts.codeShowing || resendAt <= now) return;
@@ -129,11 +140,15 @@ export function useEmailCodeAuth(opts: EmailCodeAuthOptions) {
       // Log-in and sign-up alike, on the page or in the booking modal (PRD 30).
       track('login_code_verified', {});
       resetTries(email);
+      // Accepted: the button stays on Checking… (disabled) until the screen
+      // moves on, rather than flashing back to an active Verify while the next
+      // page loads (owner, 2026-11-14). Only a failure after this frees it.
       try {
         await latest.current.onVerified(email);
-      } finally {
+      } catch (e) {
         verifyingNow.current = false;
         if (mounted.current) setVerifying(false);
+        throw e;
       }
       return;
     }
