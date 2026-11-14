@@ -59,6 +59,12 @@
 .colHead {
   min-width: 0;
 }
+/* The Email header and its copy icon on one line. */
+.headAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
 .who {
   display: flex;
   align-items: center;
