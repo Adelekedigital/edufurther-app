@@ -11,6 +11,7 @@ which is exactly when someone starts treating it as live.
 |---|---|---|
 | Supabase | the **dev** project `hitgxzhrimuhivlfamhj` | not a production auth store — accounts created here, Google or email, are test accounts |
 | Backend | `edufurtherbe-dev` on Railway (`edufurtherbe-dev.up.railway.app`) | never the production API |
+| Staging site | https://staging.edufurther.org, the `development` branch deployed on Vercel (Preview settings, `NEXT_PUBLIC_APP_ENV=staging`; owner 2026-11-14). E2E runs here | not production: Production (edufurther-app.vercel.app) moves to the live backend at cutover |
 | The mentors, bookings, reviews and credits on screen | seeded dev data on that backend, or the in-app mock (`ENABLE_MOCK_API=1`) | not real people and not real sessions |
 | Supabase **Site URL** | `http://localhost:3000` | a tell that this project has never been pointed at production |
 

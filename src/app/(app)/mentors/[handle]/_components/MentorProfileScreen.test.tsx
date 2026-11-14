@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { similarMentors } from '@/components/organisms/SimilarMentorsCard/similar.fixture';
@@ -447,7 +447,7 @@ describe('MentorProfileScreen — new mentors (design reply #45)', () => {
     expect(screen.queryByRole('button', { name: /^Book .* · / })).not.toBeInTheDocument();
   });
 
-  it('shows the owner what mentees see, and "Share your profile" opens the share menu', async () => {
+  it('shows the owner what mentees see, and "Share your profile" opens the share modal', async () => {
     const user = userEvent.setup();
     h.profile = state({ data: newMentor(1, { owner: { approval: 'approved', listed: true } }) });
     render(<MentorProfileScreen handle="gbenga" />);
@@ -455,7 +455,23 @@ describe('MentorProfileScreen — new mentors (design reply #45)', () => {
       screen.getByRole('heading', { name: 'Mentees see you as a new mentor' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Share your profile' }));
-    expect(screen.getByRole('menuitem', { name: 'Copy profile link' })).toHaveFocus();
+    const dialog = await screen.findByRole('dialog', { name: 'Share your profile' });
+    await waitFor(() => expect(dialog).toContainElement(document.activeElement as HTMLElement));
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    // Focus goes back to the button that opened it.
+    expect(screen.getByRole('button', { name: 'Share your profile' })).toHaveFocus();
+  });
+
+  it('a visitor’s header Share opens the modal named for the mentor', async () => {
+    const user = userEvent.setup();
+    h.profile = state({ data: fullProfile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    const dialog = await screen.findByRole('dialog', { name: /^Share .+’s profile$/ });
+    expect(dialog).toHaveAccessibleDescription('Send it to someone it could help.');
+    expect(within(dialog).getByRole('button', { name: 'Copy link' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Share' })).toBeInTheDocument();
   });
 
   it('does not nudge sharing a profile mentees can’t see (review of #25)', () => {

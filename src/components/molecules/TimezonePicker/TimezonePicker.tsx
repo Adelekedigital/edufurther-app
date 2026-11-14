@@ -168,7 +168,7 @@ export function TimezonePicker({
           {/* Focus goes back to Change from here, not from the trap: it records
               the search field (focused first) as the opener. */}
           {/* An outside click on the desktop popover closes it without taking
-              focus anywhere (as the mousedown handler and ShareMenu do); the
+              focus anywhere (as the mousedown handler does); the
               phone sheet is a modal dialog, so focus goes back to Change. */}
           <span className={styles.backdrop} aria-hidden onClick={() => close(isPhone)} />
           <Panel id={panelId} sheet={isPhone} onClose={() => close()} onKeyDown={onListKey}>

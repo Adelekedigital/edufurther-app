@@ -11,8 +11,11 @@ import { APPLE_STARTUP_IMAGES } from './pwa-splash/sizes';
 import '@/styles/globals.css';
 import { BRAND_BLUE } from '@/styles/brand';
 import { BRAND_SLOGAN } from '@/lib/copy/brand';
+import { siteBase } from '@/lib/config/site';
 
 export const metadata: Metadata = {
+  // Absolute og:image and og:url on this environment's own address (SITE_URL).
+  metadataBase: siteBase(),
   title: { default: 'EduFurther', template: '%s · EduFurther' },
   description: BRAND_SLOGAN,
   // startupImage: the iPhone's launch screen (logo on white) instead of black.

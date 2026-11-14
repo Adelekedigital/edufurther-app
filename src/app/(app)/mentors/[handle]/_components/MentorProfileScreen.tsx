@@ -3,13 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { Button } from '@/components/atoms/Button/Button';
+import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
-import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
 import { BookSessionCard } from '@/components/organisms/BookSessionCard/BookSessionCard';
 import { FirstMenteesCard } from '@/components/organisms/FirstMenteesCard/FirstMenteesCard';
 import { ProfileStrengthCard } from '@/components/organisms/ProfileStrengthCard/ProfileStrengthCard';
@@ -115,6 +115,13 @@ const RemovePhotoConfirm = lazyPart(
       (m) => m.RemovePhotoConfirm,
     ),
   { close: (p) => p.onKeep() },
+);
+const ShareProfileModal = lazyPart(
+  () =>
+    import('@/components/templates/ShareProfileModal/ShareProfileModal').then(
+      (m) => m.ShareProfileModal,
+    ),
+  { close: (p) => p.onClose() },
 );
 
 // Tests import it from here.
@@ -237,7 +244,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       : o.approval === 'declined' || !o.listed
         ? SHARE_NOTE.hidden
         : undefined;
-  // The owner's "Share your profile" opens the header's share menu.
+  // The header's Share and the owner's "Share your profile" open the share modal.
   const [shareOpen, setShareOpen] = useState(false);
   const isPhone = useMediaQuery('(max-width: 767px)');
 
@@ -603,14 +610,15 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     </Button>
                   )}
                   {shareUrl && (
-                    <ShareMenu
-                      url={shareUrl}
-                      name={p.mentor.name}
-                      note={shareNote}
-                      open={shareOpen}
-                      onOpenChange={setShareOpen}
-                      own={isOwner}
-                    />
+                    <button
+                      type="button"
+                      className={styles.shareTrigger}
+                      aria-label="Share profile"
+                      aria-haspopup="dialog"
+                      onClick={() => setShareOpen(true)}
+                    >
+                      <Icon name="ios_share" size={20} />
+                    </button>
                   )}
                 </>
               }
@@ -856,6 +864,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 ? { text: 'Photo updated.', id: photo.uploadedStamp }
                 : null
           }
+        />
+      )}
+
+      {shareOpen && p && shareUrl && (
+        <ShareProfileModal
+          url={shareUrl}
+          name={p.mentor.name}
+          own={isOwner}
+          note={shareNote}
+          onClose={() => setShareOpen(false)}
         />
       )}
 

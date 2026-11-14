@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MentorDashboard, MentorStage } from '@/lib/api/data/dashboard';
 import { viewers } from '@/app/_shell/lockedPage.harness';
 import { track } from '@/lib/analytics/track';
+import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
 import { DashboardScreen } from './DashboardScreen';
 
 vi.mock('@/lib/analytics/track', async (orig) => ({
@@ -85,6 +86,10 @@ const banner = () => screen.queryByRole('region', { name: 'Account setup' });
 beforeEach(() => {
   status = null;
 });
+// A test that stubs the share sheet never leaks it into the next.
+afterEach(() => {
+  Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
+});
 
 describe('DashboardScreen stages (PRD Mentor Home)', () => {
   it('noBookings: the hero under the setup banner, no KPIs, chart or quality', () => {
@@ -150,7 +155,7 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     expect(screen.queryByText('You’re taking a break')).toBeNull();
   });
 
-  it('a copy from the header’s share menu marks this week’s Share move done', async () => {
+  it('a copy from the header’s share modal marks this week’s Share move done', async () => {
     localStorage.clear();
     const user = userEvent.setup();
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -158,7 +163,27 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     make('noBookings');
     render(<DashboardScreen />);
     await user.click(screen.getByRole('button', { name: 'Share profile' }));
-    await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Share your profile' });
+    await user.click(within(dialog).getByRole('button', { name: 'Copy link' }));
+    expect(writeText).toHaveBeenCalledWith(
+      MENTOR_SHARE_COPY.panel(true, 'Gbenga Adeyemi').copyText(
+        'https://edufurther.com/mentors/gbenga',
+      ),
+    );
+    expect(await screen.findByTestId('moves')).toHaveTextContent('share');
+  });
+
+  it('a share through the device’s share sheet marks it done too', async () => {
+    localStorage.clear();
+    const user = userEvent.setup();
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    make('noBookings');
+    render(<DashboardScreen />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Share your profile' });
+    await user.click(within(dialog).getByRole('button', { name: 'Share' }));
+    expect(share).toHaveBeenCalledTimes(1);
     expect(await screen.findByTestId('moves')).toHaveTextContent('share');
   });
 
@@ -196,6 +221,12 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     render(<DashboardScreen />);
     await user.click(screen.getByRole('button', { name: 'Copy link' }));
     expect(await screen.findByText('Link copied')).toBeInTheDocument();
+    // The same message and link as the share modal's Copy link.
+    expect(writeText).toHaveBeenCalledWith(
+      MENTOR_SHARE_COPY.panel(true, 'Gbenga Adeyemi').copyText(
+        'https://edufurther.com/mentors/gbenga',
+      ),
+    );
     expect(vi.mocked(track).mock.calls.filter(([e]) => e === 'link_shared')).toEqual([
       ['link_shared', { kind: 'mentor_profile', method: 'copy', own: true }],
     ]);

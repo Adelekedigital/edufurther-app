@@ -59,9 +59,9 @@ const CHECKS = [
       // owner's "Edit topics" wraps with the chips (the list has no box).
       const topics = head?.querySelector('ul[aria-label="Helps with"]')?.parentElement;
       // The actions row, found by the Share button: Book's label changes when
-      // booking is blocked ("Can't book right now"), Share's never does.
-      const actions = head?.querySelector('button[aria-label="Share profile"]')?.parentElement
-        ?.parentElement;
+      // booking is blocked ("Can't book right now"), Share's never does. The
+      // button sits straight in the row.
+      const actions = head?.querySelector('button[aria-label="Share profile"]')?.parentElement;
       if (!topics || !actions) return { cannot: 'topics or the actions row not found' };
       const t = topics.getBoundingClientRect();
       const b = actions.getBoundingClientRect();
