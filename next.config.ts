@@ -34,10 +34,11 @@ const nextConfig: NextConfig = {
     imageSizes: [48, 96, 256],
     minimumCacheTTL: 2678400,
   },
-  // The invite link preview reads its fonts and logos from disk at request
-  // time (opengraph-image.tsx); trace them into that function.
+  // The link previews (invite, mentor profile) read their fonts and logos
+  // from disk at request time (lib/og/ogAssets); trace them into those functions.
   outputFileTracingIncludes: {
     '/invite/**': ['./src/app/fonts/og/*.ttf', './public/brand/*.png'],
+    '/mentors/**': ['./src/app/fonts/og/*.ttf', './public/brand/*.png'],
   },
   async headers() {
     return [...SECURITY_HEADERS, ...PWA_HEADERS];

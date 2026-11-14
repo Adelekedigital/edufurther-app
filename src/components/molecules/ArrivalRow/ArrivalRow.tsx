@@ -8,7 +8,7 @@ type ArrivalRowProps = {
   initial: string;
   /** Their colour: `personCover(...)` (the invite has no user id: the code). */
   tone: CoverKey;
-  /** Only from our image host (`inviterPhoto`); else the initial. */
+  /** Only from our image host (`publicPhoto`); else the initial. */
   photoUrl: string | null;
   /** "Invited by Damilola": the row's one readable line. */
   kicker: string;

@@ -1,15 +1,11 @@
+import { PROXY_SECRET, serverGet as get, stubServerEnv } from './_test/serverReadHarness';
 import type * as InviteServer from './inviteServer';
-const get = vi.fn();
-vi.mock('openapi-fetch', () => ({ default: () => ({ GET: (...a: unknown[]) => get(...a) }) }));
+
+vi.mock('openapi-fetch', async () => (await import('./_test/serverReadHarness')).openapiFetch);
 
 const { lookupInviterOnServer }: typeof InviteServer = await import('./inviteServer');
 
-beforeEach(() => {
-  get.mockReset();
-  vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', '');
-  vi.stubEnv('BACKEND_URL', 'https://api.example.test');
-  vi.stubEnv('EDGE_PROXY_SECRET', 'x'.repeat(40));
-});
+beforeEach(stubServerEnv);
 afterEach(() => vi.unstubAllEnvs());
 
 describe('lookupInviterOnServer', () => {
@@ -23,7 +19,8 @@ describe('lookupInviterOnServer', () => {
     });
     const init = get.mock.calls[0]![1];
     expect(init.params).toEqual({ path: { code: 'damilola-7k2x' } });
-    expect(init.headers).toEqual({ 'x-edufurther-proxy-secret': 'x'.repeat(40) });
+    expect(init.headers).toEqual({ 'x-edufurther-proxy-secret': PROXY_SECRET });
+    expect(init.cache).toBe('no-store');
   });
 
   it('null for a code that can’t be joined, a failure, or a code that fails the test', async () => {

@@ -132,7 +132,7 @@ export function useReferrals(
 
 // The mappers live in inviter.ts (no 'use client'), so the server-drawn link
 // preview shares them; re-exported here for the hooks' callers.
-export { inviterPhoto, toInviter, type Inviter } from './inviter';
+export { toInviter, type Inviter } from './inviter';
 /**
  * Who the invite a visitor arrived with is from (GET /invites/{code}, before
  * sign-in). Every code that can't be joined through answers `inviter: null`,

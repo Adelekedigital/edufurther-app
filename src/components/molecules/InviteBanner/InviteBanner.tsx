@@ -8,7 +8,7 @@ type InviteBannerProps = {
   initial: string;
   /** `personCover(code)`: the invite exposes no user id or cover. */
   tone: CoverKey;
-  /** Only from our image host (`inviterPhoto`); else the initial. */
+  /** Only from our image host (`publicPhoto`); else the initial. */
   photoUrl: string | null;
   /** "Invited by Damilola." (semibold) */
   lead: string;
