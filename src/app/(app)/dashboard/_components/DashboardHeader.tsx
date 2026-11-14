@@ -1,4 +1,8 @@
-import { ShareMenu } from '@/components/molecules/ShareMenu/ShareMenu';
+'use client';
+
+import { useState } from 'react';
+import { Button } from '@/components/atoms/Button/Button';
+import { ShareProfileModal } from '@/components/templates/ShareProfileModal/ShareProfileModal';
 import styles from './DashboardHeader.module.css';
 
 type DashboardHeaderProps = {
@@ -6,17 +10,17 @@ type DashboardHeaderProps = {
   name: string;
   /** The one-line context under the greeting. */
   subline: string;
-  /** Absolute profile URL for the share menu. Empty hides the share button. */
+  /** Absolute profile URL to share. Empty hides the share button. */
   shareUrl: string;
-  /** Mentor's name, for the share email subject. */
+  /** Mentor's name, for the share message. */
   shareName: string;
-  /** The share menu's link copy landed. */
+  /** The profile link was copied or shared. */
   onShareCopied?: () => void;
 };
 
 /**
  * Mentor Dashboard v2 header: greeting + subline, with a "Share profile" button
- * that opens the shared ShareMenu (its labelled-trigger variant).
+ * that opens the shared ShareProfileModal (a bottom sheet on phones).
  */
 export function DashboardHeader({
   name,
@@ -25,6 +29,7 @@ export function DashboardHeader({
   shareName,
   onShareCopied,
 }: DashboardHeaderProps) {
+  const [sharing, setSharing] = useState(false);
   return (
     <div className={styles.header}>
       <div className={styles.text}>
@@ -32,12 +37,22 @@ export function DashboardHeader({
         <p className={styles.subline}>{subline}</p>
       </div>
       {shareUrl && (
-        <ShareMenu
-          triggerLabel="Share profile"
+        <Button
+          variant="secondary-outlined"
+          size="small"
+          aria-haspopup="dialog"
+          onClick={() => setSharing(true)}
+        >
+          Share profile
+        </Button>
+      )}
+      {sharing && shareUrl && (
+        <ShareProfileModal
           url={shareUrl}
           name={shareName}
-          onCopied={onShareCopied}
           own
+          onShared={onShareCopied}
+          onClose={() => setSharing(false)}
         />
       )}
     </div>

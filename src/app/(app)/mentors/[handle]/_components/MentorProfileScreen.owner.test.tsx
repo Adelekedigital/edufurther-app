@@ -185,16 +185,18 @@ describe('MentorProfileScreen — the owner’s share note', () => {
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: 'Share profile' }));
-    return screen.getByRole('menu', { name: 'Share' });
+    return screen.findByRole('dialog', { name: 'Share your profile' });
   };
   const HIDDEN = 'Only you can see this page. Others see “This mentor profile isn’t available”.';
 
-  it('pending: who can see it until approved, and the options still work', async () => {
-    const menu = await open('pending');
-    expect(menu).toHaveAccessibleDescription(
+  it('pending: who can see it until approved, in place of the subtitle; the link still works', async () => {
+    const dialog = await open('pending');
+    expect(dialog).toHaveAccessibleDescription(
       'Only you can see this page until you’re approved. Others see “This mentor profile isn’t available”.',
     );
-    expect(within(menu).getByRole('menuitem', { name: /Copy profile link/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Copy link' })).not.toHaveAttribute(
+      'aria-disabled',
+    );
   });
 
   it('declined: the shorter note', async () => {
@@ -205,7 +207,9 @@ describe('MentorProfileScreen — the owner’s share note', () => {
     expect(await open('approved', false)).toHaveAccessibleDescription(HIDDEN);
   });
 
-  it('approved and listed: no note', async () => {
-    expect(await open('approved')).not.toHaveAccessibleDescription();
+  it('approved and listed: no note, the usual subtitle', async () => {
+    expect(await open('approved')).toHaveAccessibleDescription(
+      'Mentees who open the link can see your profile and book a session.',
+    );
   });
 });

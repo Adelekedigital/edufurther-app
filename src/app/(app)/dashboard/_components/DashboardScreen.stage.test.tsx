@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MentorDashboard, MentorStage } from '@/lib/api/data/dashboard';
 import { viewers } from '@/app/_shell/lockedPage.harness';
@@ -150,7 +150,7 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     expect(screen.queryByText('You’re taking a break')).toBeNull();
   });
 
-  it('a copy from the header’s share menu marks this week’s Share move done', async () => {
+  it('a copy from the header’s share modal marks this week’s Share move done', async () => {
     localStorage.clear();
     const user = userEvent.setup();
     const writeText = vi.fn().mockResolvedValue(undefined);
@@ -158,8 +158,23 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     make('noBookings');
     render(<DashboardScreen />);
     await user.click(screen.getByRole('button', { name: 'Share profile' }));
-    await user.click(screen.getByRole('menuitem', { name: 'Copy profile link' }));
+    const dialog = screen.getByRole('dialog', { name: 'Share your profile' });
+    await user.click(within(dialog).getByRole('button', { name: 'Copy link' }));
     expect(await screen.findByTestId('moves')).toHaveTextContent('share');
+  });
+
+  it('a share through the device’s share sheet marks it done too', async () => {
+    localStorage.clear();
+    const user = userEvent.setup();
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    make('noBookings');
+    render(<DashboardScreen />);
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    await user.click(screen.getByRole('button', { name: 'Share' }));
+    expect(share).toHaveBeenCalledTimes(1);
+    expect(await screen.findByTestId('moves')).toHaveTextContent('share');
+    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
   });
 
   it('a refused copy leaves Share to do, and says so', async () => {

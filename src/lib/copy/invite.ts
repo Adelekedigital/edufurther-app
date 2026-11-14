@@ -79,3 +79,19 @@ export const INVITE_LANDING_COPY = {
   /** While the page works out who is visiting (screen readers only). */
   opening: 'Opening your invite…',
 };
+
+/**
+ * The invite link in LinkSharePanel (InviteModal, Home's next step): Copy puts
+ * the message and link on the clipboard, Share hands the sheet the same words.
+ */
+export const INVITE_LINK_SHARE = {
+  kind: 'invite',
+  own: true,
+  copyText: INVITE_LANDING_COPY.message,
+  share: (url: string) => ({ ...INVITE_LANDING_COPY.share, url }),
+  copyLabel: 'Copy invite link',
+  copiedLabel: 'Link copied',
+  loading: 'Loading your invite link',
+  failed: 'We couldn’t load your invite link.',
+  off: { title: 'Your invite link is turned off.', body: 'Nobody can join through it for now.' },
+} as const;

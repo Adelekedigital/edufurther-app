@@ -29,9 +29,8 @@ export type MentorApplicationStep = 'about_you' | 'education' | 'hours';
 export type Role = Schemas['PrimaryRole'];
 /** Whose link: a mentor's profile, or an invite (names agreed with edufurtherbe-85, 11 Nov). */
 export type ShareKind = 'mentor_profile' | 'invite';
-/** How it left: the link copied, the link with its message copied, the device's share sheet, or a share target. */
-export type ShareMethod =
-  'copy' | 'copy_message' | 'native' | 'whatsapp' | 'x' | 'linkedin' | 'email' | 'other';
+/** How it left: the link copied (with its message), or the device's share sheet. */
+export type ShareMethod = 'copy' | 'native' | 'other';
 
 export type AnalyticsEvents = {
   /** One per navigation, from the router (track.ts), never from a screen. */

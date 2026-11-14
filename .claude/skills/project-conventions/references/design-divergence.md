@@ -1162,12 +1162,13 @@ verified 21 Oct).
 - **Countries in a sentence:** full names with "the" where English needs it
   ("the United States", "the United Kingdom"), from one `countryInSentence` /
   `locationLine` in `lib/utils/format.ts`, on every surface.
-- **Popover menus near an edge:** a menu hangs from its own trigger and slides
-  just enough to stay 16px inside the screen (`useClampIntoView`, ShareMenu);
-  a tooltip flips to the other side (`useEdgeFlip`, InfoTip). Both live in
-  `lib/utils/useEdgeFlip.ts`. (The design hangs the share panel from the CTA
-  row; on a full-width phone row that opens it away from its button, so ours
-  keeps it under the button.)
+- **Popover menus near an edge:** a tooltip flips to the other side
+  (`useEdgeFlip` in `lib/utils/useEdgeFlip.ts`, InfoTip).
+- **Sharing a mentor profile** (owner, 2026-11-14): the design's share panel
+  (six options hung from the CTA row) is replaced by the invite's pattern,
+  `ShareProfileModal`: a modal from 768px, a bottom sheet on phones, holding the
+  link, one Copy (message + link) and Share (the device's share sheet, which
+  carries WhatsApp, X, LinkedIn and email; copies where there is none).
 
 ### Session Join — lobby as drawn (Session Join PRD, PR 3 without presence), 2026-10-25
 

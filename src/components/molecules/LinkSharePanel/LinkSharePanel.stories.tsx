@@ -1,22 +1,28 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
-import { InviteLinkPanel } from './InviteLinkPanel';
+import { INVITE_LINK_SHARE } from '@/lib/copy/invite';
+import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
+import { LinkSharePanel } from './LinkSharePanel';
 
-/** The invite link and its Copy / Share actions, in the modal and on Home's next-step card. */
-const meta: Meta<typeof InviteLinkPanel> = {
-  title: 'Molecules/InviteLinkPanel',
-  component: InviteLinkPanel,
+/**
+ * A link and its Copy / Share actions: the invite (in its modal and on Home's
+ * next-step card) and a mentor's profile (in the share modal).
+ */
+const meta: Meta<typeof LinkSharePanel> = {
+  title: 'Molecules/LinkSharePanel',
+  component: LinkSharePanel,
   args: {
     url: 'https://edufurther.com/invite/damilola-7k2x',
     urlLoading: false,
     urlError: false,
     onRetry: fn(),
     onShared: fn(),
+    content: INVITE_LINK_SHARE,
   },
   decorators: [(S) => <div style={{ maxWidth: 560, display: 'grid', gap: 16 }}>{S()}</div>],
 };
 export default meta;
-type Story = StoryObj<typeof InviteLinkPanel>;
+type Story = StoryObj<typeof LinkSharePanel>;
 
 export const Modal: Story = { args: { layout: 'modal' } };
 export const Card: Story = {
@@ -28,6 +34,12 @@ export const Card: Story = {
       </div>
     ),
   ],
+};
+export const MentorProfile: Story = {
+  args: {
+    url: 'https://edufurther.com/mentors/gbenga',
+    content: MENTOR_SHARE_COPY.panel(false, 'Gbenga Elufisan'),
+  },
 };
 export const Loading: Story = { args: { url: null, urlLoading: true } };
 export const Failed: Story = { args: { url: null, urlError: true } };
