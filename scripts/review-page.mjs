@@ -181,7 +181,12 @@ const VITALS_SCRIPT = `
 function makeWeightTracker(page) {
   const weight = { totalBytes: 0, jsBytes: 0, cssBytes: 0, imgBytes: 0, unmeasured: 0 };
   const pending = [];
+  let loaded = false;
   page.on('response', (res) => {
+    // The budget is the first load. What the page fetches afterwards (lazy
+    // parts preloaded on idle, the code a focused control asks for during the
+    // focus trace) is off the critical path, and not counted.
+    if (loaded) return;
     const type = res.request().resourceType();
     const header = Number(res.headers()['content-length'] ?? NaN);
     pending.push(
@@ -206,6 +211,9 @@ function makeWeightTracker(page) {
   // Every size settles once its body has arrived; call before reading weight.
   // A body still streaming after 5s (an event stream) stays uncounted rather than
   // hanging the run.
+  weight.stop = () => {
+    loaded = true;
+  };
   weight.settle = () =>
     Promise.race([Promise.all(pending), new Promise((r) => setTimeout(r, 5000))]);
   return weight;
@@ -279,6 +287,7 @@ async function reviewWidth(width) {
   try {
     const res = await page.goto(result.url, { waitUntil: 'networkidle', timeout: 30_000 });
     if (!res) throw new Error('no response');
+    weight.stop();
     if (res.status() >= 400 && !FORCE_STATES) {
       result.badRequests.push({ url: result.url, status: res.status(), document: true });
     }
@@ -402,7 +411,7 @@ async function reviewWidth(width) {
     cls: window.__vitals?.cls ?? null,
   }));
   await weight.settle();
-  const { settle: _settle, ...measured } = weight;
+  const { settle: _settle, stop: _stop, ...measured } = weight;
   result.weight = measured;
 
   const kb = (b) => Math.round(b / 1024);
