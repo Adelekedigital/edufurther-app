@@ -88,11 +88,14 @@ const ReviewsTab = lazyPart(() => import('./ReviewsTab').then((m) => m.ReviewsTa
   loading: () => <Skeleton height="240px" radius="xl" />,
 });
 // The owner's About and intro editors open from Edit: they load then too.
-const AboutEditor = lazyPart(() =>
-  import('@/components/molecules/AboutEditor/AboutEditor').then((m) => m.AboutEditor),
+// A failed load closes them (Cancel), so Edit works again.
+const AboutEditor = lazyPart(
+  () => import('@/components/molecules/AboutEditor/AboutEditor').then((m) => m.AboutEditor),
+  { close: (p) => p.onCancel() },
 );
-const IntroEditForm = lazyPart(() =>
-  import('@/components/molecules/IntroEditForm/IntroEditForm').then((m) => m.IntroEditForm),
+const IntroEditForm = lazyPart(
+  () => import('@/components/molecules/IntroEditForm/IntroEditForm').then((m) => m.IntroEditForm),
+  { close: (p) => p.onCancel() },
 );
 const ReviewDialog = lazyPart(() =>
   import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
@@ -103,10 +106,12 @@ const OwnerItemEditor = lazyPart(() =>
 const OwnerEntryDelete = lazyPart(() =>
   import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerEntryDelete),
 );
-const RemovePhotoConfirm = lazyPart(() =>
-  import('@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm').then(
-    (m) => m.RemovePhotoConfirm,
-  ),
+const RemovePhotoConfirm = lazyPart(
+  () =>
+    import('@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm').then(
+      (m) => m.RemovePhotoConfirm,
+    ),
+  { close: (p) => p.onKeep() },
 );
 
 // Tests import it from here.

@@ -3,7 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { useRef, useState } from 'react';
 import { LOAD_FAILED_COPY } from '@/lib/copy/loadFailed';
 import { useFocusTrap } from '@/lib/utils/useFocusTrap';
-import { isChunkFailure, lazyPart, page, RELOAD_KEY } from './lazyPart';
+import {
+  clearLoadFailures,
+  isChunkFailure,
+  LazyPartFailures,
+  lazyPart,
+  page,
+  RELOAD_KEY,
+} from './lazyPart';
 
 // The real next/dynamic, as the app router bundles it (vitest.setup makes it
 // eager everywhere else, and plain `next/dynamic` here would be the pages
@@ -29,6 +36,7 @@ function TestDialog({ onClose }: { onClose: () => void }) {
 function Screen({ Part }: { Part: (p: { onClose: () => void }) => React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState('');
+  const [saved, setSaved] = useState(false);
   return (
     <main>
       <h1>Profile</h1>
@@ -36,9 +44,19 @@ function Screen({ Part }: { Part: (p: { onClose: () => void }) => React.ReactNod
       <button type="button" onClick={() => setOpen(true)}>
         Open
       </button>
+      {/* Another task on the page, nothing to do with the part. */}
+      <button type="button" onClick={() => setSaved(true)}>
+        {saved ? 'Saved' : 'Save'}
+      </button>
       {open && <Part onClose={() => setOpen(false)} />}
+      <LazyPartFailures />
     </main>
   );
+}
+
+/** An always-on part (a tool in the page), with no way to close it. */
+function Tool() {
+  return <p>Cover tools</p>;
 }
 
 const chunkError = () =>
@@ -49,6 +67,7 @@ const chunkError = () =>
 beforeEach(() => {
   sessionStorage.clear();
   vi.restoreAllMocks();
+  clearLoadFailures();
 });
 
 describe('lazyPart', () => {
@@ -128,7 +147,7 @@ describe('lazyPart', () => {
     expect(reload).not.toHaveBeenCalled();
   });
 
-  it('fails, then after reconnecting a second press on the opener opens it (review of PR 606)', async () => {
+  it('a failed dialog closes: other presses never open it or move focus; its opener, once back online, does (review of PR 606)', async () => {
     const user = userEvent.setup();
     // Both tries fail (offline), then the network is back.
     const load = vi
@@ -141,10 +160,40 @@ describe('lazyPart', () => {
     const opener = screen.getByRole('button', { name: 'Open' });
     await user.click(opener);
     expect(await screen.findByText(LOAD_FAILED_COPY.online, {}, { timeout: 3000 })).toBeVisible();
-    // The parent still holds the part open: the press itself must try again.
+    // Closed through its parent: nothing is held open behind the page.
+    expect(load).toHaveBeenCalledTimes(2);
+    // Another task: the failed dialog stays shut and focus stays put.
+    const save = screen.getByRole('button', { name: 'Save' });
+    await user.click(save);
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Saved' })).toHaveFocus();
+    expect(load).toHaveBeenCalledTimes(2);
+    // Its own opener tries afresh, and it opens; the reload offer goes.
     await user.click(opener);
     expect(await screen.findByRole('dialog', {}, { timeout: 3000 })).toBeInTheDocument();
-    expect(screen.queryByText(LOAD_FAILED_COPY.online)).toBeNull();
+    await waitFor(() => expect(screen.queryByText(LOAD_FAILED_COPY.online)).toBeNull());
+  });
+
+  it('an always-on part says so in its place, and Try again loads it', async () => {
+    const user = userEvent.setup();
+    const load = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue(Tool);
+    const Part = lazyPart(load);
+    render(
+      <main>
+        <Part />
+        <LazyPartFailures />
+      </main>,
+    );
+    expect(await screen.findByText(LOAD_FAILED_COPY.inline, {}, { timeout: 3000 })).toBeVisible();
+    expect(screen.getByText(LOAD_FAILED_COPY.online)).toBeVisible();
+    await user.click(screen.getByRole('button', { name: LOAD_FAILED_COPY.tryAgain }));
+    expect(await screen.findByText('Cover tools')).toBeVisible();
+    expect(screen.queryByText(LOAD_FAILED_COPY.inline)).toBeNull();
   });
 
   it('knows a missing file from other failures', () => {

@@ -1,7 +1,9 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Component, type ComponentType, type ReactNode } from 'react';
+import { Component, useSyncExternalStore, type ComponentType, type ReactNode } from 'react';
+import { Button } from '@/components/atoms/Button/Button';
+import { Notice } from '@/components/molecules/Notice/Notice';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
 import { LOAD_FAILED_COPY as C } from '@/lib/copy/loadFailed';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
@@ -15,7 +17,11 @@ import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
  *   never suspends the page around it (that hid the page and dropped the
  *   opener's focus to <body>);
  * - retries its import once;
- * - fails locally: the page and its state stay, and a toast offers a reload.
+ * - fails locally: the page and its state stay, and a toast offers a reload
+ *   (LazyPartFailures, mounted once in the app's providers). A part that can
+ *   close (a dialog, a sheet) closes, so its opener works again and its next
+ *   press tries afresh; an always-on part says so in its place, with Try again.
+ *   Nothing retries on its own, so a part never opens over another task.
  *   An update deployed while the tab was open (its old files are gone) reloads
  *   the page once, unless there is unsaved input;
  * - preloads on idle after the page has loaded, and on the first pointer or
@@ -25,9 +31,15 @@ import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 
 type Loader<P> = () => Promise<ComponentType<P>>;
 
-type Options = {
+type Options<P> = {
   /** Drawn while the code loads, in the part's place (sized like it). Default: nothing. */
   loading?: () => ReactNode;
+  /**
+   * How the part's parent closes it, when that isn't `onClose` (an inline
+   * editor's onCancel, a confirm's onKeep). A part with neither stays in place
+   * and offers Try again.
+   */
+  close?: (props: P) => void;
 };
 
 /** A retry after this long: a blip passes, a missing file fails fast. */
@@ -112,23 +124,65 @@ if (
   schedulePreload();
 }
 
-// Failed parts waiting for another try. A press on any control (the part's own
-// opener again, say, after reconnecting) gives each one a fresh attempt, so a
-// parent that keeps the part mounted never leaves its opener dead.
-const failedParts = new Set<() => void>();
-if (typeof document !== 'undefined') {
-  document.addEventListener(
-    'click',
-    (e) => {
-      if (!(e.target as Element | null)?.closest?.('button, a, [role="button"]')) return;
-      // After the click's own handlers, so the parent's state is settled first.
-      queueMicrotask(() => failedParts.forEach((retry) => retry()));
-    },
-    true,
+// The parts that couldn't load, for the one toast that offers a reload. It
+// stays until each of them has loaded after all (or the page reloads).
+let failed = new Set<number>();
+const failedListeners = new Set<() => void>();
+const setFailed = (next: Set<number>) => {
+  failed = next;
+  failedListeners.forEach((l) => l());
+};
+const markFailed = (id: number) => setFailed(new Set(failed).add(id));
+const markLoaded = (id: number) => {
+  if (!failed.has(id)) return;
+  const next = new Set(failed);
+  next.delete(id);
+  setFailed(next);
+};
+const subscribeFailed = (l: () => void) => {
+  failedListeners.add(l);
+  return () => {
+    failedListeners.delete(l);
+  };
+};
+let failedStamp = 0;
+
+/** Forgets every failure (each test starts clean; the store is per page). */
+export function clearLoadFailures() {
+  setFailed(new Set());
+}
+
+/**
+ * The reload offer for any part that couldn't load. Mounted once (app
+ * providers), so it outlives the dialog that failed and closed. Persistent: a
+ * newer toast can't take it away for good.
+ */
+export function LazyPartFailures() {
+  const ids = useSyncExternalStore(
+    subscribeFailed,
+    () => failed,
+    () => failed,
+  );
+  if (ids.size === 0) return null;
+  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+  return (
+    <Snackbar
+      persist
+      tone="error"
+      stamp={failedStamp}
+      message={offline ? C.offline : C.online}
+      action={{ label: C.reload, onClick: () => page.reload() }}
+    />
   );
 }
 
-type BoundaryProps = { children: (attempt: number) => ReactNode; onFailed: () => void };
+type BoundaryProps = {
+  children: (attempt: number) => ReactNode;
+  /** The part failed for good: a fresh lazy for the next attempt, and the toast. */
+  onFailed: (reloading: boolean) => void;
+  /** Closes the part through its parent; absent for an always-on part. */
+  close: (() => void) | null;
+};
 type BoundaryState = { error: unknown; reloading: boolean | null; attempt: number };
 
 /** Keeps a failed part's error here: the page around it, and its state, stay. */
@@ -137,46 +191,41 @@ class PartBoundary extends Component<BoundaryProps, BoundaryState> {
   static getDerivedStateFromError(error: unknown): Partial<BoundaryState> {
     return { error: error ?? new Error('lazy part failed') };
   }
-  private retry = () => {
-    failedParts.delete(this.retry);
-    // A fresh attempt: the part remounts (keyed), on a fresh lazy (onFailed).
-    this.setState((s) => ({ error: null, reloading: null, attempt: s.attempt + 1 }));
-  };
   componentDidCatch(error: unknown) {
-    this.props.onFailed();
     // A missing file while online is usually a new deploy: one reload fixes it.
     // Decided here, once, not during render.
     const reloading = isChunkFailure(error) && reloadOnce();
+    this.props.onFailed(reloading);
     this.setState({ reloading });
-    if (!reloading) failedParts.add(this.retry);
+    if (reloading) return;
+    // Closed through its parent: the opener works again, and its next press
+    // mounts the part afresh. Only that press retries, never another click.
+    this.props.close?.();
   }
-  componentWillUnmount() {
-    failedParts.delete(this.retry);
-  }
+  private retry = () => {
+    this.setState((s) => ({ error: null, reloading: null, attempt: s.attempt + 1 }));
+  };
   render() {
     const { error, reloading, attempt } = this.state;
     if (!error) return this.props.children(attempt);
-    // Nothing until the reload is decided, and nothing while it happens.
-    return reloading === false ? <LoadFailed /> : null;
+    // Nothing until the reload is decided, nothing while it happens, and
+    // nothing once a closable part has been closed.
+    if (reloading !== false || this.props.close) return null;
+    return (
+      <Notice tone="danger" title={C.inline}>
+        <Button variant="secondary-outlined" size="small" onClick={this.retry}>
+          {C.tryAgain}
+        </Button>
+      </Notice>
+    );
   }
 }
 
-/** The failure, said where everyone sees it: the rest of the page still works. */
-function LoadFailed() {
-  const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-  return (
-    // persist: a newer toast (a save) can't take the reload offer away for good.
-    <Snackbar
-      persist
-      tone="error"
-      message={offline ? C.offline : C.online}
-      action={{ label: C.reload, onClick: () => page.reload() }}
-    />
-  );
-}
+let nextPartId = 0;
 
 /** `load` resolves to the component, e.g. `() => import('./X').then((m) => m.X)`. */
-export function lazyPart<P extends object>(load: Loader<P>, options: Options = {}) {
+export function lazyPart<P extends object>(load: Loader<P>, options: Options<P> = {}) {
+  const id = nextPartId++;
   let pending: Promise<ComponentType<P>> | null = null;
   // One load shared by the preload and the render. A failure is retried once;
   // a second one is forgotten, so the next attempt starts afresh.
@@ -186,17 +235,27 @@ export function lazyPart<P extends object>(load: Loader<P>, options: Options = {
         await wait(RETRY_MS);
         return load();
       })
-      .catch((e: unknown) => {
-        pending = null;
-        throw e;
-      }));
+      .then(
+        (part) => {
+          markLoaded(id);
+          return part;
+        },
+        (e: unknown) => {
+          pending = null;
+          throw e;
+        },
+      ));
   const make = () =>
     dynamic(loadOnce, { ssr: false, ...(options.loading ? { loading: options.loading } : {}) });
   let Part = make();
   // React.lazy keeps a rejection for good: after a failure the next mount (the
   // dialog opened again) gets a fresh one, so it can still load.
-  const rebuild = () => {
+  // Only a failure someone met (a render) is said; a preload's is silent.
+  const failedForGood = (reloading: boolean) => {
     Part = make();
+    if (reloading) return;
+    failedStamp += 1;
+    markFailed(id);
   };
   // Settles when the code is in (or failed): a caller can wait, then act.
   const preload = (): Promise<void> =>
@@ -208,9 +267,14 @@ export function lazyPart<P extends object>(load: Loader<P>, options: Options = {
   // A part from a screen opened after the first preload (a client-side move):
   // its own idle preload.
   if (preloaded) onIdle(() => void preload());
+  const closer = (props: P): (() => void) | null => {
+    if (options.close) return () => options.close?.(props);
+    const onClose = (props as { onClose?: unknown }).onClose;
+    return typeof onClose === 'function' ? () => (onClose as () => void)() : null;
+  };
   function LazyPart(props: P) {
     return (
-      <PartBoundary onFailed={rebuild}>
+      <PartBoundary onFailed={failedForGood} close={closer(props)}>
         {(attempt) => <Part key={attempt} {...props} />}
       </PartBoundary>
     );

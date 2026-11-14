@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { LazyPartFailures } from '@/components/molecules/LazyPart/lazyPart';
 import { SessionHintProvider } from '@/lib/api/data/session';
 import { AnalyticsRoot } from './_shell/AnalyticsRoot';
 import { PreviewRoot } from './_shell/PreviewRoot';
@@ -30,6 +31,8 @@ export function Providers({
         <PreviewRoot>{children}</PreviewRoot>
         {/* PRD 30: the consent banner, page views and the analytics vendor. Off by flag. */}
         <AnalyticsRoot />
+        {/* A lazy part (a dialog, a tool) that couldn't load: the one reload offer. */}
+        <LazyPartFailures />
       </SessionHintProvider>
     </QueryClientProvider>
   );
