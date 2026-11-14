@@ -12,11 +12,11 @@ then the backend's plan.
 | YAML check (schema, routes, viewers, `after`, no secrets)         | backend repo `tests/unit/test_e2e_scenarios.py`. Run it after every edit. |
 | The team's human checklist (same ids)                             | https://claude.ai/artifact/UHnFMufd4mYK1KJaEbcRhy                         |
 
-## Target (founder-confirmed)
+## Target (founder-confirmed; staging since 14 Nov 2026)
 
 | Part     | Value                                                                           |
 | -------- | ------------------------------------------------------------------------------- |
-| Frontend | https://edufurther-app.vercel.app (its Production deploy runs on **test data**) |
+| Frontend | https://staging.edufurther.org (the `development` branch, on **test data**) |
 | Backend  | `edufurtherbe-dev` (Railway `development`)                                      |
 | Supabase | `hitgxzhrimuhivlfamhj` (the dev project)                                        |
 
@@ -32,7 +32,7 @@ one-time magic link for an allowlisted seed account. It refuses unless
 
 ```
 python scripts/e2e_session.py --env staging --run <tag> --account <ref> --link \
-  --redirect "https://edufurther-app.vercel.app/auth/callback?next=/home"
+  --redirect "https://staging.edufurther.org/auth/callback?next=/home"
 ```
 
 It runs through `railway run` against Railway's **development** environment,
@@ -45,7 +45,7 @@ Two values are the **operator's**, given on the command line for each run and
 never stored on Railway or in the repo: `E2E_ALLOW=1` and
 `E2E_SUPABASE_PROJECT=hitgxzhrimuhivlfamhj`. The runner also needs
 `E2E_API_URL` and `E2E_FRONTEND_URL` on the operator's machine. **Both are the
-app's address** (`https://edufurther-app.vercel.app`): the backend is
+app's address** (`https://staging.edufurther.org`): the backend is
 origin-locked and answers 403 to anything that doesn't come through the app's
 `/api/v1` proxy (`src/proxy.ts`, backend #426). Only `/health` and `/ready` are
 open on Railway directly. Each run starts
@@ -205,8 +205,8 @@ the step if not, reporting it as blocked.
 
   ```
   E2E_SUPABASE_PROJECT=hitgxzhrimuhivlfamhj \
-  E2E_API_URL=https://edufurther-app.vercel.app \
-  E2E_FRONTEND_URL=https://edufurther-app.vercel.app \
+  E2E_API_URL=https://staging.edufurther.org \
+  E2E_FRONTEND_URL=https://staging.edufurther.org \
   node scripts/e2e/run.mjs --be ../edufurtherBE --run <tag> --out <scratch dir> \
     [--only BOOK-001,MSG-001] [--kinds api,ui] [--jobs] \
     [--stop BOOK-001:mentee_joins] [--from BOOK-001:mentee_joins]
