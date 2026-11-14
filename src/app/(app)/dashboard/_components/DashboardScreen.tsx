@@ -12,6 +12,7 @@ import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { useMentorStatus } from '@/lib/api/data/mentorStatus';
 import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
+import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
 import { track } from '@/lib/analytics/track';
 import { inSentence, viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
@@ -140,22 +141,25 @@ function MentorHome({ member }: { member: Member }) {
   const now = useMemo(() => new Date(clock), [clock]);
   const weekMoves = useWeekMoves(member.id, accountZone, now);
 
-  // A copy from anywhere (the share menu, the setup banner, the Share move)
-  // counts for both the setup step and this week's Share move (design shared()).
+  // A copy or share from anywhere (the share modal, the setup banner, the Share
+  // move) counts for both the setup step and this week's Share move (design shared()).
   const markShared = () => {
     setShared(true);
     persistShared(member.id);
     weekMoves.mark('share');
   };
 
-  const copyShareLink = (url: string) => {
+  // The banner's and the Share move's Copy link: the same words and count as
+  // the share modal's Copy link (MENTOR_SHARE_COPY.panel), message then link.
+  const copyShareLink = (url: string, name: string) => {
     if (!url) {
       say('Couldn’t copy the link');
       return;
     }
-    void copy(url).then((ok) => {
+    const content = MENTOR_SHARE_COPY.panel(true, name);
+    void copy(content.copyText(url)).then((ok) => {
       if (!ok) return say('Couldn’t copy the link');
-      track('link_shared', { kind: 'mentor_profile', method: 'copy', own: true });
+      track('link_shared', { kind: content.kind, method: 'copy', own: content.own });
       markShared();
       say('Link copied');
     });
@@ -182,10 +186,10 @@ function MentorHome({ member }: { member: Member }) {
       }
     : null;
 
-  const toAction = (next: SetupNext, shareUrl: string): SetupAction =>
+  const toAction = (next: SetupNext, shareUrl: string, shareName: string): SetupAction =>
     'href' in next.action
       ? { label: next.action.label, href: next.action.href }
-      : { label: next.action.label, onClick: () => copyShareLink(shareUrl) };
+      : { label: next.action.label, onClick: () => copyShareLink(shareUrl, shareName) };
 
   const stage = dash.stage;
   // Not bookable with nothing left to set up: never "let's get booked" above a
@@ -224,7 +228,7 @@ function MentorHome({ member }: { member: Member }) {
           total={d.setup.total}
           pct={d.setup.pct}
           nextTitle={inSentence(d.setup.next.title)}
-          action={toAction(d.setup.next, d.shareUrl)}
+          action={toAction(d.setup.next, d.shareUrl, d.shareName)}
         />
       )}
       {stage === 'firstBooked' || stage === 'noBookings' ? (
@@ -239,7 +243,7 @@ function MentorHome({ member }: { member: Member }) {
           now={now}
           movesDone={weekMoves.done}
           onMove={weekMoves.mark}
-          onCopyLink={() => copyShareLink(d.shareUrl)}
+          onCopyLink={() => copyShareLink(d.shareUrl, d.shareName)}
         />
       ) : stage === null ? (
         // Bookable, and the upcoming sessions that pick the hero aren't in yet.

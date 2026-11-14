@@ -18,6 +18,11 @@ function renderModal(over: Partial<ComponentProps<typeof ShareProfileModal>> = {
   return props;
 }
 
+afterEach(() => {
+  Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
+  Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true });
+});
+
 describe('ShareProfileModal', () => {
   it('someone else’s profile: named for the mentor, with a reason to send it', () => {
     renderModal();
@@ -62,7 +67,21 @@ describe('ShareProfileModal', () => {
       text: MENTOR_SHARE_COPY.message(false, 'Gbenga Elufisan'),
       url: URL,
     });
-    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
+  });
+
+  it('a payload the browser can’t share is copied instead, without the sheet', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const share = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true });
+    renderModal();
+    await user.click(screen.getByRole('button', { name: 'Share' }));
+    expect(share).not.toHaveBeenCalled();
+    expect(writeText).toHaveBeenCalledWith(
+      `${MENTOR_SHARE_COPY.message(false, 'Gbenga Elufisan')}\n${URL}`,
+    );
   });
 
   it('closes from its close button', async () => {

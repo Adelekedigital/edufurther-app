@@ -1,9 +1,16 @@
-'use client';
-
 import { useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
-import { ShareProfileModal } from '@/components/templates/ShareProfileModal/ShareProfileModal';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import styles from './DashboardHeader.module.css';
+
+// Loads on open, not with the dashboard (performance budget), as on the profile.
+const ShareProfileModal = lazyPart(
+  () =>
+    import('@/components/templates/ShareProfileModal/ShareProfileModal').then(
+      (m) => m.ShareProfileModal,
+    ),
+  { close: (p) => p.onClose() },
+);
 
 type DashboardHeaderProps = {
   /** First name for the greeting. */

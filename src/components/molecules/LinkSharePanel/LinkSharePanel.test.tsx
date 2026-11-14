@@ -117,9 +117,20 @@ describe('LinkSharePanel', () => {
     expect(shares()).toEqual([{ kind: 'invite', method: 'copy', own: true }]);
   });
 
-  it('a failed link without a retry is a notice with no button', () => {
-    render(<LinkSharePanel url={null} urlError content={content} />);
-    expect(screen.getByText('We couldn’t load the link.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
+  it('a link that failed to load is a notice with Try again', async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn();
+    render(
+      <LinkSharePanel
+        url={null}
+        urlLoading={false}
+        urlError
+        onRetry={onRetry}
+        content={INVITE_LINK_SHARE}
+      />,
+    );
+    expect(screen.getByText('We couldn’t load your invite link.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
   });
 });

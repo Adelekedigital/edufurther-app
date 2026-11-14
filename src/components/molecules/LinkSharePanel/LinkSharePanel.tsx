@@ -38,16 +38,28 @@ export type LinkShareContent = {
   off?: { title: string; body: string };
 };
 
-export type LinkSharePanelProps = {
-  /** The full link; null until it has loaded. */
+/** A link the page already has (a profile's URL): nothing to load or retry. */
+type KnownLink = { url: string; urlLoading?: never; urlError?: never; onRetry?: never };
+/**
+ * A link that's fetched (the invite): null until it has loaded. One that can
+ * fail always comes with its retry, so the failed state offers Try again.
+ */
+type FetchedLink = {
   url: string | null;
-  urlLoading?: boolean;
-  urlError?: boolean;
-  onRetry?: () => void;
+  urlLoading: boolean;
+  urlError: boolean;
+  onRetry: () => void;
+};
+
+/** The link's own state, as a caller hands it on (layout and words set by the place). */
+export type LinkShareState = (KnownLink | FetchedLink) & {
   /** False: the link is revoked, so it shows as off and can't be shared. */
   linkActive?: boolean;
   /** Called once the link was copied or shared. */
   onShared?: () => void;
+};
+
+export type LinkSharePanelProps = LinkShareState & {
   /**
    * `modal` (InviteModal.dc.html): a grey box, then Copy and Share stacked full
    * width. `card` (Mentee Dashboard v2.dc.html next step): a white box, then
@@ -56,9 +68,6 @@ export type LinkSharePanelProps = {
   layout?: 'modal' | 'card';
   content: LinkShareContent;
 };
-
-/** The link's own state props, as a caller hands them on (layout and words set by the place). */
-export type LinkShareState = Omit<LinkSharePanelProps, 'layout' | 'content'>;
 
 const COPIED = 'Link copied';
 const COPY_FAILED = 'Couldn’t copy the link. Try again.';

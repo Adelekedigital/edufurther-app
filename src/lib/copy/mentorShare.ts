@@ -29,7 +29,6 @@ export const MENTOR_SHARE_COPY = {
         : 'Send it to someone it could help.',
   },
   message,
-  withLink,
   /** The profile link in LinkSharePanel: Copy and the share sheet carry the same words. */
   panel: (own: boolean, name: string) =>
     ({
