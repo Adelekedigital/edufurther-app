@@ -142,7 +142,10 @@ async function expectOne(page, raw, scope) {
  * so a step not about consent hides it before each action instead.
  */
 async function hideConsentBanner(page) {
-  const banner = page.getByRole('region', { name: 'Can we use analytics cookies?', exact: true });
+  const banner = page.getByRole('region', {
+    name: 'Can we use analytics cookies to improve EduFurther?',
+    exact: true,
+  });
   if (await banner.isVisible().catch(() => false)) {
     await banner
       .evaluate((n) => n.style.setProperty('visibility', 'hidden', 'important'))

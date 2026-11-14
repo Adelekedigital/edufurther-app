@@ -6,7 +6,7 @@ import { ConsentBanner } from './ConsentBanner';
 const meta: Meta<typeof ConsentBanner> = {
   title: 'Organisms/ConsentBanner',
   component: ConsentBanner,
-  args: { onAccept: fn(), onDecline: fn() },
+  args: { onAccept: fn(), onDecline: fn(), onClose: fn() },
   parameters: { layout: 'fullscreen' },
 };
 export default meta;

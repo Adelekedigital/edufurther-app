@@ -317,6 +317,11 @@ export function AnalyticsRoot() {
       signedIn={viewer.kind === 'member'}
       onAccept={() => answerFromBanner(true)}
       onDecline={() => answerFromBanner(false)}
+      // The X is "Essential only": the same answer, cookie and server save,
+      // and focus to the heading after. No consent event carries a method
+      // (the answer itself is the record), so close and decline aren't told
+      // apart; doing so needs a new event agreed with the backend.
+      onClose={() => answerFromBanner(false)}
     />
   );
 }

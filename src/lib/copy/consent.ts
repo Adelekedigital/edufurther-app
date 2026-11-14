@@ -15,10 +15,22 @@
  * booking window (not joining a session),
  * and a decline still counts anonymous steps, not only page visits. The second
  * button says what you keep: "Essential only".
+ *
+ * Compact + close (owner, 2026-11-13): on a phone the full card covered
+ * log-in and sign-up. Collapsed, it shows one short question; "Learn more"
+ * opens the approved text above in place. The short line is a question, not
+ * "We use analytics cookies", because nothing is set until the visitor
+ * allows it (UX writer). The X is the decline, so its name says so.
  */
 export const CONSENT_COPY = {
-  /** Also the banner region's name, read out when a screen reader lands in it. */
-  title: 'Can we use analytics cookies?',
+  /** The collapsed line, and the banner region's name read out when a screen reader lands in it. */
+  short: 'Can we use analytics cookies to improve EduFurther?',
+  /** The disclosure's label, closed then open. */
+  more: 'Learn more',
+  less: 'Show less',
+  /** The corner X: closing counts as "Essential only", so its name says that. */
+  close: 'Close, essential only',
+  /** The approved explanation, shown when "Learn more" is open. */
   body: 'If you allow analytics cookies, we can see where people get stuck, for example while setting up a profile or booking a session. On these pages, we may keep a replay of clicks and scrolling to understand how people use EduFurther. Anything you type stays hidden. If you choose essential only, we only count visits and steps anonymously, without cookies.',
   /** Members only: a guest has no Settings to change it in. */
   change: 'You can change this anytime in Settings › Login and security.',
