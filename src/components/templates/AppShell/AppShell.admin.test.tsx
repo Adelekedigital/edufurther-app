@@ -78,37 +78,49 @@ describe('AppShell: the admin app (Admin PRD, Access)', () => {
     expect(within(link).getByText('9+')).toBeInTheDocument();
   });
 
-  it('an admin in the member app gets the Admin item at the rail foot, under a divider', () => {
+  it('the rail has no Admin link: the way in is the account menu (owner, 2026-11-14)', () => {
     render(
-      <AppShell active="Home" nav="mentee" adminEntry chrome="member" offline={false}>
+      <AppShell
+        active="Home"
+        nav="mentee"
+        chrome="member"
+        offline={false}
+        account={{
+          avatar: { initials: 'AO', cover: 'sky' },
+          items: [
+            { key: 'admin', label: 'Admin', icon: 'admin_panel_settings', href: '/admin/mentors' },
+          ],
+        }}
+      >
         <p>Page</p>
       </AppShell>,
     );
-    const admin = nav(0).getByRole('link', { name: 'Admin' });
-    expect(admin).toHaveAttribute('href', '/admin/mentors');
-    // Last in the rail, after its own divider.
-    expect(hrefs(0).at(-1)).toBe('/admin/mentors');
-    const list = admin.closest('ul')!;
-    expect(list.previousElementSibling).toHaveAttribute('aria-hidden');
-    // Not a phone tab.
+    expect(hrefs(0)).not.toContain('/admin/mentors');
     expect(nav(1).queryByRole('link', { name: 'Admin' })).toBeNull();
   });
 
-  it('phones: the Admin item is in the More sheet, for mentors and mentees', async () => {
-    for (const role of ['mentor', 'mentee'] as const) {
-      const { unmount } = render(
-        <AppShell active="Home" nav={role} adminEntry chrome="member" offline={false}>
-          <p>Page</p>
-        </AppShell>,
-      );
-      await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
-      const sheet = document.getElementById('more-sheet')!;
-      expect(within(sheet).getByRole('link', { name: 'Admin' })).toHaveAttribute(
-        'href',
-        '/admin/mentors',
-      );
-      unmount();
-    }
+  it('phones: Admin shows once in the More sheet, from the account items', async () => {
+    render(
+      <AppShell
+        active="Home"
+        nav="mentor"
+        chrome="member"
+        offline={false}
+        account={{
+          avatar: { initials: 'AO', cover: 'sky' },
+          items: [
+            { key: 'admin', label: 'Admin', icon: 'admin_panel_settings', href: '/admin/mentors' },
+          ],
+        }}
+      >
+        <p>Page</p>
+      </AppShell>,
+    );
+    await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
+    const sheet = document.getElementById('more-sheet')!;
+    const links = within(sheet).getAllByRole('link', { name: 'Admin' });
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute('href', '/admin/mentors');
   });
 
   it('phones: More holds the account items in the admin app, so Logout is reachable', async () => {
