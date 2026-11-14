@@ -41,7 +41,14 @@ describe('mentor opengraph-image', () => {
     await draw('gbenga');
     expect(lookup).toHaveBeenCalledWith('gbenga', '');
     const html = lastDrawn();
-    for (const text of ['Gbenga Elufisan', 'University of Toronto', 'GE', 'Application documents'])
+    for (const text of [
+      'Mentoring',
+      'on edufurther.org',
+      'Gbenga Elufisan',
+      'University of Toronto',
+      'GE',
+      'Application documents',
+    ])
       expect(html).toContain(text);
     expect(html).not.toContain('Career guidance');
     expect(html).toMatch(/display:flex;flex-direction:row;flex-wrap:nowrap;gap:12px/);

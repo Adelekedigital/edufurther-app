@@ -27,7 +27,6 @@ export const assetStubs = {
     fontFamily: 'DM Sans',
     fonts: [],
     logo: 'data:logo',
-    mark: 'data:mark',
   }),
 };
 

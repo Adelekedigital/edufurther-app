@@ -67,17 +67,16 @@ export async function photoData(url: string | null): Promise<string | null> {
 
 /**
  * DM Sans with Inter's gap file behind it (static cuts, scripts/fonts/og_fonts.py),
- * the logo (630×84) and the swoosh mark (128×55), as data URLs.
+ * and the white wordmark (630×84, for the blue-900 card), as a data URL.
  */
 export async function ogAssets() {
-  const [regular, bold, gapsRegular, gapsBold, logo, mark] = await Promise.all([
+  const [regular, bold, gapsRegular, gapsBold, logo] = await Promise.all([
     // Literal paths: a computed one makes the build trace the whole project.
     readFile(join(process.cwd(), 'src/app/fonts/og/dm-sans-regular.ttf')),
     readFile(join(process.cwd(), 'src/app/fonts/og/dm-sans-bold.ttf')),
     readFile(join(process.cwd(), 'src/app/fonts/og/inter-gaps-regular.ttf')),
     readFile(join(process.cwd(), 'src/app/fonts/og/inter-gaps-bold.ttf')),
-    readFile(join(process.cwd(), 'public/brand/edufurther-logo-630.png')),
-    readFile(join(process.cwd(), 'public/brand/edufurther-mark-swoosh.png')),
+    readFile(join(process.cwd(), 'public/brand/edufurther-logo-white-630.png')),
   ]);
   return {
     // Inter's gap file carries what DM Sans lacks (Ṣ, ọ, ₦…), per character,
@@ -90,6 +89,5 @@ export async function ogAssets() {
       { name: 'Inter Gaps', data: gapsBold, weight: 700 as const, style: 'normal' as const },
     ],
     logo: dataUrl(logo, 'image/png'),
-    mark: dataUrl(mark, 'image/png'),
   };
 }

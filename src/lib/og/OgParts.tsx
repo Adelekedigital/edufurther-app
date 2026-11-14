@@ -4,10 +4,11 @@ import { coverInkHex, tokenHex } from '@/lib/utils/imageColors';
 import type { CoverKey } from '@/lib/utils/cover';
 
 /**
- * The link preview images' shared pieces (Invite Preview.dc.html): the
- * blue-50 page with the logo top left, the white-ringed face, and the centred
- * title and body. Colours are tokens via imageColors: satori reads no CSS
- * variables.
+ * The link preview images' shared pieces (Invite Preview.dc.html, owner
+ * 2026-11-14): the blue-900 card with the white wordmark top left, the
+ * blue-700-ringed face, then an eyebrow, the title and the body, centred.
+ * What matters stays in the centre 630×630, because WhatsApp and iMessage crop
+ * to it. Colours are tokens via imageColors: satori reads no CSS variables.
  */
 
 /** satori lays a fragment's children out in a row: each version is its own column. */
@@ -15,8 +16,11 @@ export const OG_STACK = {
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: 28,
+  gap: 24,
 } as const;
+
+/** Secondary lines on the card. */
+const SOFT = tokenHex('blue-100');
 
 export function OgFrame({
   logo,
@@ -37,8 +41,8 @@ export function OgFrame({
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        background: tokenHex('blue-50'),
-        color: tokenHex('ink-900'),
+        background: tokenHex('blue-900'),
+        color: tokenHex('white'),
         fontFamily,
       }}
     >
@@ -68,23 +72,23 @@ export function OgFace({
   return (
     <div
       style={{
-        width: 224,
-        height: 224,
+        width: 248,
+        height: 248,
         borderRadius: 9999,
-        boxShadow: `0 0 0 10px ${tokenHex('white')}`,
+        boxShadow: `0 0 0 8px ${tokenHex('blue-700')}`,
         overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         background: coverInkHex(cover),
         color: tokenHex('white'),
-        fontSize: 80,
+        fontSize: 88,
         fontWeight: 700,
         letterSpacing: '-0.02em',
       }}
     >
       {photo ? (
-        <img src={photo} alt="" width={224} height={224} style={{ objectFit: 'cover' }} />
+        <img src={photo} alt="" width={248} height={248} style={{ objectFit: 'cover' }} />
       ) : (
         initials
       )}
@@ -92,34 +96,65 @@ export function OgFace({
   );
 }
 
-/** A fallback preview: the swoosh mark (128×55 source, 64px tall) over the generic lines. */
-export function OgFallback({ mark, title, body }: { mark: string; title: string; body: string }) {
-  return (
-    <div style={{ ...OG_STACK, gap: 16 }}>
-      <img src={mark} alt="" height={64} width={149} />
-      <OgLines title={title} body={body} gap={16} />
-    </div>
-  );
-}
+/**
+ * The eyebrow says why the card exists and puts our domain on it: `lead` in
+ * blue-200 ("Mentoring"), then `rest` ("on edufurther.org"), if any.
+ */
+export type OgEyebrow = { lead: string; rest?: string };
 
-export function OgLines({ title, body, gap = 12 }: { title: string; body: string; gap?: number }) {
+export function OgLines({
+  eyebrow,
+  title,
+  body,
+}: {
+  eyebrow: OgEyebrow;
+  title: string;
+  body: string;
+}) {
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap,
-        maxWidth: 840,
+        gap: 10,
+        maxWidth: 900,
         textAlign: 'center',
       }}
     >
-      <span style={{ fontSize: 60, lineHeight: 1.1, fontWeight: 700, letterSpacing: '-0.02em' }}>
+      <div style={{ display: 'flex', gap: 8, fontSize: 26, lineHeight: 1.2, color: SOFT }}>
+        <span style={{ color: tokenHex('blue-200'), fontWeight: 700 }}>{eyebrow.lead}</span>
+        {eyebrow.rest && <span>{eyebrow.rest}</span>}
+      </div>
+      <span
+        style={{
+          fontSize: 64,
+          lineHeight: 1.1,
+          fontWeight: 700,
+          letterSpacing: '-0.02em',
+          textWrap: 'balance',
+        }}
+      >
         {title}
       </span>
-      <span style={{ fontSize: 32, lineHeight: 1.4, fontWeight: 400, color: tokenHex('ink-700') }}>
+      {/* Balanced, so a long body never leaves one word on its last line. */}
+      <span
+        style={{ fontSize: 30, lineHeight: 1.3, fontWeight: 400, color: SOFT, textWrap: 'balance' }}
+      >
         {body}
       </span>
     </div>
   );
 }
+
+/** A fallback preview: no face, the generic lines under the domain. */
+export function OgFallback({ title, body }: { title: string; body: string }) {
+  return (
+    <div style={{ ...OG_STACK, maxWidth: 840 }}>
+      <OgLines eyebrow={OG_DOMAIN} title={title} body={body} />
+    </div>
+  );
+}
+
+/** The fallback's eyebrow: the domain alone. */
+export const OG_DOMAIN: OgEyebrow = { lead: 'edufurther.org' };

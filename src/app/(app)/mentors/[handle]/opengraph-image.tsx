@@ -26,9 +26,9 @@ export function generateStaticParams() {
 const PILLS = 3;
 
 /**
- * A mentor profile link's preview (owner, 2026-11-13), in the invite
- * preview's frame: the photo or initials on their cover ink, the name, their
- * school and up to three help areas. A hidden, unapproved or missing profile
+ * A mentor profile link's preview (owner, 2026-11-13; restyled 2026-11-14), in
+ * the shared frame: the photo or initials on their cover ink, "Mentoring on
+ * edufurther.org", the name, their school and up to three help areas. A hidden, unapproved or missing profile
  * (or any failure) redirects to the one shared generic image, so random
  * handles never draw images of their own.
  */
@@ -46,7 +46,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
     <OgFrame logo={assets.logo} fontFamily={assets.fontFamily}>
       <div style={OG_STACK}>
         <OgFace photo={photo} initials={mentor.initials} cover={mentor.cover} />
-        <OgLines title={mentor.name} body={mentor.school ?? COPY.alt} />
+        <OgLines eyebrow={COPY.eyebrow} title={mentor.name} body={mentor.school ?? COPY.alt} />
         {mentor.topics.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', gap: 12 }}>
             {mentor.topics.slice(0, PILLS).map((t) => (

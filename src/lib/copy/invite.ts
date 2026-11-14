@@ -60,6 +60,8 @@ export const INVITE_LANDING_COPY = {
    */
   preview: {
     title: (first: string) => `${first} invited you to EduFurther`,
+    /** The image's eyebrow, "1:1 help" in blue-200 (owner, 2026-11-14). */
+    eyebrow: { lead: '1:1 help', rest: 'on edufurther.org' },
     body: '1:1 help with your grad school applications from mentors who’ve been through it. First session free.',
     fallbackTitle: 'Get 1:1 help with your grad school applications',
     fallbackBody: 'From mentors who’ve been through it. Your first session is free.',
