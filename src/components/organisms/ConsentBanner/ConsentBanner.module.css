@@ -36,10 +36,18 @@
   right: var(--space-1);
 }
 
-/* Room on the right for the X, so the question never runs under it. */
+/* Room on the right for the X on the first line only (a float the height of
+   one line), so the lines under it use the card's full width: two lines
+   collapsed on a 375px phone, not three. */
+.lead::before {
+  content: '';
+  float: right;
+  width: var(--space-8);
+  height: var(--space-6);
+}
+
 .lead {
   margin: 0;
-  padding-right: var(--space-8);
   font-size: var(--text-p-sm);
   line-height: var(--lh-p);
   color: var(--ink-700);
@@ -54,7 +62,7 @@
 .links {
   display: inline-flex;
   align-items: baseline;
-  gap: var(--space-2);
+  gap: var(--space-1);
   white-space: nowrap;
 }
 
@@ -100,6 +108,13 @@
    tab bar's own html:has() rule, and the card already sits above the bar. */
 :global(html:root):has(.banner) {
   scroll-padding-bottom: var(--ef-consent-h, 0px);
+}
+
+/* And the page can always scroll its last line above the card: on a short
+   phone, sign-up's "Have an account? Log in" sat under it with no room left to
+   scroll (375x667, 2026-11-13). Only while the card shows. */
+:global(html:root):has(.banner) :global(body) {
+  padding-bottom: var(--ef-consent-h, 0px);
 }
 
 /* Phones: the buttons share the card's width under the text, half each. */
