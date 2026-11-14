@@ -248,6 +248,15 @@ async function reviewWidth(width) {
     result.consoleErrors.push(`uncaught: ${err.message}`.slice(0, 300));
   });
   page.on('requestfailed', (req) => {
+    const reason = req.failure()?.errorText ?? '';
+    // Next prefetches the pages a visible link leads to (an RSC request,
+    // `_rsc=`). One still in flight when the run moves on or closes the page is
+    // aborted by the browser: timing, not a failure (it flaked the mentor home
+    // on /sessions/j-3). Only aborts of RSC requests are skipped; any other
+    // failure, and any RSC answer of 4xx/5xx, is still reported.
+    const headers = req.headers();
+    const rsc = !!headers.rsc || !!headers['next-router-prefetch'] || /[?&]_rsc=/.test(req.url());
+    if (rsc && reason.includes('ERR_ABORTED')) return;
     result.badRequests.push({
       url: req.url(),
       status: 'failed',
