@@ -174,7 +174,7 @@ describe('the flags', () => {
   it('a guest sees the banner on a guest page; Accept goes identified, Decline stays cookieless', async () => {
     env.path = '/invite/abc';
     render(<AnalyticsRoot />);
-    expect(screen.getByRole('region', { name: 'Can we use analytics cookies?' })).toBeVisible();
+    expect(screen.getByRole('region', { name: CONSENT_COPY.short })).toBeVisible();
     await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless'));
     await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
     expect(screen.queryByRole('region')).toBeNull();
@@ -207,7 +207,7 @@ describe('the flags', () => {
     // An expired session or a log-out in this tab (lib/api/data/http onExpired, useSignOut).
     act(() => resetIdentity());
     await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless'));
-    expect(screen.getByRole('region', { name: CONSENT_COPY.title })).toBeVisible();
+    expect(screen.getByRole('region', { name: CONSENT_COPY.short })).toBeVisible();
   });
 
   it('answering on a page without #main puts focus on its first heading', async () => {
@@ -246,6 +246,31 @@ describe('the flags', () => {
     expect(readConsentCookie()?.granted).toBe(false);
     expect(screen.queryByRole('region')).toBeNull();
     expect(vendor.setMode).not.toHaveBeenCalledWith('identified');
+  });
+
+  it('the X answers exactly as Essential only: the same cookie, and focus to the heading', async () => {
+    render(
+      <>
+        <main id="main">
+          <h1>Log in</h1>
+        </main>
+        <AnalyticsRoot />
+      </>,
+    );
+    screen.getByRole('button', { name: CONSENT_COPY.close }).focus();
+    await userEvent.keyboard('{Enter}');
+    expect(readConsentCookie()?.granted).toBe(false);
+    expect(screen.queryByRole('region')).toBeNull();
+    expect(vendor.setMode).not.toHaveBeenCalledWith('identified');
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Log in' })).toHaveFocus());
+  });
+
+  it('Escape does not close it (not a dialog): no answer is recorded', async () => {
+    render(<AnalyticsRoot />);
+    screen.getByRole('button', { name: CONSENT_COPY.more }).focus();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('region', { name: CONSENT_COPY.short })).toBeVisible();
+    expect(readConsentCookie()).toBeNull();
   });
 });
 
@@ -346,6 +371,15 @@ describe('members', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
     expect(PUT).toHaveBeenCalledWith('/api/v1/me/consents/analytics', {
       body: { granted: true, version: CONSENT_VERSION },
+    });
+  });
+
+  it("a member's X saves Essential only on the account, as Decline does", async () => {
+    env.viewer = member();
+    render(<AnalyticsRoot />);
+    await userEvent.click(screen.getByRole('button', { name: CONSENT_COPY.close }));
+    expect(PUT).toHaveBeenCalledWith('/api/v1/me/consents/analytics', {
+      body: { granted: false, version: CONSENT_VERSION },
     });
   });
 
