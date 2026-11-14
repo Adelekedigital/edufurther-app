@@ -9,11 +9,11 @@ vi.mock('@/lib/og/ogAssets', async (orig) => ({
 const { GET, dynamic } = await import('./route');
 
 describe('mentor fallback preview', () => {
-  it('is drawn once at build, with the generic lines and the mark', async () => {
+  it('is drawn once at build, with the generic lines under the domain', async () => {
     expect(dynamic).toBe('force-static');
     await GET();
     const html = lastDrawn();
     expect(html).toContain('Find a mentor on EduFurther');
-    expect(html).toContain('src="data:mark"');
+    expect(html).toContain('edufurther.org');
   });
 });

@@ -13,12 +13,12 @@ describe('mentorPreviewMetadata', () => {
     expect(m.title).toBe('Gbenga Elufisan');
     expect(m.description).toBe(description);
     expect(m.openGraph).toMatchObject({
-      title: 'Gbenga Elufisan · EduFurther mentor',
+      title: 'Get mentored by Gbenga Elufisan on EduFurther',
       description,
     });
     expect(m.twitter).toMatchObject({
       card: 'summary_large_image',
-      title: 'Gbenga Elufisan · EduFurther mentor',
+      title: 'Get mentored by Gbenga Elufisan on EduFurther',
     });
   });
 

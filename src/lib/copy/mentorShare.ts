@@ -41,7 +41,10 @@ export const MENTOR_SHARE_COPY = {
     }) as const,
   /** The link preview (og: lines and opengraph-image). */
   preview: {
-    title: (name: string) => `${name} · EduFurther mentor`,
+    /** After ADPList's card (owner, 2026-11-14): an invitation, not a label. */
+    title: (name: string) => `Get mentored by ${name} on EduFurther`,
+    /** The image's eyebrow, "Mentoring" in blue-200. Never first person: anyone may share it. */
+    eyebrow: { lead: 'Mentoring', rest: 'on edufurther.org' },
     /**
      * Headline, school and help areas, each only when the profile has it. A
      * headline that already names the school isn't followed by it again.

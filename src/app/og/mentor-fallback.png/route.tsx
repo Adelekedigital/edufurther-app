@@ -14,7 +14,7 @@ export async function GET() {
   const assets = await ogAssets();
   return new ImageResponse(
     <OgFrame logo={assets.logo} fontFamily={assets.fontFamily}>
-      <OgFallback mark={assets.mark} title={COPY.fallbackTitle} body={COPY.fallbackBody} />
+      <OgFallback title={COPY.fallbackTitle} body={COPY.fallbackBody} />
     </OgFrame>,
     { ...OG_SIZE, fonts: assets.fonts },
   );
