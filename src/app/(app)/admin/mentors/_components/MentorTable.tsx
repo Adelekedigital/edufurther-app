@@ -4,6 +4,7 @@ import { useEffect, useRef, type CSSProperties, type Ref } from 'react';
 import { Avatar } from '@/components/atoms/Avatar/Avatar';
 import { Checkbox } from '@/components/atoms/Checkbox/Checkbox';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import type { AdminMentorRow, MentorTab } from '@/lib/api/data/adminMentors';
@@ -101,6 +102,8 @@ type Props = {
   onToggleAll: () => void;
   /** Each row's open button, so focus can come back to it. */
   rowRef: (id: string) => Ref<HTMLButtonElement>;
+  /** Approved: a copy icon on the Email header copies the emails shown (owner, 14 Nov 2026). */
+  copyEmails?: { count: number; onCopy: () => void };
 };
 
 /**
@@ -121,6 +124,7 @@ export function MentorTable({
   onToggle,
   onToggleAll,
   rowRef,
+  copyEmails,
 }: Props) {
   const heads = T.heads[tab];
   const style = {
@@ -156,9 +160,22 @@ export function MentorTable({
             </span>
           )}
           <span role="columnheader">{T.mentor}</span>
-          {heads.map((h) => (
+          {heads.map((h, i) => (
             <span key={h} role="columnheader" className={styles.colHead}>
-              {h}
+              {tab === 'approved' && i === 0 && copyEmails && copyEmails.count > 0 ? (
+                <span className={styles.headAction}>
+                  {h}
+                  <IconButton
+                    icon="content_copy"
+                    size="sm"
+                    aria-label={T.copyEmails(copyEmails.count)}
+                    title={T.copyEmails(copyEmails.count)}
+                    onClick={copyEmails.onCopy}
+                  />
+                </span>
+              ) : (
+                h
+              )}
             </span>
           ))}
           <span aria-hidden />

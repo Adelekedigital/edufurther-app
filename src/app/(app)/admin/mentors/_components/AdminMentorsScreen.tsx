@@ -278,18 +278,6 @@ export function AdminMentorsScreen() {
           active={active}
           onClear={() => changeFilters(NO_FILTERS)}
         />
-        {listStatus === 'ready' && emails.length > 0 && (
-          <div className={styles.copyRow}>
-            <Button
-              variant="secondary-outlined"
-              size="small"
-              icon="content_copy"
-              onClick={copyEmails}
-            >
-              {MENTOR_TABLE.copyEmails(emails.length)}
-            </Button>
-          </div>
-        )}
         {selectable && liveChecked.length > 0 && (
           <MentorBulkBar
             count={liveChecked.length}
@@ -348,6 +336,7 @@ export function AdminMentorsScreen() {
                     return allOn ? hidden : [...hidden, ...ids];
                   });
                 }}
+                copyEmails={{ count: emails.length, onCopy: () => void copyEmails() }}
                 rowRef={rowRef}
               />
             ))}

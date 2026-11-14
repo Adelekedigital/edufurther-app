@@ -144,15 +144,17 @@ describe('AdminMentorsScreen: the list', () => {
     expect(screen.getByText('Only they can resume')).toBeInTheDocument();
   });
 
-  it('Approved: email has its own column, and Copy emails copies every email on screen', async () => {
+  it('Approved: email has its own column, and its header icon copies every email on screen', async () => {
     const user = userEvent.setup();
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     renderScreen(<AdminMentorsScreen />);
     await user.click(await screen.findByRole('tab', { name: /Approved/ }));
     await screen.findAllByRole('button', { name: /^Open / });
-    expect(within(table()).getByRole('columnheader', { name: 'Email' })).toBeInTheDocument();
-    const button = screen.getByRole('button', { name: /^Copy \d+ emails?$/ });
+    // The copy control is an icon on the Email header, not a button above the table.
+    const head = within(table()).getByRole('columnheader', { name: /^Email/ });
+    const button = within(head).getByRole('button', { name: /^Copy \d+ emails?$/ });
+    expect(screen.getAllByRole('button', { name: /^Copy \d+ emails?$/ })).toHaveLength(1);
     await user.click(button);
     expect(writeText).toHaveBeenCalledTimes(1);
     const copied = writeText.mock.calls[0]![0] as string;
