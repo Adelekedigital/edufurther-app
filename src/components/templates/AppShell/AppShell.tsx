@@ -118,17 +118,6 @@ const PRIMARY_TABS = {
 /** Admin phone tabs: the first three admin items in nav order (design `pick`), the rest in More. */
 const ADMIN_TABS = 3;
 /**
- * The way into the admin app from the member app, for platform admins only
- * (design `showAdmin`): the rail's foot under a divider, and on phones the More
- * sheet (its own icon there, as drawn).
- */
-const ADMIN_ENTRY: NavItem = {
-  label: 'Admin',
-  href: '/admin/mentors',
-  icon: 'admin_panel_settings',
-  group: 'setup',
-};
-/**
  * Prefetch is off until the other screens exist: Next 16 holds prefetch streams
  * open for routes that 404, which never lets the page reach network idle.
  * Turn it back on (delete prefetch={PREFETCH}) once Home/Messages/Settings and the
@@ -149,8 +138,6 @@ type AppShellProps = {
    * flash first; `admin` inside the admin app.
    */
   nav?: 'mentee' | 'mentor' | 'admin' | 'unknown';
-  /** A platform admin in the member app: the Admin item (design `showAdmin`). */
-  adminEntry?: boolean;
   /** Messages is on (MESSAGES_LIVE): its nav item shows. */
   messages?: boolean;
   /** Admin Emails is on (ADMIN_EMAILS_LIVE): the admin nav shows Emails. */
@@ -195,7 +182,6 @@ type AppShellProps = {
 export function AppShell({
   active,
   nav = 'mentee',
-  adminEntry = false,
   messages = false,
   adminEmails = false,
   adminAnalytics = false,
@@ -294,13 +280,6 @@ export function AppShell({
   const moreActive = extra.some((n) => n.label === active);
   const daily = items.filter((n) => n.group === 'daily');
   const setup = items.filter((n) => n.group === 'setup');
-  const admin = adminEntry && nav !== 'admin' ? [shownItem(ADMIN_ENTRY, undefined, {})] : [];
-  // Phones put it in the More sheet with the icon the design draws there
-  // (AppShell.dc.html mentor defs ['Admin', 'accessibility_new']; Admin PRD).
-  const sheetItems = [
-    ...extra,
-    ...admin.map((n) => ({ ...n, icon: 'accessibility_new' as const })),
-  ];
 
   // The page behind the More sheet doesn't scroll (as under the credits sheet).
   useEffect(() => (moreOpen ? lockScroll() : undefined), [moreOpen]);
@@ -371,12 +350,6 @@ export function AppShell({
                 <span className={styles.railDivider} aria-hidden />
               )}
               <RailList items={setup} active={active} onLock={openLock} />
-              {admin.length > 0 && (
-                <div className={styles.railAdmin}>
-                  <span className={cx(styles.railDivider, styles.railAdminDivider)} aria-hidden />
-                  <RailList items={admin} active={active} onLock={openLock} />
-                </div>
-              )}
             </div>
             {account && (
               <AccountMenu
@@ -518,7 +491,7 @@ export function AppShell({
               <CreditsSummary credits={credits} onHowItWorks={() => openCredits(moreRef.current)} />
             )}
             <ul className={styles.sheetList}>
-              {sheetItems.map((n) => (
+              {extra.map((n) => (
                 <li key={n.href}>
                   {n.locked ? (
                     <button

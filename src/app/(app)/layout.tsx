@@ -73,25 +73,14 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const {
-    chrome,
-    account,
-    nav,
-    adminEntry,
-    access,
-    messages,
-    adminEmails,
-    adminAnalytics,
-    onPreview,
-    member,
-  } = useAppShell();
+  const { chrome, account, nav, access, messages, adminEmails, adminAnalytics, onPreview, member } =
+    useAppShell();
   const online = useOnline();
 
   return (
     <AppShell
       active={activeFor(pathname)}
       nav={nav}
-      adminEntry={adminEntry}
       messages={messages}
       adminEmails={adminEmails}
       adminAnalytics={adminAnalytics}

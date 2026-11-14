@@ -33,7 +33,13 @@ const member = (over: object): Viewer =>
       balance: 3,
       state: 'on_track',
       nextResetAt: '2026-11-01T00:00:00Z',
-      monthly: { balance: 3, ceiling: 3, level: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
+      monthly: {
+        balance: 3,
+        ceiling: 3,
+        level: 3,
+        expiresAt: '2026-11-01T00:00:00Z',
+        unlocked: true,
+      },
       bonus: { balance: 0, groups: [] },
     },
     ...over,
@@ -49,7 +55,14 @@ describe('useAppShell: the admin app (Admin PRD, Access)', () => {
     h.path = '/admin/mentors';
     const { result } = renderHook(() => useAppShell());
     expect(result.current.nav).toBe('admin');
-    expect(result.current.adminEntry).toBe(true);
+    // Inside: the account menu offers the way back, not the way in.
+    const keys = result.current.account?.items.map((i) => i.key);
+    expect(keys).toContain('app');
+    expect(keys).not.toContain('admin');
+    expect(result.current.account?.items.find((i) => i.key === 'app')).toMatchObject({
+      label: 'Back to the app',
+      href: '/',
+    });
     expect(h.summaryFor).toHaveBeenLastCalledWith('u1');
     expect(result.current.account?.counts).toEqual(adminCounts(3));
     expect(result.current.account?.credits).toBeUndefined();
@@ -60,7 +73,13 @@ describe('useAppShell: the admin app (Admin PRD, Access)', () => {
     h.path = '/home';
     const { result } = renderHook(() => useAppShell());
     expect(result.current.nav).toBe('mentee');
-    expect(result.current.adminEntry).toBe(true);
+    const items = result.current.account?.items ?? [];
+    expect(items.find((i) => i.key === 'admin')).toMatchObject({
+      label: 'Admin',
+      href: '/admin/mentors',
+    });
+    // Just above Logout.
+    expect(items.map((i) => i.key).slice(-2)).toEqual(['admin', 'logout']);
     expect(h.summaryFor).toHaveBeenLastCalledWith(null);
     expect(result.current.account?.credits).toBeDefined();
   });
@@ -70,7 +89,9 @@ describe('useAppShell: the admin app (Admin PRD, Access)', () => {
     h.path = '/admin/mentors';
     const { result } = renderHook(() => useAppShell());
     expect(result.current.nav).toBe('mentee');
-    expect(result.current.adminEntry).toBe(false);
+    const keys = result.current.account?.items.map((i) => i.key);
+    expect(keys).not.toContain('admin');
+    expect(keys).not.toContain('app');
     expect(h.summaryFor).toHaveBeenLastCalledWith(null);
   });
 });
