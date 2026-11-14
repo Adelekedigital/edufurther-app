@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { MenteeProfile } from '@/lib/api/data/settings';
 import { SECURITY_COPY, SETTINGS_COPY } from '@/lib/copy/settings';
+import { CONSENT_COPY } from '@/lib/copy/consent';
+import { CONSENT_COOKIE, CONSENT_VERSION } from '@/lib/analytics/consent';
+import { resetConsentStoreForTests } from '@/lib/analytics/consentStore';
 import { SecurityPanel } from './SecurityPanel';
 
 const order: string[] = [];
@@ -24,8 +27,18 @@ vi.mock('@/lib/api/data/auth', () => ({
   },
 }));
 const del = vi.fn();
+const put = vi.fn();
+// The analytics switch is offered (PRD 30's banner flag on).
+vi.mock('@/lib/config/analytics', async (orig) => ({
+  ...(await orig<typeof import('@/lib/config/analytics')>()),
+  CONSENT_BANNER_LIVE: true,
+}));
 vi.mock('@/lib/api/data/http', () => ({
   api: {
+    PUT: (path: string, init: { body: unknown }) => {
+      put(path, init);
+      return Promise.resolve({ data: undefined, response: { ok: true, status: 200 } });
+    },
     DELETE: (path: string, init: unknown) => {
       order.push(`DELETE ${path} ${JSON.stringify((init as { body: unknown }).body)}`);
       return del();
@@ -65,6 +78,7 @@ async function typeAndDelete() {
 beforeEach(() => {
   order.length = 0;
   del.mockReset();
+  put.mockReset();
   read = { profile, status: 'ready' };
   provider = 'email';
 });
@@ -212,5 +226,26 @@ describe('SecurityPanel', () => {
       'href',
     )!;
     expect(decodeURIComponent(href)).toContain('Role: Mentee');
+  });
+});
+
+describe('SecurityPanel › analytics switch', () => {
+  beforeEach(() => {
+    document.cookie = `${CONSENT_COOKIE}=; Path=/; Max-Age=0`;
+    resetConsentStoreForTests();
+  });
+
+  it.each([true, false])('turning it to %s is saved with method settings', async (on) => {
+    // The device's earlier answer is the opposite, so one press gives `on`.
+    document.cookie = `${CONSENT_COOKIE}=${CONSENT_VERSION}.${on ? 0 : 1}.${Date.now() - 500}; Path=/`;
+    setup();
+    const sw = await screen.findByRole('switch', { name: CONSENT_COPY.settingsTitle });
+    expect(sw).toHaveAttribute('aria-checked', String(!on));
+    await userEvent.click(sw);
+    await waitFor(() =>
+      expect(put).toHaveBeenLastCalledWith('/api/v1/me/consents/analytics', {
+        body: { granted: on, version: CONSENT_VERSION, method: 'settings' },
+      }),
+    );
   });
 });

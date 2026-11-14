@@ -3,7 +3,12 @@
 import { useCallback, useState, useSyncExternalStore } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
-import { fromServer, type ConsentAnswer } from '@/lib/analytics/consent';
+import {
+  consentMethod,
+  fromServer,
+  type ConsentAnswer,
+  type ConsentMethod,
+} from '@/lib/analytics/consent';
 import { consentStore } from '@/lib/analytics/consentStore';
 import type { Acquisition } from '@/lib/analytics/acquisition';
 import { api } from './http';
@@ -11,6 +16,7 @@ import { keys } from './keys';
 import { isPreviewing } from './previewStore';
 
 type AcquisitionRead = components['schemas']['AcquisitionRead'];
+type ConsentWrite = components['schemas']['AnalyticsConsentWrite'];
 
 /** Where the account came from, as POST /me/acquisition records it (the domain's name for it). */
 export type SignupRead = AcquisitionRead;
@@ -27,7 +33,10 @@ export type SignupRead = AcquisitionRead;
  * Stores the answer on the account and returns it as stored (the server's
  * `answered_at`), or null when it didn't land: the cookie still holds it and
  * the next visit retries. The cookie takes the server's time (one clock for
- * every later comparison) and the cached /me is refetched.
+ * every later comparison) and the cached /me is refetched. The method always
+ * goes with it (consentMethod: an answer stored before methods existed is
+ * sent as the button that gives it), since one sent without a method resets
+ * the account's to null.
  */
 export async function saveConsent(
   a: ConsentAnswer,
@@ -36,11 +45,21 @@ export async function saveConsent(
   if (isPreviewing()) return null;
   try {
     const { data, response } = await api.PUT('/api/v1/me/consents/analytics', {
-      body: { granted: a.granted, version: a.version },
+      body: {
+        granted: a.granted,
+        version: a.version,
+        method: consentMethod(a),
+      } satisfies ConsentWrite,
     });
     if (!response.ok) return null;
     const stored = data
-      ? fromServer({ granted: data.granted, version: data.version, answeredAt: data.answered_at })
+      ? fromServer({
+          granted: data.granted,
+          version: data.version,
+          answeredAt: data.answered_at,
+          // Typed from the contract; absent from a backend that predates it.
+          method: data.method ?? null,
+        })
       : null;
     if (stored) consentStore.confirm(stored);
     void qc?.invalidateQueries({ queryKey: keys.viewer.all });
@@ -115,9 +134,9 @@ export function useAnalyticsConsent(memberId: string | null) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const choose = useCallback(
-    async (granted: boolean) => {
+    async (granted: boolean, method: ConsentMethod) => {
       // The device follows at once (same-session effect); the account after.
-      const a = consentStore.answer(granted);
+      const a = consentStore.answer(granted, method);
       if (!memberId) return;
       setBusy(true);
       try {

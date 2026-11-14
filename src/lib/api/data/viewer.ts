@@ -58,6 +58,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
           granted: me.analytics_consent.granted,
           version: me.analytics_consent.version,
           answeredAt: me.analytics_consent.answered_at,
+          method: me.analytics_consent.method ?? null,
         }
       : null,
     createdAt: me.created_at,

@@ -106,7 +106,7 @@ export function SecurityPanel({
           ? {
               granted: isCurrent(shown) && shown.granted,
               busy: consent.busy,
-              onChange: (on) => void consent.choose(on),
+              onChange: (on) => void consent.choose(on, 'settings'),
             }
           : undefined
       }
