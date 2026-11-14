@@ -145,7 +145,8 @@ export function CodeStep({
         type="submit"
         size="large"
         fullWidth
-        disabled={code.length !== CODE_LENGTH || locked || expired}
+        // Disabled, not just busy, while the code is checked: nothing to press twice.
+        disabled={code.length !== CODE_LENGTH || locked || expired || !!verifying}
         busy={verifying}
       >
         {verifying ? 'Checking…' : verifyLabel}
