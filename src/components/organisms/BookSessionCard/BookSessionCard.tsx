@@ -2,7 +2,8 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Tag } from '@/components/atoms/Tag/Tag';
 import { BookingModeLabel } from '@/components/molecules/BookingModeLabel/BookingModeLabel';
-import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
+// From its source, not TimezonePicker's re-export, which pulls the whole picker in.
+import { zoneLabel } from '@/lib/utils/timezones';
 import { bookSessionsSub } from '@/lib/copy/profile';
 import type { ProfileSessionType } from '@/types/mentor';
 import styles from './BookSessionCard.module.css';

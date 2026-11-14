@@ -23,7 +23,8 @@ import {
   showedUp,
   partyLine,
 } from '@/lib/utils/bookings';
-import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
+// From its source, not TimezonePicker's re-export, which pulls the whole picker in.
+import { zoneLabel } from '@/lib/utils/timezones';
 import type { BookingOutcome } from '@/lib/api/data/sessionEvents';
 import type { AnswerFile, Booking, BookingAnswer } from '@/types/booking';
 import styles from './BookingDetails.module.css';

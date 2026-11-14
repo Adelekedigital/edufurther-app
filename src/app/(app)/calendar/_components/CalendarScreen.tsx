@@ -54,7 +54,8 @@ import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { supportMailto } from '@/lib/utils/mailto';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
-import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
+// From its source, not TimezonePicker's re-export, which pulls the whole picker in.
+import { zoneLabel } from '@/lib/utils/timezones';
 import { lockedPageGate, memberGate, type MemberGateCopy } from '@/app/_shell/MentorGate';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useCalendarReconnect } from '@/app/_shell/useCalendarReconnect';

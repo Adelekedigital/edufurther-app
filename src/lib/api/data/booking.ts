@@ -10,7 +10,6 @@ import type {
   BookingRequest,
   IntakeAnswer,
   IntakeFile,
-  IntakeQuestion,
   Remote,
   SessionType,
 } from '@/types/mentor';
@@ -20,45 +19,16 @@ import { keys } from './keys';
 import { fileBody, uploadError } from './upload';
 import { notePushMoment } from '@/lib/utils/push';
 
-type SessionTypeRead = components['schemas']['SessionTypeRead'];
-type QuestionRead = components['schemas']['QuestionRead'];
 type AnswerWrite = components['schemas']['AnswerWrite'];
 
 // ---- mapping ----------------------------------------------------------------
 
-export function toQuestion(q: QuestionRead): IntakeQuestion {
-  return {
-    id: q.id,
-    label: q.question_text,
-    kind:
-      q.question_type === 'file_upload'
-        ? 'file'
-        : q.question_type === 'multi_choice'
-          ? q.allows_multiple
-            ? 'multi'
-            : 'single'
-          : 'text',
-    required: q.is_required,
-    options: (q.options ?? []).map((o) => ({ id: o.id, label: o.text })),
-  };
-}
-
-export function toSessionType(r: SessionTypeRead): SessionType {
-  return {
-    id: r.id,
-    name: r.name,
-    durationMin: r.duration_minutes,
-    description: r.description?.trim() ?? '',
-    // The window this type really uses (the platform cap applied), backend #309.
-    windowDays: r.booking_window_days,
-    // Request or instant: picks "Request …" vs "Book …" before sending.
-    requiresConfirmation: r.requires_booking_confirmation !== false,
-    // The live intake form, in the order mentees see it (backend #268).
-    questions: [...(r.questions ?? [])]
-      .sort((a, b) => a.display_order - b.display_order)
-      .map(toQuestion),
-  };
-}
+// Read by the profile and Session types too, which need none of the booking
+// hooks below: they live apart so those pages don't load this whole module.
+import { toSessionType } from './sessionTypeRead';
+import { keyForAttempt } from './attempt';
+export { toQuestion, toSessionType } from './sessionTypeRead';
+export { keyForAttempt } from './attempt';
 
 /** Answered = something to send: text, at least one option, or an uploaded file. */
 export function isAnswered(a: IntakeAnswer | undefined): boolean {
@@ -110,20 +80,6 @@ export function answerProblem(body: unknown, sent: AnswerWrite[]): AnswerProblem
 export function questionForPointer(body: unknown, sent: AnswerWrite[]): string | undefined {
   const p = answerProblem(body, sent);
   return p?.kind === 'answer' ? p.questionId : undefined;
-}
-
-/**
- * One Idempotency-Key per booking *attempt* (backend ADR 0024): a retry of the
- * same request re-sends the key, so a timeout can't book twice — but a different
- * time or offering is a new attempt with a new key, or the backend answers 422
- * ("this key already stands for a different request").
- */
-export function keyForAttempt(
-  current: { key: string; body: string } | null,
-  body: string,
-  newKey: () => string,
-): { key: string; body: string } {
-  return current && current.body === body ? current : { key: newKey(), body };
 }
 
 /** Booking-specific copy over the generic error (never the server's `detail`). */

@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useLayoutEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { DateChip } from '@/components/molecules/DateChip/DateChip';
@@ -11,8 +12,12 @@ import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { joinState, nextSessionWhen, timeRange } from '@/lib/utils/bookings';
 import { providerName } from '@/lib/utils/sessionPhase';
 import type { Booking } from '@/types/booking';
-import { MenteeTipsModal } from './MenteeTipsModal';
 import styles from './MenteeNextSession.module.css';
+
+// Opens from a link, never at first paint: loads on open (performance budget).
+const MenteeTipsModal = dynamic(() => import('./MenteeTipsModal').then((m) => m.MenteeTipsModal), {
+  ssr: false,
+});
 
 type MenteeNextSessionProps = {
   /** The soonest upcoming session — upcomingBookings[0]. */

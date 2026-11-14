@@ -3,7 +3,14 @@
 import { Avatar, type PhotoSize } from '@/components/atoms/Avatar/Avatar';
 import type { CoverKey } from '@/lib/utils/cover';
 import type { PhotoFocus } from '@/lib/utils/person';
-import { PhotoPicker } from '../PhotoPicker/PhotoPicker';
+import dynamic from 'next/dynamic';
+
+// The camera badge and its menu: only an owner editing has them, and the badge
+// sits over the photo's corner (absolute), so it arriving a moment after the
+// photo moves nothing. Visitors' pages never load it (performance budget).
+const PhotoPicker = dynamic(() => import('../PhotoPicker/PhotoPicker').then((m) => m.PhotoPicker), {
+  ssr: false,
+});
 
 /** Whose photo: what the circle shows. */
 export type PhotoPerson = {

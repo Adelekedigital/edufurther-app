@@ -15,7 +15,7 @@ import { coverKey, type CoverKey } from '@/lib/utils/cover';
 import { resetsOnFor } from '@/lib/utils/credits';
 import { personCover, personInitials } from '@/lib/utils/person';
 import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
-import { keyForAttempt } from './booking';
+import { keyForAttempt } from './attempt';
 import { toCredits } from './credits';
 import { ApiError, apiError, retryOnce } from './errors';
 import { api } from './http';

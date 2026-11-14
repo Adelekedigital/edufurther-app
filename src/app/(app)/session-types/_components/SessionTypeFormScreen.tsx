@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -24,11 +25,20 @@ import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import { typeLength, weeklySummary, type Draft } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { lockedPageGate, memberGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
-import { PublishedModal, SavedModal } from './SessionTypeFormModals';
 import styles from './SessionTypesScreen.module.css';
 import { useLeaveGuard, useSessionTypeDraft, type EditTarget } from './useSessionTypeDraft';
 import { useSessionTypeSubmit } from './useSessionTypeSubmit';
 import { useWizardSteps } from './useWizardSteps';
+
+// Shown only after a save or a publish: they load then (performance budget,
+// 350kB first-load JS) and mount whole, so their focus handling is unchanged.
+const SavedModal = dynamic(() => import('./SessionTypeFormModals').then((m) => m.SavedModal), {
+  ssr: false,
+});
+const PublishedModal = dynamic(
+  () => import('./SessionTypeFormModals').then((m) => m.PublishedModal),
+  { ssr: false },
+);
 
 export type { EditTarget } from './useSessionTypeDraft';
 

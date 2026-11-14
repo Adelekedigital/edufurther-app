@@ -1,20 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { SignInBookingFlow } from '@/app/_shell/SignInBookingFlow';
-import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import {
-  useRequestBooking,
-  useSessionTypes,
-  useSlots,
-  useUploadIntakeFile,
-} from '@/lib/api/data/booking';
+import dynamic from 'next/dynamic';
 import type { EntryPoint } from '@/lib/analytics/events';
-import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import type { Mentor } from '@/types/mentor';
 
-type BookingLauncherProps = {
-  /** The mentor to book; null closes the flow (the query stays mounted, disabled). */
+// The booking flow, its hooks and its modal are the heaviest thing on the
+// pages that offer them, and none of it is needed until someone presses Book:
+// it loads on open (performance budget, 350kB first-load JS) and mounts whole,
+// so its focus handling is unchanged. Every lazy part in the app passes
+// `ssr: false` or `loading`: either gives it its own Suspense boundary. Without
+// one, the load suspends the page's boundary instead, which hides the page
+// and drops the opener's focus to <body>.
+const OpenBooking = dynamic(() => import('./OpenBooking').then((m) => m.OpenBooking), {
+  ssr: false,
+});
+
+export type BookingLauncherProps = {
+  /** The mentor to book; null closes the flow. */
   mentor: Mentor | null;
   /** Which surface this is (PRD 30): sent with the request and on the booking events. */
   entryPoint: EntryPoint;
@@ -40,80 +42,11 @@ type BookingLauncherProps = {
 };
 
 /**
- * Opens the Explore booking modal (BookingFlow) for any `mentor`, wiring the
- * shared session-types / slots / request / upload hooks and the modal shell once
- * so every screen books the same way. Mounted with `mentor=null` when closed;
- * the queries sit disabled until a mentor is set.
+ * Opens the Explore booking modal (BookingFlow) for any `mentor`, so every
+ * screen books the same way (OpenBooking). Mounted with `mentor=null` when
+ * closed, which renders nothing and loads nothing.
  */
-export function BookingLauncher({
-  mentor,
-  entryPoint,
-  isGuest = false,
-  hideProfileLink,
-  ratingUnknown,
-  onClose,
-  onBooked,
-  initialTime,
-  initialSessionTypeId,
-  startAfterTime,
-  timeZone,
-}: BookingLauncherProps) {
-  const [typeIdState, setTypeIdState] = useState<string | null>(null);
-  const deviceZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
-  const zone = timeZone ?? deviceZone;
-  const sessionTypes = useSessionTypes(mentor?.id ?? null);
-  // The offering being booked: the one picked in the modal, else the one
-  // remembered from before sign-up (when the mentor still offers it), else the first.
-  const remembered = sessionTypes.data?.find((t) => t.id === initialSessionTypeId)?.id;
-  const typeId = typeIdState ?? remembered ?? sessionTypes.data?.[0]?.id ?? null;
-  const slots = useSlots(mentor?.id ?? null, typeId, zone);
-  const request = useRequestBooking();
-  const uploadIntakeFile = useUploadIntakeFile();
-
+export function BookingLauncher({ mentor, ...rest }: BookingLauncherProps) {
   if (!mentor) return null;
-
-  const close = () => {
-    const booked = request.isDone;
-    setTypeIdState(null);
-    request.reset();
-    onClose();
-    if (booked) onBooked?.();
-  };
-
-  return (
-    <SignInBookingFlow
-      key={mentor.id}
-      mentor={mentor}
-      entryPoint={entryPoint}
-      sessionTypes={sessionTypes}
-      sessionTypeId={typeId}
-      onSessionTypeChange={setTypeIdState}
-      slots={slots}
-      isGuest={isGuest}
-      initialTime={initialTime}
-      startAfterTime={startAfterTime}
-      onRequest={request.request}
-      requestPending={request.isPending}
-      requestDone={request.isDone}
-      requestConfirmed={request.isConfirmed}
-      requestError={request.error}
-      onUpload={uploadIntakeFile}
-      onClose={close}
-      deviceZone={zone}
-      hideProfileLink={hideProfileLink}
-      ratingUnknown={ratingUnknown}
-      renderShell={(shell, body) => (
-        <ModalShell
-          title={shell.title}
-          subtitle={shell.subtitle}
-          size="xl"
-          onClose={close}
-          sheet={shell.sheet}
-          footer={shell.footer}
-        >
-          {body}
-        </ModalShell>
-      )}
-    />
-  );
+  return <OpenBooking mentor={mentor} {...rest} />;
 }

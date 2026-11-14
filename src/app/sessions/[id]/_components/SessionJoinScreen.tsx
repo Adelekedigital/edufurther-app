@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -25,8 +26,7 @@ import {
   AddToCalendarChoices,
 } from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
 import { FocusPage } from '@/components/templates/FocusPage/FocusPage';
-import { ConfirmActionDialog, type MoveOption } from '@/app/_sessions/ConfirmActionDialog';
-import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
+import type { MoveOption } from '@/app/_sessions/ConfirmActionDialog';
 import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
 import { MESSAGES_LIVE } from '@/lib/config/messages';
 import { bookingRecipient } from '@/lib/utils/messageRecipient';
@@ -82,6 +82,18 @@ import {
 } from './lobbyModel';
 import { track } from '@/lib/analytics/track';
 import styles from './SessionJoinScreen.module.css';
+
+// Opened from a button, never needed for the first paint of the join page:
+// each loads on open (performance budget, 350kB first-load JS) and mounts
+// whole, so its focus handling is unchanged.
+const ConfirmActionDialog = dynamic(
+  () => import('@/app/_sessions/ConfirmActionDialog').then((m) => m.ConfirmActionDialog),
+  { ssr: false },
+);
+const FileViewerLauncher = dynamic(
+  () => import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
+  { ssr: false },
+);
 
 const BACK = { href: '/bookings', label: 'Go to Bookings' };
 
