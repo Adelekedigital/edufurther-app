@@ -150,7 +150,7 @@ The fields agreed with the backend:
 - **Analytics consent (`CONSENT-001`/`-002`):** the banner shows only when
   `NEXT_PUBLIC_ANALYTICS_ENABLED` and `NEXT_PUBLIC_CONSENT_BANNER_ENABLED` are on.
   Buttons are "Allow analytics" and "Decline". The Settings › Security switch
-  withdraws. The cookie is `ef_consent=<version>.<1|0>.<unix ms>`.
+  withdraws. The cookie is `ef_consent=<version>.<1|0>.<unix ms>[.<method>]` (method: accept, decline, close or settings).
 
 ## Working with the founder (founder, 2026-11-12)
 
