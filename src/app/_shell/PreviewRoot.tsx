@@ -4,11 +4,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { PreviewBar } from '@/components/organisms/PreviewBar/PreviewBar';
-import {
-  PreviewUserPicker,
-  type PickerRole,
-} from '@/components/organisms/PreviewUserPicker/PreviewUserPicker';
-import { NoticeDialog } from '@/components/templates/NoticeDialog/NoticeDialog';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
+import type { PickerRole } from '@/components/organisms/PreviewUserPicker/PreviewUserPicker';
 import {
   previewHome,
   useAdminUsers,
@@ -27,6 +24,18 @@ import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
 import NotFound from '../not-found';
 import { RoleLoading } from './RoleRedirect';
 import { useViewAsParam } from './useViewAsParam';
+
+// Admin-only, and only on demand (the picker opens from the preview bar; the
+// notices follow a blocked write or an ended preview): every page carried
+// them for everyone. Each mounts whole, so its focus handling is unchanged.
+const PreviewUserPicker = lazyPart(() =>
+  import('@/components/organisms/PreviewUserPicker/PreviewUserPicker').then(
+    (m) => m.PreviewUserPicker,
+  ),
+);
+const NoticeDialog = lazyPart(() =>
+  import('@/components/templates/NoticeDialog/NoticeDialog').then((m) => m.NoticeDialog),
+);
 
 /** PRD, The user picker: server search, 250 ms after typing stops. */
 const SEARCH_DEBOUNCE_MS = 250;

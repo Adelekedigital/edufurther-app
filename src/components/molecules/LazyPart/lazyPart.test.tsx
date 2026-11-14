@@ -128,6 +128,25 @@ describe('lazyPart', () => {
     expect(reload).not.toHaveBeenCalled();
   });
 
+  it('fails, then after reconnecting a second press on the opener opens it (review of PR 606)', async () => {
+    const user = userEvent.setup();
+    // Both tries fail (offline), then the network is back.
+    const load = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue(TestDialog);
+    const Part = lazyPart(load);
+    render(<Screen Part={Part} />);
+    const opener = screen.getByRole('button', { name: 'Open' });
+    await user.click(opener);
+    expect(await screen.findByText(LOAD_FAILED_COPY.online, {}, { timeout: 3000 })).toBeVisible();
+    // The parent still holds the part open: the press itself must try again.
+    await user.click(opener);
+    expect(await screen.findByRole('dialog', {}, { timeout: 3000 })).toBeInTheDocument();
+    expect(screen.queryByText(LOAD_FAILED_COPY.online)).toBeNull();
+  });
+
   it('knows a missing file from other failures', () => {
     expect(isChunkFailure(chunkError())).toBe(true);
     expect(

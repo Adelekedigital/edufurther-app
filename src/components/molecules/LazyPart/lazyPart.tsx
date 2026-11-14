@@ -112,24 +112,50 @@ if (
   schedulePreload();
 }
 
-type BoundaryProps = { children: ReactNode; onFailed: () => void };
-type BoundaryState = { error: unknown; reloading: boolean | null };
+// Failed parts waiting for another try. A press on any control (the part's own
+// opener again, say, after reconnecting) gives each one a fresh attempt, so a
+// parent that keeps the part mounted never leaves its opener dead.
+const failedParts = new Set<() => void>();
+if (typeof document !== 'undefined') {
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (!(e.target as Element | null)?.closest?.('button, a, [role="button"]')) return;
+      // After the click's own handlers, so the parent's state is settled first.
+      queueMicrotask(() => failedParts.forEach((retry) => retry()));
+    },
+    true,
+  );
+}
+
+type BoundaryProps = { children: (attempt: number) => ReactNode; onFailed: () => void };
+type BoundaryState = { error: unknown; reloading: boolean | null; attempt: number };
 
 /** Keeps a failed part's error here: the page around it, and its state, stay. */
 class PartBoundary extends Component<BoundaryProps, BoundaryState> {
-  state: BoundaryState = { error: null, reloading: null };
+  state: BoundaryState = { error: null, reloading: null, attempt: 0 };
   static getDerivedStateFromError(error: unknown): Partial<BoundaryState> {
     return { error: error ?? new Error('lazy part failed') };
   }
+  private retry = () => {
+    failedParts.delete(this.retry);
+    // A fresh attempt: the part remounts (keyed), on a fresh lazy (onFailed).
+    this.setState((s) => ({ error: null, reloading: null, attempt: s.attempt + 1 }));
+  };
   componentDidCatch(error: unknown) {
     this.props.onFailed();
     // A missing file while online is usually a new deploy: one reload fixes it.
     // Decided here, once, not during render.
-    this.setState({ reloading: isChunkFailure(error) && reloadOnce() });
+    const reloading = isChunkFailure(error) && reloadOnce();
+    this.setState({ reloading });
+    if (!reloading) failedParts.add(this.retry);
+  }
+  componentWillUnmount() {
+    failedParts.delete(this.retry);
   }
   render() {
-    const { error, reloading } = this.state;
-    if (!error) return this.props.children;
+    const { error, reloading, attempt } = this.state;
+    if (!error) return this.props.children(attempt);
     // Nothing until the reload is decided, and nothing while it happens.
     return reloading === false ? <LoadFailed /> : null;
   }
@@ -139,7 +165,9 @@ class PartBoundary extends Component<BoundaryProps, BoundaryState> {
 function LoadFailed() {
   const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
   return (
+    // persist: a newer toast (a save) can't take the reload offer away for good.
     <Snackbar
+      persist
       tone="error"
       message={offline ? C.offline : C.online}
       action={{ label: C.reload, onClick: () => page.reload() }}
@@ -183,7 +211,7 @@ export function lazyPart<P extends object>(load: Loader<P>, options: Options = {
   function LazyPart(props: P) {
     return (
       <PartBoundary onFailed={rebuild}>
-        <Part {...props} />
+        {(attempt) => <Part key={attempt} {...props} />}
       </PartBoundary>
     );
   }

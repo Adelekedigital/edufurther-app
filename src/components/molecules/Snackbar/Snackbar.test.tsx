@@ -33,6 +33,33 @@ describe('Snackbar with two panels kept mounted', () => {
     expect(screen.queryByText('Profile saved')).toBeNull();
     expect(screen.getByText('Goals saved')).toBeInTheDocument();
   });
+
+  it('a persistent toast comes back once a newer one leaves (review of PR 606)', () => {
+    const offer = { label: 'Reload page', onClick: () => {} };
+    const { rerender } = render(
+      <>
+        <Snackbar persist message="We couldn’t open this." action={offer} />
+        <Snackbar message={null} />
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Reload page' })).toBeInTheDocument();
+    // A save says so: it takes the screen for now…
+    rerender(
+      <>
+        <Snackbar persist message="We couldn’t open this." action={offer} />
+        <Snackbar message="Profile saved" stamp={1} />
+      </>,
+    );
+    expect(screen.queryByRole('button', { name: 'Reload page' })).toBeNull();
+    // …and once it's gone, the reload offer is back.
+    rerender(
+      <>
+        <Snackbar persist message="We couldn’t open this." action={offer} />
+        <Snackbar message={null} />
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Reload page' })).toBeInTheDocument();
+  });
 });
 
 describe('Snackbar with an action', () => {
