@@ -145,8 +145,11 @@ export function CodeStep({
         type="submit"
         size="large"
         fullWidth
-        // Disabled, not just busy, while the code is checked: nothing to press twice.
-        disabled={code.length !== CODE_LENGTH || locked || expired || !!verifying}
+        // Drawn disabled and ignores presses while the code is checked, but stays
+        // focusable (aria-disabled, as Send a new code): a button that disables
+        // itself under focus drops a keyboard user to <body>.
+        disabled={code.length !== CODE_LENGTH || locked || expired}
+        unavailable={!!verifying}
         busy={verifying}
       >
         {verifying ? 'Checking…' : verifyLabel}
