@@ -155,11 +155,12 @@ describe('lazyPart', () => {
       .mockRejectedValueOnce(new Error('offline'))
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValue(TestDialog);
-    const Part = lazyPart(load);
+    const Part = lazyPart<{ onClose: () => void }>(load, { close: (p) => p.onClose() });
     render(<Screen Part={Part} />);
     const opener = screen.getByRole('button', { name: 'Open' });
     await user.click(opener);
     expect(await screen.findByText(LOAD_FAILED_COPY.online, {}, { timeout: 3000 })).toBeVisible();
+    expect(screen.queryByText(LOAD_FAILED_COPY.inline)).toBeNull();
     // Closed through its parent: nothing is held open behind the page.
     expect(load).toHaveBeenCalledTimes(2);
     // Another task: the failed dialog stays shut and focus stays put.
@@ -194,6 +195,36 @@ describe('lazyPart', () => {
     await user.click(screen.getByRole('button', { name: LOAD_FAILED_COPY.tryAgain }));
     expect(await screen.findByText('Cover tools')).toBeVisible();
     expect(screen.queryByText(LOAD_FAILED_COPY.inline)).toBeNull();
+  });
+
+  it('an onClose prop is not a way to close it: with no `close`, CoverPicker-like parts stay, say so, and Try again works (review of PR 606)', async () => {
+    const user = userEvent.setup();
+    // Like CoverPicker: always on while editing, and its onClose only clears messages.
+    function Cover({ onClose }: { onClose: () => void }) {
+      return (
+        <button type="button" onClick={onClose}>
+          Cover color
+        </button>
+      );
+    }
+    const clearMessages = vi.fn();
+    const load = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue(Cover);
+    const Part = lazyPart<{ onClose: () => void }>(load);
+    render(
+      <main>
+        <Part onClose={clearMessages} />
+        <LazyPartFailures />
+      </main>,
+    );
+    expect(await screen.findByText(LOAD_FAILED_COPY.inline, {}, { timeout: 3000 })).toBeVisible();
+    expect(clearMessages).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: LOAD_FAILED_COPY.tryAgain }));
+    expect(await screen.findByRole('button', { name: 'Cover color' })).toBeVisible();
+    expect(clearMessages).not.toHaveBeenCalled();
   });
 
   it('knows a missing file from other failures', () => {

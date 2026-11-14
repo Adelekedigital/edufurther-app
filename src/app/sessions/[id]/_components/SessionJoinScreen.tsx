@@ -86,11 +86,13 @@ import styles from './SessionJoinScreen.module.css';
 // Opened from a button, never needed for the first paint of the join page:
 // each loads on open (performance budget, 350kB first-load JS) and mounts
 // whole, so its focus handling is unchanged.
-const ConfirmActionDialog = lazyPart(() =>
-  import('@/app/_sessions/ConfirmActionDialog').then((m) => m.ConfirmActionDialog),
+const ConfirmActionDialog = lazyPart(
+  () => import('@/app/_sessions/ConfirmActionDialog').then((m) => m.ConfirmActionDialog),
+  { close: (p) => p.onClose() },
 );
-const FileViewerLauncher = lazyPart(() =>
-  import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
+const FileViewerLauncher = lazyPart(
+  () => import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
+  { close: (p) => p.onClose() },
 );
 
 const BACK = { href: '/bookings', label: 'Go to Bookings' };

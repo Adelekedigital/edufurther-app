@@ -12,11 +12,13 @@ import type { MessageRecipient } from '@/types/messages';
 // The dialog and the file viewer load when a Message button opens them, not
 // with the page (performance budget, 350kB first-load JS). Each mounts whole,
 // so its focus handling is unchanged.
-const SendMessage = lazyPart(() =>
-  import('@/components/templates/SendMessage/SendMessage').then((m) => m.SendMessage),
+const SendMessage = lazyPart(
+  () => import('@/components/templates/SendMessage/SendMessage').then((m) => m.SendMessage),
+  { close: (p) => p.onClose() },
 );
-const FileViewerLauncher = lazyPart(() =>
-  import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
+const FileViewerLauncher = lazyPart(
+  () => import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
+  { close: (p) => p.onClose() },
 );
 
 type SendMessageLauncherProps = {

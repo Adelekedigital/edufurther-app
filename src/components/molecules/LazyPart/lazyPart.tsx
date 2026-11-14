@@ -18,8 +18,8 @@ import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
  *   opener's focus to <body>);
  * - retries its import once;
  * - fails locally: the page and its state stay, and a toast offers a reload
- *   (LazyPartFailures, mounted once in the app's providers). A part that can
- *   close (a dialog, a sheet) closes, so its opener works again and its next
+ *   (LazyPartFailures, mounted once in the app's providers). A part given
+ *   `close` (a dialog, a sheet) closes, so its opener works again and its next
  *   press tries afresh; an always-on part says so in its place, with Try again.
  *   Nothing retries on its own, so a part never opens over another task.
  *   An update deployed while the tab was open (its old files are gone) reloads
@@ -35,9 +35,10 @@ type Options<P> = {
   /** Drawn while the code loads, in the part's place (sized like it). Default: nothing. */
   loading?: () => ReactNode;
   /**
-   * How the part's parent closes it, when that isn't `onClose` (an inline
-   * editor's onCancel, a confirm's onKeep). A part with neither stays in place
-   * and offers Try again.
+   * How the part's parent closes it (a dialog's onClose, an inline editor's
+   * onCancel, a confirm's onKeep). Given, a final failure closes the part, so
+   * its opener works again. Absent (an always-on part), the failure is said in
+   * its place, with Try again. Never inferred from an `onClose` prop.
    */
   close?: (props: P) => void;
 };
@@ -267,11 +268,11 @@ export function lazyPart<P extends object>(load: Loader<P>, options: Options<P> 
   // A part from a screen opened after the first preload (a client-side move):
   // its own idle preload.
   if (preloaded) onIdle(() => void preload());
-  const closer = (props: P): (() => void) | null => {
-    if (options.close) return () => options.close?.(props);
-    const onClose = (props as { onClose?: unknown }).onClose;
-    return typeof onClose === 'function' ? () => (onClose as () => void)() : null;
-  };
+  // Only an explicit `close` closes: an `onClose` prop can mean something
+  // else (CoverPicker's clears its messages), and inferring it left the tools
+  // gone with no notice.
+  const closer = (props: P): (() => void) | null =>
+    options.close ? () => options.close?.(props) : null;
   function LazyPart(props: P) {
     return (
       <PartBoundary onFailed={failedForGood} close={closer(props)}>

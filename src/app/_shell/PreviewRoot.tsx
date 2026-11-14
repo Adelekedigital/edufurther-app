@@ -28,13 +28,16 @@ import { useViewAsParam } from './useViewAsParam';
 // Admin-only, and only on demand (the picker opens from the preview bar; the
 // notices follow a blocked write or an ended preview): every page carried
 // them for everyone. Each mounts whole, so its focus handling is unchanged.
-const PreviewUserPicker = lazyPart(() =>
-  import('@/components/organisms/PreviewUserPicker/PreviewUserPicker').then(
-    (m) => m.PreviewUserPicker,
-  ),
+const PreviewUserPicker = lazyPart(
+  () =>
+    import('@/components/organisms/PreviewUserPicker/PreviewUserPicker').then(
+      (m) => m.PreviewUserPicker,
+    ),
+  { close: (p) => p.onClose() },
 );
-const NoticeDialog = lazyPart(() =>
-  import('@/components/templates/NoticeDialog/NoticeDialog').then((m) => m.NoticeDialog),
+const NoticeDialog = lazyPart(
+  () => import('@/components/templates/NoticeDialog/NoticeDialog').then((m) => m.NoticeDialog),
+  { close: (p) => p.onClose() },
 );
 
 /** PRD, The user picker: server search, 250 ms after typing stops. */

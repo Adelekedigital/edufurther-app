@@ -97,14 +97,17 @@ const IntroEditForm = lazyPart(
   () => import('@/components/molecules/IntroEditForm/IntroEditForm').then((m) => m.IntroEditForm),
   { close: (p) => p.onCancel() },
 );
-const ReviewDialog = lazyPart(() =>
-  import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
+const ReviewDialog = lazyPart(
+  () => import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
+  { close: (p) => p.onClose() },
 );
-const OwnerItemEditor = lazyPart(() =>
-  import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerItemEditor),
+const OwnerItemEditor = lazyPart(
+  () => import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerItemEditor),
+  { close: (p) => p.onClose() },
 );
-const OwnerEntryDelete = lazyPart(() =>
-  import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerEntryDelete),
+const OwnerEntryDelete = lazyPart(
+  () => import('@/app/_profile/OwnerItemEditor').then((m) => m.OwnerEntryDelete),
+  { close: (p) => p.onClose() },
 );
 const RemovePhotoConfirm = lazyPart(
   () =>

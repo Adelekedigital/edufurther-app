@@ -10,8 +10,9 @@ import type { ReviewableSession } from '@/types/mentor';
 
 // The review dialog loads when someone opens it, not with the page
 // (performance budget, 350kB first-load JS); it mounts whole, focus and all.
-const ReviewDialog = lazyPart(() =>
-  import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
+const ReviewDialog = lazyPart(
+  () => import('@/app/_reviews/ReviewDialog').then((m) => m.ReviewDialog),
+  { close: (p) => p.onClose() },
 );
 
 type Options = {

@@ -9,7 +9,9 @@ import type { Mentor } from '@/types/mentor';
 // it loads on open (performance budget, 350kB first-load JS) and mounts whole,
 // so its focus handling is unchanged (lazyPart: its own Suspense and error
 // boundaries, a retry and a preload).
-const OpenBooking = lazyPart(() => import('./OpenBooking').then((m) => m.OpenBooking));
+const OpenBooking = lazyPart(() => import('./OpenBooking').then((m) => m.OpenBooking), {
+  close: (p) => p.onClose(),
+});
 
 export type BookingLauncherProps = {
   /** The mentor to book; null closes the flow. */

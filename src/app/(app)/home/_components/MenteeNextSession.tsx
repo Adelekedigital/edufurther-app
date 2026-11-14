@@ -15,7 +15,9 @@ import type { Booking } from '@/types/booking';
 import styles from './MenteeNextSession.module.css';
 
 // Opens from a link, never at first paint: loads on open (performance budget).
-const MenteeTipsModal = lazyPart(() => import('./MenteeTipsModal').then((m) => m.MenteeTipsModal));
+const MenteeTipsModal = lazyPart(() => import('./MenteeTipsModal').then((m) => m.MenteeTipsModal), {
+  close: (p) => p.onClose(),
+});
 
 type MenteeNextSessionProps = {
   /** The soonest upcoming session — upcomingBookings[0]. */

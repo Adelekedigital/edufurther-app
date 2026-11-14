@@ -44,14 +44,20 @@ import styles from './MenteeHomeScreen.module.css';
 // Each opens from a button (or ?invite=open), never at first paint: they load
 // on open (performance budget, 350kB first-load JS) and mount whole, so their
 // focus handling is unchanged.
-const InviteModal = lazyPart(() =>
-  import('@/components/templates/InviteModal/InviteModal').then((m) => m.InviteModal),
+const InviteModal = lazyPart(
+  () => import('@/components/templates/InviteModal/InviteModal').then((m) => m.InviteModal),
+  { close: (p) => p.onClose() },
 );
-const EducationEditor = lazyPart(() =>
-  import('@/app/_profile/EducationEditor').then((m) => m.EducationEditor),
+const EducationEditor = lazyPart(
+  () => import('@/app/_profile/EducationEditor').then((m) => m.EducationEditor),
+  { close: (p) => p.onClose() },
 );
-const MetMentorsModal = lazyPart(() => import('./MetMentorsModal').then((m) => m.MetMentorsModal));
-const ProfileSheet = lazyPart(() => import('./ProfileSheet').then((m) => m.ProfileSheet));
+const MetMentorsModal = lazyPart(() => import('./MetMentorsModal').then((m) => m.MetMentorsModal), {
+  close: (p) => p.onClose(),
+});
+const ProfileSheet = lazyPart(() => import('./ProfileSheet').then((m) => m.ProfileSheet), {
+  close: (p) => p.onClose(),
+});
 
 /** Getting started leaves this long after its last step is done (design gsDone). */
 const FINISH_MS = 1500;
