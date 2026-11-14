@@ -501,7 +501,8 @@ describe('useSignInFlow — review fixes', () => {
     await flush();
     expect(account).toHaveBeenCalledTimes(1 + ACCOUNT_RETRY_MS.length);
     expect(replace).toHaveBeenCalledWith('/bookings');
-    expect(result.current.form.verifying).toBe(false);
+    // Leaving for /bookings: the button stays on Checking…, never back to Verify.
+    expect(result.current.form.verifying).toBe(true);
   });
 
   it('says a failed resend failed, and sends once for a double press', async () => {

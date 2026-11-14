@@ -209,6 +209,15 @@ describe('SignInForm — code', () => {
     expect(screen.getByLabelText('6-digit code')).toBeDisabled();
   });
 
+  it('while the code is checked, the button reads Checking…, is drawn disabled and keeps focus', () => {
+    render(<SignInForm {...props({ ...code, code: '111111', verifying: true })} />);
+    const button = screen.getByRole('button', { name: 'Checking…' });
+    // aria-disabled, not disabled: it keeps a keyboard user's focus.
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Verify' })).toBeNull();
+  });
+
   it('stops Verify and resend while locked', () => {
     render(<SignInForm {...props({ ...code, resendIn: 0, codeProblem: { kind: 'locked' } })} />);
     expect(screen.getByRole('alert')).toHaveTextContent('Too many wrong codes.');
