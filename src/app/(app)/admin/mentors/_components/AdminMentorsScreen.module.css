@@ -10,10 +10,13 @@
   min-width: 220px;
 }
 /* Approved: "Copy {n} emails" sits at the end of the filter row's line. */
-.copyRow {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: calc(var(--space-3) * -1);
+.copyPhone {
+  display: none;
+}
+@media (max-width: 767px) {
+  .copyPhone {
+    display: flex;
+  }
 }
 .panel {
   display: flex;

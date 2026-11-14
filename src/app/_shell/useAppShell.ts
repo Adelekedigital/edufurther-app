@@ -61,7 +61,7 @@ export function isMenteeSide(member: Member | null): member is Member {
 
 /**
  * The account menu (AppShell.dc.html `menuItems`), in the design's order:
- * View profile, Talk to our team, Logout. "View profile" is the viewer's
+ * View profile, Talk to our team, Admin (or Back to the app), Logout. "View profile" is the viewer's
  * own Mentor Profile, so mentors only: mentees have no profile page yet (#50).
  * "Feedback" has no destination yet (#51).
  */
@@ -70,6 +70,8 @@ export function accountItems(
   signOut: () => void,
   /** In setup the profile isn't theirs to see yet (the setup lock): no "View profile". */
   access?: Access,
+  /** Inside /admin: the way back to the app instead of the way in. */
+  inAdmin = false,
 ): AccountMenuItem[] {
   return [
     ...(member?.isMentor && !(access && inSetup(access))
@@ -91,6 +93,20 @@ export function accountItems(
             href: MATCH_CALL_URL,
             external: true,
           },
+        ]
+      : []),
+    // Platform admins only: the way into the admin app lives in this menu,
+    // not the sidebar (owner, 2026-11-14); inside it, the way back Home.
+    ...(member?.isAdmin
+      ? [
+          inAdmin
+            ? { key: 'app', label: 'Back to the app', icon: 'home' as const, href: '/' }
+            : {
+                key: 'admin',
+                label: 'Admin',
+                icon: 'admin_panel_settings' as const,
+                href: '/admin/mentors',
+              },
         ]
       : []),
     {
@@ -143,6 +159,7 @@ export function useAppShell() {
       else void signOut();
     },
     access,
+    inAdmin,
   );
   return {
     viewer,
@@ -157,7 +174,6 @@ export function useAppShell() {
         : member.isMentor
           ? ('mentor' as const)
           : ('mentee' as const),
-    adminEntry: !!admin,
     // Preview as user (AppShell.dc.html `vaEntry`): admins it's switched on for,
     // never mid-preview (the previewed /me says false then anyway).
     onPreview: member?.canPreviewAsUser && !previewing ? previewStore.open : undefined,
