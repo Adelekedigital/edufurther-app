@@ -21,7 +21,11 @@
   flex-direction: column;
   align-items: stretch;
   gap: var(--space-3);
-  padding: var(--space-4) var(--space-6);
+  /* Named, so the X's clearance below follows the padding at every width. */
+  --pad-y: var(--space-4);
+  --pad-x: var(--space-6);
+  --close-inset: var(--space-1);
+  padding: var(--pad-y) var(--pad-x);
   border-radius: var(--radius-2xl);
   background: var(--surface-card);
   box-shadow: var(--shadow-modal);
@@ -32,18 +36,19 @@
    is never louder than the two buttons; 44px at every width. */
 .close {
   position: absolute;
-  top: var(--space-1);
-  right: var(--space-1);
+  top: var(--close-inset);
+  right: var(--close-inset);
 }
 
-/* Room on the right for the X on the first line only (a float the height of
-   one line), so the lines under it use the card's full width: two lines
-   collapsed on a 375px phone, not three. */
+/* The X's whole 44px hit area, as it reaches into the text box: a float of
+   exactly that footprint, so no line or link ever runs under it (a tap on the
+   end of "Privacy policy" must open the link, never answer "Essential only").
+   Lines below the X use the card's full width. */
 .lead::before {
   content: '';
   float: right;
-  width: var(--space-8);
-  height: var(--space-6);
+  width: calc(var(--close-inset) + var(--touch-target-min) - var(--pad-x));
+  height: calc(var(--close-inset) + var(--touch-target-min) - var(--pad-y));
 }
 
 .lead {
@@ -120,13 +125,21 @@
 /* Phones: the buttons share the card's width under the text, half each. */
 @media (max-width: 767px) {
   .banner {
-    padding: var(--space-3) var(--space-4);
+    --pad-y: var(--space-3);
+    --pad-x: var(--space-4);
     width: calc(100% - var(--space-4) * 2);
   }
 
   /* Above the app's 56px tab bar (AppShell, members only), so no tab hides. */
   :global(body:has([data-phone-tabs])) .banner {
     bottom: calc(var(--space-14) + var(--space-2) + env(safe-area-inset-bottom));
+  }
+
+  /* Under ~340px the two labels can't sit side by side: they stack, still
+     equal (full width each), instead of the row overflowing the card's left
+     edge (320px, 2026-11-13). */
+  .actions {
+    flex-wrap: wrap;
   }
 
   .actions > * {
