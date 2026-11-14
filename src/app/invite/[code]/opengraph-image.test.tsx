@@ -25,13 +25,15 @@ describe('invite opengraph-image', () => {
     const html = await draw('damilola-7k2x');
     expect(lookup).toHaveBeenCalledWith('damilola-7k2x', 'https://app.test');
     expect(html).toContain('Damilola invited you to EduFurther');
+    expect(html).toContain('1:1 help');
     expect(html).toContain('>D<');
   });
 
-  it('a code that can’t be joined draws the fallback with the mark', async () => {
+  it('a code that can’t be joined draws the fallback under the domain', async () => {
     lookup.mockResolvedValue(null);
     const html = await draw('gone-0000');
     expect(html).toContain('Get 1:1 help with your grad school applications');
-    expect(html).toContain('src="data:mark"');
+    expect(html).toContain('edufurther.org');
+    expect(html).not.toContain('invited you');
   });
 });

@@ -8,7 +8,10 @@ import type { CoverKey } from './cover';
  */
 const TOKENS = {
   'blue-50': '#e6f0ff',
+  'blue-100': '#b0cfff',
+  'blue-200': '#8ab8ff',
   'blue-700': '#0047b5',
+  'blue-900': '#002a6b',
   'green-900': '#063f1a',
   'yellow-900': '#66440a',
   'ink-700': '#344054',

@@ -15,10 +15,10 @@ export const contentType = 'image/png';
 
 /**
  * The invite link's preview (Invite Preview.dc.html, PRD Invite Landing PR 5):
- * 1200×630 on blue-50, the logo top left, the inviter's photo or initial in a
- * white-ringed circle, "{First} invited you" and the perk. A code that can't
- * be joined (or any failure) draws the fallback: the swoosh mark and the
- * generic lines.
+ * 1200×630 on blue-900, the white logo top left, the inviter's photo or
+ * initial in a blue-700-ringed circle, the eyebrow, "{First} invited you" and
+ * the perk. A code that can't be joined (or any failure) draws the fallback:
+ * the domain and the generic lines.
  */
 export default async function Image({ params }: { params: Promise<{ code: string }> }) {
   const { code } = await params;
@@ -35,10 +35,10 @@ export default async function Image({ params }: { params: Promise<{ code: string
             initials={inviter.firstName.charAt(0).toUpperCase()}
             cover={personCover(code)}
           />
-          <OgLines title={COPY.title(inviter.firstName)} body={COPY.body} />
+          <OgLines eyebrow={COPY.eyebrow} title={COPY.title(inviter.firstName)} body={COPY.body} />
         </div>
       ) : (
-        <OgFallback mark={assets.mark} title={COPY.fallbackTitle} body={COPY.fallbackBody} />
+        <OgFallback title={COPY.fallbackTitle} body={COPY.fallbackBody} />
       )}
     </OgFrame>,
     { ...OG_SIZE, fonts: assets.fonts },
