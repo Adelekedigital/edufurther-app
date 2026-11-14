@@ -278,6 +278,20 @@ export function AdminMentorsScreen() {
           active={active}
           onClear={() => changeFilters(NO_FILTERS)}
         />
+        {/* Phones hide the table header, where the copy icon lives: the same
+            control as a small button there (review of PR 613). */}
+        {listStatus === 'ready' && emails.length > 0 && (
+          <div className={styles.copyPhone}>
+            <Button
+              variant="secondary-outlined"
+              size="small"
+              icon="content_copy"
+              onClick={() => void copyEmails()}
+            >
+              {MENTOR_TABLE.copyEmails(emails.length)}
+            </Button>
+          </div>
+        )}
         {selectable && liveChecked.length > 0 && (
           <MentorBulkBar
             count={liveChecked.length}

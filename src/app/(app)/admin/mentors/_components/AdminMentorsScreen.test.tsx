@@ -154,7 +154,11 @@ describe('AdminMentorsScreen: the list', () => {
     // The copy control is an icon on the Email header, not a button above the table.
     const head = within(table()).getByRole('columnheader', { name: /^Email/ });
     const button = within(head).getByRole('button', { name: /^Copy \d+ emails?$/ });
-    expect(screen.getAllByRole('button', { name: /^Copy \d+ emails?$/ })).toHaveLength(1);
+    // Phones hide the header: the same control sits above the list there.
+    const phone = screen
+      .getAllByRole('button', { name: /^Copy \d+ emails?$/ })
+      .find((b) => b !== button);
+    expect(phone?.parentElement?.className).toMatch(/copyPhone/);
     await user.click(button);
     expect(writeText).toHaveBeenCalledTimes(1);
     const copied = writeText.mock.calls[0]![0] as string;
@@ -169,7 +173,7 @@ describe('AdminMentorsScreen: the list', () => {
     renderScreen(<AdminMentorsScreen />);
     await user.click(await screen.findByRole('tab', { name: /Approved/ }));
     await screen.findAllByRole('button', { name: /^Open / });
-    await user.click(screen.getByRole('button', { name: /^Copy \d+ emails?$/ }));
+    await user.click(screen.getAllByRole('button', { name: /^Copy \d+ emails?$/ })[0]!);
     expect(
       await screen.findByText('Couldn’t copy. Select the Email column and copy it instead.'),
     ).toBeVisible();
