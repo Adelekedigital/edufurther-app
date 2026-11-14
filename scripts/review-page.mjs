@@ -178,6 +178,9 @@ const VITALS_SCRIPT = `
  * gzips and streams with no content-length, so counting the header alone read
  * every script as 0kB and the JS budget never fired.
  */
+/** Counting window after the load event: under lazyPart's 2500ms preload delay. */
+const FIRST_LOAD_MS = 2000;
+
 function makeWeightTracker(page) {
   const weight = { totalBytes: 0, jsBytes: 0, cssBytes: 0, imgBytes: 0, unmeasured: 0 };
   const pending = [];
@@ -214,6 +217,11 @@ function makeWeightTracker(page) {
   weight.stop = () => {
     loaded = true;
   };
+  // Lazy parts preload 2.5s after the load event (lazyPart.tsx schedulePreload).
+  // networkidle can land later than that on a slow runner, which counted the
+  // preloads on some runs and not others (PR 614: 355kB at one width, 348kB at
+  // the rest). Stop 2s after load, before any preload can start.
+  page.on('load', () => setTimeout(weight.stop, FIRST_LOAD_MS));
   weight.settle = () =>
     Promise.race([Promise.all(pending), new Promise((r) => setTimeout(r, 5000))]);
   return weight;
