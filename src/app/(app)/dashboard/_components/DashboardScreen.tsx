@@ -11,6 +11,8 @@ import { useCalendarReconnect } from '@/app/_shell/useCalendarReconnect';
 import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { useMentorStatus } from '@/lib/api/data/mentorStatus';
+import { recordProfileShare } from '@/lib/api/data/profileLinks';
+import type { ShareMethod } from '@/lib/analytics/events';
 import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
 import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
 import { track } from '@/lib/analytics/track';
@@ -142,8 +144,10 @@ function MentorHome({ member }: { member: Member }) {
   const weekMoves = useWeekMoves(member.id, accountZone, now);
 
   // A copy or share from anywhere (the share modal, the setup banner, the Share
-  // move) counts for both the setup step and this week's Share move (design shared()).
-  const markShared = () => {
+  // move) counts for both the setup step and this week's Share move (design shared()),
+  // and is recorded as a share of their profile, beside its link_shared.
+  const markShared = (method: ShareMethod) => {
+    recordProfileShare(member.id, method);
     setShared(true);
     persistShared(member.id);
     weekMoves.mark('share');
@@ -160,7 +164,7 @@ function MentorHome({ member }: { member: Member }) {
     void copy(content.copyText(url)).then((ok) => {
       if (!ok) return say('Couldn’t copy the link');
       track('link_shared', { kind: content.kind, method: 'copy', own: content.own });
-      markShared();
+      markShared('copy');
       say('Link copied');
     });
   };
@@ -210,7 +214,7 @@ function MentorHome({ member }: { member: Member }) {
         subline={subline}
         shareUrl={d.shareUrl}
         shareName={d.shareName}
-        onShareCopied={markShared}
+        onShared={markShared}
       />
       {reconnect.show && (
         <CalendarReconnectBanner

@@ -34,6 +34,7 @@ import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useMentorProfile } from '@/lib/api/data/profile';
+import { recordProfileShare } from '@/lib/api/data/profileLinks';
 import { NOT_TAKING_TITLE, SHARE_NOTE } from '@/lib/copy/profile';
 import { useMentorsFreeSoon } from '@/lib/api/data/freeSoon';
 import { SIMILAR_SHOWN, useSimilarMentors } from '@/lib/api/data/similar';
@@ -873,6 +874,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           name={p.mentor.name}
           own={isOwner}
           note={shareNote}
+          onShared={(method) => recordProfileShare(p.mentor.id, method)}
           onClose={() => setShareOpen(false)}
         />
       )}

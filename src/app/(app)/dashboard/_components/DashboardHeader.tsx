@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
+import type { ShareMethod } from '@/lib/analytics/events';
 import styles from './DashboardHeader.module.css';
 
 // Loads on open, not with the dashboard (performance budget), as on the profile.
@@ -21,8 +22,8 @@ type DashboardHeaderProps = {
   shareUrl: string;
   /** Mentor's name, for the share message. */
   shareName: string;
-  /** The profile link was copied or shared. */
-  onShareCopied?: () => void;
+  /** The profile link was copied or shared, and how. */
+  onShared?: (method: ShareMethod) => void;
 };
 
 /**
@@ -34,7 +35,7 @@ export function DashboardHeader({
   subline,
   shareUrl,
   shareName,
-  onShareCopied,
+  onShared,
 }: DashboardHeaderProps) {
   const [sharing, setSharing] = useState(false);
   return (
@@ -58,7 +59,7 @@ export function DashboardHeader({
           url={shareUrl}
           name={shareName}
           own
-          onShared={onShareCopied}
+          onShared={onShared}
           onClose={() => setSharing(false)}
         />
       )}

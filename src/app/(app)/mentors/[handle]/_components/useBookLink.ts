@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { VIA_PARAM } from '@/lib/utils/mentorPath';
 import type { MentorProfile } from '@/types/mentor';
 
 type Options = {
@@ -65,6 +66,10 @@ export function useBookLink({ profile, gone, ready, allowed, open, onDropped }: 
     const next = new URLSearchParams(params.toString());
     next.delete('book');
     next.delete('at');
+    // useProfileViewed counts `via` on this same load (from its own render's
+    // params) and takes it out of the address bar; this replace, built from
+    // params read before that, must not put it back.
+    next.delete(VIA_PARAM);
     const qs = next.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [asked, at, gone, ready, profile, allowed, open, onDropped, params, pathname, router]);

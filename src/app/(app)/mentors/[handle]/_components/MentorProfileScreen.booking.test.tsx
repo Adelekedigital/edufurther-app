@@ -63,6 +63,13 @@ describe('MentorProfileScreen — ?book= links', () => {
     });
   });
 
+  it('a copied booking link’s via is counted, never put back by the replace', () => {
+    withLink(`book=${second.id}&via=copy&utm_source=x`);
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?utm_source=x', { scroll: false });
+  });
+
   it('waits until it knows who is looking', () => {
     withLink(`book=${second.id}`);
     h.viewerLoading = true;

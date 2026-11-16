@@ -17,3 +17,29 @@ export function mentorProfilePath(
   const qs = q.toString();
   return qs ? `${path}?${qs}` : path;
 }
+
+/**
+ * How a profile link was passed on, as its `?via=` (backend decisions 346,
+ * 347): the Copy button, the device's share sheet, or an invite. The visit
+ * it brings is counted by it.
+ */
+export type ProfileVia = 'copy' | 'share' | 'invite';
+
+/** The query key the channel travels in. */
+export const VIA_PARAM = 'via';
+
+/**
+ * The profile link as it goes out by one channel: `via` set, every other
+ * param kept (`?book=`). Added only at the copy or the share, since the
+ * channel isn't known before, so the link on screen stays bare.
+ */
+export function withProfileVia(url: string, via: ProfileVia): string {
+  try {
+    const u = new URL(url);
+    u.searchParams.set(VIA_PARAM, via);
+    return u.toString();
+  } catch {
+    // Not absolute: the link goes out as it was rather than not at all.
+    return url;
+  }
+}

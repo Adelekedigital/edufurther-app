@@ -50,23 +50,35 @@ describe('ShareProfileModal', () => {
     const p = renderModal({ own: true });
     expect(screen.getByText('app.test/mentors/gbenga')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    // Shown bare; the copied link carries its channel.
     expect(writeText).toHaveBeenCalledWith(
-      `${MENTOR_SHARE_COPY.message(true, 'Gbenga Elufisan')}\n${URL}`,
+      `${MENTOR_SHARE_COPY.message(true, 'Gbenga Elufisan')}\n${URL}?via=copy`,
     );
-    expect(p.onShared).toHaveBeenCalledTimes(1);
+    expect(p.onShared).toHaveBeenCalledExactlyOnceWith('copy');
   });
 
   it('Share sends the share sheet a title, the message and the link', async () => {
     const user = userEvent.setup();
     const share = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'share', { value: share, configurable: true });
-    renderModal();
+    const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Share' }));
     expect(share).toHaveBeenCalledWith({
       title: 'Gbenga Elufisan on EduFurther',
       text: MENTOR_SHARE_COPY.message(false, 'Gbenga Elufisan'),
-      url: URL,
+      url: `${URL}?via=share`,
     });
+    expect(p.onShared).toHaveBeenCalledExactlyOnceWith('native');
+  });
+
+  it('a dismissed share sheet is no share', async () => {
+    const user = userEvent.setup();
+    const share = vi.fn().mockRejectedValue(Object.assign(new Error('x'), { name: 'AbortError' }));
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true });
+    const p = renderModal();
+    await user.click(screen.getByRole('button', { name: 'Share' }));
+    expect(share).toHaveBeenCalled();
+    expect(p.onShared).not.toHaveBeenCalled();
   });
 
   it('a payload the browser can’t share is copied instead, without the sheet', async () => {
@@ -80,7 +92,7 @@ describe('ShareProfileModal', () => {
     await user.click(screen.getByRole('button', { name: 'Share' }));
     expect(share).not.toHaveBeenCalled();
     expect(writeText).toHaveBeenCalledWith(
-      `${MENTOR_SHARE_COPY.message(false, 'Gbenga Elufisan')}\n${URL}`,
+      `${MENTOR_SHARE_COPY.message(false, 'Gbenga Elufisan')}\n${URL}?via=copy`,
     );
   });
 

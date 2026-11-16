@@ -46,9 +46,12 @@ describe('LinkSharePanel', () => {
     const onShared = renderPanel();
     await user.click(screen.getByRole('button', { name: 'Copy link' }));
     expect(write).toHaveBeenCalledWith(content.copyText(URL));
+    // A profile link goes out carrying its channel, the link on screen stays bare.
+    expect(write.mock.calls[0]![0]).toMatch(/\nhttps:\/\/app\.test\/mentors\/gbenga\?via=copy$/);
+    expect(screen.getByText('app.test/mentors/gbenga')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
     expect(screen.getAllByRole('status').some((s) => s.textContent === 'Link copied')).toBe(true);
-    expect(onShared).toHaveBeenCalledTimes(1);
+    expect(onShared).toHaveBeenCalledExactlyOnceWith('copy');
     expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'copy', own: false }]);
   });
 
@@ -59,7 +62,8 @@ describe('LinkSharePanel', () => {
     const onShared = renderPanel();
     await user.click(screen.getByRole('button', { name: 'Share' }));
     expect(share).toHaveBeenCalledWith(content.share(URL));
-    expect(onShared).toHaveBeenCalledTimes(1);
+    expect(share.mock.calls[0]![0]).toMatchObject({ url: `${URL}?via=share` });
+    expect(onShared).toHaveBeenCalledExactlyOnceWith('native');
     expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'native', own: false }]);
   });
 
@@ -67,9 +71,12 @@ describe('LinkSharePanel', () => {
     const user = userEvent.setup();
     const write = vi.fn().mockResolvedValue(undefined);
     clip(write);
-    renderPanel();
+    const onShared = renderPanel();
     await user.click(screen.getByRole('button', { name: 'Share' }));
+    // A copy, so it goes out and counts as one.
     expect(write).toHaveBeenCalledWith(content.copyText(URL));
+    expect(write.mock.calls[0]![0]).toMatch(/\?via=copy$/);
+    expect(onShared).toHaveBeenCalledExactlyOnceWith('copy');
     expect(shares()).toEqual([{ kind: 'mentor_profile', method: 'copy', own: false }]);
   });
 
@@ -110,10 +117,13 @@ describe('LinkSharePanel', () => {
 
   it('the invite keeps its own labels and counts as an invite', async () => {
     const user = userEvent.setup();
-    clip(vi.fn().mockResolvedValue(undefined));
+    const write = vi.fn().mockResolvedValue(undefined);
+    clip(write);
     renderPanel(INVITE_LINK_SHARE);
     await user.click(screen.getByRole('button', { name: 'Copy invite link' }));
     expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
+    // Not a profile link: no channel is added to it.
+    expect(write.mock.calls[0]![0]).not.toMatch(/via=/);
     expect(shares()).toEqual([{ kind: 'invite', method: 'copy', own: true }]);
   });
 

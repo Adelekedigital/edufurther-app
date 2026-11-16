@@ -6,7 +6,7 @@ import { Icon } from '@/components/atoms/Icon/Icon';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { Notice } from '@/components/molecules/Notice/Notice';
-import type { ShareKind } from '@/lib/analytics/events';
+import type { ShareKind, ShareMethod } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/track';
 import { cx } from '@/lib/utils/cx';
 import { useCopyText } from '@/lib/utils/useCopyText';
@@ -55,8 +55,11 @@ type FetchedLink = {
 export type LinkShareState = (KnownLink | FetchedLink) & {
   /** False: the link is revoked, so it shows as off and can't be shared. */
   linkActive?: boolean;
-  /** Called once the link was copied or shared. */
-  onShared?: () => void;
+  /**
+   * Called once the link was copied or shared, with how (link_shared
+   * `method`), right after that event: a profile share is recorded here too.
+   */
+  onShared?: (method: ShareMethod) => void;
 };
 
 export type LinkSharePanelProps = LinkShareState & {
@@ -105,7 +108,7 @@ export function LinkSharePanel({
     say(copied ? COPIED : COPY_FAILED);
     if (!copied) return;
     track('link_shared', { kind, method: 'copy', own });
-    onShared?.();
+    onShared?.('copy');
   };
 
   const share = async () => {
@@ -119,7 +122,7 @@ export function LinkSharePanel({
     try {
       await navigator.share(payload);
       track('link_shared', { kind, method: 'native', own });
-      onShared?.();
+      onShared?.('native');
     } catch (e) {
       // Dismissing the share sheet is not a failure. Anything else falls back
       // to copying, as no share at all does.

@@ -156,8 +156,9 @@ export function SessionTypesScreen() {
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   // Only once we know whose profile it is (no broken link while the account loads).
   // The viewer's slug from /me, else their id (the route 308s an id to the slug).
+  // Only ever copied, never shown, so it carries its channel (`via=copy`) as built.
   const shareUrl = (t: OwnSessionType) =>
-    member ? `${origin}${mentorProfilePath(member, { book: t.id })}` : null;
+    member ? `${origin}${mentorProfilePath(member, { book: t.id, via: 'copy' })}` : null;
 
   const [confirming, setConfirming] = useState<OwnSessionType | null>(null);
   // Read when a delete answers: another row's confirm may be open by then.

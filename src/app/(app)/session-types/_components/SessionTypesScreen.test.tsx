@@ -808,7 +808,8 @@ describe('SessionTypesScreen', () => {
     await user.click(screen.getByRole('menuitem', { name: /Edit/ }));
     expect(push).toHaveBeenCalledWith('/session-types/a/edit');
     await user.click(screen.getByRole('button', { name: 'Copy share link for SOP draft review' }));
-    expect(write).toHaveBeenCalledWith(expect.stringMatching(/\/mentors\/m1\?book=a$/));
+    // The copied link carries its channel, so the visit it brings counts as a copy.
+    expect(write).toHaveBeenCalledWith(expect.stringMatching(/\/mentors\/m1\?book=a&via=copy$/));
     expect(await screen.findByText('Link copied')).toBeInTheDocument();
   });
 

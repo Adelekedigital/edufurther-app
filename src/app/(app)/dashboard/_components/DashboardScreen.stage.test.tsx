@@ -4,12 +4,16 @@ import type { MentorDashboard, MentorStage } from '@/lib/api/data/dashboard';
 import { viewers } from '@/app/_shell/lockedPage.harness';
 import { track } from '@/lib/analytics/track';
 import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
+import { recordProfileShare } from '@/lib/api/data/profileLinks';
 import { DashboardScreen } from './DashboardScreen';
 
 vi.mock('@/lib/analytics/track', async (orig) => ({
   ...(await orig<typeof import('@/lib/analytics/track')>()),
   track: vi.fn(),
 }));
+
+// The share's own record: its network side is profileLinks.test.ts.
+vi.mock('@/lib/api/data/profileLinks', () => ({ recordProfileShare: vi.fn() }));
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
 vi.mock('@/app/_shell/useAppShell', () => ({
@@ -85,6 +89,7 @@ const banner = () => screen.queryByRole('region', { name: 'Account setup' });
 
 beforeEach(() => {
   status = null;
+  vi.mocked(recordProfileShare).mockClear();
 });
 // A test that stubs the share sheet never leaks it into the next.
 afterEach(() => {
@@ -170,7 +175,9 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
         'https://edufurther.com/mentors/gbenga',
       ),
     );
+    expect(writeText.mock.calls[0]![0]).toMatch(/\/mentors\/gbenga\?via=copy$/);
     expect(await screen.findByTestId('moves')).toHaveTextContent('share');
+    expect(recordProfileShare).toHaveBeenCalledExactlyOnceWith(viewers.mentorApproved.id, 'copy');
   });
 
   it('a share through the device’s share sheet marks it done too', async () => {
@@ -184,7 +191,11 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     const dialog = await screen.findByRole('dialog', { name: 'Share your profile' });
     await user.click(within(dialog).getByRole('button', { name: 'Share' }));
     expect(share).toHaveBeenCalledTimes(1);
+    expect(share.mock.calls[0]![0]).toMatchObject({
+      url: 'https://edufurther.com/mentors/gbenga?via=share',
+    });
     expect(await screen.findByTestId('moves')).toHaveTextContent('share');
+    expect(recordProfileShare).toHaveBeenCalledExactlyOnceWith(viewers.mentorApproved.id, 'native');
   });
 
   it('a refused copy leaves Share to do, and says so', async () => {
@@ -204,6 +215,7 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     expect(await screen.findByText('Couldn’t copy the link')).toBeInTheDocument();
     expect(screen.getByTestId('moves')).toHaveTextContent('');
     expect(localStorage.getItem('ef-dash-shared-' + viewers.mentorApproved.id)).toBeNull();
+    expect(recordProfileShare).not.toHaveBeenCalled();
   });
 
   it('the banner’s Copy link counts one mentor-profile share, on success only', async () => {
@@ -230,6 +242,8 @@ describe('DashboardScreen stages (PRD Mentor Home)', () => {
     expect(vi.mocked(track).mock.calls.filter(([e]) => e === 'link_shared')).toEqual([
       ['link_shared', { kind: 'mentor_profile', method: 'copy', own: true }],
     ]);
+    // Recorded beside it, so the event and our own count stay in step.
+    expect(recordProfileShare).toHaveBeenCalledExactlyOnceWith(viewers.mentorApproved.id, 'copy');
   });
 
   it('active: KPIs, next session, chart and quality, no hero or banner', () => {
