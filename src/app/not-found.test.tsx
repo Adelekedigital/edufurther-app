@@ -14,6 +14,11 @@ describe('not-found', () => {
   it('draws the 404 even with no query client: Next renders it without the root layout for an unknown server action', () => {
     render(<NotFound />);
     expect(screen.getByRole('heading', { name: ERROR_PAGE.notFound.title })).toBeInTheDocument();
+    // No viewer to ask: one way home, a full page load.
+    expect(screen.getByRole('link', { name: ERROR_PAGE.actions.site })).toHaveAttribute(
+      'href',
+      '/',
+    );
   });
 
   it('inside the app (the usual case): uses the client already there, never a second one', () => {

@@ -93,7 +93,8 @@ export function proxy(request: NextRequest) {
   // The app has no server actions ('use server'), so a request naming one is a
   // probe. Unanswered, Next renders not-found without the root layout and
   // fails with a 500, a full render per probe. Refused here instead. Adding a
-  // server action means removing this.
+  // server action means removing this. Paths the matcher skips (anything with
+  // a dot) still reach Next, so not-found must draw without the providers too.
   if (request.headers.has('next-action')) return new NextResponse(null, { status: 404 });
   return refreshSessionCookies(request, ({ userId, accessToken }) => {
     // Signed out (verified: null, not a failed check) on a members-only page:
