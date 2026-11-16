@@ -8,7 +8,8 @@ const h = vi.hoisted(() => ({
   lookup: vi.fn<(handle: string, origin: string) => Promise<MentorPreview | null>>(),
 }));
 vi.mock('next/navigation', () => ({ permanentRedirect: h.permanentRedirect }));
-vi.mock('@/lib/api/data/mentorPreview', () => ({
+vi.mock('@/lib/api/data/mentorPreview', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/data/mentorPreview')>()),
   lookupMentorPreviewOnServer: (handle: string, origin: string) => h.lookup(handle, origin),
 }));
 vi.mock('@/lib/api/data/serverBackend', () => ({ mockOrigin: async () => '' }));
@@ -64,6 +65,15 @@ describe('/mentors/[handle]', () => {
     expect(await open(ID)).toBeTruthy();
     expect(h.permanentRedirect).not.toHaveBeenCalled();
   });
+
+  it.each(['..', '//evil.com', 'jane.doe', 'a/b', ''])(
+    'a slug of a shape we never route (%j) is never redirected to',
+    async (slug) => {
+      h.lookup.mockResolvedValue({ ...MENTOR, slug });
+      expect(await open(ID, { book: 't-1' })).toBeTruthy();
+      expect(h.permanentRedirect).not.toHaveBeenCalled();
+    },
+  );
 
   it('a hidden, missing or failed read renders: the screen says so', async () => {
     h.lookup.mockResolvedValue(null);

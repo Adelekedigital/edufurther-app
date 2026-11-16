@@ -66,14 +66,20 @@ export function profileLinkSource(source: ProfileViewSource) {
 const INVITE_PARAMS = ['ref', 'invite'];
 
 /**
- * The source of this visit to `handle`, taken once: what the link noted when
- * it was for this profile and recent, else `invite_link` when the URL carries an invite
+ * The source of this visit, taken once: what the link noted when it was for
+ * this profile and recent, else `invite_link` when the URL carries an invite
  * or referral, else `direct`. Whatever was noted is cleared either way.
+ * `handles` are every name the profile answers to (the URL's handle and the
+ * mentor's id): a link noted by id lands on the slug after the route's 308.
  */
-export function takeProfileSource(handle: string, search: URLSearchParams): ProfileViewSource {
+export function takeProfileSource(
+  handles: string | readonly (string | null | undefined)[],
+  search: URLSearchParams,
+): ProfileViewSource {
   const n = noted;
   noted = null;
-  if (n && n.handle === handle && Date.now() - n.at <= NOTE_TTL_MS) return n.source;
+  const mine = typeof handles === 'string' ? [handles] : handles;
+  if (n && mine.includes(n.handle) && Date.now() - n.at <= NOTE_TTL_MS) return n.source;
   return INVITE_PARAMS.some((p) => search.has(p)) ? 'invite_link' : 'direct';
 }
 

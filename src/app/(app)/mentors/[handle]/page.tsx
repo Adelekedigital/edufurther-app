@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { permanentRedirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { lookupMentorPreviewOnServer } from '@/lib/api/data/mentorPreview';
+import { isMentorHandle, lookupMentorPreviewOnServer } from '@/lib/api/data/mentorPreview';
 import { mockOrigin } from '@/lib/api/data/serverBackend';
 import { MentorProfileScreen } from './_components/MentorProfileScreen';
 import { mentorPreviewMetadata } from './previewMetadata';
@@ -53,7 +53,8 @@ export default async function MentorProfilePage({
   const handle = safeDecode(raw) ?? raw;
   if (ID_HANDLE.test(handle)) {
     const mentor = await lookupMentorPreviewOnServer(handle, await mockOrigin());
-    if (mentor?.slug && mentor.slug !== handle)
+    // Only to a slug of the shape we route: never `..`, a dot or a slash from the API.
+    if (mentor?.slug && isMentorHandle(mentor.slug) && mentor.slug !== handle)
       permanentRedirect(`${mentorProfilePath(mentor)}${queryString(await searchParams)}`);
   }
   // The screen reads ?tab= (useSearchParams), which needs a Suspense boundary.

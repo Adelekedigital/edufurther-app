@@ -155,7 +155,7 @@ export function SessionTypesScreen() {
   };
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   // Only once we know whose profile it is (no broken link while the account loads).
-  // /me carries no profile slug, so the id: the profile route takes either.
+  // The viewer's slug from /me, else their id (the route 308s an id to the slug).
   const shareUrl = (t: OwnSessionType) =>
     member ? `${origin}${mentorProfilePath(member, { book: t.id })}` : null;
 
