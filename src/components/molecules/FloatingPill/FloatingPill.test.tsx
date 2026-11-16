@@ -34,5 +34,7 @@ describe('FloatingPill', () => {
     );
     expect(box()).not.toHaveAttribute('role');
     expect(box()).not.toHaveAttribute('aria-label');
+    // Its stable hook for tests and page checks.
+    expect(box()).toHaveAttribute('data-floating-pill');
   });
 });

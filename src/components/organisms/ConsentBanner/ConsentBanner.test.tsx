@@ -22,6 +22,11 @@ describe('ConsentBanner', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it("marks itself as the bottom band's overlay, so floating pills step aside", () => {
+    setup();
+    expect(screen.getByRole('region', { name: C.short })).toHaveAttribute('data-bottom-overlay');
+  });
+
   it('collapsed, it shows only the short question: under 12 words, the full text hidden', () => {
     setup();
     expect(C.short.split(/\s+/).length).toBeLessThanOrEqual(12);

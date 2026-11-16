@@ -1,12 +1,16 @@
 import { act, renderHook } from '@testing-library/react';
 import { useScrolledPast } from './useScrolledPast';
 
-type Watch = { cb: IntersectionObserverCallback; el: Element | null };
+type Watch = {
+  cb: IntersectionObserverCallback;
+  el: Element | null;
+  options?: IntersectionObserverInit;
+};
 let watches: Watch[] = [];
 class FakeObserver {
   watch: Watch;
-  constructor(cb: IntersectionObserverCallback) {
-    this.watch = { cb, el: null };
+  constructor(cb: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+    this.watch = { cb, el: null, options };
     watches.push(this.watch);
   }
   observe(el: Element) {
@@ -67,6 +71,28 @@ describe('useScrolledPast', () => {
     expect(watches.some((w) => w.el === a)).toBe(false);
     rerender({ el: null });
     expect(result.current).toBe(false);
+  });
+
+  it('a top inset (a sticky header) shrinks the viewport from the top', () => {
+    const el = document.createElement('div');
+    const inset = () => 64;
+    const { result } = renderHook(() => useScrolledPast(el, inset));
+    expect(watches[0]!.options?.rootMargin).toBe('-64px 0px 0px 0px');
+    // Under the header (bottom 40 < 64) counts as past.
+    act(() =>
+      watches[0]!.cb(
+        [
+          {
+            target: el,
+            isIntersecting: false,
+            boundingClientRect: { bottom: 40 },
+            rootBounds: { top: 64 },
+          } as unknown as IntersectionObserverEntry,
+        ],
+        watches[0] as unknown as IntersectionObserver,
+      ),
+    );
+    expect(result.current).toBe(true);
   });
 
   it('without IntersectionObserver it stays false', () => {

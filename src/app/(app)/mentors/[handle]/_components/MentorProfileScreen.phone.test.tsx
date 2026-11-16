@@ -58,15 +58,25 @@ vi.mock('@/lib/api/data/mentors', async (original) => ({
   ...(await original<object>()),
   ...(await import('./profileScreen.harness')).mocks.topics(),
 }));
+// Messages on, with the composer stubbed as its dialog (as the message suite does).
+vi.mock('@/lib/config/messages', () => ({ MESSAGES_LIVE: true }));
+vi.mock('@/app/_shell/SendMessageLauncher', () => ({
+  SendMessageLauncher: ({ to }: { to: { firstName: string } | null }) =>
+    to ? <div role="dialog" aria-modal="true" aria-label={`Message ${to.firstName}`} /> : null,
+}));
 
 // IntersectionObserver as the browser drives it: each test says where the
 // booking card is relative to the viewport.
-type Watch = { cb: IntersectionObserverCallback; el: Element | null };
+type Watch = {
+  cb: IntersectionObserverCallback;
+  el: Element | null;
+  options?: IntersectionObserverInit;
+};
 let watches: Watch[] = [];
 class FakeObserver {
   watch: Watch;
-  constructor(cb: IntersectionObserverCallback) {
-    this.watch = { cb, el: null };
+  constructor(cb: IntersectionObserverCallback, options?: IntersectionObserverInit) {
+    this.watch = { cb, el: null, options };
     watches.push(this.watch);
   }
   observe(el: Element) {
@@ -96,20 +106,27 @@ const cardIs = (where: 'above' | 'in' | 'below') =>
       w.cb([entry], w as unknown as IntersectionObserver);
     }
   });
+// matchMedia whose phone query can flip mid-test, telling its listeners (useMediaQuery).
+let isPhoneNow = true;
+const mediaListeners = new Set<() => void>();
 const phone = (on: boolean) => {
+  isPhoneNow = on;
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
-    matches: on && query.includes('max-width: 767px'),
+    get matches() {
+      return isPhoneNow && query.includes('max-width: 767px');
+    },
     media: query,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
+    addEventListener: (_: string, cb: () => void) => mediaListeners.add(cb),
+    removeEventListener: (_: string, cb: () => void) => mediaListeners.delete(cb),
   }));
 };
-// The floating pill: a top-level button of the screen (FloatingPill's own box),
-// unlike the header's Book of the same name.
-const pill = () =>
-  screen
-    .queryAllByRole('button', { name: 'Book a session' })
-    .find((b) => b.parentElement?.parentElement?.parentElement === document.body) ?? null;
+const resizeTo = (on: boolean) =>
+  act(() => {
+    isPhoneNow = on;
+    for (const cb of [...mediaListeners]) cb();
+  });
+/** The floating Book pill (inside FloatingPill's data-floating-pill), or null. */
+const pill = () => document.querySelector<HTMLElement>('[data-floating-pill] button');
 const bookCard = () => document.getElementById('profile-book');
 
 // Three session types: the Sessions tab shows (PRD, 21 Oct).
@@ -118,6 +135,7 @@ const scrollIntoView = vi.fn();
 
 beforeEach(() => {
   watches = [];
+  mediaListeners.clear();
   window.IntersectionObserver = FakeObserver as unknown as typeof IntersectionObserver;
   Element.prototype.scrollIntoView = scrollIntoView;
   scrollIntoView.mockReset();
@@ -264,5 +282,127 @@ describe('MentorProfileScreen on phones: the floating Book pill', () => {
     expect(bookCard()).toBeNull();
     cardIs('above');
     expect(pill()).toBeNull();
+  });
+});
+
+describe('MentorProfileScreen on phones: more of the pill', () => {
+  it('guests get it too, placed on the shared bottom-chrome height (over the guest bar)', () => {
+    h.isGuest = true;
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    cardIs('above');
+    const box = pill()!.closest<HTMLElement>('[data-floating-pill]')!;
+    expect(box.style.getPropertyValue('--pill-bottom')).toBe(
+      'calc(var(--bottom-chrome-h) + var(--space-4))',
+    );
+  });
+
+  it('"past" is measured from under the sticky header', () => {
+    const header = document.createElement('header');
+    header.setAttribute('data-shell-header', '');
+    header.getBoundingClientRect = () => ({ bottom: 64 }) as DOMRect;
+    document.body.append(header);
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    const w = watches.find((x) => x.el?.id === 'profile-book')!;
+    expect(w.options?.rootMargin).toBe('-64px 0px 0px 0px');
+    header.remove();
+  });
+
+  it('phone to desktop and back: one booking card, moving; the pill only on the phone', () => {
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    cardIs('above');
+    expect(pill()).toBeInTheDocument();
+    resizeTo(false);
+    expect(document.querySelectorAll('#profile-book')).toHaveLength(1);
+    expect(bookCard()!.closest('aside')).not.toBeNull();
+    cardIs('above');
+    expect(pill()).toBeNull();
+    resizeTo(true);
+    expect(document.querySelectorAll('#profile-book')).toHaveLength(1);
+    expect(bookCard()!.closest('aside')).toBeNull();
+  });
+
+  it('Reviews: the "no session yet" note\'s Book scrolls to the card under the tabs', async () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.reviewPrompt = 'none';
+    h.profile = state({ data: profile });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    const note = screen
+      .getByText('You can review Gbenga after your first session')
+      .closest('div')!.parentElement!;
+    await user.click(within(note).getByRole('button', { name: 'Book a session' }));
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(bookCard()!.closest('aside')).toBeNull();
+    expect(bookCard()).toContainElement(document.activeElement as HTMLElement);
+  });
+
+  it('under prefers-reduced-motion the tap jumps instead of gliding', async () => {
+    const media = window.matchMedia;
+    window.matchMedia = ((q: string) =>
+      q === '(prefers-reduced-motion: reduce)'
+        ? ({
+            matches: true,
+            addEventListener() {},
+            removeEventListener() {},
+          } as unknown as MediaQueryList)
+        : media(q)) as typeof window.matchMedia;
+    h.profile = state({ data: profile });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    cardIs('above');
+    await user.click(pill()!);
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+  });
+
+  it('none while the share dialog is open', async () => {
+    h.profile = state({ data: profile });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    cardIs('above');
+    expect(pill()).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Share profile' }));
+    cardIs('above');
+    expect(pill()).toBeNull();
+  });
+
+  it('none while the review dialog is open', async () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.reviewPrompt = 'due';
+    h.reviewableRemote = remote([
+      { id: 's1', startsAt: '2026-09-19T15:00:00Z', typeName: 'SOP draft review' },
+    ]);
+    h.profile = state({ data: profile });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    cardIs('above');
+    expect(pill()).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Write a review' }));
+    cardIs('above');
+    expect(pill()).toBeNull();
+  });
+
+  it('none while the message composer is open', async () => {
+    h.profile = state({ data: { ...profile, canMessage: true } });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    cardIs('above');
+    expect(pill()).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Message' }));
+    expect(screen.getByRole('dialog', { name: 'Message Gbenga' })).toBeInTheDocument();
+    cardIs('above');
+    expect(pill()).toBeNull();
+  });
+
+  it('a new mentor with no track record or similar mentors: no empty aside landmark', () => {
+    h.similarRemote = remote([]);
+    h.profile = state({
+      data: { ...profile, mentor: { ...profile.mentor, completedSessions: 0 } },
+    });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(bookCard()).toBeInTheDocument();
+    expect(screen.queryByRole('complementary')).toBeNull();
   });
 });

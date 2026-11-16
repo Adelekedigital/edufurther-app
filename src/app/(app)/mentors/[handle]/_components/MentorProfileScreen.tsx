@@ -65,6 +65,8 @@ import { focusIfShown } from '@/lib/utils/focus';
 import { cx } from '@/lib/utils/cx';
 import { useScrolledPast } from '@/lib/utils/useScrolledPast';
 import { BookPill } from './BookPill';
+import { scrollBehavior } from '@/lib/utils/scrollBehavior';
+import { shellHeaderBottom } from '@/components/templates/AppShell/shellHeader';
 
 // Dialogs a visitor opens from a button (the review) or only the owner ever
 // sees (the item editors, remove photo): each loads on open, not with the
@@ -178,7 +180,7 @@ const NEW_MENTOR_UNDER = 3;
  * component lays the page out.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
-  const { viewer, member, canBook, chrome, previewing } = useAppShell();
+  const { viewer, member, canBook, previewing } = useAppShell();
   const online = useOnline();
   const profile = useMentorProfile(handle);
   const p = profile.data;
@@ -450,7 +452,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // takes you to the booking card rather than opening booking itself.
   const scrollToBook = () => {
     const card = document.getElementById('profile-book');
-    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    card?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     card?.querySelector<HTMLElement>('button, a[href]')?.focus({ preventScroll: true });
   };
 
@@ -478,7 +480,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // where the card is and can book: not in either preview, nor over a dialog.
   const bookPillOn =
     isPhone && tab !== 'sessions' && showBook && !viewing && !previewing && canStartBooking;
-  const bookPassed = useScrolledPast(bookPillOn ? bookEl : null);
+  // Past means gone under the sticky header, not off the screen's top.
+  const bookPassed = useScrolledPast(bookPillOn ? bookEl : null, shellHeaderBottom);
   const dialogOpen = !!booking.active || shareOpen || !!reviews.reviewing || !!messaging;
 
   // Design reply #45: under 3 sessions, an invitation (mentees) or what mentees
@@ -780,13 +783,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 </TabPanel>
               )}
               {tab !== 'sessions' &&
-                // Never an empty named landmark (the owner's Reviews tab can hold nothing).
-                ((asMentee && !isPhone) ||
-                  tab === 'overview' ||
-                  track ||
+                // Exactly what it holds: never an empty named landmark (a phone
+                // mentee on a new mentor, the owner's Reviews tab).
+                ((!isPhone && (!!bookCard || !!firstMentees)) ||
                   strengthShown ||
-                  similarShown ||
-                  (!isPhone && !!firstMentees)) && (
+                  track ||
+                  similarShown) && (
                   <aside
                     className={styles.aside}
                     aria-label={asideLabel}
@@ -897,9 +899,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         />
       )}
 
-      {bookPillOn && bookPassed && !dialogOpen && (
-        <BookPill hasTabBar={chrome === 'member'} onBook={scrollToBook} />
-      )}
+      {bookPillOn && bookPassed && !dialogOpen && <BookPill onBook={scrollToBook} />}
 
       <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />
 

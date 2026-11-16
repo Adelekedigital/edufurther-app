@@ -38,6 +38,8 @@ export function FloatingPill({
         className,
       )}
       style={style}
+      // A stable hook for tests and page checks, whatever the pill holds.
+      data-floating-pill
     >
       {children}
     </div>

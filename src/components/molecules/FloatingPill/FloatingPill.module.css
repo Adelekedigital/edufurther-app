@@ -29,7 +29,9 @@
     transition: none;
   }
 }
-/* Never over a modal or sheet, as SaveBar; popovers (not aria-modal) leave it. */
-:global(body:has([aria-modal='true'])) .float {
+/* Never over a modal or sheet, as SaveBar (popovers, not aria-modal, leave
+   it), nor fighting a card fixed in the same bottom band (the consent banner,
+   which marks itself data-bottom-overlay). */
+:global(body:has([aria-modal='true'], [data-bottom-overlay])) .float {
   display: none;
 }
