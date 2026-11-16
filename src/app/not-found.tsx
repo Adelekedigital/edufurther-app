@@ -1,6 +1,6 @@
-import { ErrorScreen } from './_shell/ErrorScreen';
+import { NotFoundScreen } from './_shell/NotFoundScreen';
 
 /** An unknown URL, outside the app shell (Error Page.dc.html, notFound): its own <main>. */
 export default function NotFound() {
-  return <ErrorScreen type="notFound" landmark />;
+  return <NotFoundScreen />;
 }

@@ -376,3 +376,27 @@ describe('proxy: the trailing-slash redirect Next no longer makes (skipTrailingS
     expect(res.status).not.toBe(308);
   });
 });
+
+describe('proxy: server-action requests (the app has none)', () => {
+  it('a POST naming a server action is a 404 before any render, on any page', async () => {
+    getClaims.mockClear();
+    for (const path of ['/', '/explore', '/mentors/ada']) {
+      const res = await proxy(
+        new NextRequest(`https://app.test${path}`, {
+          method: 'POST',
+          headers: { 'next-action': '7f' + 'a'.repeat(40) },
+        }),
+      );
+      expect(res.status).toBe(404);
+    }
+    // Refused before the session check: no Supabase call for a probe.
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+
+  it('the API is still forwarded whatever a client sends', async () => {
+    const res = await proxy(
+      new NextRequest('https://app.test/api/v1/me', { headers: { 'next-action': 'x' } }),
+    );
+    expect(res.status).not.toBe(404);
+  });
+});
