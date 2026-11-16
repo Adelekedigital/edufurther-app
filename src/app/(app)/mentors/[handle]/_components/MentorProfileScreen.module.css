@@ -179,6 +179,19 @@
   }
 }
 
+/* Phones, while the floating Book pill may show (BookPill: 48px, 16px above
+   the tab bar): the last card scrolls clear of it, and so does a focused
+   control (WCAG 2.4.11), as AppShell does for the tab bar. */
+@media (max-width: 767px) {
+  .pillRoom {
+    padding-bottom: calc(var(--button-h-large) + var(--space-4));
+  }
+  :global(html):has(.page.pillRoom) {
+    scroll-padding-bottom: calc(
+      56px + var(--space-4) + var(--button-h-large) + var(--space-2) + env(safe-area-inset-bottom)
+    );
+  }
+}
 /* The review note's "Book a session" scrolls here; clear the app header. */
 .scrollTarget {
   scroll-margin-top: var(--space-6);

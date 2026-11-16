@@ -62,6 +62,9 @@ import { useProfileTab } from './useProfileTab';
 import { useProfileViewed } from './useProfileViewed';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { focusIfShown } from '@/lib/utils/focus';
+import { cx } from '@/lib/utils/cx';
+import { useScrolledPast } from '@/lib/utils/useScrolledPast';
+import { BookPill } from './BookPill';
 
 // Dialogs a visitor opens from a button (the review) or only the owner ever
 // sees (the item editors, remove photo): each loads on open, not with the
@@ -175,7 +178,7 @@ const NEW_MENTOR_UNDER = 3;
  * component lays the page out.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
-  const { viewer, member, canBook } = useAppShell();
+  const { viewer, member, canBook, chrome, previewing } = useAppShell();
   const online = useOnline();
   const profile = useMentorProfile(handle);
   const p = profile.data;
@@ -396,7 +399,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     listLabel([
       // Neutral when nothing can be booked (review of #81).
       // Neutral when it only says bookings are closed (review of #81, #102).
-      asMentee && (notTaking ? 'availability' : 'booking'),
+      // Phones draw the booking card under the tabs instead.
+      asMentee && !isPhone && (notTaking ? 'availability' : 'booking'),
       strengthShown && 'profile strength',
       track && 'track record',
       similarShown && 'similar mentors',
@@ -450,6 +454,33 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     card?.querySelector<HTMLElement>('button, a[href]')?.focus({ preventScroll: true });
   };
 
+  // The booking card (or, not taking bookings, the note saying so). Desktop: top
+  // of the aside. Phones: under the tabs, so booking comes first (owner, 16 Nov).
+  const [bookEl, setBookEl] = useState<HTMLDivElement | null>(null);
+  const bookCard =
+    p && asMentee ? (
+      notTaking ? (
+        <NotTakingNote firstName={p.mentor.firstName} similarBelow={similarShown} />
+      ) : (
+        <div id="profile-book" ref={setBookEl} className={styles.scrollTarget}>
+          <BookSessionCard
+            sessionTypes={p.sessionTypes}
+            timeZone={timeZone}
+            onBook={booking.open}
+            onCompare={sessionsTab ? () => setTab('sessions') : undefined}
+            bookBlocked={shownBlock}
+            bookDisabled={viewing}
+          />
+        </div>
+      )
+    ) : null;
+  // Phones: a floating Book once that card has scrolled up out of view. Only
+  // where the card is and can book: not in either preview, nor over a dialog.
+  const bookPillOn =
+    isPhone && tab !== 'sessions' && showBook && !viewing && !previewing && canStartBooking;
+  const bookPassed = useScrolledPast(bookPillOn ? bookEl : null);
+  const dialogOpen = !!booking.active || shareOpen || !!reviews.reviewing || !!messaging;
+
   // Design reply #45: under 3 sessions, an invitation (mentees) or what mentees
   // see (owner). Desktop: top of the aside (Overview only, like the aside).
   // Phones: under the tabs, on both tabs.
@@ -480,7 +511,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   if (detour) return null;
   return (
     <>
-      <div className={styles.page}>
+      {/* Room for the pill under the last card, kept whenever it may show so nothing jumps. */}
+      <div className={cx(styles.page, bookPillOn && styles.pillRoom)}>
         {profile.isLoading ? (
           <ProfileSkeleton />
         ) : profile.error && !p ? (
@@ -658,6 +690,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             />
 
             {isPhone && firstMentees}
+            {isPhone && tab !== 'sessions' && bookCard}
 
             <div className={styles.cols}>
               {/* Overview stays in the page while the owner edits: a tab switch
@@ -748,10 +781,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
               )}
               {tab !== 'sessions' &&
                 // Never an empty named landmark (the owner's Reviews tab can hold nothing).
-                (asMentee ||
+                ((asMentee && !isPhone) ||
                   tab === 'overview' ||
                   track ||
                   strengthShown ||
+                  similarShown ||
                   (!isPhone && !!firstMentees)) && (
                   <aside
                     className={styles.aside}
@@ -760,21 +794,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     onClickCapture={profileLinkSource('similar_mentors')}
                   >
                     {!isPhone && firstMentees}
-                    {asMentee &&
-                      (notTaking ? (
-                        <NotTakingNote firstName={p.mentor.firstName} similarBelow={similarShown} />
-                      ) : (
-                        <div id="profile-book" className={styles.scrollTarget}>
-                          <BookSessionCard
-                            sessionTypes={p.sessionTypes}
-                            timeZone={timeZone}
-                            onBook={booking.open}
-                            onCompare={sessionsTab ? () => setTab('sessions') : undefined}
-                            bookBlocked={shownBlock}
-                            bookDisabled={viewing}
-                          />
-                        </div>
-                      ))}
+                    {!isPhone && bookCard}
                     {strengthShown && completeness && (
                       <ProfileStrengthCard
                         id={STRENGTH_ID}
@@ -875,6 +895,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           note={shareNote}
           onClose={() => setShareOpen(false)}
         />
+      )}
+
+      {bookPillOn && bookPassed && !dialogOpen && (
+        <BookPill hasTabBar={chrome === 'member'} onBook={scrollToBook} />
       )}
 
       <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />
