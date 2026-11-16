@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
@@ -49,8 +49,8 @@ export function MatchPill({
   onRestore,
 }: MatchPillProps) {
   // Full ↔ mini swaps the focused element out of the DOM (× , restore, or the
-  // phone collapse near the pager). If focus was in the pill, carry it to the
-  // control that replaced it instead of letting it fall to <body>.
+  // phone collapse near the pager): FloatingPill carries focus to the control
+  // that replaced it instead of letting it fall to <body>.
   const asideRef = useRef<HTMLElement>(null);
   const popoverId = useId();
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -60,22 +60,14 @@ export function MatchPill({
     setLastForm(size + miniAction);
     setPopoverOpen(false);
   }
-  const focusInside = useRef(false);
+  // A press outside closes the popover.
   useEffect(() => {
     const onPointerDown = (e: PointerEvent) => {
-      if (!asideRef.current?.contains(e.target as Node)) {
-        focusInside.current = false;
-        setPopoverOpen(false);
-      }
+      if (!asideRef.current?.contains(e.target as Node)) setPopoverOpen(false);
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
   }, []);
-  useLayoutEffect(() => {
-    const aside = asideRef.current;
-    if (!aside || !focusInside.current || aside.contains(document.activeElement)) return;
-    aside.querySelector<HTMLElement>('a, button')?.focus();
-  }, [size, miniAction]);
 
   return (
     <FloatingPill bottom={bottom} dock={dock} tracking={tracking}>
@@ -89,16 +81,6 @@ export function MatchPill({
             e.stopPropagation();
             setPopoverOpen(false);
             asideRef.current?.querySelector<HTMLElement>('button[aria-expanded]')?.focus();
-          }
-        }}
-        onFocus={() => {
-          focusInside.current = true;
-        }}
-        onBlur={(e) => {
-          // Removing the focused element during a swap fires no blur, so any blur
-          // means focus really left — including to the browser UI (relatedTarget null).
-          if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget as Node)) {
-            focusInside.current = false;
           }
         }}
       >

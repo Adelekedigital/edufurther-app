@@ -66,7 +66,7 @@ import { cx } from '@/lib/utils/cx';
 import { useScrolledPast } from '@/lib/utils/useScrolledPast';
 import { BookPill } from './BookPill';
 import { scrollBehavior } from '@/lib/utils/scrollBehavior';
-import { shellHeaderBottom } from '@/components/templates/AppShell/shellHeader';
+import { shellHeader } from '@/components/templates/AppShell/shellHeader';
 
 // Dialogs a visitor opens from a button (the review) or only the owner ever
 // sees (the item editors, remove photo): each loads on open, not with the
@@ -450,10 +450,17 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 
   // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
   // takes you to the booking card rather than opening booking itself.
+  // Focus the booking card's first control, where it already is.
+  const focusBook = () =>
+    document
+      .getElementById('profile-book')
+      ?.querySelector<HTMLElement>('button, a[href]')
+      ?.focus({ preventScroll: true });
   const scrollToBook = () => {
-    const card = document.getElementById('profile-book');
-    card?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
-    card?.querySelector<HTMLElement>('button, a[href]')?.focus({ preventScroll: true });
+    document
+      .getElementById('profile-book')
+      ?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+    focusBook();
   };
 
   // The booking card (or, not taking bookings, the note saying so). Desktop: top
@@ -481,7 +488,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const bookPillOn =
     isPhone && tab !== 'sessions' && showBook && !viewing && !previewing && canStartBooking;
   // Past means gone under the sticky header, not off the screen's top.
-  const bookPassed = useScrolledPast(bookPillOn ? bookEl : null, shellHeaderBottom);
+  const bookPassed = useScrolledPast(bookPillOn ? bookEl : null, shellHeader);
   const dialogOpen = !!booking.active || shareOpen || !!reviews.reviewing || !!messaging;
 
   // Design reply #45: under 3 sessions, an invitation (mentees) or what mentees
@@ -899,7 +906,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         />
       )}
 
-      {bookPillOn && bookPassed && !dialogOpen && <BookPill onBook={scrollToBook} />}
+      {bookPillOn && bookPassed && !dialogOpen && (
+        <BookPill onBook={scrollToBook} onFocusLost={focusBook} />
+      )}
 
       <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />
 

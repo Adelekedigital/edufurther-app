@@ -73,10 +73,12 @@ describe('useScrolledPast', () => {
     expect(result.current).toBe(false);
   });
 
-  it('a top inset (a sticky header) shrinks the viewport from the top', () => {
+  it('a cover (a sticky header) shrinks the viewport from the top', () => {
     const el = document.createElement('div');
-    const inset = () => 64;
-    const { result } = renderHook(() => useScrolledPast(el, inset));
+    const header = document.createElement('header');
+    header.getBoundingClientRect = () => ({ bottom: 64 }) as DOMRect;
+    const cover = () => header;
+    const { result } = renderHook(() => useScrolledPast(el, cover));
     expect(watches[0]!.options?.rootMargin).toBe('-64px 0px 0px 0px');
     // Under the header (bottom 40 < 64) counts as past.
     act(() =>
@@ -93,6 +95,34 @@ describe('useScrolledPast', () => {
       ),
     );
     expect(result.current).toBe(true);
+  });
+
+  it('a cover that changes height later re-observes with the new inset', () => {
+    // ResizeObserver as the browser drives it: the test says when the header resized.
+    let resized: (() => void) | null = null;
+    const RO = window.ResizeObserver;
+    window.ResizeObserver = class {
+      constructor(cb: () => void) {
+        resized = cb;
+      }
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+    let bottom = 64;
+    const header = document.createElement('header');
+    header.getBoundingClientRect = () => ({ bottom }) as DOMRect;
+    const cover = () => header;
+    const el = document.createElement('div');
+    renderHook(() => useScrolledPast(el, cover));
+    expect(watches.find((w) => w.el === el)!.options?.rootMargin).toBe('-64px 0px 0px 0px');
+    // The offline bar opens inside the header: it grows by 40px.
+    bottom = 104;
+    act(() => resized!());
+    const live = watches.filter((w) => w.el === el);
+    expect(live).toHaveLength(1);
+    expect(live[0]!.options?.rootMargin).toBe('-104px 0px 0px 0px');
+    window.ResizeObserver = RO;
   });
 
   it('without IntersectionObserver it stays false', () => {

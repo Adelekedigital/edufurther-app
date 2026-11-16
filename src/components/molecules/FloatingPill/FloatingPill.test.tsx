@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { FloatingPill } from './FloatingPill';
 
 const box = () => screen.getByRole('button', { name: 'Act' }).parentElement!;
@@ -36,5 +37,56 @@ describe('FloatingPill', () => {
     expect(box()).not.toHaveAttribute('aria-label');
     // Its stable hook for tests and page checks.
     expect(box()).toHaveAttribute('data-floating-pill');
+  });
+
+  it('a swap inside that drops the focused control carries focus to its replacement', () => {
+    const { rerender } = render(
+      <FloatingPill bottom="24px">
+        <button type="button">Full</button>
+      </FloatingPill>,
+    );
+    screen.getByRole('button', { name: 'Full' }).focus();
+    rerender(
+      <FloatingPill bottom="24px">
+        <button type="button">Mini</button>
+      </FloatingPill>,
+    );
+    expect(screen.getByRole('button', { name: 'Mini' })).toHaveFocus();
+  });
+
+  it('leaving while it holds focus hands focus to onFocusLost, never to body', () => {
+    const Page = ({ shown }: { shown: boolean }) => (
+      <>
+        <button type="button">Card</button>
+        {shown && (
+          <FloatingPill
+            bottom="24px"
+            onFocusLost={() => screen.getByRole('button', { name: 'Card' }).focus()}
+          >
+            <button type="button">Act</button>
+          </FloatingPill>
+        )}
+      </>
+    );
+    const { rerender } = render(<Page shown />);
+    screen.getByRole('button', { name: 'Act' }).focus();
+    rerender(<Page shown={false} />);
+    expect(screen.getByRole('button', { name: 'Card' })).toHaveFocus();
+  });
+
+  it('leaving without focus moves nothing', async () => {
+    const onFocusLost = vi.fn();
+    const { rerender } = render(
+      <>
+        <button type="button">Elsewhere</button>
+        <FloatingPill bottom="24px" onFocusLost={onFocusLost}>
+          <button type="button">Act</button>
+        </FloatingPill>
+      </>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Elsewhere' }));
+    rerender(<button type="button">Elsewhere</button>);
+    expect(onFocusLost).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Elsewhere' })).toHaveFocus();
   });
 });

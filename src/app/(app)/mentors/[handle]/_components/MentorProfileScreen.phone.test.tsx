@@ -222,6 +222,21 @@ describe('MentorProfileScreen on phones: the floating Book pill', () => {
     expect(bookCard()).toContainElement(document.activeElement as HTMLElement);
   });
 
+  it('focused when the card comes back into view: focus moves to the card, not body', () => {
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    cardIs('above');
+    pill()!.focus();
+    expect(pill()).toHaveFocus();
+    // Scrolled back up with the keyboard: the card intersects, the pill goes.
+    cardIs('in');
+    expect(pill()).toBeNull();
+    expect(document.activeElement).not.toBe(document.body);
+    expect(document.activeElement).toBe(
+      within(bookCard()!).getAllByRole('button', { name: /^Book/ })[0],
+    );
+  });
+
   it('no pill on the Sessions tab, where there is no card', () => {
     h.profile = state({ data: profile });
     const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
