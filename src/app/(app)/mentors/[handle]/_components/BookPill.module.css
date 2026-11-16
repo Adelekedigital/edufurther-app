@@ -1,0 +1,8 @@
+/* Mentor Profile.dc.html `bookPill`: the primary Large button, as a pill that
+   floats (radius-full, padding 0 24px, a float shadow). Scoped under the
+   float so it outranks Button's own phone padding whatever the CSS order. */
+.float .pill {
+  border-radius: var(--radius-full);
+  padding: 0 var(--space-6);
+  box-shadow: var(--shadow-float);
+}

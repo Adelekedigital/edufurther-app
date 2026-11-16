@@ -54,6 +54,9 @@
   /* How far every sticky top edge moves down: the bar's height while it shows
      (html[data-previewing], globals.css), 0 otherwise. Never read by the bar itself. */
   --ef-va-h: 0px;
+  /* What is fixed or sticky along the bottom on phones (the tab bar, or the
+     guest bar): AppShell sets it, 0 otherwise. Floating UI sits above it. */
+  --bottom-chrome-h: 0px;
 
   /* Cover colour swatch edge, so pale swatches read on white (Mentor Profile.dc.html). */
   --swatch-edge: rgba(16, 25, 40, 0.08);

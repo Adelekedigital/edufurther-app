@@ -1,11 +1,7 @@
+/* The pill's look; FloatingPill places it (fixed, centred or docked, motion). */
 .pill {
-  position: fixed;
-  z-index: 25;
-  left: var(--fixed-center-x);
-  bottom: var(--pill-bottom);
-  transform: translateX(-50%);
-  width: max-content;
-  max-width: calc(100% - var(--space-8));
+  /* The popover's anchor. */
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -14,15 +10,6 @@
   border: var(--border-hairline) solid var(--green-100);
   box-shadow: var(--shadow-float);
   font-family: var(--font-ui);
-  transition:
-    left var(--duration-slow) var(--ease-standard),
-    transform var(--duration-slow) var(--ease-standard),
-    bottom var(--duration-base) var(--ease-standard);
-}
-/* Docked: slides to the bottom-right so the centred pager stays clear. */
-.corner {
-  left: calc(100% - var(--space-6) - var(--fixed-edge-gap));
-  transform: translateX(-100%);
 }
 .full {
   padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
@@ -97,11 +84,6 @@
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
-@media (prefers-reduced-motion: reduce) {
-  .pill {
-    transition: none;
-  }
-}
 @media (max-width: 767px) {
   .label {
     white-space: normal;
@@ -121,18 +103,6 @@
   }
   .minimise {
     width: var(--touch-target-min);
-  }
-}
-
-/* Docked beside the pager: bottom is recomputed every frame while scrolling. */
-.tracking {
-  transition:
-    left var(--duration-slow) var(--ease-standard),
-    transform var(--duration-slow) var(--ease-standard);
-}
-@media (prefers-reduced-motion: reduce) {
-  .tracking {
-    transition: none;
   }
 }
 

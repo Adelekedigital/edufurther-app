@@ -311,7 +311,7 @@ export function AppShell({
       )}
       {/* Desktop members get the brand in the rail and a bar over the content
           (design logoIn=sidebar); guests, the pending state and phones keep this. */}
-      <header className={cx(styles.header, member && styles.headerMember)}>
+      <header className={cx(styles.header, member && styles.headerMember)} data-shell-header>
         <Link href="/" prefetch={PREFETCH} className={styles.logo} aria-label="EduFurther home">
           <BrandLogo width={180} height={24} priority />
         </Link>

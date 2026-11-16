@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { ExternalLink } from '@/components/atoms/ExternalLink/ExternalLink';
 import { cx } from '@/lib/utils/cx';
 import { Icon } from '@/components/atoms/Icon/Icon';
+import { FloatingPill } from '@/components/molecules/FloatingPill/FloatingPill';
 import styles from './MatchPill.module.css';
 
 type MatchPillProps = {
@@ -33,7 +34,7 @@ type MatchPillProps = {
 /**
  * Floating "Not sure where to start?" pill (Design decisions: sticky match
  * prompt, `promptSticky=on`, "Float behaviour, final"). Positioning is decided by
- * the page from scroll state; this component only draws it.
+ * the page from scroll state and placed by FloatingPill; this component draws it.
  */
 export function MatchPill({
   href,
@@ -47,11 +48,9 @@ export function MatchPill({
   onMinimise,
   onRestore,
 }: MatchPillProps) {
-  const style = { '--pill-bottom': bottom } as CSSProperties;
-
   // Full ↔ mini swaps the focused element out of the DOM (× , restore, or the
-  // phone collapse near the pager). If focus was in the pill, carry it to the
-  // control that replaced it instead of letting it fall to <body>.
+  // phone collapse near the pager): FloatingPill carries focus to the control
+  // that replaced it instead of letting it fall to <body>.
   const asideRef = useRef<HTMLElement>(null);
   const popoverId = useId();
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -61,123 +60,101 @@ export function MatchPill({
     setLastForm(size + miniAction);
     setPopoverOpen(false);
   }
-  const focusInside = useRef(false);
+  // A press outside closes the popover.
   useEffect(() => {
     const onPointerDown = (e: PointerEvent) => {
-      if (!asideRef.current?.contains(e.target as Node)) {
-        focusInside.current = false;
-        setPopoverOpen(false);
-      }
+      if (!asideRef.current?.contains(e.target as Node)) setPopoverOpen(false);
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
   }, []);
-  useLayoutEffect(() => {
-    const aside = asideRef.current;
-    if (!aside || !focusInside.current || aside.contains(document.activeElement)) return;
-    aside.querySelector<HTMLElement>('a, button')?.focus();
-  }, [size, miniAction]);
 
   return (
-    <aside
-      ref={asideRef}
-      aria-label="Talk to our team"
-      className={cx(
-        styles.pill,
-        styles[size],
-        dock === 'corner' && styles.corner,
-        tracking && styles.tracking,
-      )}
-      data-match-pill
-      onKeyDown={(e) => {
-        if (e.key === 'Escape' && popoverOpen) {
-          e.stopPropagation();
-          setPopoverOpen(false);
-          asideRef.current?.querySelector<HTMLElement>('button[aria-expanded]')?.focus();
-        }
-      }}
-      style={style}
-      onFocus={() => {
-        focusInside.current = true;
-      }}
-      onBlur={(e) => {
-        // Removing the focused element during a swap fires no blur, so any blur
-        // means focus really left — including to the browser UI (relatedTarget null).
-        if (!e.relatedTarget || !e.currentTarget.contains(e.relatedTarget as Node)) {
-          focusInside.current = false;
-        }
-      }}
-    >
-      {size === 'full' ? (
-        <>
-          <Icon name="route" size={20} className={styles.route} />
-          <span className={styles.label}>Not sure where to start?</span>
-          <ExternalLink
-            href={href}
-            label="Book a free call"
-            newTab={!!external}
-            className={styles.cta}
-          >
-            Book a free call
-            <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
-          </ExternalLink>
-          <button
-            type="button"
-            className={styles.minimise}
-            aria-label="Minimise"
-            onClick={onMinimise}
-          >
-            <Icon name="close" size={18} />
-          </button>
-        </>
-      ) : miniAction === 'restore' ? (
-        <button
-          type="button"
-          className={styles.mini}
-          aria-label="Show “Not sure where to start?”"
-          title="Show “Not sure where to start?”"
-          onClick={onRestore}
-        >
-          <Icon name="route" size={24} />
-        </button>
-      ) : (
-        <>
+    <FloatingPill bottom={bottom} dock={dock} tracking={tracking}>
+      <aside
+        ref={asideRef}
+        aria-label="Talk to our team"
+        className={cx(styles.pill, styles[size])}
+        data-match-pill
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && popoverOpen) {
+            e.stopPropagation();
+            setPopoverOpen(false);
+            asideRef.current?.querySelector<HTMLElement>('button[aria-expanded]')?.focus();
+          }
+        }}
+      >
+        {size === 'full' ? (
+          <>
+            <Icon name="route" size={20} className={styles.route} />
+            <span className={styles.label}>Not sure where to start?</span>
+            <ExternalLink
+              href={href}
+              label="Book a free call"
+              newTab={!!external}
+              className={styles.cta}
+            >
+              Book a free call
+              <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
+            </ExternalLink>
+            <button
+              type="button"
+              className={styles.minimise}
+              aria-label="Minimise"
+              onClick={onMinimise}
+            >
+              <Icon name="close" size={18} />
+            </button>
+          </>
+        ) : miniAction === 'restore' ? (
           <button
             type="button"
             className={styles.mini}
-            aria-label="Not sure where to start?"
-            aria-expanded={popoverOpen}
-            aria-controls={popoverOpen ? popoverId : undefined}
-            onClick={() => setPopoverOpen((o) => !o)}
+            aria-label="Show “Not sure where to start?”"
+            title="Show “Not sure where to start?”"
+            onClick={onRestore}
           >
             <Icon name="route" size={24} />
           </button>
-          {/* After the toggle in the DOM, so Tab from the icon moves into it. */}
-          {popoverOpen && (
-            <div
-              id={popoverId}
-              className={styles.popover}
-              role="region"
-              aria-labelledby={`${popoverId}-title`}
+        ) : (
+          <>
+            <button
+              type="button"
+              className={styles.mini}
+              aria-label="Not sure where to start?"
+              aria-expanded={popoverOpen}
+              aria-controls={popoverOpen ? popoverId : undefined}
+              onClick={() => setPopoverOpen((o) => !o)}
             >
-              <p id={`${popoverId}-title`} className={styles.popoverTitle}>
-                <Icon name="route" size={18} className={styles.route} />
-                Not sure where to start?
-              </p>
-              <p className={styles.popoverBody}>{body}</p>
-              <ExternalLink
-                href={href}
-                label="Book a free call"
-                newTab={!!external}
-                className={styles.popoverCta}
+              <Icon name="route" size={24} />
+            </button>
+            {/* After the toggle in the DOM, so Tab from the icon moves into it. */}
+            {popoverOpen && (
+              <div
+                id={popoverId}
+                className={styles.popover}
+                role="region"
+                aria-labelledby={`${popoverId}-title`}
               >
-                Book a free call
-                <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
-              </ExternalLink>
-            </div>
-          )}
-        </>
-      )}
-    </aside>
+                <p id={`${popoverId}-title`} className={styles.popoverTitle}>
+                  <Icon name="route" size={18} className={styles.route} />
+                  Not sure where to start?
+                </p>
+                <p className={styles.popoverBody}>{body}</p>
+                <ExternalLink
+                  href={href}
+                  label="Book a free call"
+                  newTab={!!external}
+                  className={styles.popoverCta}
+                >
+                  Book a free call
+                  <Icon name={external ? 'open_in_new' : 'arrow_forward'} size={16} />
+                </ExternalLink>
+              </div>
+            )}
+          </>
+        )}
+      </aside>
+    </FloatingPill>
   );
 }

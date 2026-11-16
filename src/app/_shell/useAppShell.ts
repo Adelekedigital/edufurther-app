@@ -178,6 +178,8 @@ export function useAppShell() {
     // Preview as user (AppShell.dc.html `vaEntry`): admins it's switched on for,
     // never mid-preview (the previewed /me says false then anyway).
     onPreview: member?.canPreviewAsUser && !previewing ? previewStore.open : undefined,
+    /** An admin is previewing as someone (writes blocked): pages hold back nudges to act. */
+    previewing,
     /** Messages is on: the nav shows its item (AppShell `messages`). */
     messages: MESSAGES_LIVE,
     /** Admin Emails is on: the admin nav shows its item (AppShell `adminEmails`). */

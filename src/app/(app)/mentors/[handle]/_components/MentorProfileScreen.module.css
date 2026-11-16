@@ -179,9 +179,32 @@
   }
 }
 
+/* Phones, while the floating Book pill may show (BookPill: 48px, 16px above
+   the bottom chrome): the last card scrolls clear of it, and so does a focused
+   control (WCAG 2.4.11). Outranks AppShell's html:has(.tabs) (the extra type
+   selector) and stays under ConsentBanner's html:root:has(), whose card hides
+   the pill anyway. */
+@media (max-width: 767px) {
+  .pillRoom {
+    padding-bottom: calc(var(--button-h-large) + var(--space-4));
+  }
+  :global(html):has(body .pillRoom) {
+    scroll-padding-bottom: calc(
+      var(--bottom-chrome-h) + var(--space-4) + var(--button-h-large) + var(--space-2)
+    );
+  }
+}
 /* The review note's "Book a session" scrolls here; clear the app header. */
 .scrollTarget {
   scroll-margin-top: var(--space-6);
+}
+/* Phones: the app header is sticky, so the card stops just under it. */
+@media (max-width: 767px) {
+  .scrollTarget {
+    scroll-margin-top: calc(
+      var(--navbar-h-mobile) + env(safe-area-inset-top) + var(--ef-va-h) + var(--space-4)
+    );
+  }
 }
 
 /* Not taking bookings (Mentor Profile.dc.html `notTakingSide`, `notTaking`). */

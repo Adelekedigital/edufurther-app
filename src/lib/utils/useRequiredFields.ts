@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState, type RefObject } from 'react';
+import { scrollBehavior } from './scrollBehavior';
 
 /**
  * The form rule for multi-field forms (Settings handoff.md, 19 Oct): Save is
@@ -62,7 +63,7 @@ function focusGap(gap: string, root?: RefObject<HTMLElement | null>, frames = 30
     );
     if (!el) return;
     const top = el.getBoundingClientRect().top;
-    window.scrollBy({ top: top - 120, behavior: 'smooth' });
+    window.scrollBy({ top: top - 120, behavior: scrollBehavior() });
     el.focus({ preventScroll: true });
   });
 }

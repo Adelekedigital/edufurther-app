@@ -1,0 +1,42 @@
+/* Placement shared by every floating pill (MatchPill, the profile's Book pill). */
+.float {
+  position: fixed;
+  z-index: 25;
+  left: var(--fixed-center-x);
+  bottom: var(--pill-bottom);
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - var(--space-8));
+  transition:
+    left var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard),
+    bottom var(--duration-base) var(--ease-standard);
+}
+/* Docked: slides to the bottom-right so the centred pager stays clear. */
+.corner {
+  left: calc(100% - var(--space-6) - var(--fixed-edge-gap));
+  transform: translateX(-100%);
+}
+/* Following the page as it scrolls: bottom is recomputed every frame. */
+.tracking {
+  transition:
+    left var(--duration-slow) var(--ease-standard),
+    transform var(--duration-slow) var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .float,
+  .tracking {
+    transition: none;
+  }
+}
+/* Never over a modal or sheet, as SaveBar (popovers, not aria-modal, leave
+   it): the modal takes focus and hands it back to its opener. */
+:global(body:has([aria-modal='true'])) .float {
+  display: none;
+}
+/* Nor fighting a card fixed in the same bottom band (the consent banner, which
+   marks itself data-bottom-overlay), unless it holds focus: hiding it then
+   would drop focus to <body>. */
+:global(body:has([data-bottom-overlay])) .float:not(:focus-within) {
+  display: none;
+}

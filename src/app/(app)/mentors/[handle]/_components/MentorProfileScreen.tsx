@@ -62,6 +62,11 @@ import { useProfileTab } from './useProfileTab';
 import { useProfileViewed } from './useProfileViewed';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { focusIfShown } from '@/lib/utils/focus';
+import { cx } from '@/lib/utils/cx';
+import { useScrolledPast } from '@/lib/utils/useScrolledPast';
+import { BookPill } from './BookPill';
+import { scrollBehavior } from '@/lib/utils/scrollBehavior';
+import { shellHeader } from '@/components/templates/AppShell/shellHeader';
 
 // Dialogs a visitor opens from a button (the review) or only the owner ever
 // sees (the item editors, remove photo): each loads on open, not with the
@@ -175,7 +180,7 @@ const NEW_MENTOR_UNDER = 3;
  * component lays the page out.
  */
 export function MentorProfileScreen({ handle }: { handle: string }) {
-  const { viewer, member, canBook } = useAppShell();
+  const { viewer, member, canBook, previewing } = useAppShell();
   const online = useOnline();
   const profile = useMentorProfile(handle);
   const p = profile.data;
@@ -396,7 +401,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     listLabel([
       // Neutral when nothing can be booked (review of #81).
       // Neutral when it only says bookings are closed (review of #81, #102).
-      asMentee && (notTaking ? 'availability' : 'booking'),
+      // Phones draw the booking card under the tabs instead.
+      asMentee && !isPhone && (notTaking ? 'availability' : 'booking'),
       strengthShown && 'profile strength',
       track && 'track record',
       similarShown && 'similar mentors',
@@ -444,11 +450,46 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
 
   // Mentor Profile.dc.html `scrollToBook`: the "no session yet" note's Book
   // takes you to the booking card rather than opening booking itself.
+  // Focus the booking card's first control, where it already is.
+  const focusBook = () =>
+    document
+      .getElementById('profile-book')
+      ?.querySelector<HTMLElement>('button, a[href]')
+      ?.focus({ preventScroll: true });
   const scrollToBook = () => {
-    const card = document.getElementById('profile-book');
-    card?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    card?.querySelector<HTMLElement>('button, a[href]')?.focus({ preventScroll: true });
+    document
+      .getElementById('profile-book')
+      ?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
+    focusBook();
   };
+
+  // The booking card (or, not taking bookings, the note saying so). Desktop: top
+  // of the aside. Phones: under the tabs, so booking comes first (owner, 16 Nov).
+  const [bookEl, setBookEl] = useState<HTMLDivElement | null>(null);
+  const bookCard =
+    p && asMentee ? (
+      notTaking ? (
+        <NotTakingNote firstName={p.mentor.firstName} similarBelow={similarShown} />
+      ) : (
+        <div id="profile-book" ref={setBookEl} className={styles.scrollTarget}>
+          <BookSessionCard
+            sessionTypes={p.sessionTypes}
+            timeZone={timeZone}
+            onBook={booking.open}
+            onCompare={sessionsTab ? () => setTab('sessions') : undefined}
+            bookBlocked={shownBlock}
+            bookDisabled={viewing}
+          />
+        </div>
+      )
+    ) : null;
+  // Phones: a floating Book once that card has scrolled up out of view. Only
+  // where the card is and can book: not in either preview, nor over a dialog.
+  const bookPillOn =
+    isPhone && tab !== 'sessions' && showBook && !viewing && !previewing && canStartBooking;
+  // Past means gone under the sticky header, not off the screen's top.
+  const bookPassed = useScrolledPast(bookPillOn ? bookEl : null, shellHeader);
+  const dialogOpen = !!booking.active || shareOpen || !!reviews.reviewing || !!messaging;
 
   // Design reply #45: under 3 sessions, an invitation (mentees) or what mentees
   // see (owner). Desktop: top of the aside (Overview only, like the aside).
@@ -480,7 +521,8 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   if (detour) return null;
   return (
     <>
-      <div className={styles.page}>
+      {/* Room for the pill under the last card, kept whenever it may show so nothing jumps. */}
+      <div className={cx(styles.page, bookPillOn && styles.pillRoom)}>
         {profile.isLoading ? (
           <ProfileSkeleton />
         ) : profile.error && !p ? (
@@ -658,6 +700,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             />
 
             {isPhone && firstMentees}
+            {isPhone && tab !== 'sessions' && bookCard}
 
             <div className={styles.cols}>
               {/* Overview stays in the page while the owner edits: a tab switch
@@ -747,12 +790,12 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                 </TabPanel>
               )}
               {tab !== 'sessions' &&
-                // Never an empty named landmark (the owner's Reviews tab can hold nothing).
-                (asMentee ||
-                  tab === 'overview' ||
-                  track ||
+                // Exactly what it holds: never an empty named landmark (a phone
+                // mentee on a new mentor, the owner's Reviews tab).
+                ((!isPhone && (!!bookCard || !!firstMentees)) ||
                   strengthShown ||
-                  (!isPhone && !!firstMentees)) && (
+                  track ||
+                  similarShown) && (
                   <aside
                     className={styles.aside}
                     aria-label={asideLabel}
@@ -760,21 +803,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
                     onClickCapture={profileLinkSource('similar_mentors')}
                   >
                     {!isPhone && firstMentees}
-                    {asMentee &&
-                      (notTaking ? (
-                        <NotTakingNote firstName={p.mentor.firstName} similarBelow={similarShown} />
-                      ) : (
-                        <div id="profile-book" className={styles.scrollTarget}>
-                          <BookSessionCard
-                            sessionTypes={p.sessionTypes}
-                            timeZone={timeZone}
-                            onBook={booking.open}
-                            onCompare={sessionsTab ? () => setTab('sessions') : undefined}
-                            bookBlocked={shownBlock}
-                            bookDisabled={viewing}
-                          />
-                        </div>
-                      ))}
+                    {!isPhone && bookCard}
                     {strengthShown && completeness && (
                       <ProfileStrengthCard
                         id={STRENGTH_ID}
@@ -875,6 +904,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           note={shareNote}
           onClose={() => setShareOpen(false)}
         />
+      )}
+
+      {bookPillOn && bookPassed && !dialogOpen && (
+        <BookPill onBook={scrollToBook} onFocusLost={focusBook} />
       )}
 
       <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />
