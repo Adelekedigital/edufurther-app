@@ -1,5 +1,6 @@
 import type { BookingParty } from '@/types/booking';
 import type { Mentor } from '@/types/mentor';
+import { mentorProfilePath } from './mentorPath';
 
 /** What a screen knows of a mentor it books again from outside Explore or the profile. */
 export type BookableIdentity = Pick<
@@ -44,13 +45,14 @@ export function bookableMentor(m: BookableIdentity): Mentor {
 
 /**
  * A session's other party (the mentor, on a mentee's session) for Book again
- * on Session Join. The row carries no handle or session count: the profile
- * route takes the id, and the count isn't shown with `ratingUnknown`.
+ * on Session Join. The row carries no slug or session count (PartyRead omits
+ * both): the profile route takes the id and 308s it to the slug, and the count
+ * isn't shown with `ratingUnknown`.
  */
 export function partyToMentor(p: BookingParty): Mentor {
   return bookableMentor({
     id: p.id,
-    profileHref: `/mentors/${encodeURIComponent(p.id)}`,
+    profileHref: mentorProfilePath(p),
     name: p.name,
     firstName: p.firstName,
     initials: p.initials,

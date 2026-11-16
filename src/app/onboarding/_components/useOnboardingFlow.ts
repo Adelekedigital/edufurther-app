@@ -15,6 +15,7 @@ import { track } from '@/lib/analytics/track';
 import { useOnLeave } from '@/lib/analytics/useOnLeave';
 import { markBookingDraftFinished } from '@/lib/utils/bookingDraft';
 import { parseGuestBooking, type GuestBooking } from '@/lib/utils/guestBooking';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { EMPTY_PLANS, missingHelp, missingPlans } from '@/lib/utils/onboardingAnswers';
 import type { PlanAnswers } from '@/types/onboarding';
 
@@ -63,9 +64,7 @@ function startFrom(s: OnboardingState): Form {
  */
 /** The mentor's page, reopening the booking that was put down (round 4, `after=booking`). */
 function bookingReturn(g: GuestBooking): string {
-  const q = new URLSearchParams({ book: g.sid });
-  if (g.time) q.set('at', g.time);
-  return `/mentors/${g.handle}?${q.toString()}`;
+  return mentorProfilePath({ id: g.handle }, { book: g.sid, at: g.time ?? undefined });
 }
 
 export function useOnboardingFlow() {

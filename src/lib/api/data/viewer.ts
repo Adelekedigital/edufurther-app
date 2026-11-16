@@ -32,6 +32,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
   return {
     kind: 'member',
     id: me.id,
+    slug: me.slug ?? null,
     firstName: name,
     initials: personInitials(me.first_name, me.last_name, me.email),
     isMentee: me.goal != null,

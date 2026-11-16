@@ -21,6 +21,7 @@ import {
   useSetLive,
 } from '@/lib/api/data/sessionTypes';
 import { formatShortDate } from '@/lib/utils/format';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { SESSION_TEMPLATES, templateHint } from '@/lib/utils/sessionTemplates';
 import { nextRemaining } from '@/lib/utils/nextRemaining';
 import { useLatest } from '@/lib/utils/useLatest';
@@ -156,9 +157,7 @@ export function SessionTypesScreen() {
   // Only once we know whose profile it is (no broken link while the account loads).
   // /me carries no profile slug, so the id: the profile route takes either.
   const shareUrl = (t: OwnSessionType) =>
-    member
-      ? `${origin}/mentors/${encodeURIComponent(member.id)}?book=${encodeURIComponent(t.id)}`
-      : null;
+    member ? `${origin}${mentorProfilePath(member, { book: t.id })}` : null;
 
   const [confirming, setConfirming] = useState<OwnSessionType | null>(null);
   // Read when a delete answers: another row's confirm may be open by then.
