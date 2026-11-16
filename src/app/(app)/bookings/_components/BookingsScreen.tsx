@@ -29,6 +29,7 @@ import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { BOOKINGS_GATE, lockedPageGate, memberGate } from '@/app/_shell/MentorGate';
 import { cx } from '@/lib/utils/cx';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
 import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
@@ -617,9 +618,11 @@ export function BookingsScreen() {
                         // the offered time. The held slot is listed for this
                         // mentee alone, so the ordinary flow is all it takes —
                         // no special path, and the booking limits still apply.
-                        const href = `/mentors/${open.other.id}?book=${encodeURIComponent(
-                          open.sessionTypeId ?? '',
-                        )}&at=${encodeURIComponent(open.suggestion!.startsAt)}`;
+                        // The party carries no slug (PartyRead): the id 308s to it.
+                        const href = mentorProfilePath(open.other, {
+                          book: open.sessionTypeId ?? '',
+                          at: open.suggestion!.startsAt,
+                        });
                         noteProfileSource('bookings', href);
                         router.push(href);
                       }

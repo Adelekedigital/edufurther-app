@@ -33,6 +33,7 @@ import { SAVE_COPY } from '@/lib/copy/settings';
 import { coverVars, topicIcon } from '@/lib/utils/cover';
 import { personCover } from '@/lib/utils/person';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { useAssistOutcome } from '@/app/_shell/useAssistOutcome';
 import { checkFullName, NAME_PROBLEM_COPY, tidyName } from '@/lib/utils/name';
 import { useRequiredFields } from '@/lib/utils/useRequiredFields';
@@ -282,7 +283,7 @@ export const MentorProfilePanel = forwardRef<PanelHandle, { userId: string }>(
                 <span className={styles.previewLabel}>{C.preview}</span>
                 {handle && (
                   <Link
-                    href={`/mentors/${encodeURIComponent(handle)}`}
+                    href={mentorProfilePath({ handle, id: userId })}
                     prefetch={false}
                     className={styles.openProfile}
                   >

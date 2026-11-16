@@ -20,6 +20,7 @@ describe('lookupMentorPreviewOnServer', () => {
     get.mockResolvedValue({ data: MENTOR_PROFILE });
     expect(await lookupMentorPreviewOnServer('gbenga', '')).toEqual({
       id: 'm-1',
+      slug: null,
       name: 'Gbenga Elufisan',
       initials: 'GE',
       cover: 'mint',
@@ -48,6 +49,11 @@ describe('lookupMentorPreviewOnServer', () => {
       data: { ...MENTOR_PROFILE, avatar_url: 'https://tracker.test/p.gif' },
     });
     expect((await lookupMentorPreviewOnServer('gbenga', ''))?.photoUrl).toBeNull();
+  });
+
+  it('carries the slug, for the canonical address and the id link’s redirect', async () => {
+    get.mockResolvedValue({ data: { ...MENTOR_PROFILE, slug: 'gbenga-e' } });
+    expect((await lookupMentorPreviewOnServer('gbenga-e', ''))?.slug).toBe('gbenga-e');
   });
 
   it('null for a hidden or missing profile (404), a failure, or no name', async () => {

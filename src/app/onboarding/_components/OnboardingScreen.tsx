@@ -23,6 +23,7 @@ import {
 } from '@/lib/copy/onboarding';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { basedOnLine } from '@/lib/utils/matchReason';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import { cx } from '@/lib/utils/cx';
@@ -101,8 +102,9 @@ export function OnboardingScreen() {
     const guestMentor =
       f.guestMentor ??
       (f.guest
-        ? (m?.matches.find((x) => x.mentor.profileHref === `/mentors/${f.guest!.handle}`)?.mentor ??
-          null)
+        ? (m?.matches.find(
+            (x) => x.mentor.profileHref === mentorProfilePath({ id: f.guest!.handle }),
+          )?.mentor ?? null)
         : null);
     // Their own answers until the server's basis arrives, so the line never reads blank.
     const label = (id: string) => f.countries.find((c) => c.id === id)?.label ?? null;
@@ -301,7 +303,9 @@ export function OnboardingScreen() {
         // Every booking from onboarding: their own mentor back from Book, or a match.
         entryPoint="onboarding_guest"
         // Their own mentor from Book: back on the questions with the time they picked.
-        {...(bookMentor && f.guest && bookMentor.profileHref === `/mentors/${f.guest.handle}`
+        {...(bookMentor &&
+        f.guest &&
+        bookMentor.profileHref === mentorProfilePath({ id: f.guest.handle })
           ? {
               initialTime: f.guest.time,
               initialSessionTypeId: f.guest.sid,

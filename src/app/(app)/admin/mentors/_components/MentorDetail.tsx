@@ -13,6 +13,7 @@ import { MENTOR_DRAWER as D, MENTOR_TABLE } from '@/lib/copy/adminMentors';
 import { cx } from '@/lib/utils/cx';
 import { educationTitle } from '@/lib/utils/educationLine';
 import { formatShortDate } from '@/lib/utils/format';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { zoneLabel } from '@/lib/utils/timezones';
 import { tierWord, waitLine } from './mentorLines';
 import { tierTone } from './mentorList';
@@ -51,15 +52,17 @@ function bookingsTag(b: AdminBooking, status: 'noShow' | 'cancelled') {
   return { label: tag?.label ?? '', tone: (tag?.tone ?? 'pending') as TagTone };
 }
 
-const profileHref = (m: AdminMentorDetail) => `/mentors/${encodeURIComponent(m.handle ?? m.id)}`;
-
 /** A fact's value: plain text (coloured by `tone`), or a new-tab link. */
 type FactRow = { label: string; text: string; href?: string; tone?: string | null };
 
 function facts(m: AdminMentorDetail, zone: string): FactRow[] {
   const d = (iso: string | null) => (iso ? formatShortDate(iso, zone) : '');
   const tz = { label: D.facts.timeZone, text: m.timeZone ? zoneLabel(m.timeZone) : '' };
-  const profile = { label: D.facts.profile, text: D.facts.viewAsMentee, href: profileHref(m) };
+  const profile = {
+    label: D.facts.profile,
+    text: D.facts.viewAsMentee,
+    href: mentorProfilePath(m),
+  };
   const linkedin = m.linkedinUrl
     ? [{ label: D.facts.linkedin, text: D.facts.viewLinkedin, href: m.linkedinUrl }]
     : [];
