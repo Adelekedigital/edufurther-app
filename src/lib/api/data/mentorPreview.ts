@@ -27,6 +27,8 @@ export const isMentorHandle = (handle: string) => HANDLE.test(handle);
 /** What a mentor's link preview shows: only what the public profile shows. */
 export type MentorPreview = {
   id: string;
+  /** The readable address; null until the backend gives them one (the id stands in). */
+  slug: string | null;
   name: string;
   initials: string;
   cover: CoverKey;
@@ -47,6 +49,7 @@ export function toMentorPreview(
   if (!name) return null;
   return {
     id: r.id,
+    slug: r.slug || null,
     name,
     initials: personInitials(first, last, name),
     cover: personCover(r.id, coverKey(r.cover_color)),

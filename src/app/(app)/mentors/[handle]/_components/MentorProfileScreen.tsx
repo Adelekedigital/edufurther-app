@@ -193,7 +193,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const ownUrl = !!member && handle === member.id;
   const detour = useSetupDetour(viewer, isOwner || ownUrl);
   // A visitor's view (PRD 30): the owner looking at their own page isn't one.
-  useProfileViewed(handle, !!p && viewer.kind !== 'loading' && !isOwner && !ownUrl);
+  useProfileViewed(handle, !!p && viewer.kind !== 'loading' && !isOwner && !ownUrl, p?.mentor.id);
   // "View as mentee" (Mentor Profile.dc.html `pvw`): the owner sees the page as
   // a mentee does, with Book drawn but off. Page state: a reload is back to editing.
   const [previewOn, setPreview] = useState(false);

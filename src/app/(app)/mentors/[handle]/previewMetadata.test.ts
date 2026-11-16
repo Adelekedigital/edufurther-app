@@ -42,8 +42,19 @@ describe('mentorPreviewMetadata', () => {
     expect(m.description).toBe('MSc Computer Science · University of Toronto.');
   });
 
+  it('one canonical address per mentor: the slug once they have one, else the id', () => {
+    const slugged = mentorPreviewMetadata(preview({ ...MENTOR_PROFILE, slug: 'gbenga-e' }));
+    expect(slugged.alternates?.canonical).toBe('/mentors/gbenga-e');
+    expect(slugged.openGraph).toMatchObject({ url: '/mentors/gbenga-e' });
+    const idOnly = mentorPreviewMetadata(preview(MENTOR_PROFILE));
+    expect(idOnly.alternates?.canonical).toBe('/mentors/m-1');
+    expect(idOnly.openGraph).toMatchObject({ url: '/mentors/m-1' });
+  });
+
   it('falls back to the generic preview, never an error, when there is no profile', () => {
     const m = mentorPreviewMetadata(null);
+    expect(m.alternates).toBeUndefined();
+    expect(m.openGraph).not.toHaveProperty('url');
     expect(m.title).toBe('Mentor profile');
     expect(m.openGraph).toMatchObject({
       title: 'Find a mentor on EduFurther',

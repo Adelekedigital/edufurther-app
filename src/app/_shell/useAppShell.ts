@@ -15,6 +15,7 @@ import { MESSAGES_LIVE } from '@/lib/config/messages';
 import { LIST_COPY } from '@/lib/copy/messages';
 import { useViewer } from '@/lib/api/data/viewer';
 import { accessFor, inSetup, isUnder, setupCredits, type Access } from '@/lib/utils/access';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { personCover } from '@/lib/utils/person';
 import { setAppBadge } from '@/lib/utils/push';
 import { creditsView } from '@/lib/utils/credits';
@@ -80,7 +81,7 @@ export function accountItems(
             key: 'profile',
             label: 'View profile',
             icon: 'account_box' as const,
-            href: `/mentors/${encodeURIComponent(member.id)}`,
+            href: mentorProfilePath(member),
           },
         ]
       : []),

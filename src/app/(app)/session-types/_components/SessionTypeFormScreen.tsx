@@ -20,6 +20,7 @@ import {
 import { useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { VIDEO_LABELS } from '@/lib/copy/integrations';
 import { SESSIONS_COPY, WIZARD_COPY } from '@/lib/copy/sessionTypes';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { SESSION_TEMPLATES } from '@/lib/utils/sessionTemplates';
 import { typeLength, weeklySummary, type Draft } from '@/lib/utils/sessionTypeDraft';
 import { useAppShell } from '@/app/_shell/useAppShell';
@@ -270,7 +271,7 @@ export function SessionTypeFormScreen({
         <SavedModal
           name={d.draft.name.trim()}
           live={edit.saved.read.is_active}
-          profileHref={member ? `/mentors/${member.id}` : null}
+          profileHref={member ? mentorProfilePath(member) : null}
           onDone={toList}
         />
       )}
@@ -278,7 +279,7 @@ export function SessionTypeFormScreen({
         <PublishedModal
           name={d.draft.name.trim()}
           created={modal.created}
-          profileHref={member ? `/mentors/${member.id}` : LIST}
+          profileHref={member ? mentorProfilePath(member) : LIST}
           retrying={retry.isPending}
           onRetry={async () => {
             const still = await retry.retry({
