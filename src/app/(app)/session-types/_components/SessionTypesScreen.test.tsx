@@ -2,6 +2,8 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
+import { track } from '@/lib/analytics/track';
+import { recordProfileShare } from '@/lib/api/data/profileLinks';
 import { SessionTypesScreen } from './SessionTypesScreen';
 import {
   expectLockedPage,
@@ -13,6 +15,13 @@ import {
 } from '@/app/_shell/lockedPage.harness';
 
 const push = vi.fn();
+vi.mock('@/lib/analytics/track', async (orig) => ({
+  ...(await orig<typeof import('@/lib/analytics/track')>()),
+  track: vi.fn(),
+}));
+// The share's own record: its network side is profileLinks.test.ts.
+vi.mock('@/lib/api/data/profileLinks', () => ({ recordProfileShare: vi.fn() }));
+
 vi.mock('next/navigation', () => ({
   usePathname: () => '/session-types',
   useRouter: () => ({ push }),
@@ -811,6 +820,44 @@ describe('SessionTypesScreen', () => {
     // The copied link carries its channel, so the visit it brings counts as a copy.
     expect(write).toHaveBeenCalledWith(expect.stringMatching(/\/mentors\/m1\?book=a&via=copy$/));
     expect(await screen.findByText('Link copied')).toBeInTheDocument();
+  });
+
+  describe('a copied booking link is a share of their profile', () => {
+    const shared = () => vi.mocked(track).mock.calls.filter(([e]) => e === 'link_shared');
+    const copyWith = (writeText: () => Promise<void>) =>
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    beforeEach(() => {
+      vi.mocked(track).mockClear();
+      vi.mocked(recordProfileShare).mockClear();
+    });
+
+    it('a copy counts once: link_shared and its record, in step', async () => {
+      const user = userEvent.setup({ delay: null });
+      viewer = mentor;
+      copyWith(vi.fn().mockResolvedValue(undefined));
+      render(<SessionTypesScreen />);
+      await user.click(
+        screen.getByRole('button', { name: 'Copy share link for SOP draft review' }),
+      );
+      expect(await screen.findByText('Link copied')).toBeInTheDocument();
+      expect(shared()).toEqual([
+        ['link_shared', { kind: 'mentor_profile', method: 'copy', own: true }],
+      ]);
+      expect(recordProfileShare).toHaveBeenCalledExactlyOnceWith('m1', 'copy');
+    });
+
+    it('a refused clipboard is no share: nothing counted or recorded', async () => {
+      const user = userEvent.setup({ delay: null });
+      viewer = mentor;
+      copyWith(vi.fn().mockRejectedValue(new Error('denied')));
+      render(<SessionTypesScreen />);
+      await user.click(
+        screen.getByRole('button', { name: 'Copy share link for SOP draft review' }),
+      );
+      expect(await screen.findByText('Couldn’t copy. Try again.')).toBeInTheDocument();
+      expect(shared()).toEqual([]);
+      expect(recordProfileShare).not.toHaveBeenCalled();
+    });
   });
 
   it('Duplicate says it’s copying, then that the copy is hidden; a refusal is said on the row (review of #74)', async () => {

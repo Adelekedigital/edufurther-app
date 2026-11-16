@@ -12,7 +12,9 @@ import { SessionTypeManager } from '@/components/organisms/SessionTypeManager/Se
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useRouter } from 'next/navigation';
 import { useTopics } from '@/lib/api/data/mentors';
+import { recordProfileShare } from '@/lib/api/data/profileLinks';
 import { useDuplicateSessionType } from '@/lib/api/data/sessionTypeEdit';
+import { track } from '@/lib/analytics/track';
 import { useSessionTypeDeletes } from '@/lib/api/data/sessionTypeDeletes';
 import {
   useOwnSessionTypes,
@@ -159,6 +161,13 @@ export function SessionTypesScreen() {
   // Only ever copied, never shown, so it carries its channel (`via=copy`) as built.
   const shareUrl = (t: OwnSessionType) =>
     member ? `${origin}${mentorProfilePath(member, { book: t.id, via: 'copy' })}` : null;
+  // A copied link is a share of their own profile, counted like every other
+  // copy of it: the event and our own record, in step.
+  const onShareCopied = () => {
+    if (!member) return;
+    track('link_shared', { kind: 'mentor_profile', method: 'copy', own: true });
+    recordProfileShare(member.id, 'copy');
+  };
 
   const [confirming, setConfirming] = useState<OwnSessionType | null>(null);
   // Read when a delete answers: another row's confirm may be open by then.
@@ -329,6 +338,7 @@ export function SessionTypesScreen() {
       onFocused={onFocused}
       onDuplicate={onDuplicate}
       shareUrl={shareUrl}
+      onShareCopied={onShareCopied}
       createHref={CREATE_HREF}
       templates={TEMPLATES}
       limit={member?.sessionTypeLimit ?? null}
