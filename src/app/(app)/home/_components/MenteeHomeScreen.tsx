@@ -40,6 +40,7 @@ import { goalLineFrom, recommendedFrom } from './recommended';
 import { useNewMentee } from './useNewMentee';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import styles from './MenteeHomeScreen.module.css';
+import { scrollBehavior } from '@/lib/utils/scrollBehavior';
 
 // Each opens from a button (or ?invite=open), never at first paint: they load
 // on open (performance budget, 350kB first-load JS) and mount whole, so their
@@ -231,8 +232,7 @@ export function MenteeHomeScreen() {
     scrollPending.current = false;
     // Recommended when it's there; else the Mentors block (Book again alone).
     const el = document.getElementById(RECOMMENDED_ID) ?? document.getElementById(MENTORS_ID);
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    el?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    el?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
     el?.focus({ preventScroll: true });
   }, [recRequest, profileOpen]);
 

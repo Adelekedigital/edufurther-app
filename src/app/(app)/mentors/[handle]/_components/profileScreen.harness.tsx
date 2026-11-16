@@ -54,6 +54,8 @@ export const h = {
   isGuest: false,
   viewerIsMentor: false,
   viewerLoading: false,
+  /** An admin's "Preview as user" is on (useAppShell `previewing`). */
+  previewingAsUser: false,
   /** Signed in but blocked from booking (e.g. account setup): bookBlockedFor says why. */
   viewerUnlinked: false,
   /** More about the signed-in member (e.g. a setup state); reset to none. */
@@ -262,6 +264,7 @@ const appShellMock = () => ({
       chrome: 'member',
       account: undefined,
       canBook: !h.viewerIsMentor,
+      previewing: h.previewingAsUser,
     };
   },
 });
@@ -551,6 +554,7 @@ beforeEach(() => {
   h.isGuest = false;
   h.viewerIsMentor = false;
   h.viewerLoading = false;
+  h.previewingAsUser = false;
   h.viewerUnlinked = false;
   h.viewerExtra = {};
   h.reviewsRemote = reviewsState();

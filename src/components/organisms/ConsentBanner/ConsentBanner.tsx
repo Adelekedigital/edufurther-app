@@ -39,7 +39,8 @@ export const ConsentBanner = forwardRef<HTMLElement, ConsentBannerProps>(functio
   const moreId = useId();
   const [open, setOpen] = useState(false);
   return (
-    <section ref={ref} className={styles.banner} aria-labelledby={titleId}>
+    // Floating pills step aside while it shows (FloatingPill): same bottom band.
+    <section ref={ref} className={styles.banner} aria-labelledby={titleId} data-bottom-overlay>
       <IconButton
         icon="close"
         size="lg"
