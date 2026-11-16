@@ -19,6 +19,7 @@ const { default: Image, revalidate } = await import('./opengraph-image');
 
 const MENTOR: MentorPreview = {
   id: 'm-1',
+  slug: 'gbenga',
   name: 'Gbenga Elufisan',
   initials: 'GE',
   cover: 'mint',

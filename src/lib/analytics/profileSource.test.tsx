@@ -19,6 +19,14 @@ describe('profileSource: where a profile visit came from', () => {
     expect(takeProfileSource('chidi', new URLSearchParams('tab=reviews'))).toBe('direct');
   });
 
+  it('a source noted on an id link is taken when the profile opens by slug (the 308)', () => {
+    noteProfileSource('bookings', '/mentors/3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b?book=t-1');
+    expect(takeProfileSource(['gbenga-e', '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b'], none)).toBe(
+      'bookings',
+    );
+    expect(takeProfileSource(['gbenga-e', undefined], none)).toBe('direct');
+  });
+
   it('gives the noted source to that profile once, and to no other', () => {
     noteProfileSource('explore', '/mentors/chidi-n?tab=reviews');
     expect(takeProfileSource('chidi-n', none)).toBe('explore');

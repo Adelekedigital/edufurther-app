@@ -9,6 +9,7 @@ import { api } from './http';
 import { keys } from './keys';
 import { bookableMentor } from '@/lib/utils/bookableMentor';
 import { coverKey } from '@/lib/utils/cover';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import { sessionKey, useSession } from './session';
 
@@ -86,7 +87,7 @@ export function toMetMentor(r: MetMentorRead): MetMentor {
 export function toBookingMentor(m: MetMentor): Mentor {
   return bookableMentor({
     id: m.id,
-    profileHref: `/mentors/${encodeURIComponent(m.slug ?? m.id)}`,
+    profileHref: mentorProfilePath(m),
     name: m.name,
     firstName: m.firstName,
     initials: m.initials,

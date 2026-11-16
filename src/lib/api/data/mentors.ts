@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { coverKey } from '@/lib/utils/cover';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { clampFocus, personCover, personInitials } from '@/lib/utils/person';
 import type { AppError, FeaturedMentor, Mentor, NextAvailableState, Topic } from '@/types/mentor';
 import { api } from './http';
@@ -82,7 +83,7 @@ export function toMentor(r: MentorSummaryRead): Mentor {
   const rating = r.session_value ?? null;
   return {
     id: r.id,
-    profileHref: `/mentors/${encodeURIComponent(r.slug || r.id)}`,
+    profileHref: mentorProfilePath(r),
     name,
     firstName: first || name.split(' ')[0] || name,
     initials: personInitials(first, last, name),

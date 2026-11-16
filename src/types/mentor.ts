@@ -204,6 +204,8 @@ export type Viewer =
   | {
       kind: 'member';
       id: string;
+      /** The profile's readable address (`/me` slug); absent or null: the id stands in. */
+      slug?: string | null;
       firstName: string;
       /** Two letters, first and last name (`personInitials`); the email's first letter with neither. */
       initials: string;

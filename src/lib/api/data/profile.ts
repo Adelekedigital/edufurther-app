@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { coverArt, coverKey } from '@/lib/utils/cover';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { stageText } from '@/lib/utils/stageText';
 import { markOf } from '@/lib/utils/socialLinks';
 import { safeSocialUrl } from '@/lib/utils/socialUrl';
@@ -103,7 +104,7 @@ export function toMentorProfile(r: MentorPublicRead): MentorProfile {
 
   const mentor: Mentor = {
     id: r.id,
-    profileHref: `/mentors/${encodeURIComponent(r.slug || r.id)}`,
+    profileHref: mentorProfilePath(r),
     name,
     firstName: first || name.split(' ')[0] || name,
     initials: personInitials(first, last, name),

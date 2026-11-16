@@ -7,6 +7,7 @@ import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { CHAT_COPY } from '@/lib/copy/messages';
 import { formatNextAvailable } from '@/lib/utils/format';
+import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import type { ChatPerson, NextBooking } from '@/types/messages';
 import { personLine } from './chatRows';
 import styles from './ChatPane.module.css';
@@ -17,7 +18,7 @@ import styles from './ChatPane.module.css';
  */
 export function profileHref(person: ChatPerson, viewerIsMentee: boolean): string | null {
   return viewerIsMentee && person.role === 'mentor' && person.state !== 'closed'
-    ? `/mentors/${encodeURIComponent(person.handle ?? person.id)}`
+    ? mentorProfilePath(person)
     : null;
 }
 

@@ -75,6 +75,12 @@ describe('MentorProfileScreen: mentor_profile_viewed (PRD 30)', () => {
     expect(views()).toEqual([['mentor_profile_viewed', { source: 'explore' }]]);
   });
 
+  it('a source noted on an id link counts when the 308 opens the profile by slug', () => {
+    noteProfileSource('bookings', `/mentors/${fullProfile.mentor.id}?book=t-1`);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(views()).toEqual([['mentor_profile_viewed', { source: 'bookings' }]]);
+  });
+
   it('invite_link when the URL carries the invite context', () => {
     h.search = new URLSearchParams('ref=invite');
     render(<MentorProfileScreen handle="gbenga" />);
