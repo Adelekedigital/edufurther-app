@@ -291,7 +291,9 @@
   /* What the tab bar covers: scrolling to a focused control stops above it
      (WCAG 2.4.11), and a menu low on the page opens upward (RowMenu). */
   :global(html):has(.tabs) {
-    scroll-padding-bottom: calc(56px + env(safe-area-inset-bottom));
+    /* The bottom chrome's height (tokens: --bottom-chrome-h), for floating UI. */
+    --bottom-chrome-h: calc(56px + env(safe-area-inset-bottom));
+    scroll-padding-bottom: var(--bottom-chrome-h);
   }
   .tabs {
     position: fixed;
@@ -443,6 +445,13 @@
 @media (max-width: 767px) {
   .guestActions {
     display: none;
+  }
+  /* The guest bar is the bottom chrome for guests: 12px padding, a Large
+     button, 12px plus the safe area, and its hairline. */
+  :global(html):has(.guestBar) {
+    --bottom-chrome-h: calc(
+      var(--button-h-large) + var(--space-6) + var(--border-hairline) + env(safe-area-inset-bottom)
+    );
   }
   .guestBar {
     position: sticky;
