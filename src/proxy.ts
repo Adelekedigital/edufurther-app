@@ -90,6 +90,11 @@ export function proxy(request: NextRequest) {
   const slash = withoutTrailingSlash(request);
   if (slash) return slash;
   if (path === '/api/v1' || path.startsWith('/api/v1/')) return forwardToBackend(request);
+  // The app has no server actions ('use server'), so a request naming one is a
+  // probe. Unanswered, Next renders not-found without the root layout and
+  // fails with a 500, a full render per probe. Refused here instead. Adding a
+  // server action means removing this.
+  if (request.headers.has('next-action')) return new NextResponse(null, { status: 404 });
   return refreshSessionCookies(request, ({ userId, accessToken }) => {
     // Signed out (verified: null, not a failed check) on a members-only page:
     // to log in before any of it is drawn, then back here (owner, 2026-11-12).
