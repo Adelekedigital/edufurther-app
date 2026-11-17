@@ -280,12 +280,14 @@ export function AdminMentorsScreen() {
           active={active}
           onClear={() => changeFilters(NO_FILTERS)}
           actions={
-            listStatus === 'ready' && visible.length > 0 ? (
+            listStatus === 'ready' ? (
               // The rows on screen, search and filters applied (roadmap:
-              // Admin mentor review v2).
+              // Admin mentor review v2). Mounted while the list is ready, so
+              // a refresh that empties it never takes focus away.
               <ExportCsvButton
                 label={MENTOR_TABLE.exportCsv}
-                filename={mentorCsvFilename(tab, zone)}
+                emptyReason={MENTOR_TABLE.exportCsvEmpty}
+                filename={() => mentorCsvFilename(tab, zone)}
                 columns={mentorCsvColumns(tab, zone)}
                 rows={visible}
               />

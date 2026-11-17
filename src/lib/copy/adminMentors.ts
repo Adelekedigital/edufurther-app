@@ -116,6 +116,7 @@ export const MENTOR_TABLE = {
   loading: 'Loading mentors',
   /** Exports the rows on screen; the filter row's count says how many. */
   exportCsv: 'Export CSV',
+  exportCsvEmpty: 'No mentors on screen to export',
 };
 
 /** The CSV's headers: plain values a spreadsheet can sort, dates as YYYY-MM-DD. */

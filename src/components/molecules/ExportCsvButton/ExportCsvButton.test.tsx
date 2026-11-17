@@ -40,6 +40,42 @@ describe('ExportCsvButton', () => {
     expect(onExported).toHaveBeenCalledWith(2);
   });
 
+  it('names the file at the click, so a page left open overnight says today', async () => {
+    Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:csv'), revokeObjectURL: vi.fn() });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    let day = '2026-11-17';
+    render(
+      <ExportCsvButton
+        filename={() => `edufurther-x-${day}.csv`}
+        columns={columns}
+        rows={[{ name: 'Ada', sessions: 1 }]}
+      />,
+    );
+    day = '2026-11-18';
+    await userEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+    expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe(
+      'edufurther-x-2026-11-18.csv',
+    );
+  });
+
+  it('with no rows it stays focusable but unavailable, and says why', async () => {
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    render(
+      <ExportCsvButton
+        filename="x.csv"
+        columns={columns}
+        rows={[]}
+        emptyReason="Nothing to export"
+      />,
+    );
+    const button = screen.getByRole('button', { name: 'Export CSV' });
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveAccessibleDescription('Nothing to export');
+    await userEvent.click(button);
+    expect(click).not.toHaveBeenCalled();
+  });
+
   it('takes the page’s own words', () => {
     render(
       <ExportCsvButton label="Download my sessions" filename="x.csv" columns={columns} rows={[]} />,

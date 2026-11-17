@@ -193,11 +193,21 @@ describe('AdminMentorsScreen: the list', () => {
     }
   });
 
-  it('Export CSV is not offered while nothing is on screen', async () => {
+  it('Export CSV stays in place but unavailable, saying why, while nothing is on screen', async () => {
     await serveFromStore({ '/api/v1/admin/mentors': () => res({ data: [], next_cursor: null }) });
-    renderScreen(<AdminMentorsScreen />);
-    expect(await screen.findByText('No applications waiting')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Export CSV' })).toBeNull();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      renderScreen(<AdminMentorsScreen />);
+      expect(await screen.findByText('No applications waiting')).toBeInTheDocument();
+      const button = screen.getByRole('button', { name: 'Export CSV' });
+      expect(button).toHaveAttribute('aria-disabled', 'true');
+      expect(button).toHaveAccessibleDescription('No mentors on screen to export');
+      await user.click(button);
+      expect(click).not.toHaveBeenCalled();
+    } finally {
+      click.mockRestore();
+    }
   });
 
   it('Copy emails says so visibly when the clipboard refuses', async () => {
