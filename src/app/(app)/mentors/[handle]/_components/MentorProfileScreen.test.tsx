@@ -463,6 +463,22 @@ describe('MentorProfileScreen — new mentors (design reply #45)', () => {
     expect(screen.getByRole('button', { name: 'Share your profile' })).toHaveFocus();
   });
 
+  it('the owner’s Reviews tab on desktop keeps the side column with what mentees see (issue 41)', async () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({
+      data: newMentor(2, {
+        owner: { approval: 'approved', listed: true },
+        reviews: { ...fullProfile.reviews, count: 1 },
+      }),
+    });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('tab', { name: /Reviews/, selected: true })).toBeInTheDocument();
+    const aside = screen.getByRole('complementary');
+    expect(
+      within(aside).getByRole('heading', { name: 'Mentees see you as a new mentor' }),
+    ).toBeInTheDocument();
+  });
+
   it('a visitor’s header Share opens the modal named for the mentor', async () => {
     const user = userEvent.setup();
     h.profile = state({ data: fullProfile });

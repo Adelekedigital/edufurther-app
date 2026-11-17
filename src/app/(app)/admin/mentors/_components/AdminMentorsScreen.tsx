@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { ExportCsvButton } from '@/components/molecules/ExportCsvButton/ExportCsvButton';
 import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { SearchField } from '@/components/molecules/SearchField/SearchField';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
@@ -42,6 +43,7 @@ import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZo
 import { MentorBulkBar } from './MentorBulkBar';
 import { MentorDialogs, type MentorDialog } from './MentorDialogs';
 import { MentorDrawer, type DrawerAction } from './MentorDrawer';
+import { mentorCsvColumns, mentorCsvFilename } from './mentorCsv';
 import { MentorFilterBar } from './MentorFilterBar';
 import { filtersActive, NO_FILTERS, visibleMentors, type MentorFilters } from './mentorList';
 import { MentorSummaryCards } from './MentorSummaryCards';
@@ -277,6 +279,20 @@ export function AdminMentorsScreen() {
           total={rows.length}
           active={active}
           onClear={() => changeFilters(NO_FILTERS)}
+          actions={
+            listStatus === 'ready' ? (
+              // The rows on screen, search and filters applied (roadmap:
+              // Admin mentor review v2). Mounted while the list is ready, so
+              // a refresh that empties it never takes focus away.
+              <ExportCsvButton
+                label={MENTOR_TABLE.exportCsv}
+                emptyReason={MENTOR_TABLE.exportCsvEmpty}
+                filename={() => mentorCsvFilename(tab, zone)}
+                columns={mentorCsvColumns(tab, zone)}
+                rows={visible}
+              />
+            ) : null
+          }
         />
         {/* Phones hide the table header, where the copy icon lives: the same
             control as a small button there (review of PR 613). */}

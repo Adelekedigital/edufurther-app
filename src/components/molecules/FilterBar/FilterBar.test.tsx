@@ -81,6 +81,25 @@ describe('FilterBar', () => {
     expect(screen.queryByText(/Showing/)).toBeNull();
   });
 
+  it('the list’s actions sit in the bar, after the count', () => {
+    render(
+      <FilterBar
+        label="Filters"
+        fields={[]}
+        count="Showing 3 of 3"
+        clearLabel="Clear filters"
+        active={false}
+        onClear={() => {}}
+        actions={<button type="button">Export CSV</button>}
+      />,
+    );
+    const group = screen.getByRole('group', { name: 'Filters' });
+    const action = screen.getByRole('button', { name: 'Export CSV' });
+    expect(group).toContainElement(action);
+    const count = screen.getByText('Showing 3 of 3');
+    expect(count.compareDocumentPosition(action) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('Clear filters, with no lead: focus goes to the first filter', async () => {
     render(<Host />);
     await pickAdmins();
