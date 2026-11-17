@@ -220,6 +220,14 @@ describe('MentorProfileScreen on phones: one session in the card (owner, 17 Nov)
     expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions', { scroll: false });
   });
 
+  it('not taking bookings: no card, so two sessions bring no Sessions tab (as on desktop)', () => {
+    const two = sessionTypes.slice(0, 2);
+    h.sessionTypesRemote = remote(two);
+    h.profile = state({ data: { ...profile, sessionTypes: two, takingBookings: false } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('tab', { name: /Sessions/ })).toBeNull();
+  });
+
   it('desktop keeps two in the card, and no Sessions tab for two sessions', () => {
     phone(false);
     const two = sessionTypes.slice(0, 2);

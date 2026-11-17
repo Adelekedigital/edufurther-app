@@ -224,14 +224,16 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // (review of PR 102).
   const notTakingTab = asMentee && notTaking;
   // The Sessions (N) tab only at 3 or more: with 1 or 2 the side card lists
-  // them (PRD, 21 Oct). Phones list one, so the tab comes at 2 for its "See
-  // all" (owner, 17 Nov). The owner, editing, always has it for the controls.
+  // them (PRD, 21 Oct). A phone's booking card lists one, so there the tab
+  // comes at 2 for its "See all" (owner, 17 Nov); only where that card shows.
+  // The owner, editing, always has it for the controls.
   // A mentor not taking bookings keeps it at 3+, saying so ("Sessions (0)"):
   // as built and as drawn (PRD: not taking bookings, no change).
   const isPhone = useMediaQuery('(max-width: 767px)');
+  const phoneCard = isPhone && asMentee && !notTaking;
   const sessionsTab =
     editing ||
-    (p?.sessionTypes.length ?? 0) >= (isPhone ? PHONE_SESSIONS_TAB_FROM : SESSIONS_TAB_FROM);
+    (p?.sessionTypes.length ?? 0) >= (phoneCard ? PHONE_SESSIONS_TAB_FROM : SESSIONS_TAB_FROM);
   const sessionCount = notTakingTab
     ? 0
     : editing && ownActive !== null
@@ -466,6 +468,18 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
       .getElementById('profile-book')
       ?.querySelector<HTMLElement>('button, a[href]')
       ?.focus({ preventScroll: true });
+  // Booking hands focus back to its opener. The Book pill can be drawn anew
+  // while it's open (back online, a guest signing up inside it), leaving the
+  // old one detached: then the live pill, else the card, never <body>.
+  const closeBooking = () => {
+    booking.close();
+    requestAnimationFrame(() => {
+      if (document.activeElement && document.activeElement !== document.body) return;
+      const pillButton = document.querySelector<HTMLElement>('[data-floating-pill] button');
+      if (pillButton) pillButton.focus();
+      else focusBook();
+    });
+  };
   const scrollToBook = () => {
     document
       .getElementById('profile-book')
@@ -939,7 +953,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         initialTime={booking.initialTime}
         // On this profile the link would lead back here; a suggested mentor's is useful.
         hideProfileLink={booking.isThisMentor}
-        onClose={booking.close}
+        onClose={closeBooking}
       />
 
       {reviews.reviewing && p && member && (

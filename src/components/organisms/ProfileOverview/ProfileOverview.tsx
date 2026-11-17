@@ -10,6 +10,7 @@ import { FactTile } from '@/components/molecules/FactTile/FactTile';
 import { IconListItem } from '@/components/molecules/IconListItem/IconListItem';
 import { SocialLink } from '@/components/molecules/SocialLink/SocialLink';
 import { cx } from '@/lib/utils/cx';
+import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { MentorProfile, ProfileItem } from '@/types/mentor';
 import { movedBetween } from '@/lib/utils/format';
 import styles from './ProfileOverview.module.css';
@@ -92,6 +93,7 @@ export function ProfileOverview({
   }[];
   // "…to the United States": the same rule as the first-mentees card (copy
   // fix made here, design-divergence.md).
+  const isPhone = useMediaQuery('(max-width: 767px)');
   const move = movedBetween(p.originCountry, p.studyCountry);
   const moved = move
     ? `Has made the move from ${move.from} to ${move.to}, a path many mentees are planning.`
@@ -197,9 +199,22 @@ export function ProfileOverview({
               onAction={onEditBackground}
             />
           )}
-          {(facts.length > 0 || moved) && (
-            // Phones: one card, the facts as rows and the move its footer (owner, 17 Nov).
-            <div className={styles.bgCard}>
+          {isPhone && (facts.length > 0 || moved) ? (
+            // Phones: one card, the facts as its rows and the move its footer
+            // (owner, 17 Nov; Mentor Profile.dc.html `bgcard`).
+            <div className={cx(styles.list, styles.bgList)}>
+              {facts.map((f) => (
+                <FactTile key={f.label} row {...f} />
+              ))}
+              {moved && (
+                <p className={cx(styles.moved, styles.movedRow)}>
+                  <Icon name="flight_takeoff" size={16} className={styles.movedIcon} />
+                  {moved}
+                </p>
+              )}
+            </div>
+          ) : (
+            <>
               {facts.length > 0 && (
                 <div className={styles.facts}>
                   {facts.map((f) => (
@@ -213,7 +228,7 @@ export function ProfileOverview({
                   {moved}
                 </p>
               )}
-            </div>
+            </>
           )}
         </section>
       )}
