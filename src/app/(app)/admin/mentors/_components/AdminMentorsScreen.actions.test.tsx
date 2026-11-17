@@ -64,6 +64,27 @@ describe('the drawer', () => {
       'mailto:joshua.lorell@example.com',
     );
     expect(within(d).getByRole('button', { name: 'Suspend' })).toBeInTheDocument();
+    // Approved with no note (or in the legacy app): no note callout.
+    expect(within(d).queryByText(/^Note sent to/)).toBeNull();
+  });
+
+  it('the drawer shows the note sent with an approval (decision 350)', async () => {
+    const store = await import('@/lib/api/mock/adminMentors');
+    await serveFromStore({
+      '/api/v1/admin/mentors/{user_id}': () =>
+        res({
+          ...store.mockMentorDetail('m-jl'),
+          approved: { at: '2026-11-17T15:02:11Z', by: 'a1', message: 'Welcome aboard!' },
+        }),
+    });
+    const user = userEvent.setup();
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('tab', { name: /^Approved/ }));
+    await user.click(await screen.findByRole('button', { name: 'Open Joshua Lorell' }));
+    const d = await drawer('Joshua Lorell');
+    expect(await within(d).findByText('Note sent to Joshua')).toBeInTheDocument();
+    expect(within(d).getByText('Welcome aboard!')).toBeInTheDocument();
+    expect(within(d).getByText(/^Approved on /)).toBeInTheDocument();
   });
 
   it('a mentor who paused themselves: the reason says so, and only Email', async () => {
@@ -136,6 +157,27 @@ describe('the confirms', () => {
     });
   });
 
+  it('approve takes an optional note for the approval email, sent as `message`', async () => {
+    const user = userEvent.setup();
+    h.POST.mockResolvedValue(res({ decided: true }));
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('button', { name: 'Open Kwame Mensah' }));
+    await user.click(within(await drawer('Kwame Mensah')).getByRole('button', { name: 'Approve' }));
+    const box = within(confirmBox()).getByRole('textbox', { name: 'Note to Kwame (optional)' });
+    expect(box).not.toHaveAttribute('aria-required');
+    expect(box).toHaveAttribute('maxlength', '1000');
+    expect(within(confirmBox()).getByText(/A note from the team/)).toBeInTheDocument();
+    await user.type(box, 'Your INSEAD story is exactly what mentees ask about.');
+    await user.click(within(confirmBox()).getByRole('button', { name: 'Approve' }));
+    expect(
+      await screen.findByText('Kwame Mensah approved and listed on Explore'),
+    ).toBeInTheDocument();
+    expect(h.POST).toHaveBeenCalledWith('/api/v1/admin/mentors/{user_id}/decision', {
+      params: { path: { user_id: 'm-kw' }, query: { approve: true } },
+      body: { message: 'Your INSEAD story is exactly what mentees ask about.' },
+    });
+  });
+
   it('not approved needs the comment: error under the box, then it sends', async () => {
     const user = userEvent.setup();
     h.POST.mockResolvedValue(res({ decided: true }));
@@ -155,7 +197,7 @@ describe('the confirms', () => {
     expect(await screen.findByText('Amaka Okafor marked not approved')).toBeInTheDocument();
     expect(h.POST).toHaveBeenCalledWith('/api/v1/admin/mentors/{user_id}/decision', {
       params: { path: { user_id: 'm-ao' }, query: { approve: false } },
-      body: { reason: 'No school yet' },
+      body: { message: 'No school yet' },
     });
   });
 
@@ -202,10 +244,14 @@ describe('the confirms', () => {
     await user.click(within(bar).getByRole('button', { name: 'Approve 2' }));
     expect(within(confirmBox()).getByText('Approve 2 mentors?')).toBeInTheDocument();
     expect(within(confirmBox()).getByText('Bisi Folarin')).toBeInTheDocument();
+    await user.type(
+      within(confirmBox()).getByRole('textbox', { name: 'Note to each of them (optional)' }),
+      'Welcome aboard!',
+    );
     await user.click(within(confirmBox()).getByRole('button', { name: 'Approve 2' }));
     expect(await screen.findByText('1 approved. 1 didn’t go through.')).toBeInTheDocument();
     expect(h.POST).toHaveBeenCalledWith('/api/v1/admin/mentors/approvals', {
-      body: { user_ids: ['m-jm', 'm-bf'] },
+      body: { user_ids: ['m-jm', 'm-bf'], message: 'Welcome aboard!' },
     });
     expect(screen.getByRole('checkbox', { name: 'Select Bisi Folarin' })).toBeChecked();
     expect(screen.getByRole('checkbox', { name: 'Select Jimoh Marko' })).not.toBeChecked();

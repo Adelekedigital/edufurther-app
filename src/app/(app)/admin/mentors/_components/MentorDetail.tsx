@@ -142,6 +142,17 @@ export function MentorDetail({ mentor: m, zone }: { mentor: AdminMentorDetail; z
           </div>
         </div>
       )}
+      {m.approved?.message && (
+        <div className={cx(styles.callout, styles.grey)}>
+          <span className={styles.calloutTitle}>
+            {m.approved.at ? D.approved.title(d(m.approved.at)) : D.approved.titleUndated}
+          </span>
+          <div className={styles.line}>
+            <span>{D.approved.note(m.firstName)}</span>
+            <p>{m.approved.message}</p>
+          </div>
+        </div>
+      )}
       {m.status === 'notApproved' && m.declined && (
         <div className={cx(styles.callout, styles.grey)}>
           <span className={styles.calloutTitle}>

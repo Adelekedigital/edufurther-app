@@ -106,6 +106,9 @@
   font-size: var(--text-p-sm);
   line-height: var(--lh-p);
   text-wrap: pretty;
+  /* Typed by an admin: keep its line breaks, wrap a long link. */
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 .stats {
   display: grid;
