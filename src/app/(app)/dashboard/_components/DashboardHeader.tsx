@@ -24,6 +24,8 @@ type DashboardHeaderProps = {
   shareName: string;
   /** The profile link was copied or shared, and how. */
   onShared?: (method: ShareMethod) => void;
+  /** Counts a copy or share of the profile (profileShared). */
+  countShare: (method: ShareMethod) => void;
 };
 
 /**
@@ -36,6 +38,7 @@ export function DashboardHeader({
   shareUrl,
   shareName,
   onShared,
+  countShare,
 }: DashboardHeaderProps) {
   const [sharing, setSharing] = useState(false);
   return (
@@ -59,6 +62,7 @@ export function DashboardHeader({
           url={shareUrl}
           name={shareName}
           own
+          count={countShare}
           onShared={onShared}
           onClose={() => setSharing(false)}
         />

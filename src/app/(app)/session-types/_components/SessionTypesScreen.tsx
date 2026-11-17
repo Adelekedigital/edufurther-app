@@ -12,9 +12,8 @@ import { SessionTypeManager } from '@/components/organisms/SessionTypeManager/Se
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useRouter } from 'next/navigation';
 import { useTopics } from '@/lib/api/data/mentors';
-import { recordProfileShare } from '@/lib/api/data/profileLinks';
+import { profileShared } from '@/lib/api/data/profileLinks';
 import { useDuplicateSessionType } from '@/lib/api/data/sessionTypeEdit';
-import { track } from '@/lib/analytics/track';
 import { useSessionTypeDeletes } from '@/lib/api/data/sessionTypeDeletes';
 import {
   useOwnSessionTypes,
@@ -162,11 +161,9 @@ export function SessionTypesScreen() {
   const shareUrl = (t: OwnSessionType) =>
     member ? `${origin}${mentorProfilePath(member, { book: t.id, via: 'copy' })}` : null;
   // A copied link is a share of their own profile, counted like every other
-  // copy of it: the event and our own record, in step.
+  // copy of it (link_shared and our record together).
   const onShareCopied = () => {
-    if (!member) return;
-    track('link_shared', { kind: 'mentor_profile', method: 'copy', own: true });
-    recordProfileShare(member.id, 'copy');
+    if (member) profileShared(member.id, 'copy', true);
   };
 
   const [confirming, setConfirming] = useState<OwnSessionType | null>(null);

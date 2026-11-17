@@ -6,24 +6,73 @@ import { takeProfileSource } from '@/lib/analytics/profileSource';
 import { track } from '@/lib/analytics/track';
 import { recordProfileVisit } from '@/lib/api/data/profileLinks';
 import { VIA_PARAM } from '@/lib/utils/mentorPath';
+import { isOwnHost } from '@/lib/utils/ownHost';
 
 /**
- * The host of the page that sent the visitor here, bare, or undefined when
- * there was none or it was this app: a navigation within the app is not a
- * referral.
+ * `document.referrer` belongs to the page load, not to each profile opened in
+ * it: it is offered once, then never again until the next load.
+ */
+let referrerOffered = false;
+
+/** The path the browser itself loaded (after any redirect), or null when it can't say. */
+function loadedPath(): string | null {
+  try {
+    const nav = performance.getEntriesByType?.('navigation')[0];
+    return nav?.name ? new URL(nav.name).pathname : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The host of the outside page that sent the visitor to this profile, bare;
+ * undefined otherwise. Only for the first profile counted on this page load,
+ * and only when this profile is the page the browser loaded: one opened later
+ * by a click inside the app was not referred by whoever sent the first.
  */
 export function referrerHost(): string | undefined {
+  if (referrerOffered) return undefined;
+  referrerOffered = true;
   try {
     if (!document.referrer) return undefined;
-    const from = new URL(document.referrer);
-    return from.origin === window.location.origin ? undefined : from.hostname || undefined;
+    const loaded = loadedPath();
+    if (loaded !== null && loaded !== window.location.pathname) return undefined;
+    const host = new URL(document.referrer).hostname;
+    return host && !isOwnHost(host, window.location.hostname) ? host : undefined;
   } catch {
     return undefined;
   }
 }
 
+/** Per tab, the mentors whose visit was recorded lately (id → when). */
+const SEEN_KEY = 'ef-profile-visits';
+/** Long enough to cover a round trip through sign-in (Google, the email code). */
+export const SEEN_MS = 30 * 60_000;
+
 /**
- * The channel has been counted: `via` leaves the address bar, without a
+ * True when this tab recorded a visit to `id` in the last SEEN_MS, else notes
+ * it now. Coming back from sign-in to the profile they left (a fresh load
+ * from Google, or a new screen after the email code) is the same visit, not a
+ * new one referred by accounts.google.com. Storage refused: counted as before.
+ */
+function seenRecently(id: string, now = Date.now()): boolean {
+  try {
+    const raw = sessionStorage.getItem(SEEN_KEY);
+    const seen = (raw ? JSON.parse(raw) : {}) as Record<string, unknown>;
+    const fresh: Record<string, number> = {};
+    for (const [k, at] of Object.entries(seen))
+      if (typeof at === 'number' && now - at < SEEN_MS) fresh[k] = at;
+    const was = id in fresh;
+    if (!was) fresh[id] = now;
+    sessionStorage.setItem(SEEN_KEY, JSON.stringify(fresh));
+    return was;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The channel has been read: `via` leaves the address bar, without a
  * navigation, so a re-share or a bookmark of this page doesn't carry it.
  */
 function dropVia() {
@@ -33,6 +82,14 @@ function dropVia() {
   window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
 }
 
+type View = {
+  /** The profile has loaded and who is looking is known. */
+  loaded: boolean;
+  /** Someone other than its owner: only their look is a visit. */
+  visitor: boolean;
+  mentorId?: string;
+};
+
 /**
  * `mentor_profile_viewed` (PRD 30), once per visit to a handle: when the
  * profile has loaded for someone other than its owner. Keyed by the handle,
@@ -41,21 +98,31 @@ function dropVia() {
  * lets a source noted on an id link count after the 308 to the slug.
  *
  * The same visit goes to our own database (recordProfileVisit), with the
- * link's `?via=` and an outside referrer's host; a preview sends nothing.
+ * link's `?via=` and an outside referrer's host, unless this tab recorded it
+ * lately; a preview sends nothing. `via` leaves the address bar once the
+ * profile has loaded, for the owner too.
  */
-export function useProfileViewed(handle: string, ready: boolean, mentorId?: string) {
+export function useProfileViewed(handle: string, { loaded, visitor, mentorId }: View) {
   const params = useSearchParams();
   const counted = useRef<string | null>(null);
   useEffect(() => {
-    if (!ready || counted.current === handle) return;
-    counted.current = handle;
-    const search = new URLSearchParams(params.toString());
-    const source = takeProfileSource([handle, mentorId], search);
-    track('mentor_profile_viewed', { source });
-    recordProfileVisit(mentorId ?? handle, {
-      via: search.get(VIA_PARAM),
-      referrerHost: referrerHost(),
-    });
+    if (!loaded) return;
+    if (visitor && counted.current !== handle) {
+      counted.current = handle;
+      const search = new URLSearchParams(params.toString());
+      const source = takeProfileSource([handle, mentorId], search);
+      track('mentor_profile_viewed', { source });
+      const id = mentorId ?? handle;
+      // Taken even when this visit isn't sent, so no later profile inherits it.
+      const from = referrerHost();
+      if (!seenRecently(id))
+        recordProfileVisit(id, { via: search.get(VIA_PARAM), referrerHost: from });
+    }
     dropVia();
-  }, [ready, handle, mentorId, params]);
+  }, [loaded, visitor, handle, mentorId, params]);
+}
+
+/** Tests only: a fresh page load. */
+export function resetProfileVisitsForTests() {
+  referrerOffered = false;
 }

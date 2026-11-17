@@ -23,9 +23,11 @@ export type ShareProfileModalProps = {
    */
   note?: string;
   /**
-   * The link was copied or shared, and how: the caller records the share
-   * (recordProfileShare) and Mentor Home marks its Share step done.
+   * Counts a copy or share: the page passes profileShared (link_shared and
+   * our record together). Required, so no profile share goes uncounted.
    */
+  count: (method: ShareMethod) => void;
+  /** The link was copied or shared (Mentor Home marks its Share step done). */
   onShared?: (method: ShareMethod) => void;
   onClose: () => void;
 };
@@ -41,6 +43,7 @@ export function ShareProfileModal({
   name,
   own = false,
   note,
+  count,
   onShared,
   onClose,
 }: ShareProfileModalProps) {
@@ -56,6 +59,7 @@ export function ShareProfileModal({
       <div className={styles.body}>
         <LinkSharePanel
           url={url}
+          count={count}
           onShared={onShared}
           content={MENTOR_SHARE_COPY.panel(own, name)}
         />

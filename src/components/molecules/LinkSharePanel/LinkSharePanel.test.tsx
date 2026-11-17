@@ -115,6 +115,19 @@ describe('LinkSharePanel', () => {
     expect(shares()).toEqual([]);
   });
 
+  it('a page that counts the share itself gets the method, and the panel sends no event of its own', async () => {
+    const user = userEvent.setup();
+    clip(vi.fn().mockResolvedValue(undefined));
+    const count = vi.fn();
+    const onShared = vi.fn();
+    render(<LinkSharePanel url={URL} content={content} count={count} onShared={onShared} />);
+    await user.click(screen.getByRole('button', { name: 'Copy link' }));
+    expect(await screen.findByRole('button', { name: 'Link copied' })).toBeInTheDocument();
+    expect(count).toHaveBeenCalledExactlyOnceWith('copy');
+    expect(onShared).toHaveBeenCalledExactlyOnceWith('copy');
+    expect(shares()).toEqual([]);
+  });
+
   it('the invite keeps its own labels and counts as an invite', async () => {
     const user = userEvent.setup();
     const write = vi.fn().mockResolvedValue(undefined);

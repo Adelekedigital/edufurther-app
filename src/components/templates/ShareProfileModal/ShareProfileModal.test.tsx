@@ -13,7 +13,14 @@ vi.mock('@/lib/analytics/track', async (orig) => ({
 const URL = 'https://app.test/mentors/gbenga';
 
 function renderModal(over: Partial<ComponentProps<typeof ShareProfileModal>> = {}) {
-  const props = { url: URL, name: 'Gbenga Elufisan', onShared: vi.fn(), onClose: vi.fn(), ...over };
+  const props = {
+    url: URL,
+    name: 'Gbenga Elufisan',
+    count: vi.fn(),
+    onShared: vi.fn(),
+    onClose: vi.fn(),
+    ...over,
+  };
   render(<ShareProfileModal {...props} />);
   return props;
 }
@@ -54,6 +61,7 @@ describe('ShareProfileModal', () => {
     expect(writeText).toHaveBeenCalledWith(
       `${MENTOR_SHARE_COPY.message(true, 'Gbenga Elufisan')}\n${URL}?via=copy`,
     );
+    expect(p.count).toHaveBeenCalledExactlyOnceWith('copy');
     expect(p.onShared).toHaveBeenCalledExactlyOnceWith('copy');
   });
 
@@ -68,6 +76,7 @@ describe('ShareProfileModal', () => {
       text: MENTOR_SHARE_COPY.message(false, 'Gbenga Elufisan'),
       url: `${URL}?via=share`,
     });
+    expect(p.count).toHaveBeenCalledExactlyOnceWith('native');
     expect(p.onShared).toHaveBeenCalledExactlyOnceWith('native');
   });
 
@@ -78,6 +87,7 @@ describe('ShareProfileModal', () => {
     const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Share' }));
     expect(share).toHaveBeenCalled();
+    expect(p.count).not.toHaveBeenCalled();
     expect(p.onShared).not.toHaveBeenCalled();
   });
 

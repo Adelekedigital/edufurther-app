@@ -1,4 +1,5 @@
 import { isInviteCode } from '@/lib/utils/inviteCode';
+import { isOwnHost } from '@/lib/utils/ownHost';
 
 /**
  * Where a visitor came from (PRD 30, Acquisition): read on arrival, held
@@ -38,12 +39,6 @@ export function cleanUtm(raw: string | null | undefined): string | undefined {
   return v;
 }
 
-/** Our own sites' visits are not referrals: the app and the landing site are one journey. */
-function isOwnHost(host: string): boolean {
-  const h = host.toLowerCase();
-  return h === 'edufurther.org' || h.endsWith('.edufurther.org');
-}
-
 /**
  * What this arrival says, or null for a direct visit: an invite path, then
  * campaign tags, then another site linking here.
@@ -67,7 +62,8 @@ export function readArrival(
   if (referrer) {
     try {
       const host = new URL(referrer).hostname;
-      if (host && host !== ownHost && !isOwnHost(host)) return { source: 'referral_site' };
+      // Our own sites' visits are not referrals: the app and the landing site are one journey.
+      if (host && !isOwnHost(host, ownHost)) return { source: 'referral_site' };
     } catch {
       // Not a URL: a direct visit.
     }

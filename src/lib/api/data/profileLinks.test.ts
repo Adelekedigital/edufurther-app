@@ -11,8 +11,13 @@ vi.mock('@/lib/vendor/supabase/browser', () => ({
   refreshAccessToken: async () => null,
   signOut: async () => {},
 }));
+vi.mock('@/lib/analytics/track', async (orig) => ({
+  ...(await orig<typeof import('@/lib/analytics/track')>()),
+  track: vi.fn(),
+}));
 vi.stubGlobal('fetch', (r: Request) => h.fetch(r));
-const { recordProfileShare, recordProfileVisit } = await import('./profileLinks');
+const { track } = await import('@/lib/analytics/track');
+const { profileShared, recordProfileShare, recordProfileVisit } = await import('./profileLinks');
 
 /** Every request sent so far, once the client's middleware has run. */
 async function settle() {
@@ -75,6 +80,22 @@ describe('recordProfileShare', () => {
     expect(new URL(r.url).pathname).toBe('/api/v1/mentors/ada-obi/shares');
     expect(await r.json()).toEqual({ method: 'native' });
     expect(r.keepalive).toBe(true);
+  });
+});
+
+describe('profileShared: the one place a profile share is counted', () => {
+  it('sends link_shared and posts the share, with the same method', async () => {
+    vi.mocked(track).mockClear();
+    profileShared('ada-obi', 'native', true);
+    await settle();
+    expect(track).toHaveBeenCalledExactlyOnceWith('link_shared', {
+      kind: 'mentor_profile',
+      method: 'native',
+      own: true,
+    });
+    expect(sent()).toHaveLength(1);
+    expect(new URL(sent()[0]!.url).pathname).toBe('/api/v1/mentors/ada-obi/shares');
+    expect(await sent()[0]!.json()).toEqual({ method: 'native' });
   });
 });
 

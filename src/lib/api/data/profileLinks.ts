@@ -1,4 +1,5 @@
 import type { ShareMethod } from '@/lib/analytics/events';
+import { track } from '@/lib/analytics/track';
 import { api } from './http';
 import { isPreviewing } from './previewStore';
 
@@ -65,4 +66,14 @@ export function recordProfileShare(handle: string, method: ShareMethod): void {
       keepalive: true,
     }),
   );
+}
+
+/**
+ * A mentor profile's link was copied or shared: `link_shared` and our own
+ * record, together. The one place either is sent for a profile, so PostHog
+ * and the database can't drift. `own`: the viewer's own profile.
+ */
+export function profileShared(handle: string, method: ShareMethod, own: boolean): void {
+  track('link_shared', { kind: 'mentor_profile', method, own });
+  recordProfileShare(handle, method);
 }

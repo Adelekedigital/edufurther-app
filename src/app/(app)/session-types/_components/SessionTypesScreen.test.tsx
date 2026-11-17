@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { AppError, Remote, Viewer } from '@/types/mentor';
 import type { DeleteError, OwnSessionType } from '@/types/sessionType';
 import { track } from '@/lib/analytics/track';
-import { recordProfileShare } from '@/lib/api/data/profileLinks';
+import { profileShared } from '@/lib/api/data/profileLinks';
 import { SessionTypesScreen } from './SessionTypesScreen';
 import {
   expectLockedPage,
@@ -19,8 +19,8 @@ vi.mock('@/lib/analytics/track', async (orig) => ({
   ...(await orig<typeof import('@/lib/analytics/track')>()),
   track: vi.fn(),
 }));
-// The share's own record: its network side is profileLinks.test.ts.
-vi.mock('@/lib/api/data/profileLinks', () => ({ recordProfileShare: vi.fn() }));
+// Counting a share (link_shared and our record): profileLinks.test.ts covers both.
+vi.mock('@/lib/api/data/profileLinks', () => ({ profileShared: vi.fn() }));
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/session-types',
@@ -828,10 +828,10 @@ describe('SessionTypesScreen', () => {
       Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
     beforeEach(() => {
       vi.mocked(track).mockClear();
-      vi.mocked(recordProfileShare).mockClear();
+      vi.mocked(profileShared).mockClear();
     });
 
-    it('a copy counts once: link_shared and its record, in step', async () => {
+    it('a copy counts once, through the one helper (link_shared and its record)', async () => {
       const user = userEvent.setup({ delay: null });
       viewer = mentor;
       copyWith(vi.fn().mockResolvedValue(undefined));
@@ -840,10 +840,8 @@ describe('SessionTypesScreen', () => {
         screen.getByRole('button', { name: 'Copy share link for SOP draft review' }),
       );
       expect(await screen.findByText('Link copied')).toBeInTheDocument();
-      expect(shared()).toEqual([
-        ['link_shared', { kind: 'mentor_profile', method: 'copy', own: true }],
-      ]);
-      expect(recordProfileShare).toHaveBeenCalledExactlyOnceWith('m1', 'copy');
+      expect(profileShared).toHaveBeenCalledExactlyOnceWith('m1', 'copy', true);
+      expect(shared()).toEqual([]);
     });
 
     it('a refused clipboard is no share: nothing counted or recorded', async () => {
@@ -856,7 +854,7 @@ describe('SessionTypesScreen', () => {
       );
       expect(await screen.findByText('Couldn’t copy. Try again.')).toBeInTheDocument();
       expect(shared()).toEqual([]);
-      expect(recordProfileShare).not.toHaveBeenCalled();
+      expect(profileShared).not.toHaveBeenCalled();
     });
   });
 

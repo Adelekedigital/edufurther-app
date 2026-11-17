@@ -56,9 +56,12 @@ export type LinkShareState = (KnownLink | FetchedLink) & {
   /** False: the link is revoked, so it shows as off and can't be shared. */
   linkActive?: boolean;
   /**
-   * Called once the link was copied or shared, with how (link_shared
-   * `method`), right after that event: a profile share is recorded here too.
+   * Counts the share in place of the panel's own `link_shared`: a mentor
+   * profile's goes through profileShared (lib/api/data/profileLinks), which
+   * sends the event and our record together, so the two can't drift.
    */
+  count?: (method: ShareMethod) => void;
+  /** Called once the link was copied or shared (and counted), with how. */
   onShared?: (method: ShareMethod) => void;
 };
 
@@ -87,6 +90,7 @@ export function LinkSharePanel({
   urlError = false,
   onRetry,
   linkActive = true,
+  count,
   onShared,
   layout = 'modal',
   content,
@@ -101,14 +105,18 @@ export function LinkSharePanel({
   const ready = url !== null && !urlLoading && !urlError && linkActive;
   const card = layout === 'card';
 
+  const shared = (method: ShareMethod) => {
+    if (count) count(method);
+    else track('link_shared', { kind, method, own });
+    onShared?.(method);
+  };
+
   const copyLink = async () => {
     if (!url) return;
     // The same words Share sends, so a pasted link says what it is.
     const copied = await copy(content.copyText(url));
     say(copied ? COPIED : COPY_FAILED);
-    if (!copied) return;
-    track('link_shared', { kind, method: 'copy', own });
-    onShared?.('copy');
+    if (copied) shared('copy');
   };
 
   const share = async () => {
@@ -121,8 +129,7 @@ export function LinkSharePanel({
     }
     try {
       await navigator.share(payload);
-      track('link_shared', { kind, method: 'native', own });
-      onShared?.('native');
+      shared('native');
     } catch (e) {
       // Dismissing the share sheet is not a failure. Anything else falls back
       // to copying, as no share at all does.
