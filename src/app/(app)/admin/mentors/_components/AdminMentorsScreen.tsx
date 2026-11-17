@@ -36,12 +36,14 @@ import {
   MENTOR_TABLE,
   MENTOR_TABS_LABEL,
 } from '@/lib/copy/adminMentors';
+import { downloadCsv } from '@/lib/utils/csv';
 import { viewerZone } from '@/lib/utils/format';
 import { useCopyText } from '@/lib/utils/useCopyText';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { MentorBulkBar } from './MentorBulkBar';
 import { MentorDialogs, type MentorDialog } from './MentorDialogs';
 import { MentorDrawer, type DrawerAction } from './MentorDrawer';
+import { mentorCsvColumns, mentorCsvFilename } from './mentorCsv';
 import { MentorFilterBar } from './MentorFilterBar';
 import { filtersActive, NO_FILTERS, visibleMentors, type MentorFilters } from './mentorList';
 import { MentorSummaryCards } from './MentorSummaryCards';
@@ -122,6 +124,11 @@ export function AdminMentorsScreen() {
     if (ok) show(MENTOR_TABLE.copiedEmails(emails.length), 'success');
     else show(MENTOR_TABLE.copyEmailsFailed, 'error');
   };
+
+  // The rows on screen, search and filters applied, as a spreadsheet (roadmap:
+  // Admin mentor review v2). Built on the device from what the admin already sees.
+  const exportCsv = () =>
+    downloadCsv(mentorCsvFilename(tab, zone), mentorCsvColumns(tab, zone), visible);
 
   const setTab = (t: MentorTab) => {
     setTabState(t);
@@ -277,6 +284,13 @@ export function AdminMentorsScreen() {
           total={rows.length}
           active={active}
           onClear={() => changeFilters(NO_FILTERS)}
+          actions={
+            listStatus === 'ready' && visible.length > 0 ? (
+              <Button variant="secondary-outlined" size="small" icon="download" onClick={exportCsv}>
+                {MENTOR_TABLE.exportCsv}
+              </Button>
+            ) : null
+          }
         />
         {/* Phones hide the table header, where the copy icon lives: the same
             control as a small button there (review of PR 613). */}

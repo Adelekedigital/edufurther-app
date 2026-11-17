@@ -8,34 +8,10 @@ import {
   visibleMentors,
   waitTone,
 } from './mentorList';
+import { mentorRow as row } from './mentorTestFixtures';
 
 const NOW = new Date('2026-10-26T12:00:00Z');
 const ago = (n: number) => new Date(NOW.getTime() - n * 86_400_000).toISOString();
-
-const row = (p: Partial<AdminMentorRow>): AdminMentorRow => ({
-  id: p.name ?? 'x',
-  name: 'X',
-  firstName: 'X',
-  initials: 'X',
-  cover: 'sky',
-  photoUrl: null,
-  handle: null,
-  email: 'x@example.com',
-  submittedAt: null,
-  approvedAt: null,
-  decidedAt: null,
-  pausedAt: null,
-  pausedBy: null,
-  pausedReason: null,
-  declineReason: null,
-  waitingDays: null,
-  school: null,
-  completed: 0,
-  upcoming: 0,
-  showUpRate: null,
-  showUpTier: null,
-  ...p,
-});
 
 const apps = [
   row({ name: 'Amaka Okafor', email: 'amaka@example.com', submittedAt: ago(1), waitingDays: 1 }),

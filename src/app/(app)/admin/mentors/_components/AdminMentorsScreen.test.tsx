@@ -166,6 +166,40 @@ describe('AdminMentorsScreen: the list', () => {
     expect(await screen.findByText(/copied\. Paste them into an email\./)).toBeInTheDocument();
   });
 
+  it('Export CSV downloads the rows on screen, search applied, named for the tab', async () => {
+    const original = { create: URL.createObjectURL, revoke: URL.revokeObjectURL };
+    const create = vi.fn((_b: Blob) => 'blob:csv');
+    Object.assign(URL, { createObjectURL: create, revokeObjectURL: vi.fn() });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    try {
+      const user = userEvent.setup();
+      renderScreen(<AdminMentorsScreen />);
+      await user.click(await screen.findByRole('tab', { name: /Approved/ }));
+      const first = (await screen.findAllByRole('button', { name: /^Open / }))[0]!;
+      const name = first.textContent!;
+      await user.type(screen.getByRole('searchbox', { name: 'Search mentors' }), name);
+      await waitFor(() => expect(rowNames()).toEqual([name]));
+      await user.click(screen.getByRole('button', { name: 'Export CSV' }));
+      const anchor = click.mock.contexts[0] as HTMLAnchorElement;
+      expect(anchor.download).toMatch(/^edufurther-mentors-approved-\d{4}-\d{2}-\d{2}\.csv$/);
+      const csv = await create.mock.calls[0]![0].text();
+      const rows = csv.replace(/^﻿/, '').trim().split('\r\n');
+      expect(rows[0]).toMatch(/^Name,Email,Approved,/);
+      expect(rows).toHaveLength(2);
+      expect(rows[1]).toContain(name);
+    } finally {
+      click.mockRestore();
+      Object.assign(URL, { createObjectURL: original.create, revokeObjectURL: original.revoke });
+    }
+  });
+
+  it('Export CSV is not offered while nothing is on screen', async () => {
+    await serveFromStore({ '/api/v1/admin/mentors': () => res({ data: [], next_cursor: null }) });
+    renderScreen(<AdminMentorsScreen />);
+    expect(await screen.findByText('No applications waiting')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Export CSV' })).toBeNull();
+  });
+
   it('Copy emails says so visibly when the clipboard refuses', async () => {
     const user = userEvent.setup();
     const writeText = vi.fn().mockRejectedValue(new Error('denied'));

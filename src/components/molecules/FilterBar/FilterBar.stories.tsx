@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { Button } from '@/components/atoms/Button/Button';
 import { SearchField } from '../SearchField/SearchField';
 import { FilterBar } from './FilterBar';
 
@@ -37,6 +38,34 @@ export const Fixed: Story = {
       />
     );
   },
+};
+
+/** With the list's actions after the count (Mentors: Export CSV). */
+export const WithActions: Story = {
+  render: () => (
+    <FilterBar
+      label="Filter mentors"
+      fields={[
+        {
+          key: 'to',
+          label: 'Goes to',
+          options: TO,
+          value: 'all',
+          changed: false,
+          onChange: () => {},
+        },
+      ]}
+      count="4 mentors"
+      clearLabel="Clear filters"
+      active={false}
+      onClear={() => {}}
+      actions={
+        <Button variant="secondary-outlined" size="small" icon="download">
+          Export CSV
+        </Button>
+      }
+    />
+  ),
 };
 
 /** `fill` with a search lead (Admin Emails.dc.html); a changed filter wears the blue look. */
