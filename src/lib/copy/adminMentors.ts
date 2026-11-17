@@ -114,6 +114,29 @@ export const MENTOR_TABLE = {
   copyEmailsFailed: 'Couldn’t copy. Select the Email column and copy it instead.',
   sessions: (n: number) => plural(n, 'session'),
   loading: 'Loading mentors',
+  /** Exports the rows on screen; the filter row's count says how many. */
+  exportCsv: 'Export CSV',
+  exportCsvEmpty: 'No mentors on screen to export',
+};
+
+/** The CSV's headers: plain values a spreadsheet can sort, dates as YYYY-MM-DD. */
+export const MENTOR_CSV = {
+  name: 'Name',
+  email: 'Email',
+  applied: 'Applied',
+  waitingDays: 'Waiting (days)',
+  school: 'School',
+  schoolCountry: 'School country',
+  approved: 'Approved',
+  completed: 'Completed sessions',
+  upcoming: 'Upcoming sessions',
+  showUpRate: 'Show-up rate (%)',
+  showUpTier: 'Show-up tier',
+  status: 'Status',
+  since: 'Since',
+  reason: 'Reason',
+  decided: 'Decided',
+  comment: 'Comment',
 };
 
 /** Show-up tiers (the Mentor Home rule; the API names the tier). */

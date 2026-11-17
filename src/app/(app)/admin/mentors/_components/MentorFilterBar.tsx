@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { SelectOption } from '@/components/atoms/Select/Select';
 import { FilterBar, type FilterField } from '@/components/molecules/FilterBar/FilterBar';
 import type { MentorTab } from '@/lib/api/data/adminMentors';
@@ -16,6 +17,8 @@ type Props = {
   total: number;
   active: boolean;
   onClear: () => void;
+  /** The list's actions at the row's end (Export CSV). */
+  actions?: ReactNode;
 };
 
 /**
@@ -23,7 +26,16 @@ type Props = {
  * Applications, show-up rate on Approved, and the sort, in the shared
  * FilterBar. A changed one wears Select's `changed` look.
  */
-export function MentorFilterBar({ tab, filters, onChange, shown, total, active, onClear }: Props) {
+export function MentorFilterBar({
+  tab,
+  filters,
+  onChange,
+  shown,
+  total,
+  active,
+  onClear,
+  actions,
+}: Props) {
   const word = MENTOR_DATE_WORD[tab];
   const sort = filters.sort ?? defaultSort(tab);
   const sorts: SelectOption[] = [
@@ -89,6 +101,7 @@ export function MentorFilterBar({ tab, filters, onChange, shown, total, active, 
       clearLabel={F.clear}
       active={active}
       onClear={onClear}
+      actions={actions}
     />
   );
 }

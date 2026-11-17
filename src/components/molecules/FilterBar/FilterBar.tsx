@@ -30,6 +30,8 @@ type FilterBarProps = {
   /** Any filter (or the lead's search) in use: Clear filters shows. */
   active: boolean;
   onClear: () => void;
+  /** The list's own actions at the row's end, after the count, e.g. Export CSV. */
+  actions?: ReactNode;
   /**
    * `fixed`: fields keep 200px (Admin.dc.html Mentors). `fill`: fields share
    * the row from 160px and the lead takes twice the room (Admin Emails.dc.html).
@@ -38,8 +40,8 @@ type FilterBarProps = {
 };
 
 /**
- * The admin list filter row: labelled Selects, the count and Clear filters on
- * the right. One row for every admin list (Mentors, Emails).
+ * The admin list filter row: labelled Selects, then the count, Clear filters
+ * and the list's actions on the right. One row for every admin list (Mentors, Emails).
  */
 export function FilterBar({
   label,
@@ -50,6 +52,7 @@ export function FilterBar({
   clearLabel,
   active,
   onClear,
+  actions,
   layout = 'fixed',
 }: FilterBarProps) {
   const base = useId();
@@ -94,6 +97,7 @@ export function FilterBar({
             {clearLabel}
           </Button>
         )}
+        {actions}
       </div>
     </div>
   );
