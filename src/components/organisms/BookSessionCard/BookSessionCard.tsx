@@ -14,8 +14,10 @@ type BookSessionCardProps = {
   timeZone: string;
   /** Opens the shared booking modal, on that offering when one is given. */
   onBook: (sessionTypeId?: string) => void;
-  /** Opens the Sessions tab; without one (under 3 sessions) there's no link. */
+  /** Opens the Sessions tab; without one (no Sessions tab) there's no link. */
   onCompare?: () => void;
+  /** How many offerings the card lists before "See all": 2, or 1 on phones (owner, 17 Nov). */
+  shown?: number;
   bookBlocked: string | null;
   /** Drawn, but can't be used (the owner's "View as mentee"). */
   bookDisabled?: boolean;
@@ -25,7 +27,8 @@ type BookSessionCardProps = {
  * The profile's booking card (design reply #32): no in-card picker — every Book
  * opens the shared BookingModal on that offering. One offering: header,
  * description, an outlined "Book this session" and what happens next. Several:
- * the first two with Book on each, then "Compare sessions". Book is outlined:
+ * the first two (one on phones) with Book on each, then "See all N sessions"
+ * or "Compare sessions". Book is outlined:
  * the header's "Book a session" is the view's one filled button (CTA hierarchy).
  */
 export function BookSessionCard({
@@ -35,6 +38,7 @@ export function BookSessionCard({
   onCompare,
   bookBlocked,
   bookDisabled = false,
+  shown = 2,
 }: BookSessionCardProps) {
   if (sessionTypes.length === 0) return null;
 
@@ -84,7 +88,7 @@ export function BookSessionCard({
         </span>
       </div>
       <ul className={styles.rows}>
-        {sessionTypes.slice(0, 2).map((s) => (
+        {sessionTypes.slice(0, shown).map((s) => (
           <li key={s.id} className={styles.row}>
             <div className={styles.rowTop}>
               <h3 className={styles.rowName}>{s.name}</h3>
@@ -113,7 +117,9 @@ export function BookSessionCard({
       </ul>
       {onCompare && (
         <button type="button" className={styles.compare} onClick={onCompare}>
-          {sessionTypes.length > 2 ? `See all ${sessionTypes.length} sessions` : 'Compare sessions'}
+          {sessionTypes.length > shown
+            ? `See all ${sessionTypes.length} sessions`
+            : 'Compare sessions'}
           <Icon name="arrow_forward" size={16} />
         </button>
       )}

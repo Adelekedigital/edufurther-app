@@ -64,10 +64,8 @@ describe('toViewer (backend auth reply #3)', () => {
     expect(toViewer(pending)).toMatchObject({ isMentor: true, isApprovedMentor: false });
   });
 
-  it('carries the profile slug from /me; none reads as null (the id stands in)', () => {
+  it('carries the profile slug from /me (every account has one, backend #688)', () => {
     expect(toViewer(me({ slug: 'esther-a' })).slug).toBe('esther-a');
-    expect(toViewer(me({ slug: null })).slug).toBeNull();
-    expect(toViewer(me()).slug).toBeNull();
   });
 
   it('falls back to the email name when there is no first name', () => {

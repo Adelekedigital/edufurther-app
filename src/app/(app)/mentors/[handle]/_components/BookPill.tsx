@@ -20,7 +20,7 @@ export function BookPill({
   onFocusLost,
 }: {
   onBook: () => void;
-  /** Focused when it goes (the card is back in view): focus moves to the card. */
+  /** Focused when it goes (the card back in view, another dialog opening): focus moves to the card. */
   onFocusLost: () => void;
 }) {
   return (
