@@ -1,5 +1,5 @@
 import { REVIEW_COPY } from '@/lib/copy/profile';
-import { formatShortDate, timeAgo, viewerZone } from './format';
+import { formatDuration, formatShortDate, timeAgo, viewerZone } from './format';
 import { newestFirst } from './reviewable';
 
 describe('formatShortDate', () => {
@@ -69,5 +69,17 @@ describe('viewerZone', () => {
     expect(viewerZone('Africa/Lagos', 'Europe/London')).toBe('Africa/Lagos');
     expect(viewerZone(null, 'Europe/London')).toBe('Europe/London');
     expect(viewerZone(undefined, 'Europe/London')).toBe('Europe/London');
+  });
+});
+
+describe('formatDuration', () => {
+  it('minutes under an hour, hours under two days, then days', () => {
+    expect(formatDuration(20)).toBe('1 min');
+    expect(formatDuration(45 * 60)).toBe('45 min');
+    expect(formatDuration(5400)).toBe('1.5 h');
+    expect(formatDuration(47 * 3600)).toBe('47 h');
+    expect(formatDuration(86_400 * 2)).toBe('2 days');
+    expect(formatDuration(259_200)).toBe('3 days');
+    expect(formatDuration(86_400 * 2.25)).toBe('2.3 days');
   });
 });

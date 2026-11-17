@@ -18,6 +18,19 @@ export const MINUS = '−';
 export const signed = (n: number, body: string) =>
   n > 0 ? `+${body}` : n < 0 ? `${MINUS}${body}` : body;
 
+/**
+ * A span of time, short and readable at a glance: "45 min", "1.5 h", "3 days"
+ * (minutes under an hour, hours under two days, then days; one decimal).
+ * For medians and durations anywhere, not a clock time.
+ */
+export function formatDuration(seconds: number): string {
+  const one = (n: number) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(n);
+  if (seconds < 3600) return `${Math.max(1, Math.round(seconds / 60))} min`;
+  if (seconds < 2 * 86_400) return `${one(seconds / 3600)} h`;
+  const days = one(seconds / 86_400);
+  return `${days} ${days === '1' ? 'day' : 'days'}`;
+}
+
 /** A whole-number count with thousands separators: 7320 → "7,320". */
 export function formatCount(n: number): string {
   return Math.round(n).toLocaleString('en-US');

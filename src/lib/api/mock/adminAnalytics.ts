@@ -468,16 +468,21 @@ export function mockFunnel(
 }
 
 function v2(name: string, k: number, c: NonNullable<ReturnType<typeof mockWindow>>) {
-  const steps = FUNNELS[name]!.map(([key, label, v, layer]) => ({
+  // Decision 351's medians: null on the first step and on outcomes.
+  const MEDIANS = [5400, 172800, 7200, 3600, 86_400];
+  let path = 0;
+  const steps = FUNNELS[name]!.map(([key, label, v, layer], i) => ({
     key,
     label,
     value: Math.max(1, Math.round(((v * c.days) / 30) * k)),
     previous: c.compare ? Math.max(1, Math.round(((v * 0.9 * c.days) / 30) * k)) : null,
     layer,
+    median_seconds_from_previous:
+      i === 0 || layer === 'secondary' ? null : (MEDIANS[path++ % MEDIANS.length] ?? null),
   }));
   // previous is null with compare off (the backend's rule).
   const figures = (FIGURES[name] ?? []).map((f) => (c.compare ? f : { ...f, previous: null }));
-  return { steps, figures };
+  return { steps, figures, median_seconds_to_complete: 259200 };
 }
 
 export function mockBehaviour(c: NonNullable<ReturnType<typeof mockWindow>>): WireBehaviour {

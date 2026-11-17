@@ -414,19 +414,35 @@ export const isUpstreamDown = (e: unknown) =>
 const retryUnlessDown = (n: number, e: unknown) => !isUpstreamDown(e) && retryOnce(n, e);
 
 export type FunnelStep = WireFunnel['steps'][number] & { layer: WireFunnelLayer };
-export type FunnelFigure = WireFunnelFigure;
+/** `seconds`: ours, for a funnel's median time to finish (decision 351). */
+export type FunnelFigure = Omit<WireFunnelFigure, 'unit'> & {
+  unit: WireFunnelFigure['unit'] | 'seconds';
+};
 /**
  * A funnel (v2): the steps, each in its layer (primary: the milestones that
  * define it; secondary: the outcome that follows), and the figures beside it.
  */
-export type Funnel = { steps: FunnelStep[]; figures: FunnelFigure[] };
+export type Funnel = {
+  steps: (FunnelStep & { medianFromPrevious: number | null })[];
+  figures: FunnelFigure[];
+  /**
+   * Median seconds from the first step to the last path step (decision 351);
+   * null when too few people finished, undefined before the backend sends it.
+   */
+  medianToComplete: number | null | undefined;
+};
 
 /** Before the backend's v2 release a step has no layer: all primary, no figures. */
 export const toFunnel = (w: WireFunnel | WireFunnelV2): Funnel => {
   const v2 = w as WireFunnelV2;
   return {
-    steps: v2.steps.map((s) => ({ ...s, layer: s.layer ?? 'primary' })),
+    steps: v2.steps.map((s) => ({
+      ...s,
+      layer: s.layer ?? 'primary',
+      medianFromPrevious: s.median_seconds_from_previous ?? null,
+    })),
     figures: v2.figures ?? [],
+    medianToComplete: v2.median_seconds_to_complete,
   };
 };
 

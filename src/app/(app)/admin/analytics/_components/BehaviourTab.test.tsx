@@ -1,13 +1,14 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError } from '@/lib/api/data/errors';
-import { toBehaviour, toFunnel, type Funnel } from '@/lib/api/data/adminAnalytics';
+import { toBehaviour, toFunnel, type Funnel, type FunnelStep } from '@/lib/api/data/adminAnalytics';
 import { mockBehaviour, mockFunnel, mockWindow } from '@/lib/api/mock/adminAnalytics';
 import { BehaviourTab, funnelRows, safeReplayUrl, type TabQuery } from './BehaviourTab';
 
 const c = mockWindow({ window: '30d' })!;
 /** A funnel from plain steps: all primary, no figures (the v1 shape). */
-const steps = (list: Omit<Funnel['steps'][number], 'layer'>[]): Funnel =>
+type WireStep = Omit<FunnelStep, 'layer'> & { median_seconds_from_previous?: number | null };
+const steps = (list: WireStep[]): Funnel =>
   toFunnel({ steps: list } as Parameters<typeof toFunnel>[0]);
 
 const ready = <T,>(data: T): TabQuery<T> => ({
@@ -276,8 +277,15 @@ describe('BehaviourTab: PostHog down', () => {
         name: 'Mentor activation, what happened next: First booking (30 days) 6, First session (30 days) 3',
       }),
     ).toBeInTheDocument();
+    // An outcome step carries no median (decision 351): only its drop-off.
     expect(screen.getByText('14% dropped')).toBeInTheDocument();
+    expect(screen.getAllByText(/^median \d/).length).toBeGreaterThan(0);
     const figures = screen.getByLabelText('Mentor activation: beside the funnel');
+    // Decision 351: every funnel's time to finish leads its figures.
+    expect(within(figures).getAllByRole('term')[0]).toHaveTextContent('Median time to finish');
+    expect(within(figures).getByText('Median time to finish').nextSibling).toHaveTextContent(
+      '3 days',
+    );
     expect(within(figures).getByText('Days to bookable').nextSibling).toHaveTextContent('2.5 days');
     expect(
       within(figures).getByText('Connected a calendar (of approved)').nextSibling,
@@ -289,10 +297,58 @@ describe('BehaviourTab: PostHog down', () => {
     ).toHaveTextContent('No data');
   });
 
-  it('a funnel with one layer and no figures shows neither the outcome label nor the figures', () => {
+  it('a funnel with one layer shows no outcome label, and only its time to finish', () => {
     renderTab({ funnelQuery: ready(toFunnel(mockFunnel('signup', 'all', c))) });
     expect(screen.queryByText('Then')).toBeNull();
+    expect(screen.getAllByRole('term').map((t) => t.textContent)).toEqual([
+      'Median time to finish',
+    ]);
+  });
+
+  it('before the backend sends medians (v2 shape): no times and no time to finish', () => {
+    renderTab({
+      funnelQuery: ready(
+        steps([
+          { key: 'a', label: 'Started sign-up', value: 640, previous: null },
+          { key: 'b', label: 'Code verified', value: 498, previous: null },
+        ]),
+      ),
+    });
+    expect(screen.getByText('22% dropped')).toBeInTheDocument();
+    expect(screen.queryByText(/median/)).toBeNull();
     expect(screen.queryByRole('definition')).toBeNull();
+  });
+
+  it('too few people for a median (null): the step says nothing, the figure says No data', () => {
+    const f = steps([
+      { key: 'a', label: 'Started sign-up', value: 4, previous: null },
+      {
+        key: 'b',
+        label: 'Code verified',
+        value: 3,
+        previous: null,
+        median_seconds_from_previous: null,
+      },
+    ]);
+    renderTab({ funnelQuery: ready({ ...f, medianToComplete: null }) });
+    expect(screen.getByText('25% dropped')).toBeInTheDocument();
+    expect(screen.getByText('Median time to finish').nextSibling).toHaveTextContent('No data');
+  });
+
+  it('a step’s median reads after its drop-off', () => {
+    const f = steps([
+      { key: 'a', label: 'Started sign-up', value: 640, previous: null },
+      {
+        key: 'b',
+        label: 'Code verified',
+        value: 498,
+        previous: null,
+        median_seconds_from_previous: 5400,
+      },
+    ]);
+    renderTab({ funnelQuery: ready(f) });
+    expect(screen.getByText('22% dropped')).toBeInTheDocument();
+    expect(screen.getByText('median 1.5 h')).toBeInTheDocument();
   });
 
   it('a funnel nobody started reads as empty, in its card', () => {
