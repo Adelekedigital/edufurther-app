@@ -185,6 +185,12 @@ export const MENTOR_DRAWER = {
     meaning: 'What this means',
     meaningBody: 'Hidden on Explore. They can log in and keep sessions already booked.',
   },
+  /** Decision 350: the note sent with the approval, when there was one. */
+  approved: {
+    title: (date: string) => `Approved on ${date}`,
+    titleUndated: 'Approved',
+    note: (first: string) => `Note sent to ${first}`,
+  },
   declined: {
     title: (date: string) => `Not approved on ${date}`,
     titleUndated: 'Not approved',

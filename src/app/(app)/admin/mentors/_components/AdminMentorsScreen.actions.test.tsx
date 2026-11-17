@@ -64,6 +64,27 @@ describe('the drawer', () => {
       'mailto:joshua.lorell@example.com',
     );
     expect(within(d).getByRole('button', { name: 'Suspend' })).toBeInTheDocument();
+    // Approved with no note (or in the legacy app): no note callout.
+    expect(within(d).queryByText(/^Note sent to/)).toBeNull();
+  });
+
+  it('the drawer shows the note sent with an approval (decision 350)', async () => {
+    const store = await import('@/lib/api/mock/adminMentors');
+    await serveFromStore({
+      '/api/v1/admin/mentors/{user_id}': () =>
+        res({
+          ...store.mockMentorDetail('m-jl'),
+          approved: { at: '2026-11-17T15:02:11Z', by: 'a1', message: 'Welcome aboard!' },
+        }),
+    });
+    const user = userEvent.setup();
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('tab', { name: /^Approved/ }));
+    await user.click(await screen.findByRole('button', { name: 'Open Joshua Lorell' }));
+    const d = await drawer('Joshua Lorell');
+    expect(await within(d).findByText('Note sent to Joshua')).toBeInTheDocument();
+    expect(within(d).getByText('Welcome aboard!')).toBeInTheDocument();
+    expect(within(d).getByText(/^Approved on /)).toBeInTheDocument();
   });
 
   it('a mentor who paused themselves: the reason says so, and only Email', async () => {

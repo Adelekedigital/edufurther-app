@@ -17,5 +17,9 @@ export async function POST(req: Request) {
     : [];
   if (ids.length < 1 || ids.length > 50) return problem(422, { title: 'Validation failed' });
   await new Promise((r) => setTimeout(r, 500));
-  return ok('/api/v1/admin/mentors/approvals', 'post', bulkApproveMock(ids));
+  return ok(
+    '/api/v1/admin/mentors/approvals',
+    'post',
+    bulkApproveMock(ids, typeof message === 'string' ? message.trim() || null : null),
+  );
 }

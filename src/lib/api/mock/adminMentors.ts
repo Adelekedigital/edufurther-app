@@ -357,9 +357,24 @@ export function mockMentorDetail(id: string): WireMentorDetail | null {
       tab === 'paused' && r.paused_by
         ? { at: r.paused_at, by: r.paused_by, reason: r.paused_reason }
         : null,
-    declined: tab === 'not_approved' ? { at: r.decided_at, reason: r.decline_reason } : null,
-  };
+    declined:
+      tab === 'not_approved'
+        ? { at: r.decided_at, reason: r.decline_reason, by: null, message: r.decline_reason }
+        : null,
+    // Decision 350: the approval and its note; null by and message for a legacy decision.
+    approved:
+      tab === 'approved' || tab === 'paused'
+        ? {
+            at: r.approved_at ?? r.decided_at ?? '',
+            by: APPROVAL_NOTES[r.user_id] ? 'mock-viewer' : null,
+            message: APPROVAL_NOTES[r.user_id] ?? null,
+          }
+        : null,
+  } as WireMentorDetail;
 }
+
+/** Notes sent with approvals in this mock (decision 350), by mentor id. */
+const APPROVAL_NOTES: Record<string, string> = {};
 
 const person = (user_id: string, first_name: string, last_name: string) => ({
   user_id,
@@ -411,6 +426,7 @@ const now = () => new Date().toISOString();
 export function decideMock(id: string, approve: boolean, reason: string | null): boolean {
   const m = find(id);
   if (!m || m.tab !== 'applications') return false;
+  if (approve && reason) APPROVAL_NOTES[id] = reason;
   Object.assign(
     m,
     approve
@@ -421,9 +437,9 @@ export function decideMock(id: string, approve: boolean, reason: string | null):
 }
 
 /** POST /approvals: each one on its own, as the backend does; a repeated id counts once. */
-export function bulkApproveMock(ids: string[]): WireBulkDecision {
+export function bulkApproveMock(ids: string[], note: string | null = null): WireBulkDecision {
   const out: WireBulkDecision = { approved: [], failed: [] };
-  for (const id of new Set(ids)) (decideMock(id, true, null) ? out.approved : out.failed).push(id);
+  for (const id of new Set(ids)) (decideMock(id, true, note) ? out.approved : out.failed).push(id);
   return out;
 }
 

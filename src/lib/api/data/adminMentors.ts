@@ -189,7 +189,19 @@ export type AdminMentorDetail = AdminPerson & {
   /** Kept whenever the API sends it, so `by` is never lost; `at` may be unknown. */
   paused: { at: string | null; by: 'admin' | 'mentor'; reason: string | null } | null;
   declined: { at: string | null; reason: string | null } | null;
+  /**
+   * The approval and the note sent with it (decision 350); null unless
+   * approved. `message` is null with no note and for legacy decisions.
+   */
+  approved: { at: string | null; message: string | null } | null;
 };
+
+/**
+ * PENDING BACKEND 350: the drawer's `approved`, and `message` on `declined`
+ * (`reason` is its deprecated twin). Drop once the spec publishes them.
+ */
+type WireDecision = { at?: string | null; reason?: string | null; message?: string | null };
+type PendingDetail = { approved?: WireDecision | null; declined?: WireDecision | null };
 
 export function toAdminMentorDetail(w: WireMentorDetail): AdminMentorDetail {
   const rules = w.weekly_hours.filter((r) => r.is_active);
@@ -231,7 +243,16 @@ export function toAdminMentorDetail(w: WireMentorDetail): AdminMentorDetail {
       };
     }),
     paused: w.paused ? { at: w.paused.at, by: w.paused.by, reason: w.paused.reason } : null,
-    declined: w.declined ? { at: w.declined.at, reason: w.declined.reason } : null,
+    declined: w.declined
+      ? {
+          at: w.declined.at,
+          reason: (w as PendingDetail).declined?.message ?? w.declined.reason,
+        }
+      : null,
+    approved: (() => {
+      const a = (w as PendingDetail).approved;
+      return a ? { at: a.at ?? null, message: a.message?.trim() || null } : null;
+    })(),
   };
 }
 

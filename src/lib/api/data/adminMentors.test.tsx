@@ -169,6 +169,25 @@ describe('mappers', () => {
     ).toEqual({ at: null, reason: 'Why' });
   });
 
+  it('decision 350: the approval note, `message` before the old `reason`, none for a legacy one', () => {
+    const pending = (extra: object) =>
+      toAdminMentorDetail({ ...detail, ...extra } as typeof detail);
+    expect(
+      pending({
+        approved: { at: '2026-11-17T15:02:11Z', by: 'a1', message: 'Welcome aboard!\nAdd hours.' },
+      }).approved,
+    ).toEqual({ at: '2026-11-17T15:02:11Z', message: 'Welcome aboard!\nAdd hours.' });
+    // Approved in the legacy app: no who, no note.
+    expect(
+      pending({ approved: { at: '2026-01-02T00:00:00Z', by: null, message: null } }).approved,
+    ).toEqual({ at: '2026-01-02T00:00:00Z', message: null });
+    expect(pending({ approved: null }).approved).toBeNull();
+    expect(toAdminMentorDetail(detail).approved).toBeNull();
+    expect(
+      pending({ declined: { at: null, reason: 'Old', by: null, message: 'New' } }).declined?.reason,
+    ).toBe('New');
+  });
+
   it('a booking mentee with no name reads as a deleted user', () => {
     const d = toAdminMentorDetail({
       ...detail,
