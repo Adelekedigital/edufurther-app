@@ -135,7 +135,6 @@ describe('MentorProfileScreen: the visit, recorded with its channel and referrer
 
   beforeEach(() => {
     vi.mocked(recordProfileVisit).mockClear();
-    sessionStorage.clear();
     resetProfileVisitsForTests();
     h.sessionTypesRemote = remote(sessionTypes);
     h.profile = state({ data: { ...fullProfile, sessionTypes } });
@@ -243,16 +242,36 @@ describe('MentorProfileScreen: the visit, recorded with its channel and referrer
     expect(visits()[0]![1]).toEqual({ via: null, referrerHost: undefined });
   });
 
-  it('back from sign-in to the profile they left: the same visit, not a new one', () => {
-    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
-    expect(visits()).toHaveLength(1);
-    unmount();
-    // Google sends them back on a fresh load, referred by accounts.google.com.
-    resetProfileVisitsForTests();
+  it('back from Google sign-in on a fresh load: never referred by Google', () => {
+    // The accepted trade-off: a fresh load may count again, but with no referrer.
     referrer('https://accounts.google.com/');
+    loadedAt('/mentors/gbenga');
+    arrive(`?book=${sessionTypes[0]!.id}`);
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(visits()).toEqual([[fullProfile.mentor.id, { via: null, referrerHost: undefined }]]);
+  });
+
+  it('back to the same profile on the same page load (the email code, Back): one visit', () => {
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    unmount();
     arrive(`?book=${sessionTypes[0]!.id}`);
     render(<MentorProfileScreen handle="gbenga" />);
     expect(visits()).toHaveLength(1);
+  });
+
+  it('nothing about the visit goes on the device (no consent yet)', () => {
+    const local = vi.spyOn(localStorage, 'setItem');
+    const session = vi.spyOn(sessionStorage, 'setItem');
+    const proto = vi.spyOn(Storage.prototype, 'setItem');
+    arrive('?via=copy');
+    referrer('https://www.linkedin.com/');
+    const { unmount } = render(<MentorProfileScreen handle="gbenga" />);
+    unmount();
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(visits()).toHaveLength(1);
+    expect(local).not.toHaveBeenCalled();
+    expect(session).not.toHaveBeenCalled();
+    expect(proto).not.toHaveBeenCalled();
   });
 
   it('a visit recorded over half an hour ago is a new one', () => {

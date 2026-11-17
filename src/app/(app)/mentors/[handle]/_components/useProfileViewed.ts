@@ -6,7 +6,7 @@ import { takeProfileSource } from '@/lib/analytics/profileSource';
 import { track } from '@/lib/analytics/track';
 import { recordProfileVisit } from '@/lib/api/data/profileLinks';
 import { VIA_PARAM } from '@/lib/utils/mentorPath';
-import { isOwnHost } from '@/lib/utils/ownHost';
+import { referralHost } from '@/lib/utils/ownHost';
 
 /**
  * `document.referrer` belongs to the page load, not to each profile opened in
@@ -37,38 +37,32 @@ export function referrerHost(): string | undefined {
     if (!document.referrer) return undefined;
     const loaded = loadedPath();
     if (loaded !== null && loaded !== window.location.pathname) return undefined;
-    const host = new URL(document.referrer).hostname;
-    return host && !isOwnHost(host, window.location.hostname) ? host : undefined;
+    // Ours, or a sign-in step (Google, our auth host): never a referral.
+    return referralHost(document.referrer, window.location.hostname);
   } catch {
     return undefined;
   }
 }
 
-/** Per tab, the mentors whose visit was recorded lately (id → when). */
-const SEEN_KEY = 'ef-profile-visits';
-/** Long enough to cover a round trip through sign-in (Google, the email code). */
+/**
+ * The mentors whose visit this page load recorded, and when. Memory only:
+ * nothing goes on the device before consent (owner, 2026-11-10).
+ */
+const seen = new Map<string, number>();
+/** Long enough to cover a round trip through sign-in by the email code. */
 export const SEEN_MS = 30 * 60_000;
 
 /**
- * True when this tab recorded a visit to `id` in the last SEEN_MS, else notes
- * it now. Coming back from sign-in to the profile they left (a fresh load
- * from Google, or a new screen after the email code) is the same visit, not a
- * new one referred by accounts.google.com. Storage refused: counted as before.
+ * True when this page load recorded a visit to `id` in the last SEEN_MS, else
+ * notes it now: back to the profile after the email code, or by Back, is the
+ * same visit.
+ * Accepted: a Google sign-in returns on a fresh load, so may count one extra (signed-in) visit, never with a referrer.
  */
 function seenRecently(id: string, now = Date.now()): boolean {
-  try {
-    const raw = sessionStorage.getItem(SEEN_KEY);
-    const seen = (raw ? JSON.parse(raw) : {}) as Record<string, unknown>;
-    const fresh: Record<string, number> = {};
-    for (const [k, at] of Object.entries(seen))
-      if (typeof at === 'number' && now - at < SEEN_MS) fresh[k] = at;
-    const was = id in fresh;
-    if (!was) fresh[id] = now;
-    sessionStorage.setItem(SEEN_KEY, JSON.stringify(fresh));
-    return was;
-  } catch {
-    return false;
-  }
+  const at = seen.get(id);
+  if (at !== undefined && now - at < SEEN_MS) return true;
+  seen.set(id, now);
+  return false;
 }
 
 /**
@@ -98,7 +92,7 @@ type View = {
  * lets a source noted on an id link count after the 308 to the slug.
  *
  * The same visit goes to our own database (recordProfileVisit), with the
- * link's `?via=` and an outside referrer's host, unless this tab recorded it
+ * link's `?via=` and an outside referrer's host, unless this page load recorded it
  * lately; a preview sends nothing. `via` leaves the address bar once the
  * profile has loaded, for the owner too.
  */
@@ -125,4 +119,5 @@ export function useProfileViewed(handle: string, { loaded, visitor, mentorId }: 
 /** Tests only: a fresh page load. */
 export function resetProfileVisitsForTests() {
   referrerOffered = false;
+  seen.clear();
 }
