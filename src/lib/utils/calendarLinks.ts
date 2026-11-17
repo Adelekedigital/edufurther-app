@@ -8,6 +8,8 @@
  * and forwarded.
  */
 
+import { downloadFile } from './download';
+
 export type CalendarEvent = {
   /** The session id: a stable UID, so adding it twice updates rather than duplicates. */
   id: string;
@@ -143,18 +145,7 @@ export function outlookCalendarUrl(e: CalendarEvent): string {
   return `https://outlook.live.com/calendar/0/action/compose?${q}`;
 }
 
-/**
- * Hands the browser the .ics as a download: no request, nothing leaves the
- * device. The object URL is released once the click has been dispatched.
- */
+/** Hands the browser the .ics as a download (`downloadFile`). */
 export function downloadIcs(e: CalendarEvent, now = new Date()): void {
-  const blob = new Blob([icsFile(e, now)], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = icsFilename(e);
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
+  downloadFile(icsFilename(e), icsFile(e, now), 'text/calendar;charset=utf-8');
 }

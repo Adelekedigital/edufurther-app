@@ -49,6 +49,4 @@ export function separatorLabel(isoInstant: string, timeZone: string, now = new D
 }
 
 /** The calendar date of an instant in `timeZone`, for grouping messages by day. */
-export function dayKey(isoInstant: string, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date(isoInstant));
-}
+export { dayKey } from './slots';
