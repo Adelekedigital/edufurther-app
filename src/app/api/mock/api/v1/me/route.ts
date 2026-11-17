@@ -73,9 +73,9 @@ export async function GET(req: Request) {
     first_name: text.first_name ?? 'Ada',
     last_name: text.last_name ?? 'Obi',
     primary_role: items.primary_role ?? ('mentee' as const),
-    // No slug, like every account made in this app (only the old platform's
-    // import set one): Mentor Settings reads the profile by the user's id.
-    slug: null,
+    // Every account has a slug (backend release 2, #688). The mock uses the id,
+    // so the viewer's profile links stay /mentors/<id>, which the mock serves.
+    slug: MOCK_VIEWER_ID,
     // Social links (backend #507), from the mock store; LinkedIn is the profile's.
     links: mockLinks(),
     timezone: 'Africa/Lagos',

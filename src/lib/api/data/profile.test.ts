@@ -60,9 +60,8 @@ describe('toMentorProfile', () => {
     expect(toMentorProfile(read({ last_name: null })).mentor.initials).toBe('G');
   });
 
-  it('addresses a mentor without a slug by id', () => {
-    expect(toMentorProfile(read({ slug: null })).mentor.profileHref).toBe('/mentors/u1');
-    // The card built from the profile carries the same flag as the profile (review of #86).
+  it('the card built from the profile carries the same taking-bookings flag', () => {
+    // (review of #86)
     expect(toMentorProfile(read({ taking_bookings: false })).mentor.takingBookings).toBe(false);
   });
 
