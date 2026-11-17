@@ -114,6 +114,53 @@ describe('first focus', () => {
   });
 });
 
+describe('closing focus', () => {
+  it('an opener that could not take focus at close gets it once the dialog has gone', async () => {
+    function Host({ open, hideOpener }: { open: boolean; hideOpener: boolean }) {
+      return (
+        <>
+          <button type="button" style={hideOpener ? { display: 'none' } : undefined}>
+            opener
+          </button>
+          {open && <Dialog name="sheet" onClose={() => {}} />}
+        </>
+      );
+    }
+    const { rerender } = render(<Host open={false} hideOpener={false} />);
+    const opener = screen.getByRole('button', { name: 'opener' });
+    opener.focus();
+    rerender(<Host open hideOpener />);
+    // jsdom has no layout: a focus() the browser would refuse is refused here by hand.
+    const focus = vi.spyOn(opener, 'focus').mockImplementationOnce(() => {});
+    rerender(<Host open={false} hideOpener={false} />);
+    expect(opener).not.toHaveFocus();
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(opener).toHaveFocus();
+    focus.mockRestore();
+  });
+
+  it('never takes focus back from somewhere the user has moved it since', async () => {
+    function Host({ open }: { open: boolean }) {
+      return (
+        <>
+          <button type="button">opener</button>
+          <button type="button">elsewhere</button>
+          {open && <Dialog name="sheet" onClose={() => {}} />}
+        </>
+      );
+    }
+    const { rerender } = render(<Host open={false} />);
+    const opener = screen.getByRole('button', { name: 'opener' });
+    opener.focus();
+    rerender(<Host open />);
+    vi.spyOn(opener, 'focus').mockImplementationOnce(() => {});
+    rerender(<Host open={false} />);
+    screen.getByRole('button', { name: 'elsewhere' }).focus();
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(screen.getByRole('button', { name: 'elsewhere' })).toHaveFocus();
+  });
+});
+
 describe('opening focus', () => {
   it('moves without scrolling, so a rising sheet doesn’t jump', () => {
     const spy = vi.spyOn(HTMLElement.prototype, 'focus');

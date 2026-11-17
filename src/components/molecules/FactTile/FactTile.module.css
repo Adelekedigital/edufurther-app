@@ -4,6 +4,10 @@
   align-items: center;
   gap: var(--space-3);
 }
+/* A row inside a divided list: the list draws the border; Card's md padding. */
+.row {
+  padding: var(--space-4);
+}
 .disc {
   width: var(--space-10);
   height: var(--space-10);

@@ -113,6 +113,15 @@ export function useFocusTrap(ref: RefObject<HTMLElement | null>, onClose: () => 
       if (at >= 0) traps.splice(at, 1);
       unlock();
       opener?.focus?.();
+      // An opener hidden while the dialog is up (a floating pill under the
+      // modal) can't take focus until the dialog has gone: once more then,
+      // unless focus has been put somewhere since.
+      if (opener && document.activeElement !== opener) {
+        requestAnimationFrame(() => {
+          const now = document.activeElement;
+          if (opener.isConnected && (!now || now === document.body)) opener.focus();
+        });
+      }
     };
     // Once per mount, on purpose: re-running would steal focus mid-dialog.
     // eslint-disable-next-line react-hooks/exhaustive-deps
