@@ -23,7 +23,7 @@ import {
   PROFILE_VIEW_SOURCES,
 } from '@/lib/copy/adminAnalytics';
 import { formatRate } from '@/lib/utils/analytics';
-import { formatCount } from '@/lib/utils/format';
+import { formatCount, formatDuration } from '@/lib/utils/format';
 import { AdminLoadError } from '../../_components/AdminLoadError';
 import { BarRows, orNoData, Section } from './parts';
 import { steps } from './tabModels';
@@ -52,11 +52,14 @@ export function safeReplayUrl(url: string | null | undefined): string | null {
 }
 
 /**
- * Each step: its bar against the first step, and how many dropped since the
- * step before. A step nothing tracks (null) reads "No data" with no bar, and
- * no drop is claimed into or out of it.
+ * Each step: its bar against the first step, how many dropped since the
+ * step before, and the median time it took (decision 351, when the backend
+ * has enough people). A step nothing tracks (null) reads "No data" with no
+ * bar, and no drop is claimed into or out of it.
  */
-export function funnelRows(funnel: Omit<FunnelStep, 'layer'>[]) {
+export function funnelRows(
+  funnel: (Omit<FunnelStep, 'layer'> & { medianFromPrevious?: number | null })[],
+) {
   const known = steps(funnel.map((s) => ({ key: s.key, value: s.value ?? 0 })));
   return known.map((s, i) => {
     const value = funnel[i]!.value;
@@ -70,6 +73,9 @@ export function funnelRows(funnel: Omit<FunnelStep, 'layer'>[]) {
       width: value === null ? 0 : s.width,
       drop:
         i === 0 ? BEHAVIOUR.start : value === null || before === null ? '' : BEHAVIOUR.dropped(pct),
+      time: funnel[i]!.medianFromPrevious
+        ? BEHAVIOUR.medianStep(formatDuration(funnel[i]!.medianFromPrevious!))
+        : '',
     };
   });
 }
@@ -284,7 +290,21 @@ function FunnelBody({ name, query }: { name: FunnelName; query: TabQuery<Funnel>
       />
     );
   }
-  const { steps: all, figures } = query.data!;
+  const { steps: all, figures: given, medianToComplete } = query.data!;
+  // Every funnel's time to finish leads its figures, once the backend sends it.
+  const figures: FunnelFigure[] =
+    medianToComplete === undefined
+      ? given
+      : [
+          {
+            key: 'median_to_complete',
+            label: BEHAVIOUR.medianToComplete,
+            value: medianToComplete,
+            previous: null,
+            unit: 'seconds',
+          },
+          ...given,
+        ];
   // Nobody started it, or nothing tracks its first step.
   if (!all.length || !all[0]!.value) {
     // Nobody started this funnel in the window: the page's empty state, in the card.
@@ -315,6 +335,7 @@ function FunnelBody({ name, query }: { name: FunnelName; query: TabQuery<Funnel>
           <span className={styles.step}>
             <strong className={styles.stepCount}>{r.count}</strong>
             <span className={styles.drop}>{r.drop}</span>
+            {r.time && <span className={styles.drop}>{r.time}</span>}
           </span>
         ),
       }))}
@@ -343,12 +364,14 @@ function FunnelBody({ name, query }: { name: FunnelName; query: TabQuery<Funnel>
 
 const ONE_DECIMAL = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 
-/** A figure as read: "2.5 days", "41.7%", or "No data". */
+/** A figure as read: "2.5 days", "41.7%", "1.5 h", or "No data". */
 export function figureValue(f: Pick<FunnelFigure, 'value' | 'unit'>): string {
   return orNoData(f.value, (n) =>
-    f.unit === 'days'
-      ? BEHAVIOUR.days(ONE_DECIMAL.format(n))
-      : BEHAVIOUR.percent(ONE_DECIMAL.format(n)),
+    f.unit === 'seconds'
+      ? formatDuration(n)
+      : f.unit === 'days'
+        ? BEHAVIOUR.days(ONE_DECIMAL.format(n))
+        : BEHAVIOUR.percent(ONE_DECIMAL.format(n)),
   );
 }
 

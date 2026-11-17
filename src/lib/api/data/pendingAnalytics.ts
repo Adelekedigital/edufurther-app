@@ -64,8 +64,17 @@ export type WireFunnelFigure = {
   unit: 'days' | 'percent';
 };
 export type WireFunnelV2 = Omit<WireFunnel, 'steps'> & {
-  steps: (WireFunnel['steps'][number] & { layer?: WireFunnelLayer })[];
+  steps: (WireFunnel['steps'][number] & {
+    layer?: WireFunnelLayer;
+    /**
+     * Median seconds from the step before (backend decision 351): null on the
+     * first step, on outcome steps, and under 5 people. Absent before release.
+     */
+    median_seconds_from_previous?: number | null;
+  })[];
   figures?: WireFunnelFigure[];
+  /** Median seconds from the first step to the last path step (decision 351); null under 5 people. */
+  median_seconds_to_complete?: number | null;
 };
 export type WireBehaviour = Schemas['AnalyticsBehaviourRead'];
 /** Where a profile view came from; anything else is counted as `other`. The words are ours. */

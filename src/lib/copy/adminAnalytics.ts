@@ -359,6 +359,9 @@ export const BEHAVIOUR = {
   outcome: 'Then',
   outcomeLabel: (name: string, steps: string) => `${name}, what happened next: ${steps}`,
   figuresLabel: (name: string) => `${name}: beside the funnel`,
+  /** Decision 351: the median time between steps, after its drop-off. */
+  medianStep: (time: string) => `median ${time}`,
+  medianToComplete: 'Median time to finish',
   days: (n: string) => `${n} ${n === '1' ? 'day' : 'days'}`,
   percent: (n: string) => `${n}%`,
   downTitle: 'Funnels aren’t available right now',
