@@ -18,7 +18,6 @@ export const MINUS = '−';
 export const signed = (n: number, body: string) =>
   n > 0 ? `+${body}` : n < 0 ? `${MINUS}${body}` : body;
 
-/** A whole-number count with thousands separators: 7320 → "7,320". */
 /**
  * A span of time, short and readable at a glance: "45 min", "1.5 h", "3 days"
  * (minutes under an hour, hours under two days, then days; one decimal).
@@ -32,6 +31,7 @@ export function formatDuration(seconds: number): string {
   return `${days} ${days === '1' ? 'day' : 'days'}`;
 }
 
+/** A whole-number count with thousands separators: 7320 → "7,320". */
 export function formatCount(n: number): string {
   return Math.round(n).toLocaleString('en-US');
 }
