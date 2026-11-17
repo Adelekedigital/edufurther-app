@@ -9,6 +9,8 @@ type CopyLinkButtonProps = {
   /** e.g. "Copy share link for SOP draft review". */
   label: string;
   url: string;
+  /** The link is on the clipboard (never after a refused copy): the page counts the share. */
+  onCopied?: () => void;
 };
 
 /**
@@ -16,7 +18,7 @@ type CopyLinkButtonProps = {
  * a green check with "Link copied" above it for 1.8s, announced politely. If
  * the browser refuses the clipboard, it says so instead (ours).
  */
-export function CopyLinkButton({ label, url }: CopyLinkButtonProps) {
+export function CopyLinkButton({ label, url, onCopied }: CopyLinkButtonProps) {
   const { state, copy } = useCopyText(1800);
   return (
     <span className={styles.wrap}>
@@ -25,7 +27,7 @@ export function CopyLinkButton({ label, url }: CopyLinkButtonProps) {
         className={cx(styles.button, state === 'copied' && styles.copied)}
         aria-label={label}
         title="Copy share link"
-        onClick={() => void copy(url)}
+        onClick={() => void copy(url).then((ok) => ok && onCopied?.())}
       >
         <Icon name={state === 'copied' ? 'check' : 'link'} size={20} />
       </button>

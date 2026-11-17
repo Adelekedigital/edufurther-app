@@ -34,6 +34,7 @@ import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
 import { BANNER_ACCEPT, useCoverEdit } from '@/lib/api/data/cover';
 import { useMentorProfile } from '@/lib/api/data/profile';
+import { profileShared } from '@/lib/api/data/profileLinks';
 import { NOT_TAKING_TITLE, SHARE_NOTE } from '@/lib/copy/profile';
 import { useMentorsFreeSoon } from '@/lib/api/data/freeSoon';
 import { SIMILAR_SHOWN, useSimilarMentors } from '@/lib/api/data/similar';
@@ -195,7 +196,11 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const ownUrl = !!member && handle === member.id;
   const detour = useSetupDetour(viewer, isOwner || ownUrl);
   // A visitor's view (PRD 30): the owner looking at their own page isn't one.
-  useProfileViewed(handle, !!p && viewer.kind !== 'loading' && !isOwner && !ownUrl, p?.mentor.id);
+  useProfileViewed(handle, {
+    loaded: !!p && viewer.kind !== 'loading',
+    visitor: !isOwner && !ownUrl,
+    mentorId: p?.mentor.id,
+  });
   // "View as mentee" (Mentor Profile.dc.html `pvw`): the owner sees the page as
   // a mentee does, with Book drawn but off. Page state: a reload is back to editing.
   const [previewOn, setPreview] = useState(false);
@@ -902,6 +907,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
           name={p.mentor.name}
           own={isOwner}
           note={shareNote}
+          count={(method) => profileShared(p.mentor.id, method, isOwner)}
           onClose={() => setShareOpen(false)}
         />
       )}

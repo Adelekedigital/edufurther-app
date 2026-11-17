@@ -4,6 +4,7 @@ import type { ComponentProps } from 'react';
 import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
 import { InviteModal } from './InviteModal';
 import { track } from '@/lib/analytics/track';
+import { recordProfileShare } from '@/lib/api/data/profileLinks';
 
 vi.mock('@/lib/analytics/track', async (orig) => ({
   ...(await orig<typeof import('@/lib/analytics/track')>()),
@@ -15,7 +16,12 @@ const shares = () =>
     .mocked(track)
     .mock.calls.filter(([e]) => e === 'link_shared')
     .map(([, p]) => p);
-beforeEach(() => vi.mocked(track).mockClear());
+// An invite isn't a mentor-profile share: nothing may record one.
+vi.mock('@/lib/api/data/profileLinks', () => ({ recordProfileShare: vi.fn() }));
+beforeEach(() => {
+  vi.mocked(track).mockClear();
+  vi.mocked(recordProfileShare).mockClear();
+});
 
 const URL = 'https://app.test/invite/damilola-7k2x';
 
@@ -138,9 +144,11 @@ describe('InviteModal', () => {
     setShare(share);
     const p = renderModal();
     await user.click(screen.getByRole('button', { name: 'Share' }));
+    // The invite link goes out as it is: no profile channel.
     expect(share).toHaveBeenCalledWith({ ...INVITE_LANDING_COPY.share, url: URL });
     expect(p.onShared).toHaveBeenCalledTimes(1);
     expect(shares()).toEqual([{ kind: 'invite', method: 'native', own: true }]);
+    expect(recordProfileShare).not.toHaveBeenCalled();
   });
 
   it('dismissing the share sheet does nothing', async () => {

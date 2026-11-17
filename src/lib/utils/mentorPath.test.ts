@@ -1,4 +1,4 @@
-import { mentorProfilePath } from './mentorPath';
+import { mentorProfilePath, withProfileVia } from './mentorPath';
 
 describe('mentorProfilePath', () => {
   it('uses the slug, else the handle, else the id', () => {
@@ -18,5 +18,23 @@ describe('mentorProfilePath', () => {
     ).toBe('/mentors/u-1?book=t-1&at=2026-11-20T10%3A00%3A00Z');
     expect(mentorProfilePath({ id: 'u-1' }, { tab: undefined })).toBe('/mentors/u-1');
     expect(mentorProfilePath({ id: 'u-1' }, {})).toBe('/mentors/u-1');
+  });
+});
+
+describe('withProfileVia', () => {
+  it('sets the channel and keeps every other param', () => {
+    expect(withProfileVia('https://app.test/mentors/ada-obi?book=t-1', 'copy')).toBe(
+      'https://app.test/mentors/ada-obi?book=t-1&via=copy',
+    );
+  });
+
+  it('replaces a channel the link already had, never doubles it', () => {
+    expect(withProfileVia('https://app.test/mentors/ada-obi?via=copy', 'share')).toBe(
+      'https://app.test/mentors/ada-obi?via=share',
+    );
+  });
+
+  it('a link it can’t read goes out as it was', () => {
+    expect(withProfileVia('/mentors/ada-obi', 'copy')).toBe('/mentors/ada-obi');
   });
 });

@@ -263,8 +263,13 @@ async function reviewWidth(width) {
   page.on('pageerror', (err) => {
     result.consoleErrors.push(`uncaught: ${err.message}`.slice(0, 300));
   });
-  page.on('requestfailed', (req) => {
+  page.on('requestfailed', async (req) => {
     const reason = req.failure()?.errorText ?? '';
+    // Chromium answers a fetch with an empty body (a 204) and then reports the
+    // same request as ERR_ABORTED: the page got its answer, so it isn't a
+    // failure. Any 4xx/5xx is still reported by the response handler below.
+    const answered = await req.response().catch(() => null);
+    if (answered && answered.status() < 400 && reason.includes('ERR_ABORTED')) return;
     // Next prefetches the pages a visible link leads to (an RSC request,
     // `_rsc=`). One still in flight when the run moves on or closes the page is
     // aborted by the browser: timing, not a failure (it flaked the mentor home

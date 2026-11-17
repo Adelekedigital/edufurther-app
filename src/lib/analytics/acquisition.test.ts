@@ -59,6 +59,11 @@ describe('readArrival', () => {
     expect(readArrival('/', '', 'https://edufurther.org/', HOST)).toBeNull();
     expect(readArrival('/', '', `https://${HOST}/home`, HOST)).toBeNull();
     expect(readArrival('/', '', 'not a url', HOST)).toBeNull();
+    // Local dev and our preview builds are us too (lib/utils/ownHost).
+    expect(readArrival('/', '', 'http://localhost:3000/', HOST)).toBeNull();
+    expect(readArrival('/', '', 'https://edufurther-app-git-x-team.vercel.app/', HOST)).toBeNull();
+    // A sign-in round trip is not a referral either.
+    expect(readArrival('/login', '?auth=google', 'https://accounts.google.com/', HOST)).toBeNull();
   });
 
   it('a direct visit is nothing', () => {
