@@ -44,7 +44,7 @@ describe('MentorDialogs', () => {
     expect(onConfirm).toHaveBeenCalledWith('No-shows');
   });
 
-  it('approve has no field and confirms straight away', async () => {
+  it('approve’s note is optional: it confirms straight away with none', async () => {
     const user = userEvent.setup();
     const onConfirm = vi.fn();
     render(
@@ -55,7 +55,9 @@ describe('MentorDialogs', () => {
         onConfirm={onConfirm}
       />,
     );
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: /\(optional\)$/ })).not.toHaveAttribute(
+      'aria-required',
+    );
     await user.click(screen.getByRole('button', { name: 'Approve' }));
     expect(onConfirm).toHaveBeenCalledWith('');
   });

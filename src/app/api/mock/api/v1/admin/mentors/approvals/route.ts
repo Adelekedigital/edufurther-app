@@ -5,7 +5,13 @@ import { ok, problem } from '@/lib/api/mock/respond';
 /** MOCK of POST /api/v1/admin/mentors/approvals (A7): 1–50 ids. */
 export async function POST(req: Request) {
   if (process.env.ENABLE_MOCK_API !== '1') return new NextResponse(null, { status: 404 });
-  const { user_ids } = (await req.json().catch(() => ({}))) as { user_ids?: unknown };
+  // `message` (backend 350): the same note for each mentor; the store keeps none for approvals.
+  const { user_ids, message } = (await req.json().catch(() => ({}))) as {
+    user_ids?: unknown;
+    message?: unknown;
+  };
+  if (typeof message === 'string' && message.trim().length > 1000)
+    return problem(422, { title: 'Validation failed' });
   const ids = Array.isArray(user_ids)
     ? user_ids.filter((x): x is string => typeof x === 'string')
     : [];

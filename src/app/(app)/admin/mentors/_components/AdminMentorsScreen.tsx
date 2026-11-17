@@ -172,7 +172,10 @@ export function AdminMentorsScreen() {
     if (!dialog) return;
     try {
       if (dialog.kind === 'bulk') {
-        const out = await bulk.mutateAsync(dialog.mentors.map((m) => m.id));
+        const out = await bulk.mutateAsync({
+          ids: dialog.mentors.map((m) => m.id),
+          message: text,
+        });
         setDialog(null);
         // Q9: the ones that failed stay checked.
         setChecked(out.failed);
@@ -183,8 +186,8 @@ export function AdminMentorsScreen() {
         return;
       }
       const m = dialog.mentor;
-      if (dialog.kind === 'approve') await approve.mutateAsync(m.id);
-      if (dialog.kind === 'decline') await decline.mutateAsync({ id: m.id, reason: text });
+      if (dialog.kind === 'approve') await approve.mutateAsync({ id: m.id, message: text });
+      if (dialog.kind === 'decline') await decline.mutateAsync({ id: m.id, message: text });
       if (dialog.kind === 'pause') await pause.mutateAsync({ id: m.id, reason: text });
       if (dialog.kind === 'resume') await resume.mutateAsync(m.id);
       setDialog(null);

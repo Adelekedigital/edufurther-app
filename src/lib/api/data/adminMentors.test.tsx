@@ -246,20 +246,25 @@ describe('reads', () => {
 });
 
 describe('writes', () => {
-  it('approve and decline use the decision call; decline always sends the comment', async () => {
+  it('approve and decline use the decision call; the note goes as `message`, trimmed', async () => {
     POST.mockResolvedValue(okRes({ decided: true }));
     const { w, spy } = withClient();
     const a = renderHook(() => useApproveMentor(), { wrapper: w });
-    await act(() => a.result.current.mutateAsync('m1'));
+    await act(() => a.result.current.mutateAsync({ id: 'm1' }));
     expect(POST).toHaveBeenLastCalledWith('/api/v1/admin/mentors/{user_id}/decision', {
       params: { path: { user_id: 'm1' }, query: { approve: true } },
       body: {},
     });
+    // A blank note is no note: the usual email.
+    await act(() => a.result.current.mutateAsync({ id: 'm1', message: '   ' }));
+    expect(POST.mock.lastCall![1].body).toEqual({});
+    await act(() => a.result.current.mutateAsync({ id: 'm1', message: ' Welcome aboard! ' }));
+    expect(POST.mock.lastCall![1].body).toEqual({ message: 'Welcome aboard!' });
     const d = renderHook(() => useDeclineMentor(), { wrapper: w });
-    await act(() => d.result.current.mutateAsync({ id: 'm1', reason: 'Why' }));
+    await act(() => d.result.current.mutateAsync({ id: 'm1', message: 'Why' }));
     expect(POST).toHaveBeenLastCalledWith('/api/v1/admin/mentors/{user_id}/decision', {
       params: { path: { user_id: 'm1' }, query: { approve: false } },
-      body: { reason: 'Why' },
+      body: { message: 'Why' },
     });
     expect(spy).toHaveBeenCalledWith({ queryKey: ['admin'] });
   });
@@ -287,10 +292,10 @@ describe('writes', () => {
     const b = renderHook(() => useBulkApprove(), { wrapper: w });
     let out: unknown;
     await act(async () => {
-      out = await b.result.current.mutateAsync(['m1', 'm2']);
+      out = await b.result.current.mutateAsync({ ids: ['m1', 'm2'], message: 'Welcome' });
     });
     expect(POST).toHaveBeenCalledWith('/api/v1/admin/mentors/approvals', {
-      body: { user_ids: ['m1', 'm2'] },
+      body: { user_ids: ['m1', 'm2'], message: 'Welcome' },
     });
     expect(out).toEqual({ approved: ['m1'], failed: ['m2'] });
   });
@@ -326,7 +331,7 @@ describe('writes', () => {
     POST.mockResolvedValue(failRes(404));
     const { w, spy } = withClient();
     const a = renderHook(() => useApproveMentor(), { wrapper: w });
-    await expect(a.result.current.mutateAsync('m1')).rejects.toMatchObject({ status: 404 });
+    await expect(a.result.current.mutateAsync({ id: 'm1' })).rejects.toMatchObject({ status: 404 });
     // The row may have moved meanwhile: the stale one must go.
     await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['admin'] }));
   });
@@ -340,7 +345,7 @@ describe('writes', () => {
     const b = renderHook(() => useBulkApprove(), { wrapper: w });
     let out: { approved: string[]; failed: string[] } | undefined;
     await act(async () => {
-      out = await b.result.current.mutateAsync(ids);
+      out = await b.result.current.mutateAsync({ ids });
     });
     expect(POST).toHaveBeenCalledTimes(2);
     expect(POST.mock.calls[0]![1].body.user_ids).toHaveLength(50);
