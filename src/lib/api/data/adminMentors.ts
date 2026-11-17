@@ -196,13 +196,6 @@ export type AdminMentorDetail = AdminPerson & {
   approved: { at: string | null; message: string | null } | null;
 };
 
-/**
- * PENDING BACKEND 350: the drawer's `approved`, and `message` on `declined`
- * (`reason` is its deprecated twin). Drop once the spec publishes them.
- */
-type WireDecision = { at?: string | null; reason?: string | null; message?: string | null };
-type PendingDetail = { approved?: WireDecision | null; declined?: WireDecision | null };
-
 export function toAdminMentorDetail(w: WireMentorDetail): AdminMentorDetail {
   const rules = w.weekly_hours.filter((r) => r.is_active);
   const week = rules.length ? toWeeklyHours(rules, w.timezone ?? 'UTC') : null;
@@ -246,13 +239,13 @@ export function toAdminMentorDetail(w: WireMentorDetail): AdminMentorDetail {
     declined: w.declined
       ? {
           at: w.declined.at,
-          reason: (w as PendingDetail).declined?.message ?? w.declined.reason,
+          // `reason` is `message` under its deprecated name (backend 350).
+          reason: w.declined.message ?? w.declined.reason,
         }
       : null,
-    approved: (() => {
-      const a = (w as PendingDetail).approved;
-      return a ? { at: a.at ?? null, message: a.message?.trim() || null } : null;
-    })(),
+    approved: w.approved
+      ? { at: w.approved.at, message: w.approved.message?.trim() || null }
+      : null,
   };
 }
 
@@ -358,13 +351,11 @@ export function useAddAdminNote(mentorId: string | null) {
 /**
  * The note an admin may send with a decision (backend 350): trimmed, 1–1,000
  * characters, plain text; the email shows it ("A note from the team" on
- * approval, the comment on decline). PENDING BACKEND 350: the spec's body is
- * `DeclineRequest {reason}` until it publishes `message`; then drop the cast.
+ * approval, the comment on decline). A blank note is no note.
  */
 export const DECISION_NOTE_MAX = 1000;
-type DecisionBody = Schemas['DeclineRequest'];
-const withNote = (message?: string) =>
-  (message?.trim() ? { message: message.trim() } : {}) as unknown as DecisionBody;
+const withNote = (message?: string): Schemas['MentorDecisionWrite'] =>
+  message?.trim() ? { message: message.trim() } : {};
 
 const decide = async (id: string, approve: boolean, message?: string) =>
   ensure(
@@ -413,11 +404,8 @@ export const useBulkApprove = () =>
     const out: BulkDecision = { approved: [], failed: [] };
     for (let i = 0; i < ids.length; i += BULK_MAX) {
       const res = await api.POST('/api/v1/admin/mentors/approvals', {
-        // The same note goes to each mentor (backend 350; PENDING: drop the cast).
-        body: {
-          user_ids: ids.slice(i, i + BULK_MAX),
-          ...(withNote(message) as object),
-        } as Schemas['BulkDecisionWrite'],
+        // The same note goes to each mentor (backend 350).
+        body: { user_ids: ids.slice(i, i + BULK_MAX), ...withNote(message) },
       });
       if (!res.response.ok || !res.data)
         throw apiError(res.response.status, res.error, res.response);
