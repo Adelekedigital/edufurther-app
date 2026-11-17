@@ -28,12 +28,14 @@ export const Header: Story = {
         subline="Let’s get your first session booked."
         shareUrl="https://edufurther.com/mentors/gbenga"
         shareName="Gbenga Adeyemi"
+        countShare={() => {}}
       />
       <DashboardHeader
         name="Gbenga"
         subline="Here’s how your mentoring is going."
         shareUrl="https://edufurther.com/mentors/gbenga"
         shareName="Gbenga Adeyemi"
+        countShare={() => {}}
       />
     </div>
   ),

@@ -2,6 +2,7 @@
 
 import { LinkSharePanel } from '@/components/molecules/LinkSharePanel/LinkSharePanel';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
+import type { ShareMethod } from '@/lib/analytics/events';
 import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
 import styles from './ShareProfileModal.module.css';
 
@@ -21,8 +22,13 @@ export type ShareProfileModalProps = {
    * sharer needs to know first. The link still works.
    */
   note?: string;
+  /**
+   * Counts a copy or share: the page passes profileShared (link_shared and
+   * our record together). Required, so no profile share goes uncounted.
+   */
+  count: (method: ShareMethod) => void;
   /** The link was copied or shared (Mentor Home marks its Share step done). */
-  onShared?: () => void;
+  onShared?: (method: ShareMethod) => void;
   onClose: () => void;
 };
 
@@ -37,6 +43,7 @@ export function ShareProfileModal({
   name,
   own = false,
   note,
+  count,
   onShared,
   onClose,
 }: ShareProfileModalProps) {
@@ -52,6 +59,7 @@ export function ShareProfileModal({
       <div className={styles.body}>
         <LinkSharePanel
           url={url}
+          count={count}
           onShared={onShared}
           content={MENTOR_SHARE_COPY.panel(own, name)}
         />

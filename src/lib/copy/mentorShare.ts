@@ -6,6 +6,8 @@
  * promise (a booking spends a credit).
  */
 
+import { withProfileVia } from '@/lib/utils/mentorPath';
+
 /** The message, mentor's own share or anyone else's. The link follows it. */
 function message(own: boolean, name: string): string {
   return own
@@ -29,13 +31,21 @@ export const MENTOR_SHARE_COPY = {
         : 'Send it to someone it could help.',
   },
   message,
-  /** The profile link in LinkSharePanel: Copy and the share sheet carry the same words. */
+  /**
+   * The profile link in LinkSharePanel: Copy and the share sheet carry the same
+   * words. The link each sends carries its channel (`?via=copy`, `?via=share`),
+   * so the visit it brings is counted by how it was passed on.
+   */
   panel: (own: boolean, name: string) =>
     ({
       kind: 'mentor_profile',
       own,
-      copyText: (url: string) => withLink(own, name, url),
-      share: (url: string) => ({ title: `${name} on EduFurther`, text: message(own, name), url }),
+      copyText: (url: string) => withLink(own, name, withProfileVia(url, 'copy')),
+      share: (url: string) => ({
+        title: `${name} on EduFurther`,
+        text: message(own, name),
+        url: withProfileVia(url, 'share'),
+      }),
       copyLabel: 'Copy link',
       copiedLabel: 'Link copied',
     }) as const,

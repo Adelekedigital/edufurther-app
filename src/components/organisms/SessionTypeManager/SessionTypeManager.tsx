@@ -26,6 +26,8 @@ type SessionTypeManagerProps = {
   onDuplicate: (type: OwnSessionType) => void;
   /** The share link for a type; null until it can be built. */
   shareUrl: (type: OwnSessionType) => string | null;
+  /** A row's share link was copied. */
+  onShareCopied?: () => void;
   createHref: string;
   /** Rows whose "Keep it" is waiting on the server. */
   restoringIds?: string[];
@@ -153,6 +155,7 @@ function List({
   onRestore,
   onDuplicate,
   shareUrl,
+  onShareCopied,
   restoringIds,
   focusAfterRemoval,
   onFocused,
@@ -236,6 +239,7 @@ function List({
           onDuplicate={() => onDuplicate(t)}
           duplicateOff={off ? SESSIONS_COPY.atLimit(limit ?? null) : null}
           shareUrl={shareUrl(t)}
+          onShareCopied={onShareCopied}
           restoring={!!restoringIds?.includes(t.id)}
           focusMenu={typeof focusAfterRemoval === 'object' && focusAfterRemoval?.menuOf === t.id}
           onFocused={onFocused}

@@ -21,8 +21,20 @@ describe('CopyLinkButton', () => {
   it('a refused clipboard says it couldn’t copy (never "copied")', async () => {
     const user = userEvent.setup();
     clip(() => Promise.reject(new Error('denied')));
-    render(<CopyLinkButton label="Copy share link for SOP" url="u" />);
+    const onCopied = vi.fn();
+    render(<CopyLinkButton label="Copy share link for SOP" url="u" onCopied={onCopied} />);
     await user.click(screen.getByRole('button', { name: 'Copy share link for SOP' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Couldn’t copy. Try again.');
+    expect(onCopied).not.toHaveBeenCalled();
+  });
+
+  it('tells the page once the link is on the clipboard', async () => {
+    const user = userEvent.setup();
+    clip(vi.fn().mockResolvedValue(undefined));
+    const onCopied = vi.fn();
+    render(<CopyLinkButton label="Copy share link for SOP" url="u" onCopied={onCopied} />);
+    await user.click(screen.getByRole('button', { name: 'Copy share link for SOP' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Link copied');
+    expect(onCopied).toHaveBeenCalledOnce();
   });
 });

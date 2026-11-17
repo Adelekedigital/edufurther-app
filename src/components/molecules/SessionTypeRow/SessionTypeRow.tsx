@@ -26,6 +26,8 @@ type SessionTypeRowProps = {
   duplicateOff?: string | null;
   /** The public link to book this type; null until it can be built (no button). */
   shareUrl: string | null;
+  /** The share link was copied. */
+  onShareCopied?: () => void;
   /** Our copy under the row: a switch that didn't save, or what Duplicate did. */
   message?: string;
   /** info: progress or success (no error icon). */
@@ -53,6 +55,7 @@ export function SessionTypeRow({
   onDuplicate,
   duplicateOff = null,
   shareUrl,
+  onShareCopied,
   message,
   messageTone = 'error',
   restoring = false,
@@ -195,7 +198,11 @@ export function SessionTypeRow({
           />
         )}
         {shareUrl && !pending && (
-          <CopyLinkButton label={`Copy share link for ${t.name}`} url={shareUrl} />
+          <CopyLinkButton
+            label={`Copy share link for ${t.name}`}
+            url={shareUrl}
+            onCopied={onShareCopied}
+          />
         )}
         <RowMenu
           triggerRef={menuRef}

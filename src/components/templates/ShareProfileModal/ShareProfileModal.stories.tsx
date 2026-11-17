@@ -12,6 +12,7 @@ const meta = {
     url: 'https://app.edufurther.com/mentors/gbenga',
     name: 'Gbenga Elufisan',
     own: false,
+    count: fn(),
     onShared: fn(),
     onClose: fn(),
   },

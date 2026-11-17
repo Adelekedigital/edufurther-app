@@ -11,9 +11,10 @@ import { useCalendarReconnect } from '@/app/_shell/useCalendarReconnect';
 import { useSetupDetour } from '@/app/_shell/useSetupDetour';
 import { useMentorDashboard, type SetupNext } from '@/lib/api/data/dashboard';
 import { useMentorStatus } from '@/lib/api/data/mentorStatus';
+import { profileShared } from '@/lib/api/data/profileLinks';
+import type { ShareMethod } from '@/lib/analytics/events';
 import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
 import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
-import { track } from '@/lib/analytics/track';
 import { inSentence, viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useCopyText } from '@/lib/utils/useCopyText';
@@ -142,7 +143,9 @@ function MentorHome({ member }: { member: Member }) {
   const weekMoves = useWeekMoves(member.id, accountZone, now);
 
   // A copy or share from anywhere (the share modal, the setup banner, the Share
-  // move) counts for both the setup step and this week's Share move (design shared()).
+  // move) is counted once (link_shared and our record, profileShared), and marks
+  // both the setup step and this week's Share move (design shared()).
+  const countShare = (method: ShareMethod) => profileShared(member.id, method, true);
   const markShared = () => {
     setShared(true);
     persistShared(member.id);
@@ -159,7 +162,7 @@ function MentorHome({ member }: { member: Member }) {
     const content = MENTOR_SHARE_COPY.panel(true, name);
     void copy(content.copyText(url)).then((ok) => {
       if (!ok) return say('Couldn’t copy the link');
-      track('link_shared', { kind: content.kind, method: 'copy', own: content.own });
+      countShare('copy');
       markShared();
       say('Link copied');
     });
@@ -210,7 +213,8 @@ function MentorHome({ member }: { member: Member }) {
         subline={subline}
         shareUrl={d.shareUrl}
         shareName={d.shareName}
-        onShareCopied={markShared}
+        countShare={countShare}
+        onShared={markShared}
       />
       {reconnect.show && (
         <CalendarReconnectBanner
