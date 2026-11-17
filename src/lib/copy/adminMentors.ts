@@ -185,6 +185,12 @@ export const MENTOR_DRAWER = {
     meaning: 'What this means',
     meaningBody: 'Hidden on Explore. They can log in and keep sessions already booked.',
   },
+  /** Decision 350: the note sent with the approval, when there was one. */
+  approved: {
+    title: (date: string) => `Approved on ${date}`,
+    titleUndated: 'Approved',
+    note: (first: string) => `Note sent to ${first}`,
+  },
   declined: {
     title: (date: string) => `Not approved on ${date}`,
     titleUndated: 'Not approved',
@@ -240,12 +246,18 @@ export const MENTOR_DIALOGS = {
     // Q5: "Their drafted hours go live once they confirm them." dropped.
     body: 'They’ll be listed on Explore right away and we’ll email them.',
     ok: 'Approve',
+    label: (first: string) => `Note to ${first} (optional)`,
     done: (name: string) => `${name} approved and listed on Explore`,
+  },
+  /** The optional note on approval (backend 350): it goes in the approval email. */
+  note: {
+    help: 'We add it to their approval email, under “A note from the team”. Leave it blank to send the usual email.',
   },
   bulk: {
     title: (n: number) => `Approve ${plural(n, 'mentor')}?`,
     body: 'They’ll be listed on Explore right away and we’ll email each of them.',
     ok: (n: number) => `Approve ${n}`,
+    label: 'Note to each of them (optional)',
     done: (n: number) => `${plural(n, 'mentor')} approved and listed on Explore`,
     // Q9: the ones that failed stay checked.
     partial: (ok: number, failed: number) => `${ok} approved. ${failed} didn’t go through.`,

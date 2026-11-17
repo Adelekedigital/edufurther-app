@@ -189,7 +189,19 @@ export type AdminMentorDetail = AdminPerson & {
   /** Kept whenever the API sends it, so `by` is never lost; `at` may be unknown. */
   paused: { at: string | null; by: 'admin' | 'mentor'; reason: string | null } | null;
   declined: { at: string | null; reason: string | null } | null;
+  /**
+   * The approval and the note sent with it (decision 350); null unless
+   * approved. `message` is null with no note and for legacy decisions.
+   */
+  approved: { at: string | null; message: string | null } | null;
 };
+
+/**
+ * PENDING BACKEND 350: the drawer's `approved`, and `message` on `declined`
+ * (`reason` is its deprecated twin). Drop once the spec publishes them.
+ */
+type WireDecision = { at?: string | null; reason?: string | null; message?: string | null };
+type PendingDetail = { approved?: WireDecision | null; declined?: WireDecision | null };
 
 export function toAdminMentorDetail(w: WireMentorDetail): AdminMentorDetail {
   const rules = w.weekly_hours.filter((r) => r.is_active);
@@ -231,7 +243,16 @@ export function toAdminMentorDetail(w: WireMentorDetail): AdminMentorDetail {
       };
     }),
     paused: w.paused ? { at: w.paused.at, by: w.paused.by, reason: w.paused.reason } : null,
-    declined: w.declined ? { at: w.declined.at, reason: w.declined.reason } : null,
+    declined: w.declined
+      ? {
+          at: w.declined.at,
+          reason: (w as PendingDetail).declined?.message ?? w.declined.reason,
+        }
+      : null,
+    approved: (() => {
+      const a = (w as PendingDetail).approved;
+      return a ? { at: a.at ?? null, message: a.message?.trim() || null } : null;
+    })(),
   };
 }
 
@@ -334,20 +355,32 @@ export function useAddAdminNote(mentorId: string | null) {
   });
 }
 
-const decide = async (id: string, approve: boolean, reason?: string) =>
+/**
+ * The note an admin may send with a decision (backend 350): trimmed, 1–1,000
+ * characters, plain text; the email shows it ("A note from the team" on
+ * approval, the comment on decline). PENDING BACKEND 350: the spec's body is
+ * `DeclineRequest {reason}` until it publishes `message`; then drop the cast.
+ */
+export const DECISION_NOTE_MAX = 1000;
+type DecisionBody = Schemas['DeclineRequest'];
+const withNote = (message?: string) =>
+  (message?.trim() ? { message: message.trim() } : {}) as unknown as DecisionBody;
+
+const decide = async (id: string, approve: boolean, message?: string) =>
   ensure(
     await api.POST('/api/v1/admin/mentors/{user_id}/decision', {
       params: { path: { user_id: id }, query: { approve } },
-      body: approve ? {} : { reason },
+      body: withNote(message),
     }),
   );
 
-/** POST /admin/mentors/{user_id}/decision?approve=true: approved and listed, emailed. */
-export const useApproveMentor = () => useAdminWrite((id: string) => decide(id, true));
+/** POST …/decision?approve=true: approved and listed, emailed, with the admin's optional note. */
+export const useApproveMentor = () =>
+  useAdminWrite(({ id, message }: { id: string; message?: string }) => decide(id, true, message));
 
 /** The same call with approve=false; the UI always sends the comment (PRD). */
 export const useDeclineMentor = () =>
-  useAdminWrite(({ id, reason }: { id: string; reason: string }) => decide(id, false, reason));
+  useAdminWrite(({ id, message }: { id: string; message: string }) => decide(id, false, message));
 
 const listing = async (id: string, listed: boolean, reason?: string) =>
   ensure(
@@ -376,11 +409,15 @@ export const BULK_MAX = 50;
  * went through still rejects; the refetch on settle shows who was approved.
  */
 export const useBulkApprove = () =>
-  useAdminWrite(async (ids: string[]): Promise<BulkDecision> => {
+  useAdminWrite(async ({ ids, message }: { ids: string[]; message?: string }) => {
     const out: BulkDecision = { approved: [], failed: [] };
     for (let i = 0; i < ids.length; i += BULK_MAX) {
       const res = await api.POST('/api/v1/admin/mentors/approvals', {
-        body: { user_ids: ids.slice(i, i + BULK_MAX) },
+        // The same note goes to each mentor (backend 350; PENDING: drop the cast).
+        body: {
+          user_ids: ids.slice(i, i + BULK_MAX),
+          ...(withNote(message) as object),
+        } as Schemas['BulkDecisionWrite'],
       });
       if (!res.response.ok || !res.data)
         throw apiError(res.response.status, res.error, res.response);
