@@ -5,6 +5,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
+import { ExportCsvButton } from '@/components/molecules/ExportCsvButton/ExportCsvButton';
 import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
 import { SearchField } from '@/components/molecules/SearchField/SearchField';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
@@ -36,7 +37,6 @@ import {
   MENTOR_TABLE,
   MENTOR_TABS_LABEL,
 } from '@/lib/copy/adminMentors';
-import { downloadCsv } from '@/lib/utils/csv';
 import { viewerZone } from '@/lib/utils/format';
 import { useCopyText } from '@/lib/utils/useCopyText';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
@@ -124,11 +124,6 @@ export function AdminMentorsScreen() {
     if (ok) show(MENTOR_TABLE.copiedEmails(emails.length), 'success');
     else show(MENTOR_TABLE.copyEmailsFailed, 'error');
   };
-
-  // The rows on screen, search and filters applied, as a spreadsheet (roadmap:
-  // Admin mentor review v2). Built on the device from what the admin already sees.
-  const exportCsv = () =>
-    downloadCsv(mentorCsvFilename(tab, zone), mentorCsvColumns(tab, zone), visible);
 
   const setTab = (t: MentorTab) => {
     setTabState(t);
@@ -286,9 +281,14 @@ export function AdminMentorsScreen() {
           onClear={() => changeFilters(NO_FILTERS)}
           actions={
             listStatus === 'ready' && visible.length > 0 ? (
-              <Button variant="secondary-outlined" size="small" icon="download" onClick={exportCsv}>
-                {MENTOR_TABLE.exportCsv}
-              </Button>
+              // The rows on screen, search and filters applied (roadmap:
+              // Admin mentor review v2).
+              <ExportCsvButton
+                label={MENTOR_TABLE.exportCsv}
+                filename={mentorCsvFilename(tab, zone)}
+                columns={mentorCsvColumns(tab, zone)}
+                rows={visible}
+              />
             ) : null
           }
         />
