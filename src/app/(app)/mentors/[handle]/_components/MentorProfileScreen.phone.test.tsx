@@ -2,7 +2,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile } from '@/types/mentor';
-import { h, remote, state } from './profileScreen.harness';
+import { h, remote, replace, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
@@ -195,6 +195,44 @@ describe('MentorProfileScreen on phones: booking first (owner, 16 Nov 2026)', ()
   });
 });
 
+describe('MentorProfileScreen on phones: one session in the card (owner, 17 Nov)', () => {
+  it('lists the first session only; "See all N sessions" opens the Sessions tab', async () => {
+    h.profile = state({ data: profile });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    const card = bookCard()!;
+    expect(within(card).getAllByRole('button', { name: /^Book(?! a session)/ })).toHaveLength(1);
+    expect(within(card).getByRole('heading', { name: sessionTypes[0]!.name })).toBeInTheDocument();
+    await user.click(
+      within(card).getByRole('button', { name: `See all ${sessionTypes.length} sessions` }),
+    );
+    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions', { scroll: false });
+  });
+
+  it('two sessions: the Sessions tab shows on phones so "See all 2 sessions" has somewhere to go', async () => {
+    const two = sessionTypes.slice(0, 2);
+    h.sessionTypesRemote = remote(two);
+    h.profile = state({ data: { ...profile, sessionTypes: two } });
+    const user = userEvent.setup();
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('tab', { name: /Sessions/ })).toBeInTheDocument();
+    await user.click(within(bookCard()!).getByRole('button', { name: 'See all 2 sessions' }));
+    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions', { scroll: false });
+  });
+
+  it('desktop keeps two in the card, and no Sessions tab for two sessions', () => {
+    phone(false);
+    const two = sessionTypes.slice(0, 2);
+    h.sessionTypesRemote = remote(two);
+    h.profile = state({ data: { ...profile, sessionTypes: two } });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(
+      within(bookCard()!).getAllByRole('button', { name: /^Book(?! a session)/ }),
+    ).toHaveLength(2);
+    expect(screen.queryByRole('tab', { name: /Sessions/ })).toBeNull();
+  });
+});
+
 describe('MentorProfileScreen on phones: the floating Book pill', () => {
   it('shows only once the card has scrolled up out of view, and goes when it is back', () => {
     h.profile = state({ data: profile });
@@ -209,7 +247,7 @@ describe('MentorProfileScreen on phones: the floating Book pill', () => {
     expect(pill()).toBeNull();
   });
 
-  it('appearing never takes focus; a tap scrolls back to the card and focuses it', async () => {
+  it('appearing never takes focus; a tap opens booking on the first session (owner, 17 Nov)', async () => {
     h.profile = state({ data: profile });
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
@@ -218,8 +256,16 @@ describe('MentorProfileScreen on phones: the floating Book pill', () => {
     cardIs('above');
     expect(tab).toHaveFocus();
     await user.click(pill()!);
-    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
-    expect(bookCard()).toContainElement(document.activeElement as HTMLElement);
+    // No scroll: booking opens where they are, on the first offering ("Change" picks another).
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toHaveTextContent(sessionTypes[0]!.name);
+    // Under the dialog the pill stays on the page (CSS hides it under aria-modal),
+    // so closing hands focus back to it: no jump up to the card.
+    const tap = pill()!;
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(tap).toHaveFocus();
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
   it('focused when the card comes back into view: focus moves to the card, not body', () => {
@@ -250,7 +296,7 @@ describe('MentorProfileScreen on phones: the floating Book pill', () => {
     expect(pill()).toBeNull();
   });
 
-  it('none while the booking flow is open', async () => {
+  it('hidden under the booking flow: kept on the page for focus, the modal hides it', async () => {
     h.profile = state({ data: profile });
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
@@ -260,9 +306,10 @@ describe('MentorProfileScreen on phones: the floating Book pill', () => {
       .getAllByRole('button', { name: 'Book a session' })
       .find((b) => b !== pill())!;
     await user.click(header);
-    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    // FloatingPill's CSS hides it under any aria-modal (body:has([aria-modal])).
+    expect(screen.getByRole('dialog')).toHaveAttribute('aria-modal', 'true');
     cardIs('above');
-    expect(pill()).toBeNull();
+    expect(pill()).toBeInTheDocument();
   });
 
   it('none for the owner, editing or viewing as a mentee', async () => {
@@ -354,7 +401,7 @@ describe('MentorProfileScreen on phones: more of the pill', () => {
     expect(bookCard()).toContainElement(document.activeElement as HTMLElement);
   });
 
-  it('under prefers-reduced-motion the tap jumps instead of gliding', async () => {
+  it("under prefers-reduced-motion the note's Book jumps instead of gliding", async () => {
     const media = window.matchMedia;
     window.matchMedia = ((q: string) =>
       q === '(prefers-reduced-motion: reduce)'
@@ -364,11 +411,15 @@ describe('MentorProfileScreen on phones: more of the pill', () => {
             removeEventListener() {},
           } as unknown as MediaQueryList)
         : media(q)) as typeof window.matchMedia;
+    h.search = new URLSearchParams('tab=reviews');
+    h.reviewPrompt = 'none';
     h.profile = state({ data: profile });
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
-    cardIs('above');
-    await user.click(pill()!);
+    const note = screen
+      .getByText('You can review Gbenga after your first session')
+      .closest('div')!.parentElement!;
+    await user.click(within(note).getByRole('button', { name: 'Book a session' }));
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
   });
 

@@ -197,18 +197,23 @@ export function ProfileOverview({
               onAction={onEditBackground}
             />
           )}
-          {facts.length > 0 && (
-            <div className={styles.facts}>
-              {facts.map((f) => (
-                <FactTile key={f.label} {...f} />
-              ))}
+          {(facts.length > 0 || moved) && (
+            // Phones: one card, the facts as rows and the move its footer (owner, 17 Nov).
+            <div className={styles.bgCard}>
+              {facts.length > 0 && (
+                <div className={styles.facts}>
+                  {facts.map((f) => (
+                    <FactTile key={f.label} {...f} />
+                  ))}
+                </div>
+              )}
+              {moved && (
+                <p className={styles.moved}>
+                  <Icon name="flight_takeoff" size={16} className={styles.movedIcon} />
+                  {moved}
+                </p>
+              )}
             </div>
-          )}
-          {moved && (
-            <p className={styles.moved}>
-              <Icon name="flight_takeoff" size={16} className={styles.movedIcon} />
-              {moved}
-            </p>
           )}
         </section>
       )}

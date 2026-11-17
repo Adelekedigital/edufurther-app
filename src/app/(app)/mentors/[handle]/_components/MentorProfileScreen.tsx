@@ -170,6 +170,8 @@ function refocusAfterTip() {
 
 /** The Sessions (N) tab shows from this many visible sessions (PRD, 21 Oct). */
 const SESSIONS_TAB_FROM = 3;
+/** Phones: the booking card lists one offering, so a second one needs the tab. */
+const PHONE_SESSIONS_TAB_FROM = 2;
 /** Below this many completed sessions a mentor is "new" (design reply #45). */
 const NEW_MENTOR_UNDER = 3;
 
@@ -222,10 +224,14 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   // (review of PR 102).
   const notTakingTab = asMentee && notTaking;
   // The Sessions (N) tab only at 3 or more: with 1 or 2 the side card lists
-  // them (PRD, 21 Oct). The owner, editing, always has it for the controls.
+  // them (PRD, 21 Oct). Phones list one, so the tab comes at 2 for its "See
+  // all" (owner, 17 Nov). The owner, editing, always has it for the controls.
   // A mentor not taking bookings keeps it at 3+, saying so ("Sessions (0)"):
   // as built and as drawn (PRD: not taking bookings, no change).
-  const sessionsTab = editing || (p?.sessionTypes.length ?? 0) >= SESSIONS_TAB_FROM;
+  const isPhone = useMediaQuery('(max-width: 767px)');
+  const sessionsTab =
+    editing ||
+    (p?.sessionTypes.length ?? 0) >= (isPhone ? PHONE_SESSIONS_TAB_FROM : SESSIONS_TAB_FROM);
   const sessionCount = notTakingTab
     ? 0
     : editing && ownActive !== null
@@ -256,7 +262,6 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         : undefined;
   // The header's Share and the owner's "Share your profile" open the share modal.
   const [shareOpen, setShareOpen] = useState(false);
-  const isPhone = useMediaQuery('(max-width: 767px)');
 
   const bookBlocked = !online ? 'Booking needs a connection' : bookBlockedFor(viewer);
   const mayBook = canBookHere && !notTaking;
@@ -482,6 +487,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
             timeZone={timeZone}
             onBook={booking.open}
             onCompare={sessionsTab ? () => setTab('sessions') : undefined}
+            shown={isPhone ? 1 : 2}
             bookBlocked={shownBlock}
             bookDisabled={viewing}
           />
@@ -494,7 +500,10 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     isPhone && tab !== 'sessions' && showBook && !viewing && !previewing && canStartBooking;
   // Past means gone under the sticky header, not off the screen's top.
   const bookPassed = useScrolledPast(bookPillOn ? bookEl : null, shellHeader);
-  const dialogOpen = !!booking.active || shareOpen || !!reviews.reviewing || !!messaging;
+  // Off while another dialog is open. Booking, which the pill opens, keeps it on
+  // the page (FloatingPill hides under any modal), so booking hands focus back
+  // to it on close rather than to the card, which would scroll up to it.
+  const pillOff = shareOpen || !!reviews.reviewing || !!messaging;
 
   // Design reply #45: under 3 sessions, an invitation (mentees) or what mentees
   // see (owner). Desktop: top of the aside (Overview only, like the aside).
@@ -912,8 +921,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
         />
       )}
 
-      {bookPillOn && bookPassed && !dialogOpen && (
-        <BookPill onBook={scrollToBook} onFocusLost={focusBook} />
+      {bookPillOn && bookPassed && !pillOff && (
+        // Opens booking on the first offering; its "Change" picks another (owner, 17 Nov).
+        <BookPill onBook={() => booking.open()} onFocusLost={focusBook} />
       )}
 
       <SendMessageLauncher to={messaging} onClose={() => setMessaging(null)} />

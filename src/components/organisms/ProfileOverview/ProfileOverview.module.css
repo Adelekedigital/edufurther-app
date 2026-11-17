@@ -60,10 +60,16 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: var(--space-3);
 }
+.bgCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
 .moved {
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  margin: 0;
   font-size: var(--text-p-xs);
   color: var(--text-secondary);
 }
@@ -75,6 +81,37 @@
 @media (max-width: 767px) {
   .overview {
     gap: var(--space-4);
+  }
+  /* Mentor Profile.dc.html `bgcard`: the tiles become one card's rows, the
+     move line its green footer, like .list above. */
+  .bgCard {
+    gap: 0;
+    border: var(--border-hairline) solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    background: var(--surface-card);
+    overflow: hidden;
+  }
+  .bgCard .facts {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .bgCard .facts > * {
+    border: none;
+    border-radius: 0;
+  }
+  .bgCard .facts > * + *,
+  .bgCard .moved {
+    border-top: var(--border-hairline) solid var(--border-muted);
+  }
+  .bgCard .moved {
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    line-height: var(--lh-p);
+    background: var(--green-50);
+  }
+  .bgCard .movedIcon {
+    margin-top: 2px;
   }
   .toggle {
     min-height: var(--touch-target-min);
