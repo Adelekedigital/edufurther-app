@@ -1,5 +1,6 @@
 import type { Ref } from 'react';
 import Link from 'next/link';
+import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
@@ -7,10 +8,11 @@ import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { MatchReason } from '@/components/molecules/MatchReason/MatchReason';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { GUEST_COPY, MATCH_COPY } from '@/lib/copy/onboarding';
-import { basedOnLine, reasonLine } from '@/lib/utils/matchReason';
+import { reasonLine } from '@/lib/utils/matchReason';
 import type { AppError, Mentor } from '@/types/mentor';
-import type { MatchBasis, MentorMatch } from '@/types/onboarding';
+import type { MentorMatch } from '@/types/onboarding';
 import { MentorCard } from '../MentorCard/MentorCard';
+import { cx } from '@/lib/utils/cx';
 import styles from './MatchResults.module.css';
 
 export type MatchResultsProps = {
@@ -22,7 +24,6 @@ export type MatchResultsProps = {
   guest?: { firstName: string; available: boolean };
   /** False: nobody matches on study country or degree, so these are the closest. */
   exact: boolean;
-  basis: MatchBasis | null;
   isLoading: boolean;
   error: AppError | null;
   onRetry: () => void;
@@ -34,7 +35,13 @@ export type MatchResultsProps = {
   offline: boolean;
   onBook: (m: Mentor) => void;
   onMoreTopics?: (m: Mentor) => void;
-  onEdit: () => void;
+  /**
+   * "Skip for now", top right (MatchSkip.dc.html): onboarding is already done
+   * here, so it goes Home. None on the guest path (they came to book).
+   */
+  onSkip?: () => void;
+  /** "First session free" under each card, while the starter credit is unused (Home's rule). */
+  starterFree: boolean;
   browseHref: string;
   /** The page moves focus here when the matches step opens. */
   headingRef?: Ref<HTMLHeadingElement>;
@@ -54,9 +61,11 @@ function MatchSkeleton() {
 }
 
 /**
- * "Your top 2 mentor matches" (Mentee Onboarding v5.dc.html, `isMatches`):
- * loading, error, empty and content, error checked before empty. Each card
- * carries its one-line "why". Props only; the page fetches.
+ * "Your top 2 mentor matches" (Mentee Onboarding v5.dc.html, `isMatches`;
+ * MatchSkip.dc.html, owner 2026-11-18): loading, error, empty and content,
+ * error checked before empty. Each card carries its one-line "why"; the
+ * heading, then each card, slides in (none with reduced motion). Props only;
+ * the page fetches.
  */
 export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
   const { matches } = p;
@@ -75,11 +84,18 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
             : !p.exact
               ? [MATCH_COPY.noExactTitle, MATCH_COPY.noExactSub]
               : [MATCH_COPY.title(matches.length), MATCH_COPY.sub];
-  const basedOn = (p.basis && basedOnLine(p.basis)) ?? MATCH_COPY.basedOnFallback;
+  const content = !p.isLoading && !p.error && matches.length > 0;
 
   return (
     <div className={styles.page}>
-      <header className={styles.head}>
+      {p.onSkip && (
+        <div className={styles.skipRow}>
+          <button type="button" className={styles.skip} onClick={p.onSkip}>
+            {MATCH_COPY.skip}
+          </button>
+        </div>
+      )}
+      <header className={cx(styles.head, content && styles.reveal)}>
         <h1 ref={headingRef} tabIndex={-1} className={styles.title}>
           {title}
         </h1>
@@ -90,13 +106,6 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
       <p role="status" className="sr-only">
         {p.isLoading ? MATCH_COPY.loadingLabel : p.error ? '' : title}
       </p>
-
-      <div className={styles.basis}>
-        <span>{basedOn}</span>
-        <Button variant="text" size="small" className={styles.edit} onClick={p.onEdit}>
-          {MATCH_COPY.edit}
-        </Button>
-      </div>
 
       {unavailable && !p.isLoading && !p.error && matches.length > 0 && (
         <Notice tone="brand" title={GUEST_COPY.unavailableNotice(g.firstName)} live={false}>
@@ -136,7 +145,7 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
           <ul className={styles.grid} aria-label="Mentor matches">
             {matches.map((mt) => {
               return (
-                <li key={mt.mentor.id} className={styles.item}>
+                <li key={mt.mentor.id} className={cx(styles.item, styles.reveal)}>
                   {(() => {
                     const line = reasonLine(mt.reasons, {
                       level: mt.level,
@@ -154,6 +163,11 @@ export function MatchResults({ headingRef, ...p }: MatchResultsProps) {
                     offline={p.offline}
                     timeZone={p.timeZone}
                   />
+                  {p.starterFree && (
+                    <Badge type="accent" color="green" shape="pill" className={styles.free}>
+                      {MATCH_COPY.firstFree}
+                    </Badge>
+                  )}
                 </li>
               );
             })}

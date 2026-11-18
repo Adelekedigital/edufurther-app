@@ -46,6 +46,9 @@ export const NEXT_STEP = {
   firstDone: { kicker: 'First session done' },
 } as const;
 
+/** Why the profile matters: the profile sheet's subtitle, and the next step's note on Home. */
+const PROFILE_WHY = 'Mentors read this before your session';
+
 export const GETTING_STARTED = {
   title: 'Getting started',
   count: (n: number) => `${n} of 4 done`,
@@ -58,6 +61,8 @@ export const GETTING_STARTED = {
   invite: 'Invite a friend',
   done: 'Done',
   details: (n: number) => `${n} of 4 details done`,
+  // HomeAfterSkip.dc.html (owner 2026-11-18): the picked-out next step says why.
+  detailsWhy: (n: number) => `${n} of 4 details done · ${PROFILE_WHY}`,
   doneWith: (first: string, date: string) => `Done with ${first} on ${date}`,
   starter: 'Free with your starter credit',
   invitedNote: {
@@ -71,7 +76,7 @@ export const GETTING_STARTED = {
 
 export const PROFILE_SHEET = {
   title: 'Your profile',
-  subtitle: 'Mentors read this before your session.',
+  subtitle: `${PROFILE_WHY}.`,
   count: (n: number) => `${n} of 4 done`,
   next: (field: string) => `Next: ${field}`,
   ready: 'Ready for your first session',

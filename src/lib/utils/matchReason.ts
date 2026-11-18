@@ -1,6 +1,6 @@
 import { countryInSentence } from '@/lib/utils/format';
 import { HELP_AREAS } from '@/lib/copy/onboarding';
-import type { MatchBasis, MatchReason } from '@/types/onboarding';
+import type { MatchReason } from '@/types/onboarding';
 
 /** "a", "a and b", "a, b and c". */
 export function joinAnd(items: string[]): string {
@@ -49,14 +49,4 @@ export function reasonLine(
     rest: bits.length > 1 ? ` · ${bits.slice(1).join(' · ')}` : '',
     matched: true,
   };
-}
-
-/** "Based on: Master's Public Health in the UK · from Nigeria" (Mentee Onboarding v5.dc.html). */
-export function basedOnLine(b: MatchBasis): string | null {
-  const subject = [b.degree, b.field, b.country ? `in ${countryInSentence(b.country)}` : null]
-    .filter(Boolean)
-    .join(' ');
-  const from = b.origin ? `from ${b.origin}` : '';
-  const line = subject && from ? `${subject} · ${from}` : subject || from;
-  return line ? `Based on: ${line}` : null;
 }

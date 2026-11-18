@@ -25,16 +25,6 @@ export type MentorMatch = {
   studyCountry: string | null;
 };
 
-/** What the matches were ranked on, for the "Based on: …" line. */
-export type MatchBasis = {
-  /** As the mentee chose it ("MBA", not the stored Master's). */
-  degree: string | null;
-  field: string | null;
-  /** Null for "Not sure yet". */
-  country: string | null;
-  origin: string | null;
-};
-
 /** Step 2's four answers as the form holds them. */
 export type PlanAnswers = {
   originId: string;
@@ -44,4 +34,3 @@ export type PlanAnswers = {
   /** A country id, NOT_SURE, or '' for none. */
   destinationId: string;
 };
-

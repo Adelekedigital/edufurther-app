@@ -665,16 +665,20 @@ describe('MentorOnboardingScreen', () => {
   });
 });
 
-describe('MentorOnboardingScreen: "Join as a mentee" on step 1 (owner, 2026-10-20)', () => {
-  const join = () => screen.queryByRole('button', { name: 'Join as a mentee' });
+describe('MentorOnboardingScreen: "Get mentored" | "Mentor others" on step 1 (owner, 2026-10-20; 2026-11-18)', () => {
+  const join = () => screen.queryByRole('radio', { name: 'Get mentored' });
   beforeEach(() => {
     viewer = { ...viewer, signedUpAsMentor: true, onboardingStarted: false } as Viewer;
   });
 
-  it('a fresh mentor sign-up sees it beside the counter; a click saves mentee once', async () => {
+  it('a fresh mentor sign-up sees the tabs, "Mentor others" picked; a click saves mentee once', async () => {
     render(<MentorOnboardingScreen />);
     expect(screen.getByText('Step 1 of 4')).not.toHaveClass('end');
-    expect(join()).toHaveClass('roleSwitch');
+    expect(screen.getByRole('radio', { name: 'Mentor others' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(join()).toHaveAttribute('aria-checked', 'false');
     await userEvent.click(join()!);
     expect(switchTo).toHaveBeenCalledTimes(1);
     expect(switchTo).toHaveBeenCalledWith('mentee');

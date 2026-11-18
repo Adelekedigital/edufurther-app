@@ -107,7 +107,8 @@ export function MenteeNewView(p: MenteeNewViewProps) {
     {
       key: 'profile',
       label: G.profile,
-      note: steps.profile ? G.done : G.details(n),
+      // The next step says why it matters (HomeAfterSkip.dc.html); its row is picked out already.
+      note: steps.profile ? G.done : current === 'profile' ? G.detailsWhy(n) : G.details(n),
       state: state(steps.profile, 'profile'),
       onClick: p.onOpenProfile,
     },

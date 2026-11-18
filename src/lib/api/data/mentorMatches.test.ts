@@ -15,7 +15,7 @@ const mentor = {
 const topics = [{ id: 'o-doc', slug: 'document-preparation', label: 'Document preparation' }];
 
 describe('toMatches', () => {
-  it('maps reasons to the codes the copy is keyed by, and keeps the chosen degree word', () => {
+  it('maps reasons to the codes the copy is keyed by', () => {
     const w: WireMatches = {
       matches: [
         {
@@ -43,7 +43,6 @@ describe('toMatches', () => {
     ]);
     // Falls back to the card's own study country.
     expect(m.matches[0]!.studyCountry).toBe('United Kingdom');
-    expect(m.basis).toEqual({ degree: 'MBA', field: 'Law', country: null, origin: 'Nigeria' });
     expect(m.exact).toBe(false);
     expect(m.forMentorBookable).toBe(true);
   });
@@ -76,7 +75,7 @@ describe('toMatches', () => {
     expect(bare).toMatchObject({ level: null, studyCountry: 'United Kingdom' });
   });
 
-  it('maps the country, origin and field reasons, and an empty basis to nothing', () => {
+  it('maps the country, origin and field reasons', () => {
     const uk = { id: 'c-gb', label: 'United Kingdom' };
     const w: WireMatches = {
       matches: [
@@ -98,36 +97,30 @@ describe('toMatches', () => {
       { code: 'origin', country: { id: 'c-ng', label: 'Nigeria' } },
       { code: 'study_country', country: uk },
     ]);
-    expect(m.basis).toEqual({ degree: null, field: null, country: null, origin: null });
   });
 
-  it('says levels in our words, not the backend’s “Master’s Degree”, and keeps MBA', () => {
+  it('says levels in our words, not the backend’s “Master’s Degree”', () => {
     const levels = [{ id: 'dl-masters', code: 'masters' }];
     const deg = { id: 'dl-masters', label: 'Master’s Degree' };
     const w: WireMatches = {
       matches: [{ mentor, reasons: [{ code: 'degree', level: deg }], level: deg }],
       exact: true,
-      based_on: { degree: { ...deg, raw: null }, field: 'Public Health' },
+      based_on: {},
     };
     const m = toMatches(w, [], levels);
-    expect(m.basis.degree).toBe('Master’s');
     expect(m.matches[0]!.level).toBe('Master’s');
     expect(m.matches[0]!.reasons).toEqual([{ code: 'degree', level: 'Master’s' }]);
-    // The mentee chose MBA: said as chosen.
-    expect(
-      toMatches({ ...w, based_on: { degree: { ...deg, raw: 'MBA' } } }, [], levels).basis.degree,
-    ).toBe('MBA');
     // A catalogue level we have no word for (Diploma) keeps the backend's name.
     const dip = { id: 'dl-diploma', label: 'Diploma' };
     expect(
       toMatches(
-        { ...w, based_on: { degree: { ...dip, raw: null } } },
+        { ...w, matches: [{ mentor, reasons: [], level: dip }] },
         [],
         [...levels, { id: 'dl-diploma', code: 'diploma' }],
-      ).basis.degree,
+      ).matches[0]!.level,
     ).toBe('Diploma');
     // An unknown level keeps the backend's name.
-    expect(toMatches(w, [], []).basis.degree).toBe('Master’s Degree');
+    expect(toMatches(w, [], []).matches[0]!.level).toBe('Master’s Degree');
   });
 });
 

@@ -139,3 +139,36 @@
     min-height: var(--touch-target-min);
   }
 }
+
+/* ---- look="text": text tabs, no box (RoleToggleQuiet.dc.html). ---- */
+.textGroup {
+  display: flex;
+  gap: var(--space-5);
+}
+.textSeg {
+  height: var(--touch-target-min);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-600);
+  white-space: nowrap;
+}
+.textSeg:hover:not(.textOn) {
+  color: var(--ink-900);
+}
+.textOn {
+  font-weight: var(--weight-semibold);
+  color: var(--ink-900);
+  box-shadow: inset 0 -2px 0 var(--blue-500);
+}
+.textSeg:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+.textGroup[aria-disabled='true'] .textSeg {
+  cursor: default;
+}
