@@ -4,7 +4,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { useRequestBooking, useSlots, useUploadIntakeFile } from './booking';
 
 const noteInstallMoment = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/pwa/installNudge', () => ({ noteInstallMoment }));
+vi.mock('@/lib/pwa/installPrompt', () => ({ noteInstallMoment }));
 const POST = vi.fn();
 const GET = vi.fn();
 vi.mock('./http', () => ({

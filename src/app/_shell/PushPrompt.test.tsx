@@ -21,9 +21,16 @@ vi.mock('@/lib/pwa/installNudge', () => ({
 }));
 
 /** A moment, then the short wait before the ask shows. */
-const moment = (m: 'message' | 'booking') => {
+/** The wait before the ask, then the nudge rules' import (mocked) it reads. */
+const askDelay = () =>
+  act(async () => {
+    vi.advanceTimersByTime(ASK_DELAY_MS);
+    await vi.dynamicImportSettled();
+  });
+
+const moment = async (m: 'message' | 'booking') => {
   act(() => notePushMoment(m));
-  act(() => vi.advanceTimersByTime(ASK_DELAY_MS));
+  await askDelay();
 };
 
 afterEach(() => vi.useRealTimers());
@@ -36,44 +43,44 @@ beforeEach(() => {
 });
 
 describe('PushPrompt', () => {
-  it('asks nothing until a meaningful moment', () => {
+  it('asks nothing until a meaningful moment', async () => {
     render(<PushPrompt userId="u1" />);
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
   });
 
   it('after a message: the ask, once per device; the tap turns them on', async () => {
     render(<PushPrompt userId="u1" />);
-    moment('message');
+    await moment('message');
     expect(screen.getByRole('status')).toHaveTextContent(PUSH_COPY.ask.message);
     fireEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
     expect(push.turnOn).toHaveBeenCalledTimes(1);
-    moment('booking');
+    await moment('booking');
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
   });
 
-  it('the install nudge took the moment: no ask now, and the device’s one ask is kept', () => {
+  it('the install nudge took the moment: no ask now, and the device’s one ask is kept', async () => {
     nudge.busy = true;
     render(<PushPrompt userId="u1" />);
-    moment('booking');
+    await moment('booking');
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
     expect(notePushAskShown).not.toHaveBeenCalled();
     nudge.busy = false;
-    moment('message');
+    await moment('message');
     expect(screen.getByRole('button', { name: PUSH_COPY.turnOn })).toBeInTheDocument();
     // Shown: the install nudge sits this visit out.
     expect(notePushAskShown).toHaveBeenCalledTimes(1);
   });
 
-  it('never asks when it cannot be offered or the browser was asked', () => {
+  it('never asks when it cannot be offered or the browser was asked', async () => {
     push.askable = false;
     render(<PushPrompt userId="u1" />);
-    moment('booking');
+    await moment('booking');
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
   });
 
   it('says the outcome of the tap', async () => {
     const { rerender } = render(<PushPrompt userId="u1" />);
-    moment('booking');
+    await moment('booking');
     fireEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
     push.busy = true;
     rerender(<PushPrompt userId="u1" />);
@@ -84,7 +91,7 @@ describe('PushPrompt', () => {
 
   it('a refusal says where to allow them', async () => {
     const { rerender } = render(<PushPrompt userId="u1" />);
-    moment('message');
+    await moment('message');
     fireEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
     push.busy = true;
     rerender(<PushPrompt userId="u1" />);
@@ -93,25 +100,25 @@ describe('PushPrompt', () => {
     expect(screen.getByRole('status')).toHaveTextContent(PUSH_COPY.blocked);
   });
 
-  it('a mentor with bookings on Home or Bookings: asked once push can be offered', () => {
+  it('a mentor with bookings on Home or Bookings: asked once push can be offered', async () => {
     push.askable = false;
     const { rerender } = render(<PushPrompt userId="u1" mentorWithBookings />);
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
     push.askable = true;
     rerender(<PushPrompt userId="u1" mentorWithBookings />);
-    act(() => vi.advanceTimersByTime(ASK_DELAY_MS));
+    await askDelay();
     expect(screen.getByRole('status')).toHaveTextContent(PUSH_COPY.ask.mentor);
   });
 
-  it('a mentor already asked on this device is not asked again', () => {
+  it('a mentor already asked on this device is not asked again', async () => {
     localStorage.setItem('ef-push-asked', '1');
     render(<PushPrompt userId="u1" mentorWithBookings />);
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
   });
 
-  it('an ask that times out unseen-to-the-end is used up only then; tapped, at once', () => {
+  it('an ask that times out unseen-to-the-end is used up only then; tapped, at once', async () => {
     render(<PushPrompt userId="u1" />);
-    moment('message');
+    await moment('message');
     expect(localStorage.getItem('ef-push-asked')).toBeNull();
     act(() => vi.advanceTimersByTime(15_000));
     expect(localStorage.getItem('ef-push-asked')).toBe('1');
@@ -120,7 +127,7 @@ describe('PushPrompt', () => {
 
   it('a failed turn-on points to Settings', async () => {
     const { rerender } = render(<PushPrompt userId="u1" />);
-    moment('booking');
+    await moment('booking');
     fireEvent.click(screen.getByRole('button', { name: PUSH_COPY.turnOn }));
     push.busy = true;
     rerender(<PushPrompt userId="u1" />);
@@ -129,9 +136,9 @@ describe('PushPrompt', () => {
     expect(screen.getByRole('status')).toHaveTextContent(PUSH_COPY.failed);
   });
 
-  it('stays while its button has focus, so focus never falls to the page', () => {
+  it('stays while its button has focus, so focus never falls to the page', async () => {
     render(<PushPrompt userId="u1" />);
-    moment('message');
+    await moment('message');
     const button = screen.getByRole('button', { name: PUSH_COPY.turnOn });
     button.focus();
     act(() => vi.advanceTimersByTime(15_000));

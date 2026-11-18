@@ -22,8 +22,4 @@ export const INSTALL_COPY = {
     addToHome: 'Add to Home Screen',
     open: 'Open EduFurther from your home screen',
   },
-  menu: {
-    label: 'Install the app',
-    sub: 'Session reminders, one tap from your home screen',
-  },
 } as const;

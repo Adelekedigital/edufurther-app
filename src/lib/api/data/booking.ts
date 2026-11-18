@@ -18,7 +18,7 @@ import { api } from './http';
 import { keys } from './keys';
 import { fileBody, uploadError } from './upload';
 import { notePushMoment } from '@/lib/utils/push';
-import { noteInstallMoment } from '@/lib/pwa/installNudge';
+import { noteInstallMoment } from '@/lib/pwa/installPrompt';
 
 type AnswerWrite = components['schemas']['AnswerWrite'];
 
@@ -282,7 +282,7 @@ export function useRequestBooking() {
       attempt.current = null;
       // A booking made: the one-time notifications ask may follow (lib/utils/push).
       notePushMoment('booking');
-      // And the install nudge, once the booking modal has closed (lib/pwa/installNudge).
+      // And the install nudge, once the booking modal has closed (lib/pwa/installPrompt).
       noteInstallMoment({ trigger: 'booking', name: req.mentorFirstName });
       // The mentee's Bookings badge counts requests awaiting the mentor (/me).
       void queryClient.invalidateQueries({ queryKey: keys.viewer.all });

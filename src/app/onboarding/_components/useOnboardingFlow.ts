@@ -12,7 +12,7 @@ import { patchViewer, useViewer } from '@/lib/api/data/viewer';
 import { HELP_LIMIT, type MissingKey } from '@/lib/copy/onboarding';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
 import { track } from '@/lib/analytics/track';
-import { noteInstallMoment } from '@/lib/pwa/installNudge';
+import { noteInstallMoment } from '@/lib/pwa/installPrompt';
 import { useOnLeave } from '@/lib/analytics/useOnLeave';
 import { markBookingDraftFinished } from '@/lib/utils/bookingDraft';
 import { parseGuestBooking, type GuestBooking } from '@/lib/utils/guestBooking';
@@ -200,7 +200,7 @@ export function useOnboardingFlow() {
       if (from === 'plans' && !completedHere.current) {
         completedHere.current = true;
         track('onboarding_completed', { role: 'mentee' });
-        // The install nudge, on the screen after the matches (lib/pwa/installNudge);
+        // The install nudge, on the screen after the matches (lib/pwa/installPrompt);
         // finishing for a booking leaves it to the booking's own moment.
         if (guest?.after !== 'booking') noteInstallMoment({ trigger: 'onboarding' });
       }

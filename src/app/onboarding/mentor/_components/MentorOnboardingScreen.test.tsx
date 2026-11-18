@@ -14,7 +14,7 @@ vi.hoisted(() => {
 const track = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/analytics/track', () => ({ track }));
 const noteInstallMoment = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/pwa/installNudge', () => ({ noteInstallMoment }));
+vi.mock('@/lib/pwa/installPrompt', () => ({ noteInstallMoment }));
 const switchTo = vi.fn();
 vi.mock('@/lib/api/data/roleHooks', () => ({
   useSwitchRole: () => ({ switchTo, isPending: false, error: null }),

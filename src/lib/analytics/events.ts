@@ -114,7 +114,7 @@ export type AnalyticsEvents = {
    */
   pwa_installed: { method: 'standalone_launch' };
   /**
-   * The install nudge (lib/pwa/installNudge): what opened it, and how this
+   * The install nudge (lib/pwa/installPrompt, installNudge): what opened it, and how this
    * device installs. Accepted is Android's prompt answer only (on iPhone a
    * tap proves nothing; `pwa_installed` counts the launch); `how` tells the
    * sheet's close from a refused browser prompt.

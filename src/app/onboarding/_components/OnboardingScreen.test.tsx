@@ -19,7 +19,7 @@ vi.mock('@/lib/api/data/roleHooks', () => ({
 }));
 
 const noteInstallMoment = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/pwa/installNudge', () => ({ noteInstallMoment }));
+vi.mock('@/lib/pwa/installPrompt', () => ({ noteInstallMoment }));
 const replace = vi.fn();
 const push = vi.fn();
 let search = '';

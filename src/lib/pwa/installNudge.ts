@@ -1,51 +1,25 @@
-'use client';
-
-import { useSyncExternalStore } from 'react';
-import { isStandalone } from '@/lib/utils/standalone';
-import type { InstallPlatform, InstallTrigger } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/track';
+import {
+  currentNudge,
+  installPlatform,
+  setOpen,
+  takeDeferredPrompt,
+  type InstallMoment,
+  type InstallNudge,
+} from './installPrompt';
 
 /**
- * The install nudge (owner, 2026-11-18): a sheet offering to add the app to
- * the home screen, right after a booking, a first message or finishing
- * onboarding, never on page load. Phone browsers only, never in the
- * installed app. Android and other Chromium browsers install through the
- * deferred `beforeinstallprompt`; iPhone Safari has no prompt, so the sheet
- * shows the Share steps instead. Everything else shows nothing.
+ * The install nudge's lazy half (owner, 2026-11-18): the rules, the waiting
+ * moment, the buttons and the analytics. Loaded when a moment happens or the
+ * More item is tapped (installPrompt.ts), so no page carries it up front.
  *
- * How often, per device (localStorage): at most once a visit. A dismiss (the
- * close button, Escape, the backdrop, or a refused browser prompt) rests it
- * for 7 days and counts one; after 3 it never shows by itself again (the More
- * menu's "Install the app" still opens it). Storage that fails shows nothing.
- * A sheet opened from the menu changes none of this: closing what you asked
- * for isn't turning the nudge down.
+ * How often, per device (localStorage): at most once a visit, and one ask a
+ * visit with the push ask (PushPrompt). A dismiss (the close button, Escape,
+ * the backdrop, or a refused browser prompt) rests it for 7 days and counts
+ * one; after 3 it never shows by itself again (the More menu's item still
+ * opens it). Storage that fails shows nothing. A sheet opened from the menu
+ * changes none of this: closing what you asked for isn't turning it down.
  */
-
-export type { InstallPlatform, InstallTrigger };
-
-/** What just happened. `name`: whose session or chat, for the sheet's line. */
-export type InstallMoment = {
-  trigger: Exclude<InstallTrigger, 'menu'>;
-  name?: string | null;
-  /** A mentor finished onboarding: they have no matches to mention. */
-  mentor?: boolean;
-};
-
-/** The sheet as it shows. */
-export type InstallNudge = {
-  trigger: InstallTrigger;
-  platform: InstallPlatform;
-  name: string | null;
-  mentor: boolean;
-};
-
-/** A moment waiting for its screen; `from` is where it happened. */
-export type PendingMoment = InstallMoment & { from: string };
-
-type DeferredPrompt = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-};
 
 /** Per device: how many dismisses, and the time it rests until. */
 export const NUDGE_KEY = 'ef-install-nudge';
@@ -54,92 +28,23 @@ export const SHOWN_KEY = 'ef-install-nudge-shown';
 export const REST_DAYS = 7;
 export const MAX_DISMISSALS = 3;
 const DAY_MS = 86_400_000;
+/** A beat after the moment, so the screen's own "sent" state is seen first. */
+export const SHOW_DELAY_MS = 1_200;
+/** Any dialog open: the nudge never covers or stacks on one. */
+const OPEN_DIALOG = '[aria-modal="true"]';
 
-/** A phone: the app's 768px breakpoint, and a touch screen (a narrow desktop window isn't one). */
-export const PHONE_QUERY = '(max-width: 767px) and (pointer: coarse)';
+/** A moment waiting for its screen; `from` is where it happened. */
+export type PendingMoment = InstallMoment & { from: string };
 
-let deferred: DeferredPrompt | null = null;
-let open: InstallNudge | null = null;
 let pending: PendingMoment | null = null;
 let shownThisVisit = false;
-const listeners = new Set<() => void>();
-
-function emit() {
-  listeners.forEach((l) => l());
-}
+let stopWaiting: (() => void) | null = null;
 
 /** Tests only: a fresh app start. */
 export function resetInstallNudgeForTests(): void {
-  deferred = null;
-  open = null;
+  stopWaiting?.();
   pending = null;
   shownThisVisit = false;
-  emit();
-}
-
-/**
- * Keeps the browser's install prompt for the sheet's button, and forgets it
- * once the app is installed. Mounted once (InstallNudgeRoot); returns the cleanup.
- */
-let release: (() => void) | null = null;
-
-/**
- * Listen for the browser's install prompt. Idempotent: the module calls it as
- * soon as it loads (below), so a prompt Chrome fires before the app hydrates
- * is still kept (review on PR 660); later calls return the same release.
- */
-export function captureInstallPrompt(): () => void {
-  if (release) return release;
-  const onPrompt = (e: Event) => {
-    // No mini-infobar: the prompt is offered at a moment that means something.
-    e.preventDefault();
-    deferred = e as DeferredPrompt;
-    emit();
-  };
-  const onInstalled = () => {
-    deferred = null;
-    emit();
-  };
-  window.addEventListener('beforeinstallprompt', onPrompt);
-  window.addEventListener('appinstalled', onInstalled);
-  release = () => {
-    window.removeEventListener('beforeinstallprompt', onPrompt);
-    window.removeEventListener('appinstalled', onInstalled);
-    release = null;
-  };
-  return release;
-}
-
-// Capture from the moment this bundle runs, not from the first effect.
-if (typeof window !== 'undefined') captureInstallPrompt();
-
-/**
- * Safari on an iPhone or iPad. Add to Home Screen is Safari's on older iOS,
- * so Chrome, Firefox, Edge, Opera, the Google app and in-app browsers (no
- * `Version/… Safari/`) are out. iPadOS reads as a Mac with touch.
- */
-export function isIosSafari(ua: string, touchPoints: number): boolean {
-  const ios = /iPhone|iPod|iPad/.test(ua) || (/Macintosh/.test(ua) && touchPoints > 1);
-  if (!ios) return false;
-  if (
-    /CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|GSA\/|YaBrowser|DuckDuckGo|FBAN|FBAV|Instagram|Line\//.test(ua)
-  )
-    return false;
-  return /Version\/[\d.]+.*Safari\//.test(ua);
-}
-
-/** How this device installs, or null when the sheet can't help here. */
-export function installPlatform(): InstallPlatform | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    if (isStandalone()) return null;
-    if (window.matchMedia?.(PHONE_QUERY).matches !== true) return null;
-  } catch {
-    return null;
-  }
-  if (deferred) return 'android';
-  if (isIosSafari(navigator.userAgent, navigator.maxTouchPoints ?? 0)) return 'ios';
-  return null;
 }
 
 type NudgeRecord = { dismissed: number; restUntil: number };
@@ -156,8 +61,7 @@ function parse(raw: string | null): Partial<NudgeRecord> | null {
 /** The device's record, or null when storage can't be read and written. */
 function readRecord(): NudgeRecord | null {
   try {
-    const raw = localStorage.getItem(NUDGE_KEY);
-    const v = parse(raw);
+    const v = parse(localStorage.getItem(NUDGE_KEY));
     const rec: NudgeRecord = {
       dismissed: Number.isFinite(v?.dismissed) ? Number(v!.dismissed) : 0,
       restUntil: Number.isFinite(v?.restUntil) ? Number(v!.restUntil) : 0,
@@ -168,14 +72,6 @@ function readRecord(): NudgeRecord | null {
     return rec;
   } catch {
     return null;
-  }
-}
-
-function writeRecord(rec: NudgeRecord): void {
-  try {
-    localStorage.setItem(NUDGE_KEY, JSON.stringify(rec));
-  } catch {
-    // Unwritable now: readRecord() then says no, so it doesn't show again.
   }
 }
 
@@ -209,69 +105,100 @@ export function mayAutoShow(now = Date.now()): boolean {
 function strike(): void {
   const rec = readRecord();
   if (!rec) return;
-  writeRecord({ dismissed: rec.dismissed + 1, restUntil: Date.now() + REST_DAYS * DAY_MS });
+  try {
+    localStorage.setItem(
+      NUDGE_KEY,
+      JSON.stringify({ dismissed: rec.dismissed + 1, restUntil: Date.now() + REST_DAYS * DAY_MS }),
+    );
+  } catch {
+    // Unwritable now: readRecord() then says no, so it doesn't show again.
+  }
+}
+
+/** Onboarding's moment waits for the next screen, so the matches reveal is never covered. */
+const onItsScreen = (m: PendingMoment) =>
+  m.trigger !== 'onboarding' || location.pathname !== m.from;
+
+/**
+ * Waits, then shows: a beat after the moment, once no dialog is open (a
+ * booking's modal closes first) and, for onboarding, on the next screen.
+ * Page changes and dialogs both change the DOM, so one observer hears both.
+ */
+function waitToShow(): void {
+  stopWaiting?.();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const ready = () => !!pending && onItsScreen(pending) && !document.querySelector(OPEN_DIALOG);
+  const attempt = () => {
+    if (timer !== undefined || !ready()) return;
+    watcher.disconnect();
+    timer = setTimeout(() => {
+      timer = undefined;
+      // A dialog opened (or the page changed back) meanwhile: wait again.
+      if (ready()) {
+        stopWaiting = null;
+        showPending();
+      } else watcher.observe(document.body, { childList: true, subtree: true });
+    }, SHOW_DELAY_MS);
+  };
+  const watcher = new MutationObserver(attempt);
+  watcher.observe(document.body, { childList: true, subtree: true });
+  stopWaiting = () => {
+    clearTimeout(timer);
+    watcher.disconnect();
+    stopWaiting = null;
+  };
+  attempt();
 }
 
 /**
- * One of the three moments happened. Queued for the screen to show when it
- * can (InstallNudgeRoot: no dialog open; onboarding's on the next screen); a
- * later moment replaces an earlier one, being more specific.
+ * A moment, if the rules allow: it waits for its screen. A later moment
+ * replaces an earlier one, being more specific.
  */
-export function noteInstallMoment(moment: InstallMoment): void {
-  if (open || !installPlatform() || !mayAutoShow()) return;
-  pending = { ...moment, from: typeof location === 'undefined' ? '' : location.pathname };
-  emit();
+export function admit(moment: InstallMoment, from: string): void {
+  if (currentNudge() || !installPlatform() || !mayAutoShow()) return;
+  pending = { ...moment, from };
+  waitToShow();
 }
 
 function show(nudge: InstallNudge): void {
   pending = null;
-  open = nudge;
+  stopWaiting?.();
   markShown();
+  setOpen(nudge);
   track('install_nudge_shown', { trigger: nudge.trigger, platform: nudge.platform });
-  emit();
 }
 
-/** The queued moment's sheet, if the rules still allow it; the moment is used either way. */
+/** The waiting moment's sheet, if the rules still allow it; the moment is used either way. */
 export function showPending(): boolean {
   const m = pending;
+  pending = null;
   if (!m) return false;
   const platform = installPlatform();
-  if (open || !platform || !mayAutoShow()) {
-    pending = null;
-    emit();
-    return false;
-  }
+  if (currentNudge() || !platform || !mayAutoShow()) return false;
   show({ trigger: m.trigger, platform, name: m.name?.trim() || null, mentor: !!m.mentor });
   return true;
 }
 
 /** The More menu's "Install the app": the sheet now, whatever the rules. */
-export function openInstallNudge(): void {
+export function openFromMenu(): void {
   const platform = installPlatform();
-  if (!platform || open) return;
+  if (!platform || currentNudge()) return;
   show({ trigger: 'menu', platform, name: null, mentor: false });
 }
 
 /**
- * One ask per visit (owner, 2026-11-18): the nudge is up, on its way, or has
+ * One ask per visit (owner, 2026-11-18): the nudge is up, waiting, or has
  * shown this visit, so the push ask waits for a later visit (PushPrompt).
  */
 export function installNudgeBusy(): boolean {
-  return open !== null || pending !== null || shownInVisit();
+  return currentNudge() !== null || pending !== null || shownInVisit();
 }
 
 /** The push ask showed this visit: the nudge then waits for another visit. */
 export function notePushAskShown(): void {
   markShown();
   pending = null;
-  emit();
-}
-
-function close(): InstallNudge | null {
-  const n = open;
-  open = null;
-  emit();
-  return n;
+  stopWaiting?.();
 }
 
 const auto = (n: InstallNudge) => n.trigger !== 'menu';
@@ -283,14 +210,11 @@ const auto = (n: InstallNudge) => n.trigger !== 'menu';
  * counts the real one on the first home-screen launch.
  */
 export async function acceptInstall(): Promise<void> {
-  const n = close();
-  if (!n) return;
+  const n = setOpen(null);
+  if (!n || n.platform !== 'android') return;
   const props = { trigger: n.trigger, platform: n.platform };
-  if (n.platform !== 'android') return;
-  const prompt = deferred;
   // A prompt is used once; the browser sends a fresh one if it may ask again.
-  deferred = null;
-  emit();
+  const prompt = takeDeferredPrompt();
   if (!prompt) return;
   try {
     await prompt.prompt();
@@ -308,55 +232,8 @@ export async function acceptInstall(): Promise<void> {
 
 /** The close button, Escape or the backdrop: a dismiss, resting it 7 days and counting one. */
 export function closeInstall(): void {
-  const n = close();
+  const n = setOpen(null);
   if (!n) return;
   track('install_nudge_dismissed', { trigger: n.trigger, platform: n.platform, how: 'closed' });
   if (auto(n)) strike();
-}
-
-function subscribe(l: () => void): () => void {
-  listeners.add(l);
-  return () => {
-    listeners.delete(l);
-  };
-}
-
-/** The sheet that's open and the moment waiting, for InstallNudgeRoot. */
-export function useInstallNudge(): { open: InstallNudge | null; pending: PendingMoment | null } {
-  return {
-    open: useSyncExternalStore(
-      subscribe,
-      () => open,
-      () => null,
-    ),
-    pending: useSyncExternalStore(
-      subscribe,
-      () => pending,
-      () => null,
-    ),
-  };
-}
-
-function subscribeAvailable(l: () => void): () => void {
-  const off = subscribe(l);
-  let mql: MediaQueryList | null = null;
-  try {
-    mql = window.matchMedia?.(PHONE_QUERY) ?? null;
-    mql?.addEventListener?.('change', l);
-  } catch {
-    mql = null;
-  }
-  return () => {
-    off();
-    mql?.removeEventListener?.('change', l);
-  };
-}
-
-/** The sheet can help on this device now: the More menu's entry shows. */
-export function useInstallAvailable(): boolean {
-  return useSyncExternalStore(
-    subscribeAvailable,
-    () => installPlatform() !== null,
-    () => false,
-  );
 }

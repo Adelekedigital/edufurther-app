@@ -2,56 +2,54 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 
 const track = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/analytics/track', () => ({ track }));
-const nav = vi.hoisted(() => ({ path: '/explore' }));
-vi.mock('next/navigation', () => ({ usePathname: () => nav.path }));
 
+import { device, offerPrompt as offer, UA } from '@/lib/pwa/_test/installHarness';
+import { NUDGE_KEY, resetInstallNudgeForTests, SHOW_DELAY_MS } from '@/lib/pwa/installNudge';
 import {
-  NUDGE_KEY,
   noteInstallMoment,
   openInstallNudge,
-  PHONE_QUERY,
-  resetInstallNudgeForTests,
-} from '@/lib/pwa/installNudge';
-import { InstallNudgeRoot, leadFor, SHOW_DELAY_MS } from './InstallNudgeRoot';
+  resetInstallPromptForTests,
+} from '@/lib/pwa/installPrompt';
+import { InstallNudgeRoot } from './InstallNudgeRoot';
+import { leadFor } from './InstallNudgeSheet';
 
-const IOS_SAFARI =
-  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
-
-function phone(ua: string) {
-  window.matchMedia = vi.fn((q: string) => ({
-    matches: q === PHONE_QUERY,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  })) as never;
-  Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
-  Object.defineProperty(navigator, 'maxTouchPoints', { value: 5, configurable: true });
-}
+const phone = (ua: string) => device({ ua });
+const IOS_SAFARI = UA.iosSafari;
 
 function offerPrompt() {
-  const e = new Event('beforeinstallprompt', { cancelable: true }) as Event & {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: string }>;
-  };
-  e.prompt = vi.fn(() => Promise.resolve());
-  e.userChoice = Promise.resolve({ outcome: 'accepted' });
+  let e!: ReturnType<typeof offer>;
   act(() => {
-    window.dispatchEvent(e);
+    e = offer();
   });
   return e;
 }
 
-const wait = (ms = SHOW_DELAY_MS) =>
+/** The lazy half loads and decides, then the delay, then the sheet. */
+const wait = async (ms = SHOW_DELAY_MS) => {
+  await act(async () => {
+    await vi.dynamicImportSettled();
+  });
   act(() => {
     vi.advanceTimersByTime(ms);
+  });
+  await act(async () => {
+    await vi.dynamicImportSettled();
+  });
+};
+
+/** The More menu's item: its code loads, then the sheet opens. */
+const openMenu = () =>
+  act(async () => {
+    await openInstallNudge();
   });
 
 beforeEach(() => {
   vi.useFakeTimers();
   resetInstallNudgeForTests();
+  resetInstallPromptForTests();
   track.mockReset();
   localStorage.clear();
   sessionStorage.clear();
-  nav.path = '/explore';
   phone(IOS_SAFARI);
 });
 afterEach(() => {
@@ -59,11 +57,11 @@ afterEach(() => {
 });
 
 describe('InstallNudgeRoot', () => {
-  it('a booking: the sheet a beat later, as a labelled dialog with the booking’s line', () => {
+  it('a booking: the sheet a beat later, as a labelled dialog with the booking’s line', async () => {
     render(<InstallNudgeRoot />);
     act(() => noteInstallMoment({ trigger: 'booking', name: 'Ada' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    wait();
+    await wait();
     const dialog = screen.getByRole('dialog', { name: 'EduFurther, one tap away' });
     expect(dialog).toHaveTextContent('Get a reminder before Ada’s session.');
     expect(track).toHaveBeenCalledWith('install_nudge_shown', {
@@ -78,37 +76,41 @@ describe('InstallNudgeRoot', () => {
     document.body.appendChild(modal);
     render(<InstallNudgeRoot />);
     act(() => noteInstallMoment({ trigger: 'booking', name: 'Ada' }));
-    wait(SHOW_DELAY_MS * 3);
+    await wait(SHOW_DELAY_MS * 3);
     expect(screen.queryByRole('dialog', { name: 'EduFurther, one tap away' })).toBeNull();
     await act(async () => {
       modal.remove();
       await Promise.resolve(); // the MutationObserver's callback
     });
-    wait();
+    await wait();
     expect(screen.getByRole('dialog', { name: 'EduFurther, one tap away' })).toBeInTheDocument();
   });
 
-  it('onboarding: never on the matches screen, on the next screen instead', () => {
-    nav.path = '/onboarding/mentee';
-    const { rerender } = render(<InstallNudgeRoot />);
-    Object.defineProperty(window, 'location', {
-      value: { ...window.location, pathname: '/onboarding/mentee' },
-      configurable: true,
-    });
+  it('onboarding: never on the matches screen, on the next screen instead', async () => {
+    const at = (pathname: string) =>
+      Object.defineProperty(window, 'location', {
+        value: { ...window.location, pathname },
+        configurable: true,
+      });
+    at('/onboarding/mentee');
+    render(<InstallNudgeRoot />);
     act(() => noteInstallMoment({ trigger: 'onboarding' }));
-    wait(SHOW_DELAY_MS * 5);
+    await wait(SHOW_DELAY_MS * 5);
     expect(screen.queryByRole('dialog')).toBeNull();
-    nav.path = '/home';
-    rerender(<InstallNudgeRoot />);
-    wait();
+    // The next screen: a new path, and the page's DOM changes with it.
+    at('/home');
+    act(() => {
+      document.body.appendChild(document.createElement('main'));
+    });
+    await wait();
     expect(screen.getByRole('dialog')).toHaveTextContent(
       'Your matches, messages and session reminders, one tap from your home screen.',
     );
   });
 
-  it('iPhone: the three steps and the close, no other button', () => {
+  it('iPhone: the three steps and the close, no other button', async () => {
     render(<InstallNudgeRoot />);
-    act(() => openInstallNudge());
+    await openMenu();
     const steps = screen.getAllByRole('listitem').map((li) => li.textContent?.replace(/\s+/g, ' '));
     expect(steps).toEqual([
       '1Tap Share ios_share in Safari’s toolbar',
@@ -125,7 +127,7 @@ describe('InstallNudgeRoot', () => {
     phone('Mozilla/5.0 (Linux; Android 14) Chrome/126.0 Mobile Safari/537.36');
     render(<InstallNudgeRoot />);
     const e = offerPrompt();
-    act(() => openInstallNudge());
+    await openMenu();
     expect(screen.getByRole('dialog')).toHaveTextContent(
       'Free, takes a few seconds, no app store.',
     );
@@ -137,11 +139,11 @@ describe('InstallNudgeRoot', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('Escape, the backdrop and the close button are each a dismiss: rested and counted', () => {
+  it('Escape, the backdrop and the close button are each a dismiss: rested and counted', async () => {
     const dismissals = () => JSON.parse(localStorage.getItem(NUDGE_KEY)!).dismissed;
     render(<InstallNudgeRoot />);
     act(() => noteInstallMoment({ trigger: 'message', name: 'Ada' }));
-    wait();
+    await wait();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(dismissals()).toBe(1);
@@ -156,21 +158,22 @@ describe('InstallNudgeRoot', () => {
     ]) {
       sessionStorage.clear();
       resetInstallNudgeForTests();
+      resetInstallPromptForTests();
       localStorage.setItem(NUDGE_KEY, JSON.stringify({ dismissed: 0, restUntil: 0 }));
       act(() => noteInstallMoment({ trigger: 'booking' }));
-      wait();
+      await wait();
       close();
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(dismissals()).toBe(1);
     }
   });
 
-  it('focus moves in, and goes back to what opened it', () => {
+  it('focus moves in, and goes back to what opened it', async () => {
     const opener = document.createElement('button');
     document.body.appendChild(opener);
     opener.focus();
     render(<InstallNudgeRoot />);
-    act(() => openInstallNudge());
+    await openMenu();
     expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(document.activeElement).toBe(opener);
@@ -180,7 +183,7 @@ describe('InstallNudgeRoot', () => {
 
 describe('leadFor: the line by what happened', () => {
   const n = { platform: 'ios' as const, name: null, mentor: false };
-  it('names the person, or falls back', () => {
+  it('names the person, or falls back', async () => {
     expect(leadFor({ ...n, trigger: 'booking', name: 'Ada' })).toBe(
       'Get a reminder before Ada’s session.',
     );
@@ -188,7 +191,7 @@ describe('leadFor: the line by what happened', () => {
     expect(leadFor({ ...n, trigger: 'message', name: 'Ada' })).toBe('Know the moment Ada replies.');
     expect(leadFor({ ...n, trigger: 'message' })).toBe('Know the moment your mentor replies.');
   });
-  it('a mentor’s onboarding and the menu: no matches mentioned', () => {
+  it('a mentor’s onboarding and the menu: no matches mentioned', async () => {
     expect(leadFor({ ...n, trigger: 'onboarding', mentor: true })).toBe(
       'Your messages and session reminders, one tap from your home screen.',
     );

@@ -1,69 +1,31 @@
 const track = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/analytics/track', () => ({ track }));
 
+import { DAY, device, offerPrompt, UA } from './_test/installHarness';
 import {
   acceptInstall,
-  captureInstallPrompt,
+  admit,
   closeInstall,
   installNudgeBusy,
-  notePushAskShown,
-  installPlatform,
-  isIosSafari,
   MAX_DISMISSALS,
   mayAutoShow,
-  noteInstallMoment,
+  notePushAskShown,
   NUDGE_KEY,
-  openInstallNudge,
-  PHONE_QUERY,
+  openFromMenu,
   REST_DAYS,
   resetInstallNudgeForTests,
   SHOWN_KEY,
   showPending,
 } from './installNudge';
+import { captureInstallPrompt, installPlatform, resetInstallPromptForTests } from './installPrompt';
 
-const UA = {
-  iosSafari:
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
-  iosChrome:
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0 Mobile/15E148 Safari/604.1',
-  iosFirefox:
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/127.0 Mobile/15E148 Safari/605.1.15',
-  iosInstagram:
-    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 330.0',
-  ipadOs:
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
-  android:
-    'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Mobile Safari/537.36',
-};
-
-const DAY = 86_400_000;
-
-function device({ phone = true, standalone = false, ua = UA.android, touch = 5 } = {}) {
-  window.matchMedia = vi.fn((q: string) => ({
-    matches: q === PHONE_QUERY ? phone : q.includes('standalone') ? standalone : false,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  })) as never;
-  Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
-  Object.defineProperty(navigator, 'maxTouchPoints', { value: touch, configurable: true });
-  Object.defineProperty(navigator, 'standalone', { value: undefined, configurable: true });
-}
-
-/** The browser offers an install prompt; its answer is `outcome`. */
-function offerPrompt(outcome: 'accepted' | 'dismissed' = 'accepted') {
-  const e = new Event('beforeinstallprompt', { cancelable: true }) as Event & {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: string }>;
-  };
-  e.prompt = vi.fn(() => Promise.resolve());
-  e.userChoice = Promise.resolve({ outcome });
-  window.dispatchEvent(e);
-  return e;
-}
+/** A moment, as installPrompt hands it over once this half has loaded. */
+const noteInstallMoment = (m: Parameters<typeof admit>[0]) => admit(m, '/here');
 
 let stop: () => void;
 beforeEach(() => {
   resetInstallNudgeForTests();
+  resetInstallPromptForTests();
   track.mockReset();
   localStorage.clear();
   sessionStorage.clear();
@@ -76,68 +38,6 @@ afterEach(() => {
 });
 
 const events = () => track.mock.calls.map((c) => [c[0], c[1]]);
-
-describe('capture', () => {
-  it('listens once however often it is asked, so an early prompt is kept by the first listener', () => {
-    expect(captureInstallPrompt()).toBe(stop);
-    const e = offerPrompt();
-    expect(e.defaultPrevented).toBe(true);
-    expect(installPlatform()).toBe('android');
-  });
-});
-
-describe('platform: phone browsers that can install, nothing else', () => {
-  it('Android with the browser’s prompt kept: android, and the mini-infobar is held back', () => {
-    const e = offerPrompt();
-    expect(e.defaultPrevented).toBe(true);
-    expect(installPlatform()).toBe('android');
-  });
-
-  it('Android with no prompt (installed already, or a browser without one): nothing', () => {
-    expect(installPlatform()).toBeNull();
-  });
-
-  it('once the app is installed the kept prompt is dropped', () => {
-    offerPrompt();
-    window.dispatchEvent(new Event('appinstalled'));
-    expect(installPlatform()).toBeNull();
-  });
-
-  it('the installed app: nothing, even with a prompt', () => {
-    device({ standalone: true });
-    offerPrompt();
-    expect(installPlatform()).toBeNull();
-  });
-
-  it('desktop and wide screens: nothing', () => {
-    device({ phone: false });
-    offerPrompt();
-    expect(installPlatform()).toBeNull();
-  });
-
-  it('iPhone Safari: the steps', () => {
-    device({ ua: UA.iosSafari });
-    expect(installPlatform()).toBe('ios');
-  });
-
-  it('iPhone Safari already on the home screen: nothing', () => {
-    device({ ua: UA.iosSafari });
-    Object.defineProperty(navigator, 'standalone', { value: true, configurable: true });
-    expect(installPlatform()).toBeNull();
-  });
-
-  it('other iPhone browsers and in-app browsers: nothing', () => {
-    for (const ua of [UA.iosChrome, UA.iosFirefox, UA.iosInstagram]) {
-      device({ ua });
-      expect(installPlatform()).toBeNull();
-    }
-  });
-
-  it('iPadOS Safari reads as a Mac with touch; a real Mac doesn’t', () => {
-    expect(isIosSafari(UA.ipadOs, 5)).toBe(true);
-    expect(isIosSafari(UA.ipadOs, 0)).toBe(false);
-  });
-});
 
 describe('how often it shows by itself', () => {
   beforeEach(() => {
@@ -160,6 +60,7 @@ describe('how often it shows by itself', () => {
     closeInstall();
     sessionStorage.clear();
     resetInstallNudgeForTests();
+    resetInstallPromptForTests();
     expect(mayAutoShow(now + (REST_DAYS - 1) * DAY)).toBe(false);
     expect(mayAutoShow(now + REST_DAYS * DAY + 1000)).toBe(true);
   });
@@ -203,6 +104,7 @@ describe('how often it shows by itself', () => {
     noteInstallMoment({ trigger: 'message' });
     expect(installNudgeBusy()).toBe(true);
     resetInstallNudgeForTests();
+    resetInstallPromptForTests();
     sessionStorage.clear();
     expect(installNudgeBusy()).toBe(false);
     offerPrompt();
@@ -275,17 +177,17 @@ describe('the buttons and what they count', () => {
 });
 
 describe('the More menu’s "Install the app"', () => {
-  it('opens it whatever the rules, and closing it there changes none of them', () => {
+  it('opens it whatever the rules, and closing it there changes none of them', async () => {
     offerPrompt();
     localStorage.setItem(NUDGE_KEY, JSON.stringify({ dismissed: MAX_DISMISSALS, restUntil: 0 }));
-    openInstallNudge();
+    openFromMenu();
     expect(events()).toEqual([['install_nudge_shown', { trigger: 'menu', platform: 'android' }]]);
     closeInstall();
     expect(JSON.parse(localStorage.getItem(NUDGE_KEY)!).dismissed).toBe(MAX_DISMISSALS);
   });
 
-  it('opens nothing where the sheet can’t help', () => {
-    openInstallNudge();
+  it('opens nothing where the sheet can’t help', async () => {
+    openFromMenu();
     expect(track).not.toHaveBeenCalled();
   });
 });

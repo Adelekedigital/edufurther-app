@@ -10,7 +10,7 @@ import { inTimeOrder, toMessage } from './messages';
 import { api } from './http';
 import { sessionKey, useSession } from './session';
 import { notePushMoment } from '@/lib/utils/push';
-import { noteInstallMoment } from '@/lib/pwa/installNudge';
+import { noteInstallMoment } from '@/lib/pwa/installPrompt';
 
 /**
  * The outbox: messages this tab has written and the server hasn't stored yet.
@@ -121,7 +121,7 @@ async function post(item: OutboxItem): Promise<boolean> {
     settle(item.to, toMessage(data));
     // A message sent: the one-time notifications ask may follow (lib/utils/push).
     notePushMoment('message');
-    // A chat's first message: the install nudge may follow (lib/pwa/installNudge).
+    // A chat's first message: the install nudge may follow (lib/pwa/installPrompt).
     if (first) noteInstallMoment({ trigger: 'message', name: firstNameOf(item.to) });
     return true;
   } catch (e) {

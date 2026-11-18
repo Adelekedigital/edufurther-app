@@ -22,7 +22,7 @@ import { CreditsExplainer } from './CreditsExplainer';
 import { LockExplainer } from './LockExplainer';
 import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { cx } from '@/lib/utils/cx';
-import { INSTALL_COPY } from '@/lib/copy/install';
+import { INSTALL_MENU_COPY } from '@/lib/copy/installMenu';
 import styles from './AppShell.module.css';
 
 /** Rail group: `daily` above the divider, `setup` below (design sidebar=grouped). */
@@ -589,8 +589,8 @@ export function AppShell({
                       <Icon name="download" size={18} />
                     </span>
                     <span className={styles.sheetInstallText}>
-                      <span className={styles.sheetInstallLabel}>{INSTALL_COPY.menu.label}</span>
-                      <span className={styles.sheetInstallSub}>{INSTALL_COPY.menu.sub}</span>
+                      <span className={styles.sheetInstallLabel}>{INSTALL_MENU_COPY.label}</span>
+                      <span className={styles.sheetInstallSub}>{INSTALL_MENU_COPY.sub}</span>
                     </span>
                   </button>
                 </li>
