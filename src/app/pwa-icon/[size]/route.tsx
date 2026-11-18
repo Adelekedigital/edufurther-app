@@ -15,8 +15,8 @@ import { BRAND_WHITE } from '@/styles/brand';
 export const dynamic = 'force-static';
 export const dynamicParams = false;
 
-/** The sizes served: 180 for iOS, 192 and 512 for the manifest. */
-export const ICON_SIZES = [180, 192, 512] as const;
+/** The sizes served: 32 and 48 for the browser tab, 180 for iOS, 192 and 512 for the manifest. */
+export const ICON_SIZES = [32, 48, 180, 192, 512] as const;
 
 export function generateStaticParams() {
   return ICON_SIZES.map((s) => ({ size: String(s) }));
@@ -26,13 +26,16 @@ export function generateStaticParams() {
 const MARK = { width: 1024, height: 438 };
 /** Share of the icon's width the mark takes: its corners stay inside the safe circle. */
 export const MARK_SHARE = 0.62;
+/** A tab icon is never masked, and at 32px the mark needs the room to read. */
+export const FAVICON_SHARE = 0.92;
+const FAVICON_MAX = 48;
 
 export async function GET(_req: Request, { params }: { params: Promise<{ size: string }> }) {
   const { size } = await params;
   const px = ICON_SIZES.find((s) => String(s) === size);
   if (!px) return new Response(null, { status: 404 });
   const png = await readFile(join(process.cwd(), 'public/brand/edufurther-mark-swoosh-1024.png'));
-  const width = Math.round(px * MARK_SHARE);
+  const width = Math.round(px * (px <= FAVICON_MAX ? FAVICON_SHARE : MARK_SHARE));
   const height = Math.round((width * MARK.height) / MARK.width);
   return new ImageResponse(
     <div
