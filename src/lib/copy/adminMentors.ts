@@ -251,7 +251,7 @@ export const MENTOR_DIALOGS = {
   },
   /** The optional note on approval (backend 350): it goes in the approval email. */
   note: {
-    help: 'We add it to their approval email, under “A note from the team”. Leave it blank to send the usual email.',
+    help: 'We add it to their approval email, under “Note from the team”. Leave it blank to send the usual email.',
   },
   bulk: {
     title: (n: number) => `Approve ${plural(n, 'mentor')}?`,

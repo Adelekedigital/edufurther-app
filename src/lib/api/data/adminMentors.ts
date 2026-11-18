@@ -350,7 +350,7 @@ export function useAddAdminNote(mentorId: string | null) {
 
 /**
  * The note an admin may send with a decision (backend 350): trimmed, 1–1,000
- * characters, plain text; the email shows it ("A note from the team" on
+ * characters, plain text; the email shows it ("Note from the team" on
  * approval, the comment on decline). A blank note is no note.
  */
 export const DECISION_NOTE_MAX = 1000;
