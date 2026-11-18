@@ -32,7 +32,10 @@ describe('SaveBar', () => {
 
   it('saving: says so and holds both buttons', () => {
     render(<SaveBar {...props} saving />);
-    expect(screen.getByRole('button', { name: 'Saving…' })).toBeDisabled();
+    // Save is busy, not disabled: it keeps focus and ignores a second press.
+    const save = screen.getByRole('button', { name: 'Saving…' });
+    expect(save).toHaveAttribute('aria-busy', 'true');
+    expect(save).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Discard' })).toBeDisabled();
   });
 });

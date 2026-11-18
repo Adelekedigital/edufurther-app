@@ -2,6 +2,7 @@ import { forwardRef, type ButtonHTMLAttributes, type ComponentProps } from 'reac
 import { cx } from '@/lib/utils/cx';
 import { unavailableProps } from '@/lib/utils/unavailable';
 import { Icon } from '../Icon/Icon';
+import { Spinner } from '../Spinner/Spinner';
 import type { IconName } from '../Icon/iconNames';
 import styles from './IconButton.module.css';
 
@@ -28,6 +29,11 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
    * reason and its accessible description. Opt-in: `disabled` stays native.
    */
   unavailable?: boolean;
+  /**
+   * The action it started is running, as Button's `busy`: aria-busy, it keeps
+   * focus and its name, ignores presses, and a spinner stands in for the glyph.
+   */
+  busy?: boolean;
 };
 
 const ICON_SIZE = { sm: 18, md: 20, lg: 22 } as const;
@@ -47,6 +53,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     variant = 'quiet',
     glyph,
     unavailable,
+    busy,
     className,
     type,
     onClick,
@@ -54,6 +61,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   },
   ref,
 ) {
+  const px = glyph ?? (variant === 'ring' ? RING_GLYPH : ICON_SIZE[size]);
   return (
     <button
       ref={ref}
@@ -66,9 +74,10 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
         className,
       )}
       {...rest}
-      {...unavailableProps({ unavailable, ariaDisabled: rest['aria-disabled'], onClick })}
+      aria-busy={busy || undefined}
+      {...unavailableProps({ unavailable, busy, ariaDisabled: rest['aria-disabled'], onClick })}
     >
-      <Icon name={icon} size={glyph ?? (variant === 'ring' ? RING_GLYPH : ICON_SIZE[size])} />
+      {busy ? <Spinner size={px} tone="current" /> : <Icon name={icon} size={px} />}
     </button>
   );
 });

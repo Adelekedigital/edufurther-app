@@ -332,13 +332,13 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
         <Button type="button" variant="secondary-outlined" size="large" fullWidth onClick={onClose}>
           Cancel
         </Button>
-        {/* aria-disabled, not disabled: a disabled button drops the focus it has. */}
+        {/* Busy and aria-disabled, not disabled: a disabled button drops the focus it has. */}
         <Button
           type="submit"
           size="large"
           fullWidth
-          aria-disabled={saving || !ready || empty || undefined}
-          aria-busy={saving || undefined}
+          busy={saving}
+          aria-disabled={(!saving && (!ready || empty)) || undefined}
         >
           {saving
             ? 'Saving…'

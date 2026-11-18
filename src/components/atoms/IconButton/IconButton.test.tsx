@@ -60,3 +60,19 @@ describe('IconButton', () => {
     expect(screen.getByRole('button', { name: 'Locked' })).toHaveAttribute('aria-disabled', 'true');
   });
 });
+
+describe('IconButton: busy', () => {
+  it('a spinner stands in for the glyph; it keeps its name and focus, says aria-busy, ignores clicks', async () => {
+    const onClick = vi.fn();
+    render(<IconButton icon="edit" aria-label="Edit booking rules" busy onClick={onClick} />);
+    const b = screen.getByRole('button', { name: 'Edit booking rules' });
+    expect(b).toHaveAttribute('aria-busy', 'true');
+    expect(b).toBeEnabled();
+    expect(b.querySelector('svg')).not.toBeNull();
+    expect(b).not.toHaveTextContent('edit');
+    b.focus();
+    expect(b).toHaveFocus();
+    await userEvent.click(b);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+});

@@ -64,3 +64,62 @@ describe('Button: onTint', () => {
     expect(tinted).not.toHaveAttribute('ontint');
   });
 });
+
+describe('Button: busy', () => {
+  it('draws a spinner, keeps its name, says aria-busy, stays focusable and ignores clicks', async () => {
+    const onClick = vi.fn();
+    render(
+      <Button busy onClick={onClick}>
+        Save changes
+      </Button>,
+    );
+    const b = screen.getByRole('button', { name: 'Save changes' });
+    expect(b).toHaveAttribute('aria-busy', 'true');
+    expect(b).toBeEnabled();
+    expect(b).not.toHaveAttribute('aria-disabled');
+    const spinner = b.querySelector('svg');
+    expect(spinner).not.toBeNull();
+    expect(spinner?.closest('[aria-hidden]')).not.toBeNull();
+    b.focus();
+    expect(b).toHaveFocus();
+    await userEvent.click(b);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('keeps its width: the label stays in place under the spinner, not swapped out', () => {
+    render(
+      <Button busy icon="check">
+        Save changes
+      </Button>,
+    );
+    const b = screen.getByRole('button', { name: 'Save changes' });
+    // The label and glyph are still laid out (hidden by opacity in the CSS, so
+    // they hold the width); the spinner is an extra, absolutely placed layer.
+    expect(b.querySelector('.label')).toHaveTextContent('Save changes');
+    expect(b.querySelector('.busyIndicator')).not.toBeNull();
+    expect(b.children).toHaveLength(3);
+  });
+
+  it('a busy type=submit button does not submit its form again', async () => {
+    const onSubmit = vi.fn((e: { preventDefault: () => void }) => e.preventDefault());
+    render(
+      <form onSubmit={onSubmit}>
+        <Button type="submit" busy>
+          Save
+        </Button>
+      </form>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('not busy: no spinner, no aria-busy, and the click goes through', async () => {
+    const onClick = vi.fn();
+    render(<Button onClick={onClick}>Save</Button>);
+    const b = screen.getByRole('button', { name: 'Save' });
+    expect(b).not.toHaveAttribute('aria-busy');
+    expect(b.querySelector('svg')).toBeNull();
+    await userEvent.click(b);
+    expect(onClick).toHaveBeenCalledOnce();
+  });
+});
