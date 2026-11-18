@@ -305,7 +305,20 @@ describe('placeList', () => {
 
   it('keeps inside the viewport on the right', () => {
     const p = placeList(rect(100, 37, 300, 200), 100, 390, 800);
-    expect(p.style.left).toBe(182);
+    expect(p.style).toMatchObject({ right: 8, minWidth: 200 });
+    expect(p.style.left).toBeUndefined();
+  });
+
+  it('a field on the right grows its list leftward, so rows never wrap in its width', () => {
+    // The phone Year field: 74px wide, 16px from the right edge.
+    const p = placeList(rect(100, 40, 300, 74), 200, 390, 800);
+    expect(p.style).toMatchObject({ right: 16, minWidth: 74, maxWidth: 366 });
+    expect(p.style.left).toBeUndefined();
+    // On the left it still grows rightward.
+    expect(placeList(rect(100, 40, 16, 74), 200, 390, 800).style).toMatchObject({
+      left: 16,
+      maxWidth: 366,
+    });
   });
 
   it('with the phone keyboard up, measures the visible part (visualViewport)', () => {
