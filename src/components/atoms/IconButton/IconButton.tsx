@@ -16,8 +16,8 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
   /** danger: hover turns red — for a delete that then confirms. */
   tone?: 'default' | 'danger';
   /**
-   * ring: the DS CircleIconButton, 40px, white with a hairline ring and a dark
-   * glyph (Messages.dc.html list header). Ignores `size`, `shape` and `tone`.
+   * ring: the DS CircleIconButton, 40px, white with a hairline ring and a 20px
+   * ink-700 glyph (Messages.dc.html list header). Ignores `size`, `shape` and `tone`.
    */
   variant?: 'quiet' | 'ring';
   /** The glyph's px when the drawn control isn't one of the sizes (a 24px back arrow). */
@@ -32,7 +32,8 @@ type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>
 
 const ICON_SIZE = { sm: 18, md: 20, lg: 22 } as const;
 /** DS CircleIconButton: the glyph is 0.6 of the 40px circle. */
-const RING_GLYPH = 24;
+// 20px like the app's other icon buttons; 24 read heavier than everything else (owner, 2026-11-18).
+const RING_GLYPH = 20;
 
 /**
  * Quiet icon control (search clear, modal close, dismiss; square for row actions).
