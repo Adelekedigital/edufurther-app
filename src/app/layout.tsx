@@ -7,6 +7,7 @@ import { fontVariables } from './fonts';
 import { Providers } from './providers';
 import { RouteFocusManager } from './_shell/RouteFocusManager';
 import { ServiceWorkerRegistration } from './_shell/ServiceWorkerRegistration';
+import { InstallNudgeRoot } from './_shell/InstallNudgeRoot';
 import { APPLE_STARTUP_IMAGES } from './pwa-splash/sizes';
 import '@/styles/globals.css';
 import { BRAND_BLUE } from '@/styles/brand';
@@ -54,6 +55,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         <RouteFocusManager />
         <ServiceWorkerRegistration />
+        <InstallNudgeRoot />
         <Providers session={await sessionHint()}>{children}</Providers>
       </body>
     </html>

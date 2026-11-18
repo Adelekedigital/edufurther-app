@@ -40,6 +40,7 @@ import { firstEducationField } from './EducationStep';
 import { HELP_FIRST_ID } from './HelpAreasStep';
 import { FIRST_DAY_ID } from './HoursStep';
 import { useAssistOutcome } from '@/app/_shell/useAssistOutcome';
+import { noteInstallMoment } from '@/lib/pwa/installNudge';
 
 /** A first About draft that takes longer counts as failed (handoff: 8 s). */
 export const DRAFT_TIMEOUT_MS = 8000;
@@ -407,6 +408,8 @@ export function useMentorOnboardingFlow() {
     try {
       await submit.submit();
       trackOnce('submitted', () => track('mentor_application_submitted', {}));
+      // The install nudge, on the status page (lib/pwa/installNudge).
+      noteInstallMoment({ trigger: 'onboarding', mentor: true });
       // Locked until the page goes, so a second tap can't send it again.
       setLeaving(true);
       // The status page, inside the app: its first arrival says it was sent.

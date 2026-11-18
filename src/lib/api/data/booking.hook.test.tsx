@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { useRequestBooking, useSlots, useUploadIntakeFile } from './booking';
 
+const noteInstallMoment = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/pwa/installNudge', () => ({ noteInstallMoment }));
 const POST = vi.fn();
 const GET = vi.fn();
 vi.mock('./http', () => ({
@@ -318,6 +320,47 @@ describe('useRequestBooking: a sent request', () => {
     );
     await waitFor(() => expect(result.current.isDone).toBe(true));
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['viewer'] });
+  });
+
+  it('a booking made: the install nudge’s moment, once, with the mentor’s first name', async () => {
+    noteInstallMoment.mockClear();
+    POST.mockResolvedValue({ data: { id: 'b1' }, error: undefined, response: new Response(null) });
+    const { result } = renderHook(() => useRequestBooking(), { wrapper });
+    act(() =>
+      result.current.request({
+        mentorId: 'm1',
+        sessionTypeId: 'st',
+        startsAt: '2026-09-30T09:00:00Z',
+        entryPoint: 'explore' as const,
+        answers: {},
+        mentorFirstName: 'Ada',
+      }),
+    );
+    await waitFor(() => expect(result.current.isDone).toBe(true));
+    expect(noteInstallMoment.mock.calls).toEqual([[{ trigger: 'booking', name: 'Ada' }]]);
+    // The name is for the sheet only: never sent.
+    expect(JSON.stringify(POST.mock.calls)).not.toContain('Ada');
+  });
+
+  it('a refused booking: no moment', async () => {
+    noteInstallMoment.mockClear();
+    POST.mockResolvedValue({
+      data: undefined,
+      error: {},
+      response: new Response(null, { status: 500 }),
+    });
+    const { result } = renderHook(() => useRequestBooking(), { wrapper });
+    act(() =>
+      result.current.request({
+        mentorId: 'm1',
+        sessionTypeId: 'st',
+        startsAt: '2026-09-30T09:00:00Z',
+        entryPoint: 'explore' as const,
+        answers: {},
+      }),
+    );
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(noteInstallMoment).not.toHaveBeenCalled();
   });
 
   it('sends where the booking began (entry_point, PRD 30)', async () => {

@@ -10,6 +10,7 @@ import { inTimeOrder, toMessage } from './messages';
 import { api } from './http';
 import { sessionKey, useSession } from './session';
 import { notePushMoment } from '@/lib/utils/push';
+import { noteInstallMoment } from '@/lib/pwa/installNudge';
 
 /**
  * The outbox: messages this tab has written and the server hasn't stored yet.
@@ -61,6 +62,16 @@ function settle(withId: string, msg: Message) {
   void qc.invalidateQueries({ queryKey: keys.messages.chats(me) });
 }
 
+/** The chat as this tab last read it: open in /messages, or SendMessage's status read. */
+function cachedThread(withId: string): Thread | undefined {
+  if (!ctx) return undefined;
+  const { qc, me } = ctx;
+  return (
+    qc.getQueryData<Thread>(keys.messages.thread(me, withId)) ??
+    qc.getQueryData<Thread>(keys.messages.threadStatus(me, withId))
+  );
+}
+
 /**
  * Nothing stored between us yet, as this tab last read it: the thread (open
  * in /messages, or SendMessage's status read), else the chat list. Unknown
@@ -68,13 +79,21 @@ function settle(withId: string, msg: Message) {
  */
 function isFirst(withId: string): boolean {
   if (!ctx) return false;
-  const { qc, me } = ctx;
-  const thread =
-    qc.getQueryData<Thread>(keys.messages.thread(me, withId)) ??
-    qc.getQueryData<Thread>(keys.messages.threadStatus(me, withId));
+  const thread = cachedThread(withId);
   if (thread) return thread.items.length === 0 && !thread.hasMore;
-  const chats = qc.getQueryData<Chats>(keys.messages.chats(me));
+  const chats = ctx.qc.getQueryData<Chats>(keys.messages.chats(ctx.me));
   return !!chats && !chats.rows.some((r) => r.person.id === withId && r.last);
+}
+
+/** Their first name, as this tab last read the chat or the list. */
+function firstNameOf(withId: string): string | null {
+  if (!ctx) return null;
+  const person =
+    cachedThread(withId)?.person ??
+    ctx.qc
+      .getQueryData<Chats>(keys.messages.chats(ctx.me))
+      ?.rows.find((r) => r.person.id === withId)?.person;
+  return person?.firstName || null;
 }
 
 /** The server refused for a reason the chat itself shows (paused, closed): re-read it. */
@@ -97,10 +116,13 @@ async function post(item: OutboxItem): Promise<boolean> {
     update(item.clientId, null);
     // PRD 30's messaging North Star: whether it opened the chat, nothing else
     // (no ids, never the text).
-    track('message_sent', { is_first_in_conversation: isFirst(item.to) });
+    const first = isFirst(item.to);
+    track('message_sent', { is_first_in_conversation: first });
     settle(item.to, toMessage(data));
     // A message sent: the one-time notifications ask may follow (lib/utils/push).
     notePushMoment('message');
+    // A chat's first message: the install nudge may follow (lib/pwa/installNudge).
+    if (first) noteInstallMoment({ trigger: 'message', name: firstNameOf(item.to) });
     return true;
   } catch (e) {
     // No response at all while offline: wait for the connection, don't fail.

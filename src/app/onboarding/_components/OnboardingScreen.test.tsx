@@ -18,6 +18,8 @@ vi.mock('@/lib/api/data/roleHooks', () => ({
   useSwitchRole: () => ({ switchTo, isPending: switching, error: switchError }),
 }));
 
+const noteInstallMoment = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/pwa/installNudge', () => ({ noteInstallMoment }));
 const replace = vi.fn();
 const push = vi.fn();
 let search = '';
@@ -399,6 +401,7 @@ describe('OnboardingScreen', () => {
           savedAt: Date.now(),
         }),
       );
+      noteInstallMoment.mockClear();
       render(<OnboardingScreen />);
       expect(
         screen.getByText('Finish to book Ada and get 1 free session credit.'),
@@ -410,6 +413,8 @@ describe('OnboardingScreen', () => {
         '/mentors/ada-obi?book=st-1&at=2026-10-20T12%3A00%3A00Z',
       );
       expect(screen.queryByRole('heading', { name: /all set to book/ })).toBeNull();
+      // The booking's own moment brings the install nudge, not this one.
+      expect(noteInstallMoment).not.toHaveBeenCalled();
       // The booking will say the credit came.
       expect(JSON.parse(window.sessionStorage.getItem('ef-booking-draft:u1')!)).toMatchObject({
         finished: true,
@@ -649,12 +654,15 @@ describe('OnboardingScreen: the onboarding funnel (PRD 30)', () => {
 
   it('saving the plans completes onboarding; leaving the matches is not an abandon', async () => {
     state = filled;
+    noteInstallMoment.mockClear();
     const { unmount } = render(<OnboardingScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'See my matches' }));
     expect(tracked('onboarding_step_completed')).toEqual([
       ['onboarding_step_completed', { role: 'mentee', step: 'plans' }],
     ]);
     expect(tracked('onboarding_completed')).toEqual([['onboarding_completed', { role: 'mentee' }]]);
+    // The install nudge's moment, once: it shows on the screen after the matches.
+    expect(noteInstallMoment.mock.calls).toEqual([[{ trigger: 'onboarding' }]]);
     unmount();
     await settle();
     expect(tracked('onboarding_abandoned')).toEqual([]);

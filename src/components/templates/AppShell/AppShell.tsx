@@ -22,6 +22,7 @@ import { CreditsExplainer } from './CreditsExplainer';
 import { LockExplainer } from './LockExplainer';
 import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { cx } from '@/lib/utils/cx';
+import { INSTALL_COPY } from '@/lib/copy/install';
 import styles from './AppShell.module.css';
 
 /** Rail group: `daily` above the divider, `setup` below (design sidebar=grouped). */
@@ -171,6 +172,12 @@ type AppShellProps = {
    * preview, while not previewing. The header's preview icon opens the bar.
    */
   onPreview?: () => void;
+  /**
+   * The install nudge's way back (phones): "Install the app", last in the
+   * More sheet. Passed only where the sheet can help (a phone browser that can
+   * install); the caller opens it.
+   */
+  onInstall?: () => void;
   offline: boolean;
   children: ReactNode;
 };
@@ -189,6 +196,7 @@ export function AppShell({
   account,
   access,
   onPreview,
+  onInstall,
   offline,
   children,
 }: AppShellProps) {
@@ -564,6 +572,29 @@ export function AppShell({
                   )}
                 </li>
               ))}
+              {onInstall && (
+                <li className={styles.sheetInstall}>
+                  <button
+                    type="button"
+                    className={styles.sheetItem}
+                    aria-haspopup="dialog"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      // The item goes with the sheet: the nudge hands focus back to More.
+                      moreRef.current?.focus();
+                      onInstall();
+                    }}
+                  >
+                    <span className={styles.sheetInstallIcon}>
+                      <Icon name="download" size={18} />
+                    </span>
+                    <span className={styles.sheetInstallText}>
+                      <span className={styles.sheetInstallLabel}>{INSTALL_COPY.menu.label}</span>
+                      <span className={styles.sheetInstallSub}>{INSTALL_COPY.menu.sub}</span>
+                    </span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         </>

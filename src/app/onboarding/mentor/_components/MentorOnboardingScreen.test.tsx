@@ -13,6 +13,8 @@ vi.hoisted(() => {
 });
 const track = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/analytics/track', () => ({ track }));
+const noteInstallMoment = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/pwa/installNudge', () => ({ noteInstallMoment }));
 const switchTo = vi.fn();
 vi.mock('@/lib/api/data/roleHooks', () => ({
   useSwitchRole: () => ({ switchTo, isPending: false, error: null }),
@@ -811,10 +813,13 @@ describe('MentorOnboardingScreen: PRD 30 application funnel', () => {
     submit.mockRejectedValueOnce(new Error('offline'));
     await userEvent.click(await screen.findByRole('button', { name: 'Submit application' }));
     expect(calls('mentor_application_submitted')).toEqual([]);
+    expect(noteInstallMoment).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole('button', { name: 'Submit application' }));
     await waitFor(() =>
       expect(calls('mentor_application_submitted')).toEqual([['mentor_application_submitted', {}]]),
     );
+    // Sent: the install nudge's moment, worded for a mentor (no matches).
+    expect(noteInstallMoment.mock.calls).toEqual([[{ trigger: 'onboarding', mentor: true }]]);
     expect(calls('mentor_application_step_completed').map(([, p]) => p)).toEqual([
       { step: 'about_you' },
       { step: 'education' },

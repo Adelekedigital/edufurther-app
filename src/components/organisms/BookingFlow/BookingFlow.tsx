@@ -304,6 +304,7 @@ export function BookingFlow(p: BookingFlowProps) {
       answers: asked(),
       // The surface it began on: a booking resumed after sign-up keeps its first one.
       entryPoint: events.entryPoint,
+      mentorFirstName: m.firstName,
     });
   };
   const pick = session && time ? { sessionTypeId: session.id, time } : null;

@@ -13,6 +13,12 @@ const push = vi.hoisted(() => ({
   turnOff: vi.fn(),
 }));
 vi.mock('@/lib/api/data/push', () => ({ usePushNotifications: () => push }));
+const nudge = vi.hoisted(() => ({ busy: false }));
+const notePushAskShown = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/pwa/installNudge', () => ({
+  installNudgeBusy: () => nudge.busy,
+  notePushAskShown,
+}));
 
 /** A moment, then the short wait before the ask shows. */
 const moment = (m: 'message' | 'booking') => {
@@ -26,6 +32,7 @@ beforeEach(() => {
   localStorage.clear();
   Object.assign(push, { state: 'off', askable: true, busy: false, failure: null });
   push.turnOn.mockReset();
+  nudge.busy = false;
 });
 
 describe('PushPrompt', () => {
@@ -42,6 +49,19 @@ describe('PushPrompt', () => {
     expect(push.turnOn).toHaveBeenCalledTimes(1);
     moment('booking');
     expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
+  });
+
+  it('the install nudge took the moment: no ask now, and the device’s one ask is kept', () => {
+    nudge.busy = true;
+    render(<PushPrompt userId="u1" />);
+    moment('booking');
+    expect(screen.queryByRole('button', { name: PUSH_COPY.turnOn })).not.toBeInTheDocument();
+    expect(notePushAskShown).not.toHaveBeenCalled();
+    nudge.busy = false;
+    moment('message');
+    expect(screen.getByRole('button', { name: PUSH_COPY.turnOn })).toBeInTheDocument();
+    // Shown: the install nudge sits this visit out.
+    expect(notePushAskShown).toHaveBeenCalledTimes(1);
   });
 
   it('never asks when it cannot be offered or the browser was asked', () => {

@@ -31,6 +31,10 @@ export type Role = Schemas['PrimaryRole'];
 export type ShareKind = 'mentor_profile' | 'invite';
 /** How it left: the link copied (with its message), or the device's share sheet. */
 export type ShareMethod = 'copy' | 'native';
+/** What opened the install nudge: one of its three moments, or the More menu. */
+export type InstallTrigger = 'booking' | 'message' | 'onboarding' | 'menu';
+/** How this device installs: the browser's prompt, or Safari's Share steps. */
+export type InstallPlatform = 'android' | 'ios';
 
 export type AnalyticsEvents = {
   /** One per navigation, from the router (track.ts), never from a screen. */
@@ -109,6 +113,19 @@ export type AnalyticsEvents = {
    * Chromium-only `appinstalled` events, which carried none.
    */
   pwa_installed: { method: 'standalone_launch' };
+  /**
+   * The install nudge (lib/pwa/installNudge): what opened it, and how this
+   * device installs. Accepted is Android's prompt answer only (on iPhone a
+   * tap proves nothing; `pwa_installed` counts the launch); `how` tells the
+   * sheet's close from a refused browser prompt.
+   */
+  install_nudge_shown: { trigger: InstallTrigger; platform: InstallPlatform };
+  install_nudge_accepted: { trigger: InstallTrigger; platform: InstallPlatform };
+  install_nudge_dismissed: {
+    trigger: InstallTrigger;
+    platform: InstallPlatform;
+    how: 'closed' | 'prompt_dismissed';
+  };
   push_permission_granted: Record<string, never>;
 
   /** Error rate by screen: the rate, never the message. */

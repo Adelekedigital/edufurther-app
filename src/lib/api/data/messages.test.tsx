@@ -20,6 +20,8 @@ import { previewStore, resetPreviewStoreForTests } from './previewStore';
 
 const track = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/analytics/track', () => ({ track }));
+const noteInstallMoment = vi.hoisted(() => vi.fn());
+vi.mock('@/lib/pwa/installNudge', () => ({ noteInstallMoment }));
 const GET = vi.fn();
 const POST = vi.fn();
 vi.mock('./http', () => ({
@@ -572,6 +574,17 @@ describe('the outbox: message_sent (PRD 30)', () => {
     ]);
     expect(JSON.stringify(track.mock.calls)).not.toContain('Hello');
     expect(JSON.stringify(track.mock.calls)).not.toContain('u-1');
+  });
+
+  it('the first message in a chat: the install nudge’s moment, once, with their first name', async () => {
+    noteInstallMoment.mockClear();
+    qc.setQueryData(THREAD, toThreadLike());
+    stored();
+    await send('Hello there');
+    await send('Second');
+    expect(noteInstallMoment.mock.calls).toEqual([
+      [{ trigger: 'message', name: toThreadLike().person.firstName }],
+    ]);
   });
 
   it('a chat with history, or one with more to load, is not first', async () => {

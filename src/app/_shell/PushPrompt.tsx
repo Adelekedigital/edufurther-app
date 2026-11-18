@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Snackbar, toastHasFocus } from '@/components/molecules/Snackbar/Snackbar';
 import { usePushNotifications } from '@/lib/api/data/push';
 import { PUSH_COPY } from '@/lib/copy/push';
+import { installNudgeBusy, notePushAskShown } from '@/lib/pwa/installNudge';
 import { markPushAsked, onPushMoment, pushAsked, type PushMoment } from '@/lib/utils/push';
 
 /** Long enough to read and tap; Settings keeps the switch for later. */
@@ -53,10 +54,12 @@ export function PushPrompt({
     if (!askable.current || pushAsked() || pending.current) return;
     pending.current = true;
     setTimeout(() => {
-      if (!askable.current || pushAsked()) {
+      // One ask per visit: the install nudge took it (up, on its way, or shown).
+      if (!askable.current || pushAsked() || installNudgeBusy()) {
         pending.current = false;
         return;
       }
+      notePushAskShown();
       setToast({ text: PUSH_COPY.ask[moment], stamp: Date.now(), ask: true });
     }, ASK_DELAY_MS);
   }, []);
