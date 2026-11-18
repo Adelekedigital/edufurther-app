@@ -129,6 +129,18 @@ describe('matchValues', () => {
     expect(matchValues(vals, 'MENTOR').map((v) => v.name)).toEqual(['mentorName']);
     expect(matchValues(vals, 'date').map((v) => v.name)).toEqual(['sessionDate']);
   });
+  it('ranks on the name: names that start with it first, meaning-only hits last', () => {
+    const more = [
+      { name: 'menteeName', meaning: 'Who booked the session' },
+      { name: 'sessionDate', meaning: 'Session date' },
+      { name: 'sessionLink', meaning: 'Join link' },
+    ];
+    expect(matchValues(more, 'session').map((v) => v.name)).toEqual([
+      'sessionDate',
+      'sessionLink',
+      'menteeName',
+    ]);
+  });
   it('an empty query lists them all', () => {
     expect(matchValues(vals, '')).toHaveLength(2);
   });

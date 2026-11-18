@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { CountryPicker } from './CountryPicker';
 
 const options = [
+  { id: 'ar', label: 'Argentina' },
+  { id: 'bj', label: 'Benin' },
   { id: 'ci', label: 'Côte d’Ivoire' },
   { id: 'gh', label: 'Ghana' },
   { id: 'ng', label: 'Nigeria' },
@@ -39,6 +41,19 @@ describe('CountryPicker', () => {
     await user.type(box, 'cote');
     expect(box).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Côte d’Ivoire']);
+  });
+
+  it('typing "n" brings the countries that start with N to the top', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    const box = screen.getByRole('combobox', { name: 'From' });
+    await user.clear(box);
+    await user.type(box, 'n');
+    // By accessible name: the chosen row (Ghana) also holds its check icon.
+    const names = ['Nigeria', 'Niger', 'Argentina', 'Benin', 'Ghana'];
+    expect(screen.getAllByRole('option')).toEqual(
+      names.map((name) => screen.getByRole('option', { name })),
+    );
   });
 
   it('arrow keys move through the matches and Enter picks, without submitting', async () => {
