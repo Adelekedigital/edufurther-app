@@ -81,6 +81,7 @@ import {
   PHASE_ANNOUNCEMENT,
 } from './lobbyModel';
 import { track } from '@/lib/analytics/track';
+import { canHandOffToSafari } from '@/lib/utils/standalone';
 import styles from './SessionJoinScreen.module.css';
 
 // Opened from a button, never needed for the first paint of the join page:
@@ -408,12 +409,15 @@ export function SessionJoinScreen({ id }: { id: string }) {
     );
   } else {
     const b = data.booking;
+    // The installed iPhone app sends a Meet call to Safari (ADR 0013).
+    const inSafari = b.provider === 'google_meet' && canHandOffToSafari();
     const lobby = lobbyModel({
       room: data,
       phase: live,
       now,
       timeZone,
-      enterHref: enterPath(id),
+      enterHref: enterPath(id, { inSafari }),
+      inSafari,
       onFollow: () => {
         setProblem(null);
         track('session_join_clicked', {

@@ -45,6 +45,11 @@ export type LobbyJoin =
       href: string;
       /** Told when Join is followed (click or middle-click); cosmetic only. */
       onFollow?: () => void;
+      /**
+       * Open in this window, not a new tab: the installed iPhone app, where a
+       * new tab is an in-app sheet signed into nothing (ADR 0013).
+       */
+      sameWindow?: boolean;
     };
 
 type SessionLobbyProps = {
@@ -172,10 +177,14 @@ export function SessionLobby({
             // there is no popup to block.
             <ButtonAnchor
               href={join.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              // One string, as ExternalLink names its links (failure log #51).
-              aria-label={`${join.label} (opens in a new tab)`}
+              {...(join.sameWindow
+                ? {}
+                : {
+                    target: '_blank',
+                    rel: 'noopener noreferrer',
+                    // One string, as ExternalLink names its links (failure log #51).
+                    'aria-label': `${join.label} (opens in a new tab)`,
+                  })}
               size="large"
               fullWidth
               onClick={join.onFollow}

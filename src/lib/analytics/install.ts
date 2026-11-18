@@ -1,3 +1,4 @@
+import { isStandalone } from '@/lib/utils/standalone';
 import { track } from './track';
 
 /**
@@ -17,12 +18,6 @@ export function resetInstallForTests(): void {
 
 /** Set once this device's first standalone launch reached the vendor. */
 export const INSTALL_SENT_KEY = 'ef_pwa_installed_sent';
-
-/** Opened as the installed app: the manifest's `standalone`, or iOS Safari's home-screen flag. */
-export function isStandalone(): boolean {
-  const ios = (navigator as Navigator & { standalone?: boolean }).standalone === true;
-  return ios || window.matchMedia?.('(display-mode: standalone)').matches === true;
-}
 
 /**
  * Once per app start: in standalone mode, send `pwa_installed` once per

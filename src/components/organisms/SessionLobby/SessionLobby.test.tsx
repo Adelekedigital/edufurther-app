@@ -166,6 +166,14 @@ describe('Join as a link to the entry route (issue 207)', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('sameWindow (the installed iPhone app, ADR 0013): no new tab, named by its label alone', () => {
+    render(<SessionLobby {...base} join={join({ sameWindow: true })} />);
+    const a = screen.getByRole('link', { name: 'Join now' });
+    expect(a).toHaveAttribute('href', '/sessions/b1/enter');
+    expect(a).not.toHaveAttribute('target');
+    expect(a).not.toHaveAttribute('rel');
+  });
+
   it('is not next/link, so nothing prefetches a route that records an arrival', async () => {
     vi.resetModules();
     const link = vi.fn(() => null);
