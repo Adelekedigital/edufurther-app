@@ -33,6 +33,15 @@ type SegmentedControlProps<V extends string> = CommonProps<V> &
         /** A control sharing the track after the radios (PerformanceChart's year Select). */
         trailing?: ReactNode;
       }
+    | {
+        /**
+         * text: text tabs on a white page, no box; the pick is ink with a 2px
+         * blue underline (RoleToggleQuiet.dc.html, onboarding step 1). 44px tall.
+         */
+        look: 'text';
+        size?: never;
+        trailing?: never;
+      }
   );
 
 type CommonProps<V extends string> = {
@@ -54,6 +63,8 @@ type CommonProps<V extends string> = {
    * stays reachable and says it's unavailable; choosing does nothing.
    */
   disabled?: boolean;
+  /** A choice is being saved: aria-busy on the group (pair with `disabled`). */
+  busy?: boolean;
 };
 
 /**
@@ -62,8 +73,19 @@ type CommonProps<V extends string> = {
  * group: one tab stop, arrows move and select, Home/End jump.
  */
 export function SegmentedControl<V extends string>(props: SegmentedControlProps<V>) {
-  const { options, value, onChange, label, layout = 'fill', width, className, disabled } = props;
+  const {
+    options,
+    value,
+    onChange,
+    label,
+    layout = 'fill',
+    width,
+    className,
+    disabled,
+    busy,
+  } = props;
   const track = props.look === 'track';
+  const text = props.look === 'text';
   const size = (track && props.size) || 'md';
   const trailing = track ? props.trailing : null;
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -100,10 +122,13 @@ export function SegmentedControl<V extends string>(props: SegmentedControlProps<
       role="radiogroup"
       aria-label={label}
       aria-disabled={disabled || undefined}
+      aria-busy={busy || undefined}
       className={
         track
           ? cx(styles.radios, layout === 'fill' && styles.radiosFill)
-          : cx(styles.group, className)
+          : text
+            ? cx(styles.textGroup, className)
+            : cx(styles.group, className)
       }
       style={!track && width ? { width } : undefined}
     >
@@ -130,7 +155,9 @@ export function SegmentedControl<V extends string>(props: SegmentedControlProps<
                     iconOnly && styles.iconOnly,
                     on && styles.ton,
                   )
-                : cx(styles.segment, styles[layout], on && styles.on)
+                : text
+                  ? cx(styles.textSeg, on && styles.textOn)
+                  : cx(styles.segment, styles[layout], on && styles.on)
             }
             onClick={() => !disabled && onChange(o.value)}
             onKeyDown={(e) => onKey(e, i)}

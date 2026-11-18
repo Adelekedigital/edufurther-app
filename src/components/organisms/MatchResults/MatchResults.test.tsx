@@ -41,12 +41,6 @@ const base: MatchResultsProps = {
     match('m2', 'Adebanjo Maria'),
   ],
   exact: true,
-  basis: {
-    degree: 'Master’s',
-    field: 'Computer Science',
-    country: 'United Kingdom',
-    origin: 'Ghana',
-  },
   isLoading: false,
   error: null,
   onRetry: vi.fn(),
@@ -55,14 +49,15 @@ const base: MatchResultsProps = {
   timeZone: 'UTC',
   offline: false,
   onBook: vi.fn(),
-  onEdit: vi.fn(),
+  onSkip: vi.fn(),
+  starterFree: false,
   browseHref: '/explore',
 };
 
 const failed: AppError = { kind: 'server', message: 'x' };
 
 describe('MatchResults', () => {
-  it('shows each match with its reason line and the basis', () => {
+  it('shows each match with its reason line, and no "Based on" row (owner 2026-11-18)', () => {
     render(<MatchResults {...base} />);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Your top 2 mentor matches',
@@ -71,18 +66,65 @@ describe('MatchResults', () => {
     expect(screen.getByText(/· Master’s$/)).toBeInTheDocument();
     // No reason: the mentor's own level and country, with the info icon.
     expect(screen.getByText('Master’s · the United Kingdom')).toBeInTheDocument();
-    expect(
-      screen.getByText('Based on: Master’s Computer Science in the United Kingdom · from Ghana'),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/Based on/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit your answers' })).toBeNull();
     expect(screen.getByRole('link', { name: /Browse all mentors/ })).toHaveAttribute(
       'href',
       '/explore',
     );
   });
 
-  it('says when nobody matches exactly', () => {
+  it('leads with the nearest fits when nobody matches exactly (MatchSkip.dc.html)', () => {
     render(<MatchResults {...base} exact={false} />);
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('No exact matches yet');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Mentors close to your goals',
+    );
+    expect(screen.getByText('Your nearest fits. More as new mentors join.')).toBeInTheDocument();
+  });
+
+  it('Skip for now is a 44px text button at the top, before the heading, and calls onSkip', () => {
+    const onSkip = vi.fn();
+    render(<MatchResults {...base} onSkip={onSkip} />);
+    const skip = screen.getByRole('button', { name: 'Skip for now' });
+    expect(skip).toHaveClass('skip');
+    // First in the reading and focus order, as it is drawn (top right).
+    expect(
+      skip.compareDocumentPosition(screen.getByRole('heading', { level: 1 })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    skip.click();
+    expect(onSkip).toHaveBeenCalledTimes(1);
+  });
+
+  it('no Skip without onSkip (the guest booking path)', () => {
+    render(
+      <MatchResults {...base} onSkip={undefined} guest={{ firstName: 'Ada', available: true }} />,
+    );
+    expect(screen.queryByRole('button', { name: 'Skip for now' })).toBeNull();
+  });
+
+  it('Skip stays while loading and after a failed load', () => {
+    const { rerender } = render(<MatchResults {...base} matches={[]} isLoading />);
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeInTheDocument();
+    rerender(<MatchResults {...base} matches={[]} error={failed} />);
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeInTheDocument();
+  });
+
+  it('"First session free" under every card only while the starter credit is unused', () => {
+    const { rerender } = render(<MatchResults {...base} starterFree />);
+    const items = screen.getAllByRole('listitem');
+    expect(items).toHaveLength(2);
+    for (const li of items) expect(li).toHaveTextContent('First session free');
+    rerender(<MatchResults {...base} starterFree={false} />);
+    expect(screen.queryByText('First session free')).toBeNull();
+  });
+
+  it('reveals the heading, then each card (classes the CSS animates; none on loading)', () => {
+    const { rerender } = render(<MatchResults {...base} matches={[]} isLoading />);
+    expect(screen.getByRole('heading', { level: 1 }).parentElement).not.toHaveClass('reveal');
+    rerender(<MatchResults {...base} />);
+    expect(screen.getByRole('heading', { level: 1 }).parentElement).toHaveClass('reveal');
+    for (const li of screen.getAllByRole('listitem')) expect(li).toHaveClass('reveal');
   });
 
   it('adds the note under a single match', () => {
@@ -105,11 +147,9 @@ describe('MatchResults', () => {
     expect(base.onRetry).toHaveBeenCalled();
   });
 
-  it('announces the results and goes back to edit the answers', () => {
+  it('announces the results', () => {
     render(<MatchResults {...base} />);
     expect(screen.getByRole('status')).toHaveTextContent('Your top 2 mentor matches');
-    screen.getByRole('button', { name: 'Edit your answers' }).click();
-    expect(base.onEdit).toHaveBeenCalled();
   });
 
   it('shows no reason line when there is nothing to say', () => {

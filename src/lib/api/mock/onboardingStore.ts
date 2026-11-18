@@ -237,7 +237,7 @@ export function mockMatches(userId: string, limit: number, forMentor: string | n
   const rows = picked ? [picked] : rest.slice(0, limit);
   return {
     matches: rows.map((r) => r.match),
-    // "No exact matches yet" when nobody matches on study country or degree (PRD US-4).
+    // "Mentors close to your goals" when nobody matches on study country or degree (PRD US-4).
     exact: rows.some((r) => r.key[4]! > 0 || r.key[5]! > 0),
     based_on: {
       degree: level

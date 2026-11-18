@@ -138,6 +138,23 @@ describe('MenteeNewView', () => {
     expect(now()).toEqual([expect.stringMatching(/Complete your profile/)]);
   });
 
+  it('the profile as the next step is picked out and says why (HomeAfterSkip.dc.html)', () => {
+    render(<MenteeNewView {...props({ fields: fields(1) })} />);
+    const row = screen.getByRole('button', {
+      name: 'Complete your profile, 1 of 4 details done · Mentors read this before your session',
+    });
+    expect(row).toHaveAttribute('aria-current', 'step');
+    expect(row).toHaveClass('rowNow');
+  });
+
+  it('the profile not the next step: its note is the count alone', () => {
+    // Booked, nothing shared: the invite is the step.
+    render(<MenteeNewView {...props({ booked })} />);
+    expect(
+      screen.getByRole('button', { name: 'Complete your profile, 3 of 4 details done' }),
+    ).not.toHaveAttribute('aria-current');
+  });
+
   it('no free session known: the ready card promises none', () => {
     render(
       <MenteeNewView {...props({ profileDone: true, fields: fields(4), freeSessions: null })} />,

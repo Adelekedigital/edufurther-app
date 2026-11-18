@@ -311,3 +311,18 @@ export function refundPolicy(hours: number | null | undefined) {
 
 /** Only when `/me` did not say; the same twelve the booking rules fall back to. */
 const FALLBACK_REFUND_HOURS = 12;
+
+/**
+ * The starter credit is still unused: no session had, none requested or
+ * booked. Home's rule for "Free with your starter credit" (MenteeNewView: no
+ * first session done, no booking ahead), read from /me so a screen outside
+ * Home can say it too (the matches' "First session free", owner 2026-11-18).
+ * A count /me doesn't know promises nothing.
+ */
+export function starterCreditUnused(v: {
+  completedSessions: number;
+  bookingCounts?: { pending: number | null; upcoming: number | null };
+}): boolean {
+  const c = v.bookingCounts;
+  return v.completedSessions === 0 && c?.pending === 0 && c?.upcoming === 0;
+}

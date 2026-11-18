@@ -12,7 +12,6 @@ import { MatchResults } from '@/components/organisms/MatchResults/MatchResults';
 import { StudyPlansForm } from '@/components/organisms/StudyPlansForm/StudyPlansForm';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import {
-  DEGREE_OPTIONS,
   FIELD_ERRORS,
   FLOW_COPY,
   GUEST_COPY,
@@ -22,11 +21,13 @@ import {
   type MissingKey,
 } from '@/lib/copy/onboarding';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
-import { basedOnLine } from '@/lib/utils/matchReason';
 import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { useOnline } from '@/lib/utils/useOnline';
 import { cx } from '@/lib/utils/cx';
+import { memberHome } from '@/lib/utils/access';
+import { starterCreditUnused } from '@/lib/utils/credits';
+import { track } from '@/lib/analytics/track';
 import type { Mentor } from '@/types/mentor';
 import { GuestBanner } from './GuestBanner';
 import { LogoFrame } from '@/components/templates/LogoFrame/LogoFrame';
@@ -106,21 +107,12 @@ export function OnboardingScreen() {
             (x) => x.mentor.profileHref === mentorProfilePath({ id: f.guest!.handle }),
           )?.mentor ?? null)
         : null);
-    // Their own answers until the server's basis arrives, so the line never reads blank.
-    const label = (id: string) => f.countries.find((c) => c.id === id)?.label ?? null;
-    const local = {
-      degree: DEGREE_OPTIONS.find((d) => d.value === form.plans.degree)?.label ?? null,
-      field: form.plans.field.trim() || null,
-      country: label(form.plans.destinationId),
-      origin: label(form.plans.originId),
-    };
+    const member = f.viewer.kind === 'member' ? f.viewer : null;
     body = (
       <main className={styles.matches}>
         <MatchResults
           matches={m?.matches ?? []}
           exact={m?.exact ?? true}
-          // The server's basis when it says something; the mentee's own answers otherwise.
-          basis={m?.basis && basedOnLine(m.basis) ? m.basis : local}
           isLoading={f.matches.isLoading}
           error={f.matches.error}
           onRetry={f.matches.retry}
@@ -138,7 +130,17 @@ export function OnboardingScreen() {
           offline={!online}
           onBook={setBookMentor}
           onMoreTopics={setSheetMentor}
-          onEdit={f.edit}
+          // Onboarding is complete here (the plans save did it), so Home loses
+          // nothing. A guest came to book: no Skip (MatchSkip.dc.html).
+          onSkip={
+            f.guest
+              ? undefined
+              : () => {
+                  track('onboarding_matches_skipped', { match_count: m?.matches.length ?? 0 });
+                  router.push(member ? memberHome(member) : '/home');
+                }
+          }
+          starterFree={!!member && starterCreditUnused(member)}
           browseHref="/explore"
           headingRef={headingRef}
         />

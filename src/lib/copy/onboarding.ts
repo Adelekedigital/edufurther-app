@@ -183,8 +183,8 @@ export const GUEST_COPY = {
 export const MATCH_COPY = {
   title: (n: number) => (n === 1 ? 'Your top mentor match' : `Your top ${n} mentor matches`),
   sub: 'These mentors fit your goals. Pick one and book your first free session.',
-  noExactTitle: 'No exact matches yet',
-  noExactSub: 'No mentor matches all of that yet. These are the closest to your goals.',
+  noExactTitle: 'Mentors close to your goals',
+  noExactSub: 'Your nearest fits. More as new mentors join.',
   oneNote: 'That’s the one closest fit right now. New mentors join every week.',
   loadingTitle: 'Finding your mentors…',
   loadingSub: 'Matching on where you want to study, your level and the help you picked.',
@@ -197,9 +197,11 @@ export const MATCH_COPY = {
   emptyTitle: 'No mentors are taking bookings right now',
   emptyBody: 'Your answers are saved. Browse all mentors to see who’s on EduFurther.',
   emptyAction: 'Browse all mentors',
-  edit: 'Edit your answers',
   browse: 'Browse all mentors',
-  basedOnFallback: 'Based on your answers',
+  // MatchSkip.dc.html (owner 2026-11-18): onboarding is done by now, so this loses nothing.
+  skip: 'Skip for now',
+  // Under each Book while the starter credit is unused (Home's "Free with your starter credit").
+  firstFree: 'First session free',
 };
 
 /** The phone topics sheet, worded as MentorCard words its own Book button. */
@@ -229,9 +231,14 @@ export const FLOW_COPY = {
   saveError: 'We couldn’t save your answers. Check your connection and try again.',
 };
 
-/** Step 1's switch to the other onboarding, for a fresh account (ours, owner 2026-10-20). */
+/**
+ * Step 1's switch to the other onboarding, for a fresh account (owner
+ * 2026-10-20): two text tabs, each named by its path (RoleToggleQuiet.dc.html,
+ * owner 2026-11-18).
+ */
 export const ROLE_SWITCH_COPY = {
-  mentor: 'Join as a mentor',
-  mentee: 'Join as a mentee',
+  label: 'I’m joining to',
+  mentee: 'Get mentored',
+  mentor: 'Mentor others',
   error: 'Couldn’t switch. Try again.',
 };

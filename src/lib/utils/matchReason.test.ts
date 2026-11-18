@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { countryInSentence } from './format';
-import { basedOnLine, joinAnd, reasonLine } from './matchReason';
+import { joinAnd, reasonLine } from './matchReason';
 
 const uk = { id: 'gb', label: 'United Kingdom' };
 const gh = { id: 'gh', label: 'Ghana' };
@@ -61,32 +61,5 @@ describe('reasonLine', () => {
       rest: '',
       matched: false,
     });
-  });
-});
-
-describe('basedOnLine', () => {
-  it('reads as the design draws it', () => {
-    expect(
-      basedOnLine({ degree: 'MBA', field: 'Law', country: 'United Kingdom', origin: 'Nigeria' }),
-    ).toBe('Based on: MBA Law in the United Kingdom · from Nigeria');
-  });
-
-  it('leaves out "Not sure yet"', () => {
-    expect(basedOnLine({ degree: 'PhD', field: 'Law', country: null, origin: null })).toBe(
-      'Based on: PhD Law',
-    );
-  });
-
-  it('never starts with a separator', () => {
-    expect(basedOnLine({ degree: null, field: null, country: null, origin: 'Nigeria' })).toBe(
-      'Based on: from Nigeria',
-    );
-    expect(
-      basedOnLine({ degree: null, field: null, country: 'United Kingdom', origin: null }),
-    ).toBe('Based on: in the United Kingdom');
-  });
-
-  it('is null with nothing to say', () => {
-    expect(basedOnLine({ degree: null, field: null, country: null, origin: null })).toBeNull();
   });
 });

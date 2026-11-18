@@ -51,6 +51,8 @@ export type AnalyticsEvents = {
   onboarding_step_completed: { role: Role; step: string };
   onboarding_completed: { role: Role };
   onboarding_abandoned: { role: Role; step: string };
+  /** "Skip for now" on the mentee's matches (owner 2026-11-18): onboarding is already complete. */
+  onboarding_matches_skipped: { match_count: number };
 
   /**
    * An invite link was opened and the invite resolved. No referrer id: who
