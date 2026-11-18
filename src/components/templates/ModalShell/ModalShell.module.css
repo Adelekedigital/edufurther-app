@@ -257,6 +257,8 @@
    Chrome and tokens are the phone sheet CreditsExplainer already draws. */
 .sheetRoot.containedRoot {
   align-items: flex-end;
+  /* Not a scroll box, as .phoneSheetRoot: the rising sheet would make one. */
+  overflow: clip;
 }
 /* Lighter than the full-screen scrim: the page behind is meant to stay readable. */
 .overlaySheet {
@@ -357,6 +359,11 @@
 @media (max-width: 767px) {
   .phoneSheetRoot {
     align-items: flex-end;
+    /* Not a scroll box: the rising sheet starts below the edge, so `.root`'s
+       auto overflow briefly had room to scroll, and iOS Safari scrolled it to
+       the focused button. The sheet showed high, rose, then dropped when the
+       motion ended. The sheet scrolls itself at its cap. */
+    overflow: clip;
   }
   .dialog.phoneSheet {
     min-height: 0;
