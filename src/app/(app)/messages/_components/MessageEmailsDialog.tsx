@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
@@ -11,7 +12,7 @@ import styles from './MessageEmailsDialog.module.css';
 /**
  * Message emails (Messages.dc.html `modalPrefs`; PRD "Message emails"): one
  * switch that saves when flipped, the session-window note, and Done, which
- * closes with the on/off toast. A sheet on phones.
+ * closes with the on/off toast when the switch changed. A sheet on phones.
  */
 export function MessageEmailsDialog({ onDone }: { onDone: (toast: string | null) => void }) {
   const settings = useMessageSettings(true);
@@ -20,9 +21,13 @@ export function MessageEmailsDialog({ onDone }: { onDone: (toast: string | null)
   // While a flip is saving, the toast would claim a value that may roll back:
   // Done (and the ×) wait for the answer.
   const saving = save.isPending;
+  // The value the sheet opened with, once it is known: closing says the outcome
+  // only when it changed, so looking and closing says nothing.
+  const [opened, setOpened] = useState<boolean | undefined>(undefined);
+  if (opened === undefined && on !== undefined) setOpened(on);
   const close = () => {
     if (saving) return;
-    onDone(on === undefined ? null : on ? SETTINGS_COPY.on : SETTINGS_COPY.off);
+    onDone(on === undefined || on === opened ? null : on ? SETTINGS_COPY.on : SETTINGS_COPY.off);
   };
 
   return (
