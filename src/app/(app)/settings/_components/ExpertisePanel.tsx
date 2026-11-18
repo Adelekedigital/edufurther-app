@@ -30,6 +30,7 @@ import { useOwnEducation } from '@/lib/api/data/profileEntries';
 import { MENTOR_EXPERTISE_COPY as C } from '@/lib/copy/mentorSettings';
 import { EDUCATION_COPY, SAVE_COPY } from '@/lib/copy/settings';
 import { useLeaveGuard } from '@/lib/utils/leaveGuard';
+import { rankByMatch } from '@/lib/utils/text';
 import { rowOf } from './EducationPanel';
 import type { PanelHandle } from './ProfilePanel';
 import styles from './ExpertisePanel.module.css';
@@ -51,8 +52,6 @@ const MATCHES = 6;
 
 const same = (a: GuideCountry[], b: GuideCountry[]) =>
   a.length === b.length && a.every((c, i) => c.id === b[i]!.id);
-/** Case- and accent-insensitive, so "cote" finds Côte d’Ivoire. */
-const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 /**
  * Settings › Expertise for a mentor (Mentor Settings.dc.html `isExpertise`,
@@ -199,11 +198,12 @@ export const ExpertisePanel = forwardRef<PanelHandle, { userId: string }>(functi
     const hit = byLabel(label);
     return hit ? [{ id: hit.id, label: hit.label }] : [];
   });
-  const q = norm(query.trim());
-  const results = q
-    ? catalog
-        .filter((c) => norm(c.label).includes(q) && !draft?.some((d) => d.id === c.id))
-        .sort((a, b) => Number(!norm(a.label).startsWith(q)) - Number(!norm(b.label).startsWith(q)))
+  const results = query.trim()
+    ? rankByMatch(
+        catalog.filter((c) => !draft?.some((d) => d.id === c.id)),
+        query,
+        (c) => c.label,
+      )
         .slice(0, MATCHES)
         .map((c) => ({ id: c.id, label: c.label }))
     : [];

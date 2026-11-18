@@ -14,7 +14,7 @@ import { SELECT_COPY, type SelectCopy } from '@/lib/copy/select';
 import { cx } from '@/lib/utils/cx';
 import { stopEscape } from '@/lib/utils/focus';
 import { Icon } from '../Icon/Icon';
-import { norm } from '@/lib/utils/text';
+import { norm, rankByMatch } from '@/lib/utils/text';
 import { typeaheadIndex } from './typeahead';
 import { useListPosition } from './useListPosition';
 import styles from './Select.module.css';
@@ -192,9 +192,7 @@ export const Select = forwardRef<HTMLElement, SelectProps>(function Select(props
   const term = q.trim();
 
   const filtered =
-    !searchable || remote || !dirty || !term
-      ? options
-      : options.filter((o) => norm(o.label).includes(norm(term)));
+    !searchable || remote || !dirty || !term ? options : rankByMatch(options, term, (o) => o.label);
   const exact = options.some((o) => norm(o.label) === norm(term));
   const rows: Row[] = filtered.map((option) => ({ kind: 'option', option }));
   if (searchable && allowCustom && term && !exact) rows.push({ kind: 'custom', text: term });
