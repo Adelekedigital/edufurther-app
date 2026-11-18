@@ -399,6 +399,28 @@ describe('Select searchable', () => {
     expect(screen.getByRole('status')).toHaveTextContent('1 match');
   });
 
+  it('names that start with the typed text come first, then the rest in list order', async () => {
+    const user = userEvent.setup();
+    const many: SelectOption[] = ['Argentina', 'Benin', 'Niger', 'South Africa', 'Nigeria'].map(
+      (label) => ({ value: label, label }),
+    );
+    render(<Search allowCustom={false} options={many} />);
+    await user.type(box(), 'n');
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Niger',
+      'Nigeria',
+      'Argentina',
+      'Benin',
+    ]);
+    await user.clear(box());
+    await user.type(box(), 'a');
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+      'Argentina',
+      'South Africa',
+      'Nigeria',
+    ]);
+  });
+
   it('Down then Enter picks a row: its id and name', async () => {
     const user = userEvent.setup();
     const onPick = vi.fn();

@@ -423,7 +423,6 @@ describe('OnboardingScreen', () => {
       matches = {
         matches: [{ mentor: ada, reasons: [], level: 'Master’s', studyCountry: 'United Kingdom' }],
         exact: true,
-        basis: null,
         forMentorBookable: true,
       };
       render(<OnboardingScreen />);
@@ -472,7 +471,6 @@ describe('OnboardingScreen', () => {
           },
         ],
         exact: true,
-        basis: null,
         forMentorBookable: false,
       };
       render(<OnboardingScreen />);
@@ -492,7 +490,6 @@ describe('OnboardingScreen', () => {
       matches = {
         matches: [{ mentor: ada, reasons: [], level: null, studyCountry: null }],
         exact: true,
-        basis: null,
         forMentorBookable: true,
       };
       render(<OnboardingScreen />);
@@ -562,13 +559,18 @@ describe('OnboardingScreen', () => {
   });
 });
 
-describe('OnboardingScreen: "Join as a mentor" on step 1 (owner, 2026-10-20)', () => {
-  const join = () => screen.queryByRole('button', { name: 'Join as a mentor' });
+describe('OnboardingScreen: "Get mentored" | "Mentor others" on step 1 (owner, 2026-10-20; 2026-11-18)', () => {
+  const join = () => screen.queryByRole('radio', { name: 'Mentor others' });
 
-  it('a fresh account sees it beside the counter, with the 44px tap class', () => {
+  it('a fresh account sees the two tabs beside the counter, "Get mentored" picked', () => {
     render(<OnboardingScreen />);
     expect(screen.getByText('Step 1 of 2')).not.toHaveClass('end');
-    expect(join()).toHaveClass('roleSwitch');
+    expect(screen.getByRole('radiogroup', { name: 'I’m joining to' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Get mentored' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    expect(join()).toHaveAttribute('aria-checked', 'false');
   });
 
   it('a click saves mentor once, and the screen routes nowhere itself', async () => {
@@ -584,8 +586,8 @@ describe('OnboardingScreen: "Join as a mentor" on step 1 (owner, 2026-10-20)', (
     switching = true;
     switchError = { kind: 'server', message: 'x' };
     render(<OnboardingScreen />);
-    expect(join()).toHaveAttribute('aria-disabled', 'true');
-    expect(join()).toHaveAttribute('aria-busy', 'true');
+    expect(screen.getByRole('radiogroup')).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.getByRole('radiogroup')).toHaveAttribute('aria-busy', 'true');
     expect(screen.getByRole('alert')).toHaveTextContent('Couldn’t switch. Try again.');
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/help/i);
   });
@@ -694,5 +696,94 @@ describe('OnboardingScreen: the onboarding funnel (PRD 30)', () => {
     expect(tracked('onboarding_step_completed')).toEqual([
       ['onboarding_step_completed', { role: 'mentee', step: 'help' }],
     ]);
+  });
+});
+
+describe('OnboardingScreen: the matches step (MatchSkip.dc.html, owner 2026-11-18)', () => {
+  const filled = {
+    ...fresh,
+    lastStep: 'help' as const,
+    needIds: ['o1'],
+    plans: { originId: 'c-ng', degree: 'masters', field: 'Law', destinationId: 'c-gb' },
+  };
+  const two = {
+    matches: [
+      { mentor: ada, reasons: [], level: null, studyCountry: null },
+      {
+        mentor: {
+          ...ada,
+          id: 'm-bo',
+          profileHref: '/mentors/bo-ade',
+          name: 'Bo Ade',
+          firstName: 'Bo',
+        },
+        reasons: [],
+        level: null,
+        studyCountry: null,
+      },
+    ],
+    exact: false,
+    forMentorBookable: true,
+  };
+  const toMatches = async () => {
+    await userEvent.click(screen.getByRole('button', { name: 'See my matches' }));
+    await screen.findByRole('heading', { level: 1, name: 'Mentors close to your goals' });
+  };
+  beforeEach(() => {
+    push.mockReset();
+    vi.mocked(track).mockClear();
+    state = filled;
+    matches = two;
+  });
+
+  it('no "Based on" row and no Edit your answers', async () => {
+    render(<OnboardingScreen />);
+    await toMatches();
+    expect(screen.queryByText(/Based on/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit your answers' })).toBeNull();
+  });
+
+  it('Skip for now goes Home (onboarding is already complete) and is counted', async () => {
+    viewer = { ...mentee, onboardingComplete: true, completedSessions: 0 } as Viewer;
+    render(<OnboardingScreen />);
+    await toMatches();
+    await userEvent.click(screen.getByRole('button', { name: 'Skip for now' }));
+    expect(push).toHaveBeenCalledWith('/home');
+    expect(vi.mocked(track)).toHaveBeenCalledWith('onboarding_matches_skipped', { match_count: 2 });
+  });
+
+  it('no Skip for a guest who came to book', async () => {
+    search = 'for=ada-obi&sid=st-1';
+    render(<OnboardingScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Continue to book Ada' }));
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByRole('button', { name: 'Skip for now' })).toBeNull();
+  });
+
+  it('"First session free" on each card while the starter credit is unused', async () => {
+    viewer = {
+      ...mentee,
+      completedSessions: 0,
+      bookingCounts: { pending: 0, upcoming: 0 },
+    } as Viewer;
+    render(<OnboardingScreen />);
+    await toMatches();
+    expect(screen.getAllByText('First session free')).toHaveLength(2);
+  });
+
+  it('no free tag once a session is had or booked, or when /me doesn’t know', async () => {
+    viewer = {
+      ...mentee,
+      completedSessions: 0,
+      bookingCounts: { pending: 1, upcoming: 0 },
+    } as Viewer;
+    const { unmount } = render(<OnboardingScreen />);
+    await toMatches();
+    expect(screen.queryByText('First session free')).toBeNull();
+    unmount();
+    viewer = mentee;
+    render(<OnboardingScreen />);
+    await toMatches();
+    expect(screen.queryByText('First session free')).toBeNull();
   });
 });

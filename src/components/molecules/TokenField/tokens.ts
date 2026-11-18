@@ -1,4 +1,4 @@
-import { norm } from '@/lib/utils/text';
+import { rankByMatch } from '@/lib/utils/text';
 
 /** A value the field may hold, written `{name}` in the text. */
 export type TokenValue = { name: string; meaning?: string; example?: string };
@@ -85,11 +85,17 @@ export function valueAfter(text: string, caret: number): [number, number] | null
   return [caret, close + 1];
 }
 
-/** Values whose name or meaning holds the query (case- and accent-insensitive). */
+/**
+ * Values whose name or meaning holds the query (case- and accent-insensitive),
+ * ranked on the name; meaning-only hits come last.
+ */
 export function matchValues(values: readonly TokenValue[], query: string): TokenValue[] {
-  const q = norm(query);
-  if (!q) return [...values];
-  return values.filter((v) => norm(v.name).includes(q) || norm(v.meaning ?? '').includes(q));
+  return rankByMatch(
+    values,
+    query,
+    (v) => v.name,
+    (v) => v.meaning ?? '',
+  );
 }
 
 /** A pasted or typed line break becomes a space: the field is one line of copy. */

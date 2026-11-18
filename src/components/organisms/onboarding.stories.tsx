@@ -155,12 +155,6 @@ const MATCHES: MentorMatch[] = [
 const results: MatchResultsProps = {
   matches: MATCHES,
   exact: true,
-  basis: {
-    degree: 'Master’s',
-    field: 'Computer Science',
-    country: 'United Kingdom',
-    origin: 'Ghana',
-  },
   isLoading: false,
   error: null,
   onRetry: fn(),
@@ -169,7 +163,8 @@ const results: MatchResultsProps = {
   timeZone: 'Africa/Lagos',
   offline: false,
   onBook: fn(),
-  onEdit: fn(),
+  onSkip: fn(),
+  starterFree: true,
   browseHref: '/explore',
 };
 const Results = (over: Partial<MatchResultsProps>) => (
@@ -186,16 +181,18 @@ export const MatchesError: Story = {
   render: () => <Results matches={[]} error={{ kind: 'server', message: 'x' }} />,
 };
 export const MatchesEmpty: Story = { render: () => <Results matches={[]} /> };
+export const MatchesStarterUsed: Story = { render: () => <Results starterFree={false} /> };
 export const MatchesGuest: Story = {
   render: () => (
     <Results
+      onSkip={undefined}
       matches={MATCHES.slice(0, 1)}
       guest={{ firstName: MATCHES[0]!.mentor.firstName, available: true }}
     />
   ),
 };
 export const MatchesGuestUnavailable: Story = {
-  render: () => <Results guest={{ firstName: 'Ada', available: false }} />,
+  render: () => <Results onSkip={undefined} guest={{ firstName: 'Ada', available: false }} />,
 };
 
 export const CardSixTopicsHighlighted: Story = {

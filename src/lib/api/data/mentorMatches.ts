@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import type { Topic } from '@/types/mentor';
-import type { MatchBasis, MatchReason, MentorMatch } from '@/types/onboarding';
+import type { MatchReason, MentorMatch } from '@/types/onboarding';
 import type { components } from '@/lib/api/generated/schema';
 import { DEGREE_OPTIONS } from '@/lib/copy/onboarding';
 import { ApiError, normaliseError, retryOnce } from './errors';
@@ -20,7 +20,7 @@ export type LevelCodes = { id: string; code: string }[];
 /**
  * A level as our own words say it ("Master’s", "PhD"), found by its catalogue
  * code; the backend's display name ("Master’s Degree") only when the code is
- * unknown (owner, 2026-10-17: the basis line read "Master’s Degree Public Health").
+ * unknown (owner, 2026-10-17: a line read "Master’s Degree Public Health").
  */
 function levelWord(
   ref: { id?: string | null; label?: string | null } | null | undefined,
@@ -55,12 +55,10 @@ function toReason(r: WireReason, topics: Topic[], levels: LevelCodes): MatchReas
 export type Matches = {
   matches: MentorMatch[];
   exact: boolean;
-  basis: MatchBasis;
   forMentorBookable: boolean;
 };
 
 export function toMatches(w: WireMatches, topics: Topic[], levels: LevelCodes = []): Matches {
-  const b = w.based_on;
   return {
     matches: w.matches.map((m) => ({
       mentor: toMentor(m.mentor),
@@ -70,13 +68,6 @@ export function toMatches(w: WireMatches, topics: Topic[], levels: LevelCodes = 
       studyCountry: m.study_country?.label ?? m.mentor.primary_study_country ?? null,
     })),
     exact: w.exact,
-    basis: {
-      // As the mentee chose it: "MBA", not the stored Master's.
-      degree: b.degree?.raw || levelWord(b.degree, levels),
-      field: b.field ?? null,
-      country: b.country?.label ?? null,
-      origin: b.origin?.label ?? null,
-    },
     forMentorBookable: w.for_mentor_bookable !== false,
   };
 }

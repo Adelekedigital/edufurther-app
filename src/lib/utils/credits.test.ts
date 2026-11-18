@@ -2,6 +2,7 @@ import {
   creditsAria,
   creditRows,
   refundPolicy,
+  starterCreditUnused,
   creditSegments,
   creditsStatus,
   creditsTitle,
@@ -329,5 +330,27 @@ describe('the level comes from monthly.level (#576), not the ceiling', () => {
   });
   it('an older API without level falls back to the ceiling', () => {
     expect(view(2, null).level).toBe(2);
+  });
+});
+
+describe('starterCreditUnused (Home’s “Free with your starter credit”)', () => {
+  const none = { pending: 0, upcoming: 0 };
+  it('is unused with no session had and none requested or booked', () => {
+    expect(starterCreditUnused({ completedSessions: 0, bookingCounts: none })).toBe(true);
+  });
+  it('is used once a session is had, requested or booked', () => {
+    expect(starterCreditUnused({ completedSessions: 1, bookingCounts: none })).toBe(false);
+    expect(
+      starterCreditUnused({ completedSessions: 0, bookingCounts: { pending: 1, upcoming: 0 } }),
+    ).toBe(false);
+    expect(
+      starterCreditUnused({ completedSessions: 0, bookingCounts: { pending: 0, upcoming: 1 } }),
+    ).toBe(false);
+  });
+  it('promises nothing when /me doesn’t know the counts', () => {
+    expect(starterCreditUnused({ completedSessions: 0 })).toBe(false);
+    expect(
+      starterCreditUnused({ completedSessions: 0, bookingCounts: { pending: null, upcoming: 0 } }),
+    ).toBe(false);
   });
 });

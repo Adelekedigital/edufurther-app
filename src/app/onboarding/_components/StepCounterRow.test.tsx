@@ -58,14 +58,33 @@ const ok = () => ({ response: new Response(null, { status: 200 }) });
 
 beforeEach(() => PATCH.mockReset());
 
-describe('StepCounterRow: switching onboardings (owner, 2026-10-20)', () => {
+const radio = (name: string) => screen.getByRole('radio', { name });
+
+describe('StepCounterRow: switching onboardings (owner, 2026-10-20; RoleToggleQuiet.dc.html)', () => {
+  it('is a radiogroup "I’m joining to", the current path checked, left of the counter', () => {
+    setup(fresh(), 'mentee');
+    const group = screen.getByRole('radiogroup', { name: 'I’m joining to' });
+    expect(radio('Get mentored')).toHaveAttribute('aria-checked', 'true');
+    expect(radio('Mentor others')).toHaveAttribute('aria-checked', 'false');
+    // One tab stop: the checked one.
+    expect(radio('Get mentored')).toHaveAttribute('tabindex', '0');
+    expect(radio('Mentor others')).toHaveAttribute('tabindex', '-1');
+    expect(
+      group.compareDocumentPosition(screen.getByText('Step 1 of 2')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('mentor onboarding shows "Mentor others" picked', () => {
+    setup(fresh({ signedUpAsMentor: true }), 'mentor');
+    expect(radio('Mentor others')).toHaveAttribute('aria-checked', 'true');
+    expect(radio('Get mentored')).toHaveAttribute('aria-checked', 'false');
+  });
+
   it('mentee → mentor: saves the role once, and the role redirect lands on mentor onboarding', async () => {
     PATCH.mockResolvedValue(ok());
     setup(fresh(), 'mentee');
-    const link = screen.getByRole('button', { name: 'Join as a mentor' });
-    // The visible text stays small; the 44px area is the class's ::after.
-    expect(link).toHaveClass('roleSwitch');
-    await userEvent.click(link);
+    await userEvent.click(radio('Mentor others'));
     await waitFor(() =>
       expect(qc.getQueryData<Member>(ME)).toMatchObject({ signedUpAsMentor: true }),
     );
@@ -79,10 +98,31 @@ describe('StepCounterRow: switching onboardings (owner, 2026-10-20)', () => {
     );
   });
 
+  it('picking the path already on saves nothing', async () => {
+    setup(fresh(), 'mentee');
+    await userEvent.click(radio('Get mentored'));
+    expect(PATCH).not.toHaveBeenCalled();
+  });
+
+  it('the keyboard: an arrow from the current path picks the other and switches', async () => {
+    let resolve!: (v: unknown) => void;
+    PATCH.mockReturnValue(new Promise((r) => (resolve = r)));
+    setup(fresh(), 'mentee');
+    await userEvent.tab();
+    expect(radio('Get mentored')).toHaveFocus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(radio('Mentor others')).toHaveFocus();
+    resolve(ok());
+    await waitFor(() =>
+      expect(qc.getQueryData<Member>(ME)).toMatchObject({ signedUpAsMentor: true }),
+    );
+    expect(PATCH).toHaveBeenCalledTimes(1);
+  });
+
   it('mentor → mentee: saves mentee, and the redirect goes on to mentee onboarding', async () => {
     PATCH.mockResolvedValue(ok());
     setup(fresh({ signedUpAsMentor: true }), 'mentor');
-    await userEvent.click(screen.getByRole('button', { name: 'Join as a mentee' }));
+    await userEvent.click(radio('Get mentored'));
     await waitFor(() =>
       expect(qc.getQueryData<Member>(ME)).toMatchObject({ signedUpAsMentor: false }),
     );
@@ -100,13 +140,14 @@ describe('StepCounterRow: switching onboardings (owner, 2026-10-20)', () => {
     let resolve!: (v: unknown) => void;
     PATCH.mockReturnValue(new Promise((r) => (resolve = r)));
     setup(fresh(), 'mentee');
-    const link = screen.getByRole('button', { name: 'Join as a mentor' });
-    await userEvent.dblClick(link);
-    await waitFor(() => expect(link).toHaveAttribute('aria-disabled', 'true'));
-    expect(link).toHaveAttribute('aria-busy', 'true');
-    // Never native disabled: the focused button stays in the focus order.
-    expect(link).not.toBeDisabled();
-    expect(link).toHaveFocus();
+    const other = radio('Mentor others');
+    await userEvent.dblClick(other);
+    const group = screen.getByRole('radiogroup');
+    await waitFor(() => expect(group).toHaveAttribute('aria-disabled', 'true'));
+    expect(group).toHaveAttribute('aria-busy', 'true');
+    // Never native disabled: the focused radio stays in the focus order.
+    expect(other).not.toBeDisabled();
+    expect(other).toHaveFocus();
     expect(PATCH).toHaveBeenCalledTimes(1);
     resolve(ok());
   });
@@ -114,17 +155,16 @@ describe('StepCounterRow: switching onboardings (owner, 2026-10-20)', () => {
   it('a failed save says so and stays: the viewer keeps its role', async () => {
     PATCH.mockResolvedValue({ response: new Response(null, { status: 503 }), error: {} });
     setup(fresh(), 'mentee');
-    await userEvent.click(screen.getByRole('button', { name: 'Join as a mentor' }));
+    await userEvent.click(radio('Mentor others'));
     expect(await screen.findByRole('alert')).toHaveTextContent('Couldn’t switch. Try again.');
     expect(qc.getQueryData<Member>(ME)?.signedUpAsMentor).toBeUndefined();
-    expect(screen.getByRole('button', { name: 'Join as a mentor' })).not.toHaveAttribute(
-      'aria-disabled',
-    );
+    expect(radio('Get mentored')).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('radiogroup')).not.toHaveAttribute('aria-disabled');
   });
 
   it('no switch for an account with a step saved: the counter alone, on the right', () => {
     setup(fresh({ onboardingStarted: true }), 'mentee');
-    expect(screen.queryByRole('button')).toBeNull();
+    expect(screen.queryByRole('radiogroup')).toBeNull();
     expect(screen.getByText('Step 1 of 2')).toHaveClass('end');
   });
 });

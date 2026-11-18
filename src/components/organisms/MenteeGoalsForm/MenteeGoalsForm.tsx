@@ -20,6 +20,7 @@ import {
   GOALS_ERRORS,
   type GoalsGap,
 } from '@/lib/copy/settings';
+import { rankByMatch } from '@/lib/utils/text';
 import type { TopicOption } from '@/lib/utils/topicGroups';
 import type { MenteeGoalValues } from '@/types/settings';
 import styles from './MenteeGoalsForm.module.css';
@@ -47,9 +48,6 @@ type MenteeGoalsFormProps = {
   schools: SchoolSearch;
 };
 
-/** Case- and accent-insensitive, as CountryPicker matches. */
-const norm = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
 /**
  * Settings › Goals for a mentee (Mentee Settings.dc.html `isMGoals`,
  * menteeTabs split, goalsSave bar): the two cards, "What you’re working
@@ -76,8 +74,9 @@ export function MenteeGoalsForm({
   const common = TOP_DESTINATIONS.flatMap((name) => countries.filter((c) => c.label === name));
   const picked = values.countryIds.flatMap((cid) => byId(cid) ?? []);
   const full = values.countryIds.length >= GOAL_COUNTRY_MAX;
-  const q = norm(countryQuery.trim());
-  const countryResults = q ? countries.filter((c) => norm(c.label).includes(q)) : [];
+  const countryResults = countryQuery.trim()
+    ? rankByMatch(countries, countryQuery, (c) => c.label)
+    : [];
   // Picks still in the catalog, as the picker and the save's check count them.
   const helpCount = values.needIds.filter((id) => topics.some((t) => t.id === id)).length;
   // One help-area error at a time: none picked, or more than the cap (saved before it).

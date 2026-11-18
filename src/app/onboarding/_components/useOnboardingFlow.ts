@@ -275,11 +275,6 @@ export function useOnboardingFlow() {
       setTried(false);
       set({ step: 'help' });
     },
-    edit: () => {
-      save.reset();
-      setTried(false);
-      set({ step: 'help', resumed: false, migrated: false });
-    },
     startOver: () => {
       if (save.isPending) return;
       save.reset();

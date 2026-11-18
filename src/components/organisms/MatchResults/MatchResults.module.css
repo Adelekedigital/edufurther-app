@@ -25,19 +25,6 @@
   text-wrap: pretty;
 }
 
-.basis {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-  font-size: var(--text-p-xs);
-  color: var(--ink-600);
-}
-/* The row's height as drawn (32px); the look and the phone tap area are Button's. */
-.edit {
-  min-height: var(--button-h-small);
-}
-
 .grid {
   list-style: none;
   margin: 0;
@@ -90,8 +77,62 @@
 .browse:hover {
   color: var(--blue-700);
 }
-.edit:focus-visible,
+.skip:focus-visible,
 .browse:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
+}
+
+/* MatchSkip.dc.html: a text button at the top right, 44px tall, pulled 8px
+   toward the heading. */
+.skipRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: calc(var(--space-2) - var(--space-6));
+}
+.skip {
+  height: var(--touch-target-min);
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--blue-700);
+}
+.skip:hover {
+  text-decoration: underline;
+}
+
+/* Under the card's Book, at the right (MatchSkip.dc.html). */
+.free {
+  align-self: flex-end;
+}
+
+/* MatchSkip.dc.html: the heading lands, then each card in turn (0.35s each,
+   0.15s apart, under a second for the top matches). */
+.reveal {
+  animation: reveal-up 0.35s ease-out both;
+}
+.item.reveal:nth-child(1) {
+  animation-delay: 0.15s;
+}
+.item.reveal:nth-child(2) {
+  animation-delay: 0.3s;
+}
+.item.reveal:nth-child(n + 3) {
+  animation-delay: 0.45s;
+}
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .item.reveal {
+    animation: none;
+  }
 }

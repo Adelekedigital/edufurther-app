@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, type ReactNode } from 'react';
+import { SegmentedControl } from '@/components/molecules/SegmentedControl/SegmentedControl';
 import { useSwitchRole } from '@/lib/api/data/roleHooks';
 import { useViewer } from '@/lib/api/data/viewer';
 import { ROLE_SWITCH_COPY } from '@/lib/copy/onboarding';
@@ -10,9 +11,10 @@ import styles from './StepCounterRow.module.css';
 
 /**
  * Both onboardings' "Step N of M" row: Back (from step 2) on the left, the
- * counter on the right. On step 1 of a fresh account the counter moves left
- * and a quiet "Join as a mentor" / "Join as a mentee" sits right (owner,
- * 2026-10-20): low emphasis, so it doesn't steer the choice.
+ * counter on the right. On step 1 of a fresh account two quiet text tabs sit
+ * left of the counter, "Get mentored" | "Mentor others", the current path
+ * picked (owner 2026-10-20; RoleToggleQuiet.dc.html, owner 2026-11-18): low
+ * emphasis, so it doesn't steer the choice. Picking the other path switches.
  */
 export function StepCounterRow({
   label,
@@ -41,8 +43,8 @@ export function StepCounterRow({
   // focus order while it saves (the house rule; SignInForm does the same).
   const off = !!disabled || isPending;
 
-  const onSwitch = async () => {
-    if (!to || off || running.current) return;
+  const onSwitch = async (pick: RouteRole) => {
+    if (!to || pick !== to || off || running.current) return;
     running.current = true;
     try {
       // On success the role redirect takes them to the other flow.
@@ -58,18 +60,21 @@ export function StepCounterRow({
     <>
       <div className={styles.row}>
         {back}
-        <span className={cx(styles.label, !to && styles.end)}>{label}</span>
         {to && (
-          <button
-            type="button"
-            className={styles.roleSwitch}
-            onClick={() => void onSwitch()}
-            aria-disabled={off || undefined}
-            aria-busy={isPending || undefined}
-          >
-            {ROLE_SWITCH_COPY[to]}
-          </button>
+          <SegmentedControl<RouteRole>
+            look="text"
+            label={ROLE_SWITCH_COPY.label}
+            options={[
+              { value: 'mentee', label: ROLE_SWITCH_COPY.mentee },
+              { value: 'mentor', label: ROLE_SWITCH_COPY.mentor },
+            ]}
+            value={from}
+            onChange={(pick) => void onSwitch(pick)}
+            disabled={off}
+            busy={isPending}
+          />
         )}
+        <span className={cx(styles.label, !to && styles.end)}>{label}</span>
       </div>
       {to && error && (
         <p role="alert" className={styles.error}>

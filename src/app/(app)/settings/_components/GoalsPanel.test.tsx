@@ -194,6 +194,18 @@ describe('GoalsPanel', () => {
     expect(screen.getByRole('button', { name: 'Sweden' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('country search: names that start with the typed letters come first', async () => {
+    ready();
+    render(<GoalsPanel userId="u1" />);
+    await userEvent.click(screen.getByRole('button', { name: GOALS_COPY.addCountry }));
+    await userEvent.type(screen.getByRole('combobox', { name: GOALS_COPY.addCountry }), 's');
+    // Sweden starts with it; United States only has a word that does.
+    const names = ['Sweden', 'United States'];
+    expect(screen.getAllByRole('option')).toEqual(
+      names.map((name) => screen.getByRole('option', { name })),
+    );
+  });
+
   it('help areas: up to 3, hinted; the others dim and can’t be picked', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
