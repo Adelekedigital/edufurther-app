@@ -37,7 +37,10 @@ export function InstallNudgeRoot() {
   const pathname = usePathname();
   const { open, pending } = useInstallNudge();
 
-  useEffect(() => captureInstallPrompt(), []);
+  // Listening starts when the module loads; this call is a no-op unless released.
+  useEffect(() => {
+    captureInstallPrompt();
+  }, []);
 
   const ready = !!pending && (pending.trigger !== 'onboarding' || pathname !== pending.from);
   useEffect(() => {

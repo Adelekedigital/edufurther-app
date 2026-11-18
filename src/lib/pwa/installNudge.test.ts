@@ -77,6 +77,15 @@ afterEach(() => {
 
 const events = () => track.mock.calls.map((c) => [c[0], c[1]]);
 
+describe('capture', () => {
+  it('listens once however often it is asked, so an early prompt is kept by the first listener', () => {
+    expect(captureInstallPrompt()).toBe(stop);
+    const e = offerPrompt();
+    expect(e.defaultPrevented).toBe(true);
+    expect(installPlatform()).toBe('android');
+  });
+});
+
 describe('platform: phone browsers that can install, nothing else', () => {
   it('Android with the browser’s prompt kept: android, and the mini-infobar is held back', () => {
     const e = offerPrompt();

@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import { isStandalone } from '@/lib/analytics/install';
+import { isStandalone } from '@/lib/utils/standalone';
 import type { InstallPlatform, InstallTrigger } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/track';
 
@@ -81,7 +81,15 @@ export function resetInstallNudgeForTests(): void {
  * Keeps the browser's install prompt for the sheet's button, and forgets it
  * once the app is installed. Mounted once (InstallNudgeRoot); returns the cleanup.
  */
+let release: (() => void) | null = null;
+
+/**
+ * Listen for the browser's install prompt. Idempotent: the module calls it as
+ * soon as it loads (below), so a prompt Chrome fires before the app hydrates
+ * is still kept (review on PR 660); later calls return the same release.
+ */
 export function captureInstallPrompt(): () => void {
+  if (release) return release;
   const onPrompt = (e: Event) => {
     // No mini-infobar: the prompt is offered at a moment that means something.
     e.preventDefault();
@@ -94,11 +102,16 @@ export function captureInstallPrompt(): () => void {
   };
   window.addEventListener('beforeinstallprompt', onPrompt);
   window.addEventListener('appinstalled', onInstalled);
-  return () => {
+  release = () => {
     window.removeEventListener('beforeinstallprompt', onPrompt);
     window.removeEventListener('appinstalled', onInstalled);
+    release = null;
   };
+  return release;
 }
+
+// Capture from the moment this bundle runs, not from the first effect.
+if (typeof window !== 'undefined') captureInstallPrompt();
 
 /**
  * Safari on an iPhone or iPad. Add to Home Screen is Safari's on older iOS,
