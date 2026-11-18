@@ -166,7 +166,7 @@ describe('the confirms', () => {
     const box = within(confirmBox()).getByRole('textbox', { name: 'Note to Kwame (optional)' });
     expect(box).not.toHaveAttribute('aria-required');
     expect(box).toHaveAttribute('maxlength', '1000');
-    expect(within(confirmBox()).getByText(/A note from the team/)).toBeInTheDocument();
+    expect(within(confirmBox()).getByText(/Note from the team/)).toBeInTheDocument();
     await user.type(box, 'Your INSEAD story is exactly what mentees ask about.');
     await user.click(within(confirmBox()).getByRole('button', { name: 'Approve' }));
     expect(
