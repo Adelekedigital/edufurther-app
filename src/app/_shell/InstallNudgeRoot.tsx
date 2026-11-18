@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { InstallSheet } from '@/components/templates/InstallSheet/InstallSheet';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { INSTALL_COPY } from '@/lib/copy/install';
 import {
   acceptInstall,
@@ -12,6 +12,12 @@ import {
   useInstallNudge,
   type InstallNudge,
 } from '@/lib/pwa/installNudge';
+
+// Loads when it opens, not with every page (performance budget, 350kB first-load JS).
+const InstallSheet = lazyPart(
+  () => import('@/components/templates/InstallSheet/InstallSheet').then((m) => m.InstallSheet),
+  { close: (p) => p.onClose() },
+);
 
 /** A beat after the moment, so the screen's own "sent" state is seen first. */
 export const SHOW_DELAY_MS = 1_200;
