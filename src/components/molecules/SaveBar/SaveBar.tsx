@@ -55,13 +55,7 @@ export function SaveBar({
         <button type="button" className={styles.discard} onClick={onDiscard} disabled={saving}>
           {discardLabel}
         </button>
-        <Button
-          variant="primary"
-          size="large"
-          onClick={onSave}
-          disabled={saving}
-          aria-busy={saving}
-        >
+        <Button variant="primary" size="large" onClick={onSave} busy={saving}>
           {saving ? savingLabel : saveLabel}
         </Button>
       </div>

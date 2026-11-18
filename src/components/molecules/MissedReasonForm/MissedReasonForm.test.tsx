@@ -61,10 +61,12 @@ describe('MissedReasonForm', () => {
     expect(screen.getByRole('textbox')).toHaveAttribute('maxLength', '1000');
   });
 
-  it('while sending, Send is off so nothing goes twice', async () => {
+  it('while sending, Send is busy so nothing goes twice', async () => {
     const onSend = form({ pending: true });
     await userEvent.click(screen.getByRole('button', { name: 'Other' }));
-    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled();
+    const send = screen.getByRole('button', { name: 'Send' });
+    expect(send).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(send);
     expect(onSend).not.toHaveBeenCalled();
   });
 

@@ -140,13 +140,8 @@ export function IntroEditForm({
         </p>
       )}
       <div className={styles.actions}>
-        {/* aria-disabled, not disabled: a disabled button drops the focus it has. */}
-        <Button
-          type="submit"
-          size="medium"
-          aria-disabled={saving || undefined}
-          aria-busy={saving || undefined}
-        >
+        {/* Busy, not disabled: a disabled button drops the focus it has. */}
+        <Button type="submit" size="medium" busy={saving}>
           {saving ? 'Saving…' : 'Save'}
         </Button>
         {/* Keyed on the try, so a second Save with gaps is said again. */}

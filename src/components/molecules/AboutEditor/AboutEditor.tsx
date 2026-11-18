@@ -127,8 +127,9 @@ export function AboutEditor({
         <Button
           type="submit"
           size="medium"
-          aria-disabled={saving || assisting || undefined}
-          aria-busy={saving || undefined}
+          busy={saving}
+          // While the AI drafts, Save waits: off, but focus stays.
+          aria-disabled={assisting || undefined}
         >
           {saving ? 'Saving…' : 'Save'}
         </Button>

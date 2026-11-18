@@ -63,7 +63,8 @@ describe('SessionTypeQuickEdit', () => {
     const user = userEvent.setup();
     render(<SessionTypeQuickEdit {...p} saving />);
     const save = screen.getByRole('button', { name: 'Saving…' });
-    expect(save).toHaveAttribute('aria-disabled', 'true');
+    expect(save).toHaveAttribute('aria-busy', 'true');
+    expect(save).toBeEnabled();
     await pickOption(user, screen.getByRole('combobox', { name: 'Length' }), '30');
     await user.click(save);
     expect(p.onSave).not.toHaveBeenCalled();

@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { cx } from '@/lib/utils/cx';
 import { unavailableProps } from '@/lib/utils/unavailable';
 import { Icon } from '../Icon/Icon';
+import { Spinner } from '../Spinner/Spinner';
 import type { IconName } from '../Icon/iconNames';
 import styles from './Button.module.css';
 
@@ -87,7 +88,13 @@ function Content({
 
 export type ButtonProps = Common &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> & {
-    /** Busy is distinct from disabled: it says why, and stays in the tab order. */
+    /**
+     * The action this button started is running. Busy is distinct from
+     * disabled: it stays in the tab order and keeps its name, says aria-busy,
+     * ignores presses, and draws a spinner over its label, which keeps its
+     * place so the button doesn't change width. Siblings that must wait (a
+     * Cancel beside Save) are `disabled`, not busy.
+     */
     busy?: boolean;
     /**
      * Off, but kept in the tab order so it can say why (pass the reason as
@@ -139,6 +146,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       <Content icon={icon} iconPosition={iconPosition} variant={variant}>
         {children}
       </Content>
+      {busy && (
+        <span className={styles.busyIndicator} aria-hidden>
+          <Spinner size={size === 'small' ? 14 : 16} tone="current" />
+        </span>
+      )}
     </button>
   );
 });

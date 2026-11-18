@@ -155,7 +155,8 @@ describe('IntroEditForm', () => {
   it('while saving: "Saving…", and no second save (the button keeps focus)', async () => {
     const { user, onSave } = setup({ saving: true });
     const btn = screen.getByRole('button', { name: 'Saving…' });
-    expect(btn).toHaveAttribute('aria-disabled', 'true');
+    expect(btn).toHaveAttribute('aria-busy', 'true');
+    expect(btn).toBeEnabled();
     await user.click(btn);
     expect(onSave).not.toHaveBeenCalled();
   });

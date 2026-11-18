@@ -14,6 +14,15 @@
   stroke: var(--action-primary);
   stroke-linecap: round;
 }
+/* Ours: inside a control, the ring and arc take its label colour; the ring
+   is faint so the arc still reads as the moving part. */
+.current .track {
+  stroke: currentColor;
+  opacity: 0.3;
+}
+.current .arc {
+  stroke: currentColor;
+}
 @keyframes spin {
   to {
     transform: rotate(360deg);

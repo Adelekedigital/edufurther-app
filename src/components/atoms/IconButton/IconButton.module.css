@@ -113,3 +113,8 @@
     inset: -2px;
   }
 }
+/* Busy, as Button's: dimmed a little, a spinner in the glyph's place. */
+.button[aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.8;
+}

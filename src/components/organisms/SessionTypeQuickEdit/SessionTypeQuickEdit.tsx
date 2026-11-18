@@ -98,13 +98,8 @@ export function SessionTypeQuickEdit({
         <Button type="button" variant="secondary-outlined" size="large" onClick={onCancel}>
           Cancel
         </Button>
-        {/* aria-disabled, not disabled: a disabled button drops the focus it has. */}
-        <Button
-          type="submit"
-          size="large"
-          aria-disabled={saving || undefined}
-          aria-busy={saving || undefined}
-        >
+        {/* Busy, not disabled: a disabled button drops the focus it has. */}
+        <Button type="submit" size="large" busy={saving}>
           {saving ? 'Saving…' : 'Save changes'}
         </Button>
       </div>

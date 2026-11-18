@@ -119,10 +119,9 @@ describe('ProfileItemModal — topics', () => {
   it('a failed save is said in place, and Save stays focusable while saving', () => {
     topics({ error: 'That didn’t save. Try again.', saving: true });
     expect(screen.getByRole('alert')).toHaveTextContent('That didn’t save. Try again.');
-    expect(screen.getByRole('button', { name: 'Saving…' })).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
+    const save = screen.getByRole('button', { name: 'Saving…' });
+    expect(save).toHaveAttribute('aria-busy', 'true');
+    expect(save).toBeEnabled();
   });
 
   it('the catalog’s states: loading, then error (before empty) with Retry, then empty', async () => {

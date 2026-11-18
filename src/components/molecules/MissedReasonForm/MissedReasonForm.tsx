@@ -120,7 +120,8 @@ export function MissedReasonForm({
           type="submit"
           variant="secondary-outlined"
           size="medium"
-          disabled={!reason || pending}
+          disabled={!reason}
+          busy={pending}
         >
           {sendLabel}
         </Button>
