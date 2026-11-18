@@ -48,14 +48,23 @@ async function enter(
     site = 'same-origin',
     token = 'tok',
     extra = {},
-  }: { site?: string | null; token?: string | null; extra?: Record<string, string> } = {},
+    query = '',
+  }: {
+    site?: string | null;
+    token?: string | null;
+    extra?: Record<string, string>;
+    query?: string;
+  } = {},
 ) {
   const headers = new Headers(extra);
   if (site) headers.set('sec-fetch-site', site);
   if (token) headers.set('x-ef-access-token', token);
-  const res = await GET(new NextRequest(`https://app.test/sessions/${id}/enter`, { headers }), {
-    params: Promise.resolve({ id }),
-  });
+  const res = await GET(
+    new NextRequest(`https://app.test/sessions/${id}/enter${query}`, { headers }),
+    {
+      params: Promise.resolve({ id }),
+    },
+  );
   const loc = res.headers.get('location');
   const to = loc ? new URL(loc) : null;
   return {
@@ -278,5 +287,59 @@ describe('/sessions/{id}/enter: mock mode (local dev, CI)', () => {
     vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', 'guest');
     expect((await enter('b1', { token: null })).to).toBe('/login?next=%2Fsessions%2Fb1');
     expect(seen).toHaveLength(0);
+  });
+});
+
+describe('/sessions/{id}/enter: the installed iPhone app asks for Safari (ADR 0013)', () => {
+  const safari = { query: '?open=safari' };
+  const meet = (meeting_url: string) => {
+    replies.join = { status: 200, body: { joined: true, meeting_url } };
+  };
+
+  it('a Google Meet link goes to Safari through x-safari-https, uncached, no referrer', async () => {
+    meet('https://meet.google.com/abc-defg-hij?authuser=0');
+    const { res, to } = await enter('b1', safari);
+    expect(res.status).toBe(303);
+    expect(to).toBe('x-safari-https://meet.google.com/abc-defg-hij?authuser=0');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(res.headers.get('referrer-policy')).toBe('no-referrer');
+    expect(seen).toHaveLength(1);
+  });
+
+  it('without the ask, the same Meet link is the usual redirect', async () => {
+    meet('https://meet.google.com/abc-defg-hij');
+    expect((await enter()).to).toBe('https://meet.google.com/abc-defg-hij');
+    expect((await enter('b1', { query: '?open=chrome' })).to).toBe(
+      'https://meet.google.com/abc-defg-hij',
+    );
+  });
+
+  it('any other host is the usual redirect: Daily, look-alikes, subdomains', async () => {
+    for (const url of [
+      'https://edufurther.daily.co/room',
+      'https://meet.google.com.evil.test/x',
+      'https://evil.meet.google.com/x',
+      'https://xmeet.google.com/x',
+      'https://meet.google.com:8443/x',
+      'https://user:pw@meet.google.com/x',
+    ]) {
+      meet(url);
+      const { to } = await enter('b1', safari);
+      expect(to, url).not.toMatch(/^x-safari/);
+    }
+  });
+
+  it('an unsafe link is still no way in, with or without the ask', async () => {
+    for (const url of ['http://meet.google.com/x', 'javascript:alert(1)', 'not a url']) {
+      meet(url);
+      expect((await enter('b1', safari)).to, url).toBe('/sessions/b1?enter=nolink');
+    }
+  });
+
+  it('nothing from the request reaches the scheme: a refusal or sign-in is unchanged', async () => {
+    replies.join = { status: 409, body: { type: '/problems/join-window-closed' } };
+    replies.door = { status: 409, body: {} };
+    expect((await enter('b1', safari)).to).toMatch(/^\/sessions\/b1\?enter=/);
+    expect((await enter('b1', { ...safari, token: null })).to).toBe('/login?next=%2Fsessions%2Fb1');
   });
 });

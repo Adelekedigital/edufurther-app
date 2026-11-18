@@ -19,8 +19,39 @@ export function isEnterPath(pathname: string): boolean {
   return ENTER_PATH.test(pathname);
 }
 
-export function enterPath(sessionId: string): string {
-  return `/sessions/${encodeURIComponent(sessionId)}/enter`;
+/**
+ * `inSafari`: the installed app on iOS asks the route to hand a Google Meet
+ * call to Safari proper (ADR 0013). It only asks; the route decides.
+ */
+export function enterPath(sessionId: string, { inSafari = false } = {}): string {
+  const path = `/sessions/${encodeURIComponent(sessionId)}/enter`;
+  return inSafari ? `${path}?${OPEN_PARAM}=${OPEN_IN_SAFARI}` : path;
+}
+
+/** The query parameter, and its one value, that ask for the Safari hand-off. */
+export const OPEN_PARAM = 'open';
+export const OPEN_IN_SAFARI = 'safari';
+
+/** The one host the hand-off is for. Daily, Zoom and custom links never take it. */
+const MEET_HOST = 'meet.google.com';
+
+/**
+ * The server's own Meet link as `x-safari-https://…`, which iOS 17+ opens in
+ * Safari (signed in, and the Meet app can take over) rather than the
+ * installed app's in-app sheet (ADR 0013). Null for anything that isn't
+ * exactly an https link on meet.google.com: the caller then redirects as
+ * usual. Only ever given the backend's link, never anything from the request.
+ */
+export function safariHandoff(callUrl: string): string | null {
+  let url: URL;
+  try {
+    url = new URL(callUrl);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:' || url.hostname !== MEET_HOST) return null;
+  if (url.username || url.password || url.port) return null;
+  return `x-safari-${url.href}`;
 }
 
 /** The query parameter the route sends the page back with when it couldn't open the call. */

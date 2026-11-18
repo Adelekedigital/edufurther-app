@@ -13,6 +13,8 @@ export const LOBBY_COPY = {
   joinLockedHint: (min: number) => `The button becomes active ${min} minutes before the start.`,
   /** Join again, for someone who has been in. */
   rejoin: 'Rejoin call',
+  /** Under Join in the installed iPhone app, for Google Meet (ADR 0013). */
+  meetInSafariHint: 'Opens Google Meet in Safari, where you’re signed in.',
   /** Both roles (PRD fix 1). */
   cancel: 'Cancel',
   /** The pill when a move canceled the session but couldn’t book the new time. */

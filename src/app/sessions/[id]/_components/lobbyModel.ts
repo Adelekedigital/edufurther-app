@@ -166,6 +166,11 @@ export type LobbyInput = {
    * redirects to the call (#207, ADR 0009). `entry` only picks the label.
    */
   enterHref: string;
+  /**
+   * The installed iPhone app joining a Google Meet call: Join opens in the
+   * same window and the route hands the call to Safari (ADR 0013).
+   */
+  inSafari?: boolean;
   /** Join was followed: the page drops its last Join problem. */
   onFollow?: () => void;
   /**
@@ -199,6 +204,7 @@ export function lobbyModel({
   now,
   timeZone,
   enterHref,
+  inSafari = false,
   onFollow,
   onCancel,
   pageUrl,
@@ -223,7 +229,8 @@ export function lobbyModel({
       enabled: true,
       href: enterHref,
       onFollow,
-      hint: pv.hint,
+      hint: inSafari ? LOBBY_COPY.meetInSafariHint : pv.hint,
+      ...(inSafari ? { sameWindow: true } : {}),
     };
   } else if (phase === 'closed' && b.joinClosesAt && !room.me.joinedAt) {
     // PROVISIONAL: undesigned. A first arrival after the window isn't let in
