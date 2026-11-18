@@ -34,6 +34,7 @@ import { useTopics } from './mentors';
 import { aboutBody } from './profileEdit';
 import type { SessionTypeWriteBody } from './sessionTypes';
 import { STARTER_COPY } from '@/lib/copy/sessionTypes';
+import { MAX_TOPICS } from '@/lib/utils/sessionTypeDraft';
 import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
 import { toWeeklyHours, useSaveWeeklyHours, useWeeklyHours, type WeeklyHours } from './weeklyHours';
 
@@ -515,7 +516,11 @@ export function useSaveMentorStep(userId: string | null) {
         if (attempt.current?.help !== help) attempt.current = { help, id: newAttempt() };
         const key = introChatKey(userId, attempt.current.id);
         if (!(await hasIntroChat())) {
-          const labels = answers.helpIds.flatMap(
+          // A session type covers at most 3 offerings (the API refuses more: a
+          // mentor helping in 6 areas couldn't submit). The first 3 picked;
+          // its help-area question still offers every area (options_source).
+          const offeringIds = answers.helpIds.slice(0, MAX_TOPICS);
+          const labels = offeringIds.flatMap(
             (id) => topics.topics.find((t) => t.id === id)?.label ?? [],
           );
           await check(
@@ -526,7 +531,7 @@ export function useSaveMentorStep(userId: string | null) {
                 name: INTRO_CHAT,
                 duration_minutes: 30,
                 description: introDescription(labels),
-                service_offering_ids: answers.helpIds,
+                service_offering_ids: offeringIds,
                 // "Created for you", and its help-area question in sync (backend #540).
                 is_starter: true,
                 application_stages: ['exploring'],
