@@ -139,6 +139,13 @@
   display: flex;
   margin-top: var(--space-1);
 }
+/* Desktop: the open row is tinted blue-50, the pill's own blue, so the pill
+   would vanish into it; on that row it is white. Phones don't tint the row. */
+@media (min-width: 768px) {
+  .chip .chipOnTint {
+    background: var(--surface-card);
+  }
+}
 .noRows {
   flex: 1;
   display: flex;

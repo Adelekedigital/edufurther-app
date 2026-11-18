@@ -3,12 +3,12 @@ import userEvent from '@testing-library/user-event';
 import { IconButton } from './IconButton';
 
 describe('IconButton', () => {
-  it('ring: the DS CircleIconButton, a 24px glyph whatever the size', () => {
+  it('ring: the DS CircleIconButton, a 20px glyph whatever the size', () => {
     render(<IconButton variant="ring" size="sm" icon="settings" aria-label="Message settings" />);
     const b = screen.getByRole('button', { name: 'Message settings' });
     expect(b.className).toMatch(/ring/);
     expect(b.className).not.toMatch(/\bsm\b|_sm/);
-    expect(b.querySelector('[aria-hidden]')).toHaveStyle({ '--icon-size': '24px' });
+    expect(b.querySelector('[aria-hidden]')).toHaveStyle({ '--icon-size': '20px' });
   });
 
   it('glyph overrides the size’s own glyph', () => {
@@ -58,5 +58,21 @@ describe('IconButton', () => {
   it('keeps a caller’s own aria-disabled', () => {
     render(<IconButton icon="lock" aria-label="Locked" aria-disabled="true" />);
     expect(screen.getByRole('button', { name: 'Locked' })).toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
+describe('IconButton: busy', () => {
+  it('a spinner stands in for the glyph; it keeps its name and focus, says aria-busy, ignores clicks', async () => {
+    const onClick = vi.fn();
+    render(<IconButton icon="edit" aria-label="Edit booking rules" busy onClick={onClick} />);
+    const b = screen.getByRole('button', { name: 'Edit booking rules' });
+    expect(b).toHaveAttribute('aria-busy', 'true');
+    expect(b).toBeEnabled();
+    expect(b.querySelector('svg')).not.toBeNull();
+    expect(b).not.toHaveTextContent('edit');
+    b.focus();
+    expect(b).toHaveFocus();
+    await userEvent.click(b);
+    expect(onClick).not.toHaveBeenCalled();
   });
 });

@@ -29,4 +29,10 @@ describe('manifest', () => {
       expect.objectContaining({ src: '/pwa-icon/512', sizes: '512x512', purpose: 'maskable' }),
     );
   });
+
+  it('a link to the app opens in the installed app where the browser allows (Android, desktop)', () => {
+    const m = manifest() as ReturnType<typeof manifest> & { handle_links?: string };
+    expect(m.launch_handler).toEqual({ client_mode: ['navigate-existing', 'auto'] });
+    expect(m.handle_links).toBe('preferred');
+  });
 });

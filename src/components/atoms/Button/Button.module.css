@@ -291,6 +291,22 @@
   color: var(--ink-500);
   text-decoration: none;
 }
+/* ---- busy (ours): the action it started is running. Dimmed a little, the
+   label and glyph see-through but in place (so the width holds), a spinner in
+   the label colour on top. Opacity, not visibility: a visibility-hidden label
+   drops out of the accessible name, and the button must keep saying what it is. ---- */
 .button[aria-busy='true'] {
   cursor: progress;
+  opacity: 0.8;
+}
+.button[aria-busy='true'] > :not(.busyIndicator) {
+  opacity: 0;
+}
+.busyIndicator {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
 }

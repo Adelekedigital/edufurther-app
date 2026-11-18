@@ -5,6 +5,7 @@ import { normaliseError } from '@/lib/api/data/errors';
 import { resetFlags, viewers } from '@/app/_shell/lockedPage.harness';
 import type { Chats } from '@/types/messages';
 import { MessagesScreen } from './MessagesScreen';
+import { TOAST_MS } from '@/components/molecules/Snackbar/useTimedToast';
 import {
   chatRow,
   h,
@@ -431,7 +432,24 @@ describe('Messages: Message emails', () => {
     await user.click(dialog.getByRole('button', { name: 'Done' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(await screen.findByText('Unread message emails are on.')).toBeInTheDocument();
+    // It goes by itself (it had stayed until the page changed).
+    act(() => void vi.advanceTimersByTime(TOAST_MS));
+    expect(screen.queryByText('Unread message emails are on.')).toBeNull();
   });
+
+  it.each(['Close', 'Done'])(
+    'opened and closed with %s, nothing changed: no toast',
+    async (name) => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      h.settings = remote({ unreadEmails: true });
+      render(<MessagesScreen />);
+      await user.click(screen.getByRole('button', { name: 'Message settings' }));
+      const dialog = within(screen.getByRole('dialog', { name: 'Message emails' }));
+      await user.click(dialog.getByRole('button', { name }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(screen.queryByText(/^Unread message emails are/)).toBeNull();
+    },
+  );
 
   it('while a flip is saving, Done waits: no toast for a value that may roll back', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });

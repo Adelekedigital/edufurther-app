@@ -14,6 +14,11 @@ export default function manifest(): MetadataRoute.Manifest {
     display: 'standalone',
     background_color: BRAND_WHITE,
     theme_color: BRAND_BLUE,
+    // Android and desktop Chrome/Edge: a link to the app (an email's) opens in
+    // the installed app, reusing its window. iPhone and iPad ignore both and
+    // always open links in Safari.
+    launch_handler: { client_mode: ['navigate-existing', 'auto'] },
+    ...({ handle_links: 'preferred' } as Record<string, string>),
     icons: [
       // The swoosh "e" on white (owner, 2026-11-07; app/pwa-icon). Sized to the
       // maskable safe zone, so one image serves both purposes.

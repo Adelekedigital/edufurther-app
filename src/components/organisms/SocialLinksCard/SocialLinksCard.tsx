@@ -271,7 +271,7 @@ export function SocialLinksCard({
               size="small"
               // Not disabled while saving: focus stays on it (submit ignores a second press).
               disabled={!plat || !draft.trim() || !!problem}
-              aria-busy={saving || undefined}
+              busy={saving}
               onClick={() => void submit()}
             >
               {saving ? C.saving : form.editId ? C.saveEdit : C.saveNew}

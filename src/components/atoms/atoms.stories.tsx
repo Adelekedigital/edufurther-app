@@ -482,3 +482,41 @@ export const RowIconButtons: Story = {
     </div>
   ),
 };
+
+/**
+ * Busy: the action it started is running. A spinner in the label colour over
+ * the label, which keeps its place (same width as at rest); dimmed a little;
+ * focusable, aria-busy, presses ignored. Static under reduced motion.
+ */
+export const BusyButtons: Story = {
+  render: () => (
+    <div style={col}>
+      <div style={row}>
+        <Button size="large">Save changes</Button>
+        <Button size="large" busy>
+          Save changes
+        </Button>
+      </div>
+      <div style={row}>
+        <Button variant="secondary-outlined" busy>
+          Book
+        </Button>
+        <Button variant="destructive" busy>
+          Cancel session
+        </Button>
+        <Button variant="dark" busy>
+          Continue with Google
+        </Button>
+        <Button size="small" busy>
+          Save
+        </Button>
+        <Button variant="text" busy>
+          Show 4 more reviews
+        </Button>
+      </div>
+      <div style={row}>
+        <IconButton icon="edit" size="sm" shape="square" aria-label="Edit booking rules" busy />
+      </div>
+    </div>
+  ),
+};

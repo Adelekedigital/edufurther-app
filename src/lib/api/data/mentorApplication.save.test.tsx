@@ -205,6 +205,15 @@ describe('useSaveMentorStep: hours', () => {
     expect(second).not.toHaveProperty('options');
   });
 
+  it('a mentor helping in more than 3 areas: the Intro chat covers the first 3 (the API refuses more)', async () => {
+    const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
+    const six = ['o-1', 'o-2', 'o-3', 'o-4', 'o-5', 'o-6'];
+    await result.current.save('hours', answers({ helpIds: six }), state);
+    const call = POST.mock.calls.find(([p]) => p === '/api/v1/me/session-types');
+    const body = (call?.[1] as { body: { service_offering_ids: string[] } }).body;
+    expect(body.service_offering_ids).toEqual(['o-1', 'o-2', 'o-3']);
+  });
+
   const introKey = () => {
     const call = POST.mock.calls.find(([p]) => p === '/api/v1/me/session-types');
     return (call?.[1] as { params: { header: Record<string, string> } }).params.header[

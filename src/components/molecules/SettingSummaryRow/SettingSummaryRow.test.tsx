@@ -55,12 +55,15 @@ describe('SettingSummaryRow', () => {
     ).toHaveTextContent('Try again');
   });
 
-  it('phones: a busy edit icon says so and takes no second tap', () => {
+  it('phones: a busy edit icon says so, keeps focus and takes no second tap', async () => {
     phone(true);
-    render(row({ busy: true }));
+    const onChange = vi.fn();
+    render(row({ busy: true, onChange }));
     const edit = screen.getByRole('button', { name: 'Edit booking rules' });
-    expect(edit).toBeDisabled();
+    expect(edit).toBeEnabled();
     expect(edit).toHaveAttribute('aria-busy', 'true');
+    await userEvent.click(edit);
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it('crossing the breakpoint with the action focused keeps focus on the action', () => {

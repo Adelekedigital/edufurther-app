@@ -59,14 +59,7 @@ export function SaveChangesDialog({
         >
           {logout ? LEAVE_COPY.discardLogout : LEAVE_COPY.discard}
         </Button>
-        <Button
-          variant="primary"
-          size="large"
-          fullWidth
-          onClick={onSave}
-          disabled={saving}
-          aria-busy={saving}
-        >
+        <Button variant="primary" size="large" fullWidth onClick={onSave} busy={saving}>
           {logout ? LEAVE_COPY.saveLogout : LEAVE_COPY.save}
         </Button>
       </div>

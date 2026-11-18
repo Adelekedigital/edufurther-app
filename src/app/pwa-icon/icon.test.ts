@@ -8,8 +8,8 @@ const png = readFileSync(join(process.cwd(), 'public/brand/edufurther-mark-swoos
 const mark = { width: png.readUInt32BE(16), height: png.readUInt32BE(20) };
 
 describe('app icon', () => {
-  it('serves the sizes iOS and the manifest ask for', () => {
-    expect([...ICON_SIZES]).toEqual([180, 192, 512]);
+  it('serves the sizes the browser tab, iOS and the manifest ask for', () => {
+    expect([...ICON_SIZES]).toEqual([32, 48, 180, 192, 512]);
   });
 
   it('the swoosh stays inside the maskable safe zone (a centred circle, 80% across)', () => {

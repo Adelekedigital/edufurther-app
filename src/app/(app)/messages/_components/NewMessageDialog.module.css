@@ -82,3 +82,17 @@
   outline-offset: var(--focus-ring-offset);
   border-radius: var(--radius-xs);
 }
+
+/* Phones: the dialog is the whole screen, so the list takes it rather than
+   scrolling inside a 320px box with the screen empty below, and a long
+   school wraps rather than being cut off. */
+@media (max-width: 767px) {
+  .people {
+    max-height: none;
+    overflow-y: visible;
+  }
+  .sub {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

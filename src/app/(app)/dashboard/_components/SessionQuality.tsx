@@ -226,16 +226,30 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-/** attendanceRate is null — no settled session in the window yet. */
-function Empty() {
+/**
+ * attendanceRate is null: no settled session in the chosen period. The card
+ * only shows for a mentor with a completed session (the dashboard's active
+ * stage), so this is always "none in this period", said as the content card
+ * draws itself: the same header, the ring empty, what to do next.
+ */
+function Empty({ period, periodPhrase }: { period: string; periodPhrase: string }) {
+  const headingId = useId();
   return (
-    <section className={styles.card} aria-label="Session quality">
-      <div className={styles.emptyBox}>
-        <p className={styles.emptyTitle}>Starts after your first session</p>
-        <p className={styles.emptyText}>
-          We’ll track how reliably you show up and share mentee reviews here. Holding every booked
-          session builds trust fast.
-        </p>
+    <section className={styles.card} aria-labelledby={headingId}>
+      <header className={styles.header}>
+        <div className={styles.headingGroup}>
+          <h2 id={headingId} className={styles.title}>
+            Session quality
+          </h2>
+          <span className={styles.subline}>How you show up for booked sessions · {period}</span>
+        </div>
+      </header>
+      <div className={styles.showUp}>
+        <ProgressCircle value={null} size="lg" aria-label="Show-up rate" />
+        <div className={styles.showUpText}>
+          <span className={styles.showUpLabel}>No sessions {periodPhrase}</span>
+          <span className={styles.rateContext}>Pick another period to see your show-up rate.</span>
+        </div>
       </div>
     </section>
   );
@@ -457,7 +471,18 @@ export function SessionQuality({
   if (!stats.data) return <ErrorState onRetry={stats.retry} />;
 
   const { current, previous, currentStreak } = stats.data;
-  if (current.attendanceRate == null) return <Empty />;
+  // Labels for the window the figures are actually for — the data's own window,
+  // not the requested query — so a mid-switch placeholder can't mislabel them. A
+  // calendar year reads "in YYYY"; a trailing window reads "last N months".
+  const { period, periodPhrase, priorLabel } =
+    stats.data.year != null
+      ? {
+          period: `in ${stats.data.year}`,
+          periodPhrase: `in ${stats.data.year}`,
+          priorLabel: 'the previous year',
+        }
+      : windowLabels(stats.data.windowDays);
+  if (current.attendanceRate == null) return <Empty period={period} periodPhrase={periodPhrase} />;
 
   const rate = current.attendanceRate;
   // The ring, badge, and headline all show the same rounded integer, so the
@@ -474,17 +499,6 @@ export function SessionQuality({
   const reviewCount = current.reviewCount;
   const tier = tierOf(displayRate);
   const onTrack = tier === 'good';
-  // Labels for the window the figures are actually for — the data's own window,
-  // not the requested query — so a mid-switch placeholder can't mislabel them. A
-  // calendar year reads "in YYYY"; a trailing window reads "last N months".
-  const { period, periodPhrase, priorLabel } =
-    stats.data.year != null
-      ? {
-          period: `in ${stats.data.year}`,
-          periodPhrase: `in ${stats.data.year}`,
-          priorLabel: 'the previous year',
-        }
-      : windowLabels(stats.data.windowDays);
   // The quote is the latest review (social proof); it shows whenever one exists
   // and is never gated on the 90-day window. The "no reviews yet" note stands in
   // only when there is genuinely no review to show, and only once the fetch has

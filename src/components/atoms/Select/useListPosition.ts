@@ -25,7 +25,8 @@ export type Visible = { top: number; height: number };
 export type ListSize = { max?: number; width?: number };
 
 /**
- * Where the open list sits: under the field, at least as wide as it, inside
+ * Where the open list sits: under the field, at least as wide as it (growing
+ * away from the nearer screen edge), inside
  * what's visible, and above the field when there's no room below and more
  * above. `vh` is the layout viewport, which `position: fixed` measures from;
  * `visible` is the visual viewport, which shrinks under the iOS keyboard.
@@ -46,9 +47,16 @@ export function placeList(
   const room = Math.max(0, above ? aboveRoom : below);
   const width = Math.min(size.width ?? field.width, field.width, vw - 2 * EDGE);
   const left = Math.max(EDGE, Math.min(field.left, vw - EDGE - width));
+  // A list as wide as its rows grows away from the nearer edge: from a field on
+  // the right it grows leftward, or the rows wrap in the field's own width
+  // ("202" over "5" beside the check, a narrow Year field on the right).
+  const fromRight = size.width == null && field.left + field.width / 2 > vw / 2;
+  const right = Math.max(EDGE, vw - field.right);
   const style: CSSProperties = {
-    left,
-    ...(size.width != null ? { width } : { minWidth: width, maxWidth: vw - left - EDGE }),
+    ...(fromRight ? { right } : { left }),
+    ...(size.width != null
+      ? { width }
+      : { minWidth: width, maxWidth: fromRight ? vw - right - EDGE : vw - left - EDGE }),
     maxHeight: Math.min(max, room),
     ...(above ? { bottom: vh - field.top + GAP } : { top: field.bottom + GAP }),
   };
