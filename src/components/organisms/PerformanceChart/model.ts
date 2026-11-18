@@ -56,13 +56,15 @@ export function buildChartModel(i: ChartModelInput) {
   // older than the backend can query (`currentYear − 4`), so a Year pick can't 422.
   // Empty only for stale data entirely outside the queryable range (the component
   // then hides the picker), which the current-month-ending window never produces.
-  const yearOptions = years.filter((y) => Number(y) >= Math.max(firstActiveYear, i.currentYear - 4));
+  const yearOptions = years.filter(
+    (y) => Number(y) >= Math.max(firstActiveYear, i.currentYear - 4),
+  );
 
   let range = i.range;
   if (range === 'all') range = `y${years[0]}`;
   const isYear = range.startsWith('y');
   const yr = isYear ? range.slice(1) : null;
-  const def = isYear ? { n: 12 } : ranges.find((r) => r.key === range) ?? ranges[1] ?? ranges[0];
+  const def = isYear ? { n: 12 } : (ranges.find((r) => r.key === range) ?? ranges[1] ?? ranges[0]);
   const n = def?.n ?? 6;
 
   const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
@@ -86,7 +88,7 @@ export function buildChartModel(i: ChartModelInput) {
         .map((k, j) => ({ keys: [k], idx: [months.length - Math.min(n, months.length) + j] }));
 
   const val = (s: ChartSeries, b: { idx: number[] }) =>
-    sum(b.idx.map((ix) => (ix >= 0 ? s.values[ix] ?? 0 : 0)));
+    sum(b.idx.map((ix) => (ix >= 0 ? (s.values[ix] ?? 0) : 0)));
   const visible = series.filter((s) => !hidden.includes(s.key));
   const allTotalRange = sum(series.map((s) => sum(buckets.map((b) => val(s, b)))));
   const allTotalEver = sum(series.map((s) => sum(s.values)));
@@ -134,7 +136,9 @@ export function buildChartModel(i: ChartModelInput) {
         color: s.color,
         points: buckets.map((b, j) => `${X0 + j * cw + cw / 2},${y(val(s, b))}`).join(' '),
       });
-      buckets.forEach((b, j) => dots.push({ x: X0 + j * cw + cw / 2, y: y(val(s, b)), color: s.color }));
+      buckets.forEach((b, j) =>
+        dots.push({ x: X0 + j * cw + cw / 2, y: y(val(s, b)), color: s.color }),
+      );
     });
   }
 
@@ -180,8 +184,7 @@ export function buildChartModel(i: ChartModelInput) {
       text: on ? 'var(--ink-900)' : 'var(--ink-400)',
       // For the mobile dropdown's checkbox rows.
       checkIcon: (on ? 'check_box' : 'check_box_outline_blank') as
-        | 'check_box'
-        | 'check_box_outline_blank',
+        'check_box' | 'check_box_outline_blank',
       checkColor: on ? 'var(--blue-500)' : 'var(--ink-400)',
     };
   });
@@ -191,7 +194,10 @@ export function buildChartModel(i: ChartModelInput) {
   // chip wrap, whether chip labels show, and the gap above the chart.
   const narrow = i.narrow ?? false;
   const ml = i.mobileLegend ?? 'compact';
-  const headGap = narrow ? 'var(--space-2)' : 'var(--space-4)';
+  // Narrow with the Showing menu, the chart sits under the chart-type/Showing
+  // row of 44px controls: it takes the full gap (at 8px the axis label touched
+  // the switch). Narrow compact chips keep the design's 8px.
+  const headGap = narrow && ml === 'compact' ? 'var(--space-2)' : 'var(--space-4)';
   const legendChips = !(narrow && ml === 'dropdown');
   const legendMenu = narrow && ml === 'dropdown';
   const showLabels = !(narrow && ml === 'compact');
@@ -274,7 +280,11 @@ export function buildChartModel(i: ChartModelInput) {
             title: labelOf(buckets[hover]!).full,
             // All series — the tooltip is the month's full breakdown, even for a
             // status toggled off in the legend (as the design draws it).
-            rows: series.map((s) => ({ label: s.label, dot: s.color, value: val(s, buckets[hover]!) })),
+            rows: series.map((s) => ({
+              label: s.label,
+              dot: s.color,
+              value: val(s, buckets[hover]!),
+            })),
           }
         : { show: false, left: '0', title: '', rows: [] },
   };

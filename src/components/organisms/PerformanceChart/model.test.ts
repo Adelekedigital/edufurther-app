@@ -10,9 +10,24 @@ const RANGES: ChartRange[] = [
   { key: '12m', label: '12M', n: 12 },
 ];
 const series: ChartSeries[] = [
-  { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: [0, 1, 2, 1, 3, 2, 4, 3, 5, 2, 6, 4] },
-  { key: 'canceled', label: 'Canceled', color: 'var(--blue-200)', values: [0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0] },
-  { key: 'missed', label: 'Missed', color: 'var(--red-500)', values: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1] },
+  {
+    key: 'completed',
+    label: 'Completed',
+    color: 'var(--blue-500)',
+    values: [0, 1, 2, 1, 3, 2, 4, 3, 5, 2, 6, 4],
+  },
+  {
+    key: 'canceled',
+    label: 'Canceled',
+    color: 'var(--blue-200)',
+    values: [0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0],
+  },
+  {
+    key: 'missed',
+    label: 'Missed',
+    color: 'var(--red-500)',
+    values: [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+  },
 ];
 const input = (over: Partial<ChartModelInput> = {}): ChartModelInput => ({
   series,
@@ -52,15 +67,26 @@ describe('buildChartModel', () => {
       ...Array.from({ length: 6 }, (_, i) => `2025-${String(i + 1).padStart(2, '0')}`),
     ];
     const activeFrom2025: ChartSeries[] = [
-      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: [0, 0, 0, 0, 0, 0, 1, 2, 1, 3, 2, 4] },
+      {
+        key: 'completed',
+        label: 'Completed',
+        color: 'var(--blue-500)',
+        values: [0, 0, 0, 0, 0, 0, 1, 2, 1, 3, 2, 4],
+      },
     ];
     expect(
-      buildChartModel(input({ months: twoYears, series: activeFrom2025, range: '12m' })).firstActiveYear,
+      buildChartModel(input({ months: twoYears, series: activeFrom2025, range: '12m' }))
+        .firstActiveYear,
     ).toBe(2025);
 
     // No sessions at all → the most recent year.
     const none: ChartSeries[] = [
-      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: months.map(() => 0) },
+      {
+        key: 'completed',
+        label: 'Completed',
+        color: 'var(--blue-500)',
+        values: months.map(() => 0),
+      },
     ];
     expect(buildChartModel(input({ series: none })).firstActiveYear).toBe(2025);
   });
@@ -72,7 +98,12 @@ describe('buildChartModel', () => {
         return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
       });
     const activeWhen = (mo: string[], from: (m: string) => boolean): ChartSeries[] => [
-      { key: 'completed', label: 'Completed', color: 'var(--blue-500)', values: mo.map((m) => (from(m) ? 1 : 0)) },
+      {
+        key: 'completed',
+        label: 'Completed',
+        color: 'var(--blue-500)',
+        values: mo.map((m) => (from(m) ? 1 : 0)),
+      },
     ];
 
     // Default fixture: 2025 only, active → [2025].
@@ -82,20 +113,26 @@ describe('buildChartModel', () => {
     const recent = monthsFrom(2023, 48);
     expect(
       buildChartModel(
-        input({ months: recent, series: activeWhen(recent, (m) => Number(m.slice(0, 4)) >= 2025), range: '12m' }),
+        input({
+          months: recent,
+          series: activeWhen(recent, (m) => Number(m.slice(0, 4)) >= 2025),
+          range: '12m',
+        }),
       ).yearOptions,
     ).toEqual(['2026', '2025']);
 
     // Six active years: capped at currentYear − 4 (2022), dropping the oldest (2021).
     const long = monthsFrom(2021, 72);
     expect(
-      buildChartModel(input({ months: long, series: activeWhen(long, () => true), range: '12m' })).yearOptions,
+      buildChartModel(input({ months: long, series: activeWhen(long, () => true), range: '12m' }))
+        .yearOptions,
     ).toEqual(['2026', '2025', '2024', '2023', '2022']);
 
     // Stale data entirely before the queryable range → no options.
     const stale = ['2019-01', '2019-02'];
     expect(
-      buildChartModel(input({ months: stale, series: activeWhen(stale, () => true), range: '12m' })).yearOptions,
+      buildChartModel(input({ months: stale, series: activeWhen(stale, () => true), range: '12m' }))
+        .yearOptions,
     ).toEqual([]);
   });
 
@@ -178,11 +215,13 @@ describe('buildChartModel', () => {
     const drop = buildChartModel(input({ narrow: true, mobileLegend: 'dropdown' }));
     expect(drop.legendChips).toBe(false);
     expect(drop.legendMenu).toBe(true);
-    expect(drop.headGap).toBe('var(--space-2)');
+    // Under the chart-type/Showing row of 44px controls: the full gap.
+    expect(drop.headGap).toBe('var(--space-4)');
 
     const compact = buildChartModel(input({ narrow: true, mobileLegend: 'compact' }));
     expect(compact.legendMenu).toBe(false);
     expect(compact.showLabels).toBe(false);
+    expect(compact.headGap).toBe('var(--space-2)');
     expect(compact.legendWrap).toBe('nowrap');
   });
 
@@ -210,7 +249,9 @@ describe('buildChartModel', () => {
     const cols = buildChartModel(input({ months: span, series: sr, range: 'y2026' })).cols;
     const jul = cols.findIndex((c) => c.aria.endsWith('upcoming')); // Jul–Dec 2026 are future
     expect(jul).toBeGreaterThan(-1);
-    const hovered = buildChartModel(input({ months: span, series: sr, range: 'y2026', hover: jul }));
+    const hovered = buildChartModel(
+      input({ months: span, series: sr, range: 'y2026', hover: jul }),
+    );
     expect(hovered.tooltip.show).toBe(false);
   });
 });

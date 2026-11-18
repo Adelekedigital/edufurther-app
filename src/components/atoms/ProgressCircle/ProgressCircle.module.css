@@ -49,3 +49,7 @@
 .md .label {
   font-size: var(--text-h6);
 }
+/* Nothing to measure: the dash is a placeholder, not a figure. */
+.labelEmpty {
+  color: var(--ink-500);
+}

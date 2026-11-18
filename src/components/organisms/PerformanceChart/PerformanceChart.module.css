@@ -51,6 +51,22 @@
 .ctrlRowNarrow .rangeWrap {
   flex: 1 1 0;
 }
+/* Narrow: chart type on the left, Showing on the right, under the full-width
+   range, so the range buttons and the year aren't squeezed into one row. */
+.subRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.subRow .menuWrap {
+  align-self: center;
+}
+/* On the right edge it opens leftward, inside the card. */
+.subRow .menu {
+  left: auto;
+  right: 0;
+}
 
 /* The bar/line and range switches are SegmentedControl look="track" size="sm";
    the type switch keeps its size when the row narrows. */

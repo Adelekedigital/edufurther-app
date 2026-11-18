@@ -6,8 +6,12 @@ import styles from './ProgressCircle.module.css';
 export type ProgressCircleTone = 'primary' | 'success' | 'warning' | 'danger';
 
 type ProgressCircleProps = {
-  /** Progress 0–100; clamped and rounded. A non-finite value renders as 0. */
-  value: number;
+  /**
+   * Progress 0–100; clamped and rounded. A non-finite value renders as 0.
+   * `null`: nothing to measure, the track alone with a dash (a period with no
+   * sessions), never a 0% that reads as a result.
+   */
+  value: number | null;
   /** lg ~90px (DS default, show-up rate). md ~64px for denser spots. */
   size?: 'md' | 'lg';
   /** Arc colour. Defaults to the primary action colour. */
@@ -45,7 +49,9 @@ export function ProgressCircle({
   'aria-label': ariaLabel,
   className,
 }: ProgressCircleProps) {
-  const pct = Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 0;
+  const empty = value === null;
+  const pct =
+    value !== null && Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : 0;
   const { box, stroke } = SIZES[size];
   const radius = (box - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -58,9 +64,14 @@ export function ProgressCircle({
       className={cx(styles.root, styles[size], className)}
       style={style}
       role="img"
-      aria-label={`${ariaLabel} ${pct}%`}
+      aria-label={empty ? `${ariaLabel}: no data` : `${ariaLabel} ${pct}%`}
     >
-      <svg className={styles.svg} viewBox={`0 0 ${box} ${box}`} aria-hidden="true" focusable="false">
+      <svg
+        className={styles.svg}
+        viewBox={`0 0 ${box} ${box}`}
+        aria-hidden="true"
+        focusable="false"
+      >
         <circle
           className={styles.track}
           cx={center}
@@ -69,22 +80,24 @@ export function ProgressCircle({
           strokeWidth={stroke}
           fill="none"
         />
-        <circle
-          className={cx(styles.arc, styles[`arc-${tone}`])}
-          cx={center}
-          cy={center}
-          r={radius}
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          transform={`rotate(-90 ${center} ${center})`}
-        />
+        {!empty && (
+          <circle
+            className={cx(styles.arc, styles[`arc-${tone}`])}
+            cx={center}
+            cy={center}
+            r={radius}
+            strokeWidth={stroke}
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={offset}
+            transform={`rotate(-90 ${center} ${center})`}
+          />
+        )}
       </svg>
       {showLabel && (
-        <span className={styles.label} aria-hidden="true">
-          {pct}%
+        <span className={cx(styles.label, empty && styles.labelEmpty)} aria-hidden="true">
+          {empty ? '–' : `${pct}%`}
         </span>
       )}
     </div>
