@@ -1,11 +1,12 @@
 'use client';
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SaveBar } from '@/components/molecules/SaveBar/SaveBar';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { MenteeProfileForm } from '@/components/organisms/MenteeProfileForm/MenteeProfileForm';
 import { RemovePhotoConfirm } from '@/components/templates/RemovePhotoConfirm/RemovePhotoConfirm';
 import { useAvatarUpload } from '@/lib/api/data/avatar';
@@ -24,9 +25,6 @@ import styles from './ProfilePanel.module.css';
 
 /** The design's eight languages, in its order (Mentee Settings.dc.html `mLangs`). */
 const COMMON = ['English', 'French', 'Yoruba', 'Igbo', 'Hausa', 'Swahili', 'Arabic', 'Portuguese'];
-/** How long "Profile saved" stays (the design's flash: 5s). */
-const TOAST_MS = 5000;
-
 // Languages are a set: off and on again is no change (the API keeps no order).
 const ids = (v: MenteeProfileValues) =>
   v.languages
@@ -102,7 +100,7 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
 
   const [promptVersion, setPromptVersion] = useState<string | null>(null);
   const [assistBusy, setAssistBusy] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useTimedToast<string>();
   const [toastStamp, setToastStamp] = useState(0);
   // Moves on every Save that didn't go through, so its error is heard again.
   const [tries, setTries] = useState(0);
@@ -110,12 +108,6 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
   const heading = useRef<HTMLHeadingElement>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
   const required = useRequiredFields(draft ? gapsOf(draft) : []);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), TOAST_MS);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // The save bar goes when the form is clean again: focus it held moves to
   // the section's heading rather than falling to the page (WCAG 2.4.3).

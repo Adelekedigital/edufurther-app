@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
+import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { useChats } from '@/lib/api/data/messages';
 import { usePreview } from '@/lib/api/data/preview';
 import { EMPTY_INBOX_COPY, LIST_COPY } from '@/lib/copy/messages';
@@ -54,7 +55,8 @@ export function MessagesScreen() {
     setKeepId(top?.person.id ?? null);
   };
   const [dialog, setDialog] = useState<'new' | 'settings' | null>(null);
-  const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
+  // Goes by itself, as every timed toast does: it had stayed until the page changed.
+  const [toast, setToast] = useTimedToast<{ text: string; id: number }>();
   const say = (text: string) => setToast({ text, id: Date.now() });
   // Preview as user: one Reveal modal for the screen, opened from any masked item.
   const preview = usePreview();
