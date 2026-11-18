@@ -251,6 +251,66 @@ export function PerformanceChart({
     persistChartType(t);
     setHover(-1);
   };
+  const typeSwitch = showSwitch && (
+    <SegmentedControl
+      look="track"
+      size="sm"
+      label="Chart type"
+      value={effectiveVariant}
+      onChange={pickType}
+      options={CHART_TYPES.map((t) => ({
+        value: t.key,
+        label: t.label,
+        icon: t.icon,
+        iconOnly: true,
+      }))}
+      className={styles.types}
+    />
+  );
+  const seriesMenu = m.legendMenu && (
+    <div className={styles.menuWrap} onKeyDown={onMenuKey}>
+      <button
+        ref={menuTriggerRef}
+        type="button"
+        aria-haspopup="true"
+        aria-expanded={menuOpen}
+        aria-controls={menuOpen ? menuId : undefined}
+        className={styles.menuTrigger}
+        onClick={() => setMenuOpen((o) => !o)}
+        onKeyDown={onTriggerKey}
+      >
+        Showing <strong className={styles.menuTriggerValue}>{m.shownLabel}</strong>
+        <Icon name="expand_more" size={18} />
+      </button>
+      {menuOpen && (
+        <div
+          ref={menuRef}
+          id={menuId}
+          role="menu"
+          aria-label="Chart series"
+          className={styles.menu}
+        >
+          {m.legend.map((l) => (
+            <button
+              key={l.key}
+              type="button"
+              role="menuitemcheckbox"
+              aria-checked={l.on}
+              className={styles.menuItem}
+              onClick={() => toggle(l.key)}
+            >
+              <span className={styles.menuCheck} style={{ color: l.checkColor }}>
+                <Icon name={l.checkIcon} size={20} />
+              </span>
+              <span className={styles.dot} style={{ background: l.dot }} />
+              <span className={styles.menuItemLabel}>{l.label}</span>
+              <strong className={styles.menuItemTotal}>{l.total}</strong>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
   return (
     <section ref={rootRef} className={styles.card}>
       <div className={styles.header}>
@@ -261,22 +321,7 @@ export function PerformanceChart({
           </span>
         </div>
         <div className={cx(styles.ctrlRow, narrow && styles.ctrlRowNarrow)}>
-          {showSwitch && (
-            <SegmentedControl
-              look="track"
-              size="sm"
-              label="Chart type"
-              value={effectiveVariant}
-              onChange={pickType}
-              options={CHART_TYPES.map((t) => ({
-                value: t.key,
-                label: t.label,
-                icon: t.icon,
-                iconOnly: true,
-              }))}
-              className={styles.types}
-            />
-          )}
+          {!narrow && typeSwitch}
           <SegmentedControl
             look="track"
             size="sm"
@@ -313,6 +358,15 @@ export function PerformanceChart({
         </div>
       </div>
 
+      {/* Narrow: the time range has the full row above; chart type and the
+          Showing menu share the row under it, so none is squeezed. */}
+      {narrow && (typeSwitch || (m.hasData && seriesMenu)) && (
+        <div className={styles.subRow}>
+          {typeSwitch}
+          {m.hasData && seriesMenu}
+        </div>
+      )}
+
       {m.hasData ? (
         <>
           {m.legendChips && (
@@ -333,51 +387,6 @@ export function PerformanceChart({
                   <strong className={styles.legendTotal}>{l.total}</strong>
                 </button>
               ))}
-            </div>
-          )}
-
-          {m.legendMenu && (
-            <div className={styles.menuWrap} onKeyDown={onMenuKey}>
-              <button
-                ref={menuTriggerRef}
-                type="button"
-                aria-haspopup="true"
-                aria-expanded={menuOpen}
-                aria-controls={menuOpen ? menuId : undefined}
-                className={styles.menuTrigger}
-                onClick={() => setMenuOpen((o) => !o)}
-                onKeyDown={onTriggerKey}
-              >
-                Showing <strong className={styles.menuTriggerValue}>{m.shownLabel}</strong>
-                <Icon name="expand_more" size={18} />
-              </button>
-              {menuOpen && (
-                <div
-                  ref={menuRef}
-                  id={menuId}
-                  role="menu"
-                  aria-label="Chart series"
-                  className={styles.menu}
-                >
-                  {m.legend.map((l) => (
-                    <button
-                      key={l.key}
-                      type="button"
-                      role="menuitemcheckbox"
-                      aria-checked={l.on}
-                      className={styles.menuItem}
-                      onClick={() => toggle(l.key)}
-                    >
-                      <span className={styles.menuCheck} style={{ color: l.checkColor }}>
-                        <Icon name={l.checkIcon} size={20} />
-                      </span>
-                      <span className={styles.dot} style={{ background: l.dot }} />
-                      <span className={styles.menuItemLabel}>{l.label}</span>
-                      <strong className={styles.menuItemTotal}>{l.total}</strong>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           )}
 

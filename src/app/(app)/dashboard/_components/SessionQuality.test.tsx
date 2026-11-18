@@ -96,11 +96,29 @@ describe('SessionQuality', () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
-  it('treats a null attendance rate as the empty state, never 0%', () => {
+  it('a period with no sessions: the card’s own header and period, an empty ring, never 0%', () => {
     data = windowStats({ attendanceRate: null, completedSessions: 0, reviewCount: 0 });
     render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
-    expect(screen.getByText('Starts after your first session')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Session quality' })).toBeInTheDocument();
+    expect(
+      screen.getByText('How you show up for booked sessions · last 3 months'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Show-up rate: no data' })).toBeInTheDocument();
+    expect(screen.getByText('No sessions in the last 3 months')).toBeInTheDocument();
+    expect(screen.getByText('Pick another period to see your show-up rate.')).toBeInTheDocument();
     expect(screen.queryByText('0%')).not.toBeInTheDocument();
+    // Not the badge: there is no tier to give.
+    expect(screen.queryByText(/On track|Needs attention|At risk/)).not.toBeInTheDocument();
+  });
+
+  it('a calendar year with no sessions names the year', () => {
+    data = {
+      ...windowStats({ attendanceRate: null, completedSessions: 0, reviewCount: 0 }),
+      year: 2023,
+    };
+    render(<SessionQuality userId="u1" profileHref="/mentors/gbenga" />);
+    expect(screen.getByText('How you show up for booked sessions · in 2023')).toBeInTheDocument();
+    expect(screen.getByText('No sessions in 2023')).toBeInTheDocument();
   });
 
   // ---- compact (default) view ----------------------------------------------

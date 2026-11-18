@@ -40,4 +40,12 @@ describe('ProgressCircle', () => {
     const dash = Number(arc().getAttribute('stroke-dasharray'));
     expect(empty).toBeCloseTo(dash, 5);
   });
+
+  it('null: the track alone with a dash, said as no data, never 0%', () => {
+    const { container } = render(<ProgressCircle value={null} aria-label="Show-up rate" />);
+    expect(screen.getByRole('img', { name: 'Show-up rate: no data' })).toBeInTheDocument();
+    expect(container.querySelectorAll('circle')).toHaveLength(1);
+    expect(screen.queryByText('0%')).not.toBeInTheDocument();
+    expect(container).toHaveTextContent('–');
+  });
 });
