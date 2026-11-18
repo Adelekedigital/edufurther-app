@@ -87,7 +87,8 @@
   height: var(--button-h-medium);
   background: var(--surface-card);
   box-shadow: inset 0 0 0 var(--border-hairline) var(--border-subtle);
-  color: var(--ink-900);
+  /* ink-700, the app's icon-button tone; it darkens on hover. */
+  color: var(--ink-700);
 }
 .ring:hover {
   background: var(--surface-subtle);

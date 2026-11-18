@@ -74,7 +74,13 @@ export function ChatListRow({
         </span>
         {row.chip && (
           <span id={`${id}-chip`} className={styles.chip}>
-            <Badge type="accent" size="sm" shape="pill" icon="event">
+            <Badge
+              type="accent"
+              size="sm"
+              shape="pill"
+              icon="event"
+              className={current ? styles.chipOnTint : undefined}
+            >
               {row.chip}
             </Badge>
           </span>
