@@ -24,7 +24,14 @@ export const metadata: Metadata = {
   // launch screens of a home-screen app that declares the Apple one.
   other: { 'apple-mobile-web-app-capable': 'yes' },
   // 180px: the size iOS draws home-screen icons at.
-  icons: { apple: { url: '/pwa-icon/180', sizes: '180x180' } },
+  icons: {
+    // The browser tab and search results (there was none: /favicon.ico 404s).
+    icon: [
+      { url: '/pwa-icon/32', sizes: '32x32', type: 'image/png' },
+      { url: '/pwa-icon/48', sizes: '48x48', type: 'image/png' },
+    ],
+    apple: { url: '/pwa-icon/180', sizes: '180x180' },
+  },
 };
 
 export const viewport: Viewport = {
