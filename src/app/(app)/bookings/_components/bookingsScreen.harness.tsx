@@ -10,6 +10,7 @@
  */
 import type { BookingHistoryResult } from '@/lib/api/data/bookings';
 import { resetReviewAndRebook } from '@/app/_sessions/reviewAndRebook.harness';
+import { cancelMoveMocks, resetCancelMove } from '@/app/_sessions/cancelMove.harness';
 import { accessFor } from '@/lib/utils/access';
 import type { Booking, BookingAnswer, BookingParty } from '@/types/booking';
 import type { Remote, Viewer } from '@/types/mentor';
@@ -137,6 +138,8 @@ export const h = {
   bookingActive: false,
   /** The screen reads `matchMedia` to choose aside vs sheet. */
   narrow: false,
+  /** The open times the cancel dialog's pickers list. */
+  slots: [] as string[],
 };
 
 export const mocks = {
@@ -203,6 +206,13 @@ export const mocks = {
       },
     };
   },
+  /** The booking module, real but for the reads the cancel dialog makes. */
+  booking: (orig: Record<string, unknown>) => ({
+    ...orig,
+    useSlots: () => ({ data: h.slots, isLoading: false, error: null, retry: vi.fn() }),
+    useSessionTypes: cancelMoveMocks.useSessionTypes,
+  }),
+  moveSession: cancelMoveMocks.moveSession,
   /** The real mapper; only the fetch is stubbed. */
   privateFiles: async () => ({
     ...(await vi.importActual<typeof import('@/lib/api/data/privateFiles')>(
@@ -215,6 +225,8 @@ export const mocks = {
 export function resetHarness() {
   vi.setSystemTime(NOW);
   h.narrow = false;
+  h.slots = [];
+  resetCancelMove();
   // jsdom has no matchMedia. Follows the stub ExploreScreen.test.tsx uses.
   window.matchMedia = vi.fn().mockImplementation((q: string) => ({
     matches: h.narrow,

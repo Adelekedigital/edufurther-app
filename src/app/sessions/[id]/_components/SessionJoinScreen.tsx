@@ -26,7 +26,7 @@ import {
   AddToCalendarChoices,
 } from '@/components/molecules/AddToCalendarMenu/AddToCalendarMenu';
 import { FocusPage } from '@/components/templates/FocusPage/FocusPage';
-import type { MoveOption } from '@/app/_sessions/ConfirmActionDialog';
+import { useCancelMove } from '@/app/_sessions/useCancelMove';
 import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
 import { MESSAGES_LIVE } from '@/lib/config/messages';
 import { bookingRecipient } from '@/lib/utils/messageRecipient';
@@ -45,8 +45,6 @@ import { DELETED_NAME } from '@/lib/api/data/bookings';
 import { supportHref, supportMailto } from '@/lib/utils/mailto';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { intakeSharer, intakeViewedFile } from '@/lib/api/data/privateFiles';
-import { useSessionTypes } from '@/lib/api/data/booking';
-import { useMoveSession } from '@/lib/api/data/moveSession';
 import { useSendMissedReason, type MissedReasonCode } from '@/lib/api/data/missedReason';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
 import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
@@ -66,8 +64,7 @@ import { outcomeView } from '@/lib/utils/sessionOutcome';
 import { entryFor, isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { CalendarEvent } from '@/lib/utils/calendarLinks';
-import type { AnswerFile, Booking } from '@/types/booking';
-import type { SessionType } from '@/types/mentor';
+import type { AnswerFile } from '@/types/booking';
 import {
   canceledLobby,
   guideTips,
@@ -177,18 +174,20 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const access = accessFor(viewer);
   const room = useSessionRoom(id, access.locked.has('Bookings') ? null : userId);
 
-  // The mentee's move (PRD fix 1): the old session ends with it, which would
-  // send this page to Bookings, so it stays until it has gone to the new one.
-  const move = useMoveSession();
-  const [moved, setMoved] = useState(false);
-  const holding = move.isPending || moved;
-  // The session as it was when Move was pressed, shown until the outcome is
-  // known: never a bare "Canceled" behind a move about to land.
-  const [movingFrom, setMovingFrom] = useState<Booking | null>(null);
-  const data =
-    room.data && movingFrom && (move.isPending || moved)
-      ? { ...room.data, booking: movingFrom }
-      : room.data;
+  // Cancel with the mentee's move (PRD fix 1), as on Bookings: the old session
+  // ends with it, which would send this page to Bookings, so it stays until it
+  // has gone to the new one, showing the session as it was when Move was pressed.
+  const cancelMove = useCancelMove({
+    live: room.data?.booking ?? null,
+    onMoved: (newId, confirmed) => {
+      // Not back to the canceled one; a request is Bookings'.
+      const to = encodeURIComponent(newId);
+      router.replace(confirmed ? `/sessions/${to}` : `/bookings?booking=${to}`);
+      return 'leaving';
+    },
+  });
+  const { holding, movingFrom } = cancelMove;
+  const data = room.data && movingFrom ? { ...room.data, booking: movingFrom } : room.data;
   // The clock stops once the outcome is final: nothing on a completed or
   // missed page changes with time. Known from the last render, adjusted while
   // rendering (React: adjusting state when a prop changes).
@@ -283,20 +282,6 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const cancel = useBookingAction('cancel');
   // Why the viewer missed it, for EduFurther only (founder, Oct 21).
   const missedReason = useSendMissedReason(id);
-  const [cancelling, setCancelling] = useState(false);
-  // The session type as offered now, for the move (form, approval). Taken
-  // when the dialog opens, or once it answers if still loading, so a later
-  // refetch never changes the view under the reader.
-  const menteeCancel = !!data && data.booking.side === 'mentee' && canCancel(data.booking, now);
-  const types = useSessionTypes(menteeCancel ? data!.booking.other.id : null);
-  const liveType = types.data?.find((t) => t.id === data?.booking.sessionTypeId) ?? null;
-  const [moveType, setMoveType] = useState<SessionType | null>(null);
-  // Opened before the types answered (adjusting state while rendering).
-  const [awaitingType, setAwaitingType] = useState(false);
-  if (awaitingType && !types.isLoading) {
-    setAwaitingType(false);
-    setMoveType(liveType);
-  }
 
   // Say the moments that matter, once each. The clock itself is never read
   // out. Worked out while rendering, from what was seen last time, rather than
@@ -427,13 +412,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
       },
       // Only rendered once the session has loaded, which is in the browser.
       pageUrl: new URL(`/sessions/${encodeURIComponent(id)}`, window.location.origin).toString(),
-      onCancel: canCancel(b, now)
-        ? () => {
-            setMoveType(liveType);
-            setAwaitingType(types.isLoading);
-            setCancelling(true);
-          }
-        : undefined,
+      onCancel: canCancel(b, now) ? () => cancelMove.open(b) : undefined,
     });
     calendar = lobby.calendar;
     // What was **answered**, not how many questions were asked (backend
@@ -611,34 +590,11 @@ export function SessionJoinScreen({ id }: { id: string }) {
         />
       )}
       {rr.dialogs}
-      {cancelling && data && (
+      {cancelMove.isOpen && data && (
         <ConfirmActionDialog
-          move={
-            awaitingType
-              ? 'loading'
-              : moveType
-                ? ({
-                    sessionType: moveType,
-                    // "Working…" until the page has gone to the new session.
-                    pending: move.isPending || moved,
-                    error: move.error?.message ?? null,
-                    onMove: ({ startsAt, message }) => {
-                      setMovingFrom(data.booking);
-                      move.move(
-                        { booking: data.booking, startsAt, message },
-                        (newId, confirmed) => {
-                          setMoved(true);
-                          // Not back to the canceled one; a request is Bookings'.
-                          const to = encodeURIComponent(newId);
-                          router.replace(confirmed ? `/sessions/${to}` : `/bookings?booking=${to}`);
-                        },
-                      );
-                    },
-                  } satisfies MoveOption)
-                : undefined
-          }
+          move={cancelMove.move}
           action="cancel"
-          booking={holding && movingFrom ? movingFrom : data.booking}
+          booking={data.booking}
           timeZone={timeZone}
           viewerId={userId ?? ''}
           accountZone={accountZone}
@@ -647,16 +603,15 @@ export function SessionJoinScreen({ id }: { id: string }) {
           error={cancel.error}
           onClose={() => {
             // Not while the POST is in flight: vanishing reads as "done".
-            if (cancel.isPending || move.isPending) return;
+            if (cancel.isPending || cancelMove.busy) return;
             cancel.reset();
-            move.reset();
-            setCancelling(false);
+            cancelMove.close();
           }}
           onConfirm={(input) =>
             cancel.mutate(
               { bookingId: data.booking.id, ...input },
               // The session is cancelled now, so the redirect above takes it to Bookings.
-              { onSuccess: () => setCancelling(false) },
+              { onSuccess: cancelMove.close },
             )
           }
         />

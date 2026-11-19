@@ -7,14 +7,16 @@
  */
 import { sampleBookingFor, sampleParty } from '@/lib/utils/bookingTestFixtures';
 import type { BookingAnswer, SessionRoom } from '@/types/booking';
-import type { AppError, Remote, SessionType, Viewer } from '@/types/mentor';
-import type { MoveRequest } from '@/lib/api/data/moveSession';
+import type { Remote, Viewer } from '@/types/mentor';
 import {
   resetReviewAndRebook,
   reviewAndRebookMocks,
 } from '@/app/_sessions/reviewAndRebook.harness';
 
+import { cancelMoveMocks, resetCancelMove } from '@/app/_sessions/cancelMove.harness';
+
 export { launched, sent } from '@/app/_sessions/reviewAndRebook.harness';
+export { moveHook, sessionTypes } from '@/app/_sessions/cancelMove.harness';
 
 /** What the mocked hooks read, set per test. */
 export const h = {
@@ -30,19 +32,8 @@ export const h = {
   // jsdom has no matchMedia; Add to calendar reads it to choose menu vs phone
   // sheet. Desktop unless a test says otherwise. Follows BookingsScreen.test.tsx.
   phone: false,
-  /** The mentor's session types (useSessionTypes), for the mentee's move. */
-  types: [] as SessionType[],
-  typesLoading: false,
   /** The open times the cancel dialog's picker lists. */
   slots: [] as string[],
-};
-
-/** The mentee's move (useMoveSession): each press recorded, the outcome up to the test. */
-export const moveHook = {
-  calls: [] as { req: MoveRequest; onMoved: (newId: string, confirmed: boolean) => void }[],
-  isPending: false,
-  error: null as AppError | null,
-  reset: vi.fn(),
 };
 
 // A tiny store, so a replace() back to this page re-renders it without the
@@ -91,27 +82,13 @@ export const mocks = {
   bookingActions: () => ({ useBookingAction: () => cancel }),
   booking: (orig: Record<string, unknown>) => ({
     ...orig,
-    useSessionTypes: (mentorId: string | null) => ({
-      data: mentorId && !h.typesLoading ? h.types : null,
-      isLoading: !!mentorId && h.typesLoading,
-      error: null,
-      retry: vi.fn(),
-      refreshing: false,
-      updatedAt: 1,
-    }),
+    useSessionTypes: cancelMoveMocks.useSessionTypes,
     useSlots: (_mentor: string | null, _type: string | null, zone: string) => {
       slotZones.push(zone);
       return { data: h.slots, isLoading: false, error: null, retry: vi.fn() };
     },
   }),
-  moveSession: () => ({
-    useMoveSession: () => ({
-      ...moveHook,
-      move: (req: MoveRequest, onMoved: (newId: string, confirmed: boolean) => void) => {
-        moveHook.calls.push({ req, onMoved });
-      },
-    }),
-  }),
+  moveSession: cancelMoveMocks.moveSession,
   reviewableSessions: () => ({ useMyReviewableSessions: () => h.reviewables }),
   ...reviewAndRebookMocks,
   missedReason: () => ({
@@ -221,12 +198,8 @@ export function setupSessionJoinHarness() {
     reasonHook.isPending = false;
     reasonHook.failed = null;
     slotZones.length = 0;
-    h.types = [];
-    h.typesLoading = false;
     h.slots = [];
-    moveHook.calls.length = 0;
-    moveHook.isPending = false;
-    moveHook.error = null;
+    resetCancelMove();
     h.reviewables = remote([{ id: 'b1', startsAt: START, typeName: '1:1 call' }]);
     replace.mockClear();
     push.mockClear();
