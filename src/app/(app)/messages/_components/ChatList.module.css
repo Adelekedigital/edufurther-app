@@ -39,8 +39,10 @@
   padding: 0 var(--space-2) var(--space-3);
 }
 
-/* A chat row: 72px or more, the open one tinted on desktop. */
+/* A chat row: 72px or more, the open one tinted on desktop. Never shrunk to
+   fit the scrolling column, or a row's chip spills over the next row. */
 .row {
+  flex: none;
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
