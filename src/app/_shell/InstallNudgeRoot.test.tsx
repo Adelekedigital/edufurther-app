@@ -4,11 +4,18 @@ const track = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/analytics/track', () => ({ track }));
 
 import { device, offerPrompt as offer, UA } from '@/lib/pwa/_test/installHarness';
-import { NUDGE_KEY, resetInstallNudgeForTests, SHOW_DELAY_MS } from '@/lib/pwa/installNudge';
+import {
+  NUDGE_KEY,
+  PENDING_MS,
+  resetInstallNudgeForTests,
+  SHOW_DELAY_MS,
+} from '@/lib/pwa/installNudge';
 import {
   noteInstallMoment,
   openInstallNudge,
+  PENDING_KEY,
   resetInstallPromptForTests,
+  resumeInstallMoment,
 } from '@/lib/pwa/installPrompt';
 import { InstallNudgeRoot } from './InstallNudgeRoot';
 import { leadFor } from './InstallNudgeSheet';
@@ -178,6 +185,140 @@ describe('InstallNudgeRoot', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(document.activeElement).toBe(opener);
     opener.remove();
+  });
+});
+
+/** This tab at another path (onboarding's moment waits for the next screen). */
+const at = (pathname: string) =>
+  Object.defineProperty(window, 'location', {
+    value: { ...window.location, pathname },
+    configurable: true,
+  });
+
+/**
+ * A full page load: the modules start again (their memory is gone), the tab's
+ * storage stays, and the eager core looks for a kept moment as it loads.
+ */
+function pageLoad() {
+  resetInstallNudgeForTests();
+  resetInstallPromptForTests();
+  act(() => resumeInstallMoment());
+}
+
+const SHEET = { name: 'EduFurther, one tap away' };
+
+describe('a page load between the moment and its screen (staging, 2026-11-18)', () => {
+  afterEach(() => at('/'));
+
+  it('booking: the modal still open, then a page load: the sheet once the modal is gone', async () => {
+    const modal = document.createElement('div');
+    modal.setAttribute('aria-modal', 'true');
+    document.body.appendChild(modal);
+    const { unmount } = render(<InstallNudgeRoot />);
+    act(() => noteInstallMoment({ trigger: 'booking', name: 'Ada' }));
+    await wait();
+    expect(screen.queryByRole('dialog', SHEET)).toBeNull();
+    unmount();
+    modal.remove();
+    pageLoad();
+    render(<InstallNudgeRoot />);
+    await wait();
+    // No name survives the load (the tab may be someone else's by then).
+    expect(screen.getByRole('dialog', SHEET)).toHaveTextContent(
+      'Get a reminder before your session.',
+    );
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it('first message: the chat opened with a page load: the sheet there', async () => {
+    const modal = document.createElement('div');
+    modal.setAttribute('aria-modal', 'true');
+    document.body.appendChild(modal);
+    const { unmount } = render(<InstallNudgeRoot />);
+    act(() => noteInstallMoment({ trigger: 'message', name: 'Ada' }));
+    await wait();
+    unmount();
+    modal.remove();
+    pageLoad();
+    render(<InstallNudgeRoot />);
+    await wait();
+    expect(screen.getByRole('dialog', SHEET)).toHaveTextContent('Know the moment they reply.');
+  });
+
+  it('onboarding: a page load onto the next screen still brings it, never on the matches', async () => {
+    at('/onboarding/mentee');
+    const { unmount } = render(<InstallNudgeRoot />);
+    act(() => noteInstallMoment({ trigger: 'onboarding' }));
+    await wait(SHOW_DELAY_MS * 3);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    unmount();
+    // Reloaded on the matches: still not there.
+    pageLoad();
+    const again = render(<InstallNudgeRoot />);
+    await wait(SHOW_DELAY_MS * 3);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    again.unmount();
+    at('/home');
+    pageLoad();
+    render(<InstallNudgeRoot />);
+    await wait();
+    expect(screen.getByRole('dialog', SHEET)).toHaveTextContent(
+      'Your matches, messages and session reminders, one tap from your home screen.',
+    );
+  });
+
+  it('Android: after the load the sheet waits for the page’s own prompt', async () => {
+    phone(UA.android);
+    offerPrompt();
+    at('/onboarding/mentee');
+    const { unmount } = render(<InstallNudgeRoot />);
+    act(() => noteInstallMoment({ trigger: 'onboarding' }));
+    await wait();
+    unmount();
+    at('/home');
+    pageLoad();
+    render(<InstallNudgeRoot />);
+    await wait();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const e = offerPrompt();
+    await wait();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Add to home screen' }));
+    });
+    expect(e.prompt).toHaveBeenCalled();
+  });
+
+  it(`a kept moment older than ${PENDING_MS / 60_000} minutes is dropped`, async () => {
+    at('/onboarding/mentee');
+    act(() => noteInstallMoment({ trigger: 'onboarding' }));
+    await wait();
+    vi.advanceTimersByTime(PENDING_MS);
+    at('/home');
+    pageLoad();
+    render(<InstallNudgeRoot />);
+    await wait();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it('once a visit still holds: shown before the load, nothing kept after it', async () => {
+    render(<InstallNudgeRoot />);
+    act(() => noteInstallMoment({ trigger: 'booking' }));
+    await wait();
+    expect(screen.getByRole('dialog', SHEET)).toBeInTheDocument();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
+  });
+
+  it('a garbled or foreign record is dropped, not shown', async () => {
+    sessionStorage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ trigger: 'menu', from: '/', at: Date.now() }),
+    );
+    pageLoad();
+    render(<InstallNudgeRoot />);
+    await wait();
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(sessionStorage.getItem(PENDING_KEY)).toBeNull();
   });
 });
 

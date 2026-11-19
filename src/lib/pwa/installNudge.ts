@@ -2,6 +2,7 @@ import { track } from '@/lib/analytics/track';
 import {
   currentNudge,
   installPlatform,
+  PENDING_KEY,
   setOpen,
   takeDeferredPrompt,
   type InstallMoment,
@@ -36,15 +37,67 @@ const OPEN_DIALOG = '[aria-modal="true"]';
 /** A moment waiting for its screen; `from` is where it happened. */
 export type PendingMoment = InstallMoment & { from: string };
 
+/**
+ * How long a kept moment waits across page loads: long enough for a booking's
+ * modal to be read and closed, short enough not to surprise a later visit.
+ */
+export const PENDING_MS = 15 * 60_000;
+
 let pending: PendingMoment | null = null;
 let shownThisVisit = false;
 let stopWaiting: (() => void) | null = null;
 
-/** Tests only: a fresh app start. */
+/** Tests only: a fresh app start (the tab's storage stays, as on a page load). */
 export function resetInstallNudgeForTests(): void {
   stopWaiting?.();
   pending = null;
   shownThisVisit = false;
+}
+
+const TRIGGERS: readonly string[] = ['booking', 'message', 'onboarding'];
+
+/**
+ * The waiting moment, here and in the tab's storage (PENDING_KEY), so a page
+ * load before its screen doesn't lose it. No name is kept: the tab may be
+ * someone else's by the next load, and the sheet then says "your session".
+ */
+function setPending(m: PendingMoment | null): void {
+  pending = m;
+  try {
+    if (m)
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ trigger: m.trigger, mentor: !!m.mentor, from: m.from, at: Date.now() }),
+      );
+    else sessionStorage.removeItem(PENDING_KEY);
+  } catch {
+    // This tab's memory still has it.
+  }
+}
+
+/** The kept moment, if it's whole and recent; anything else is dropped. */
+function keptMoment(now = Date.now()): PendingMoment | null {
+  try {
+    const v = parse(sessionStorage.getItem(PENDING_KEY)) as Record<string, unknown> | null;
+    const at = Number(v?.at);
+    if (
+      v &&
+      typeof v.trigger === 'string' &&
+      TRIGGERS.includes(v.trigger) &&
+      typeof v.from === 'string' &&
+      at <= now &&
+      now - at < PENDING_MS
+    )
+      return {
+        trigger: v.trigger as PendingMoment['trigger'],
+        mentor: v.mentor === true,
+        from: v.from,
+      };
+    sessionStorage.removeItem(PENDING_KEY);
+  } catch {
+    // Unreadable: nothing kept.
+  }
+  return null;
 }
 
 type NudgeRecord = { dismissed: number; restUntil: number };
@@ -156,12 +209,28 @@ function waitToShow(): void {
  */
 export function admit(moment: InstallMoment, from: string): void {
   if (currentNudge() || !installPlatform() || !mayAutoShow()) return;
-  pending = { ...moment, from };
+  setPending({ ...moment, from });
+  waitToShow();
+}
+
+/**
+ * After a page load: the moment kept for this tab waits for its screen again,
+ * if the rules still allow it (installPrompt's resumeInstallMoment).
+ */
+export function resumePending(): void {
+  if (pending || currentNudge()) return;
+  const m = keptMoment();
+  if (!m || !installPlatform()) return;
+  if (!mayAutoShow()) {
+    setPending(null);
+    return;
+  }
+  pending = m;
   waitToShow();
 }
 
 function show(nudge: InstallNudge): void {
-  pending = null;
+  setPending(null);
   stopWaiting?.();
   markShown();
   setOpen(nudge);
@@ -171,7 +240,7 @@ function show(nudge: InstallNudge): void {
 /** The waiting moment's sheet, if the rules still allow it; the moment is used either way. */
 export function showPending(): boolean {
   const m = pending;
-  pending = null;
+  setPending(null);
   if (!m) return false;
   const platform = installPlatform();
   if (currentNudge() || !platform || !mayAutoShow()) return false;
@@ -191,13 +260,13 @@ export function openFromMenu(): void {
  * shown this visit, so the push ask waits for a later visit (PushPrompt).
  */
 export function installNudgeBusy(): boolean {
-  return currentNudge() !== null || pending !== null || shownInVisit();
+  return currentNudge() !== null || pending !== null || shownInVisit() || keptMoment() !== null;
 }
 
 /** The push ask showed this visit: the nudge then waits for another visit. */
 export function notePushAskShown(): void {
   markShown();
-  pending = null;
+  setPending(null);
   stopWaiting?.();
 }
 

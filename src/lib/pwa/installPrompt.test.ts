@@ -1,15 +1,19 @@
 const admit = vi.hoisted(() => vi.fn());
 const openFromMenu = vi.hoisted(() => vi.fn());
-vi.mock('./installNudge', () => ({ admit, openFromMenu }));
+const resumePending = vi.hoisted(() => vi.fn());
+vi.mock('./installNudge', () => ({ admit, openFromMenu, resumePending }));
 
 import { device, offerPrompt, UA } from './_test/installHarness';
+import { EARLY_CAPTURE, EARLY_PROMPT } from './earlyPrompt';
 import {
   captureInstallPrompt,
   installPlatform,
   isIosSafari,
   noteInstallMoment,
   openInstallNudge,
+  PENDING_KEY,
   resetInstallPromptForTests,
+  resumeInstallMoment,
 } from './installPrompt';
 
 let stop: () => void;
@@ -17,6 +21,7 @@ beforeEach(() => {
   resetInstallPromptForTests();
   admit.mockReset();
   openFromMenu.mockReset();
+  resumePending.mockReset();
   localStorage.clear();
   sessionStorage.clear();
   device();
@@ -32,6 +37,18 @@ describe('capture', () => {
     expect(captureInstallPrompt()).toBe(stop);
     const e = offerPrompt();
     expect(e.defaultPrevented).toBe(true);
+    expect(installPlatform()).toBe('android');
+  });
+
+  it('a prompt that came before the bundle ran: the layout’s script kept it, and it is adopted', () => {
+    stop();
+    // The <head> script, run as the browser runs it, then the prompt, then the bundle.
+    new Function(EARLY_CAPTURE)();
+    const e = offerPrompt();
+    expect(e.defaultPrevented).toBe(true);
+    expect((window as never)[EARLY_PROMPT]).toBe(e);
+    expect(installPlatform()).toBeNull();
+    stop = captureInstallPrompt();
     expect(installPlatform()).toBe('android');
   });
 });
@@ -83,6 +100,14 @@ describe('platform: phone browsers that can install, nothing else', () => {
     }
   });
 
+  it('Safari 26 on iOS 26 (a frozen "iPhone OS 18_6", Version/26.0): the steps', () => {
+    const ua =
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1';
+    expect(isIosSafari(ua, 5)).toBe(true);
+    device({ ua });
+    expect(installPlatform()).toBe('ios');
+  });
+
   it('iPadOS Safari reads as a Mac with touch; a real Mac doesn’t', () => {
     expect(isIosSafari(UA.ipadOs, 5)).toBe(true);
     expect(isIosSafari(UA.ipadOs, 0)).toBe(false);
@@ -109,5 +134,35 @@ describe('handing a moment to the lazy half', () => {
     offerPrompt();
     await openInstallNudge();
     expect(openFromMenu).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('a moment kept across a page load', () => {
+  it('a page load with one kept: the rules pick it up', async () => {
+    device({ ua: UA.iosSafari });
+    sessionStorage.setItem(PENDING_KEY, '{}');
+    resumeInstallMoment();
+    await vi.dynamicImportSettled();
+    expect(resumePending).toHaveBeenCalledTimes(1);
+  });
+
+  it('none kept, or a device that can’t show it: nothing loads', async () => {
+    device({ ua: UA.iosSafari });
+    resumeInstallMoment();
+    device({ phone: false, ua: UA.iosSafari });
+    sessionStorage.setItem(PENDING_KEY, '{}');
+    resumeInstallMoment();
+    await vi.dynamicImportSettled();
+    expect(resumePending).not.toHaveBeenCalled();
+  });
+
+  it('Android: a kept moment waits for the page’s prompt, then is picked up', async () => {
+    sessionStorage.setItem(PENDING_KEY, '{}');
+    resumeInstallMoment();
+    await vi.dynamicImportSettled();
+    expect(resumePending).not.toHaveBeenCalled();
+    offerPrompt();
+    await vi.dynamicImportSettled();
+    expect(resumePending).toHaveBeenCalledTimes(1);
   });
 });
