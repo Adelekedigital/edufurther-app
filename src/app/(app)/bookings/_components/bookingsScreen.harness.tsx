@@ -13,7 +13,7 @@ import { resetReviewAndRebook } from '@/app/_sessions/reviewAndRebook.harness';
 import { cancelMoveMocks, resetCancelMove } from '@/app/_sessions/cancelMove.harness';
 import { accessFor } from '@/lib/utils/access';
 import type { Booking, BookingAnswer, BookingParty } from '@/types/booking';
-import type { Remote, Viewer } from '@/types/mentor';
+import type { AppError, Remote, Viewer } from '@/types/mentor';
 
 export const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> => ({
   data,
@@ -138,6 +138,8 @@ export const h = {
   bookingActive: false,
   /** The screen reads `matchMedia` to choose aside vs sheet. */
   narrow: false,
+  /** How the single-booking read (a `?booking=` not in any list) answers. */
+  fetchError: null as AppError | null,
   /** The open times the cancel dialog's pickers list. */
   slots: [] as string[],
 };
@@ -169,7 +171,7 @@ export const mocks = {
     useBookingHistory: () => h.history,
     useBooking: (_id: string | null, _userId: string | null, active: boolean) => {
       h.bookingActive = active;
-      return { data: null, isLoading: false, error: null, retry: vi.fn() };
+      return { data: null, isLoading: false, error: active ? h.fetchError : null, retry: vi.fn() };
     },
   }),
   sessionEvents: () => ({
@@ -226,6 +228,7 @@ export function resetHarness() {
   vi.setSystemTime(NOW);
   h.narrow = false;
   h.slots = [];
+  h.fetchError = null;
   resetCancelMove();
   // jsdom has no matchMedia. Follows the stub ExploreScreen.test.tsx uses.
   window.matchMedia = vi.fn().mockImplementation((q: string) => ({

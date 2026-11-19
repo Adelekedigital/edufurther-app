@@ -259,27 +259,47 @@ export function BookingsScreen() {
       // (the dialog closing is all a screen reader would otherwise get).
       if (confirming) say(MOVE_COPY.requestSent(confirming.booking.other.firstName));
       setConfirming(null);
-      setFocusNew(newId);
+      setFocusNew({ id: newId, from: selected, arrived: false });
       router.replace(`/bookings?tab=pending&booking=${to}`, { scroll: false });
       return 'done';
     },
   });
   // The request a move just sent: its panel takes focus once the URL has
-  // swapped to it, as the dialog's opener (the old Cancel session) is gone.
-  const [focusNew, setFocusNew] = useState<string | null>(null);
+  // swapped to it and it has loaded, as the dialog's opener (the old Cancel
+  // session) is gone. Latched only until then: the viewer opening another
+  // booking or closing the panel drops it, so it never moves focus later.
+  const [focusNew, setFocusNew] = useState<{
+    id: string;
+    /** The booking open when the move was pressed, before the URL swaps. */
+    from: string | null;
+    arrived: boolean;
+  } | null>(null);
+  const loadFailed = !!fetched.error;
   useEffect(() => {
-    if (!focusNew || openId !== focusNew) return;
+    if (!focusNew) return;
+    if (!focusNew.arrived) {
+      if (selected === focusNew.id) setFocusNew({ ...focusNew, arrived: true });
+      else if (selected !== focusNew.from) setFocusNew(null);
+      return;
+    }
+    if (selected !== focusNew.id) return setFocusNew(null);
+    const failed = openId !== focusNew.id && loadFailed;
+    if (openId !== focusNew.id && !failed) return;
     setFocusNew(null);
     // After the dialog's own focus return, which finds its opener gone.
     requestAnimationFrame(() => {
       const panel = document.getElementById(PANEL_ID);
-      // The aside takes focus itself; the phone sheet, its first control.
-      const to = panel?.hasAttribute('tabindex')
-        ? panel
-        : panel?.querySelector<HTMLElement>(FOCUSABLE);
+      // Loaded: the aside takes focus itself; the phone sheet, its first
+      // control. Failed: its Try again, else its close.
+      const to = failed
+        ? (panel?.querySelector<HTMLElement>('[role="alert"] button') ??
+          panel?.querySelector<HTMLElement>(FOCUSABLE))
+        : panel?.hasAttribute('tabindex')
+          ? panel
+          : panel?.querySelector<HTMLElement>(FOCUSABLE);
       to?.focus();
     });
-  }, [focusNew, openId]);
+  }, [focusNew, selected, openId, loadFailed]);
   const callOff = (action: 'decline' | 'withdraw' | 'cancel', b: Booking) => {
     setConfirming({ action, booking: b });
     // Every call-off starts the move clean, so no earlier move's "Working…"

@@ -235,6 +235,54 @@ describe('where a move from Bookings lands', () => {
     },
   );
 
+  /** A move sent as a request, and the URL swapped to it with Pending still loading. */
+  async function landRequest() {
+    sessionTypes.data = [{ ...TYPE, requiresConfirmation: true }];
+    const view = render(<BookingsScreen />);
+    const { onMoved } = await openAndMove('Send request');
+    act(() => onMoved('b-new', false));
+    h.tab = 'pending';
+    h.selectedBooking = 'b-new';
+    h.pending = remote<Booking[]>(null, { isLoading: true });
+    view.rerender(<BookingsScreen />);
+    return view;
+  }
+  const newRequest = () =>
+    session({ id: 'b-new', status: 'pending', respondBy: at(20), refundUntil: null });
+
+  it.each([
+    ['beside the list', false],
+    ['in the phone sheet', true],
+  ])(
+    'a request whose read fails: focus on the panel’s Try again (%s), never the body',
+    async (_where, narrow) => {
+      h.narrow = narrow;
+      const view = await landRequest();
+      h.pending = remote<Booking[]>([]);
+      h.fetchError = { kind: 'server', message: 'boom' };
+      view.rerender(<BookingsScreen />);
+      await waitFor(() =>
+        expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Try again' })),
+      );
+    },
+  );
+
+  it('the viewer opening another booking first drops it: no focus moved later', async () => {
+    const view = await landRequest();
+    // They open another booking before the new one has loaded…
+    h.selectedBooking = 'later';
+    h.pending = remote<Booking[]>([]);
+    view.rerender(<BookingsScreen />);
+    const raf = vi.spyOn(window, 'requestAnimationFrame');
+    // …then come back to it by hand: nothing of the move's moves focus now.
+    h.selectedBooking = 'b-new';
+    h.pending = remote([newRequest()]);
+    view.rerender(<BookingsScreen />);
+    await act(async () => {});
+    expect(raf).not.toHaveBeenCalled();
+    raf.mockRestore();
+  });
+
   it('refused: stays in the dialog, in the move’s words, and nothing has changed', async () => {
     moveHook.error = {
       kind: 'conflict',
