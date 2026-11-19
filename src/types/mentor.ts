@@ -172,6 +172,8 @@ export type BookingRequest = {
   answers: Record<string, IntakeAnswer>;
   /** The surface the booking was opened from (`sessions.entry_point`, PRD 30). */
   entryPoint: EntryPoint;
+  /** For the install nudge's line ("before Ada’s session"); never sent. */
+  mentorFirstName?: string;
 };
 
 /** Who is looking (GET /api/v1/me; backend auth reply #3). */

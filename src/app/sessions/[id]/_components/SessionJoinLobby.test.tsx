@@ -589,3 +589,88 @@ describe('after the call, before attendance is settled', () => {
     expect(screen.getByText('Joined at 6:01 pm')).toBeVisible();
   });
 });
+
+describe('the installed iPhone app joining Google Meet (ADR 0013)', () => {
+  const IPHONE_17 =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+  const realUa = navigator.userAgent;
+  const device = (ua: string, standalone: boolean) => {
+    Object.defineProperty(navigator, 'userAgent', { value: ua, configurable: true });
+    Object.defineProperty(navigator, 'standalone', { value: standalone, configurable: true });
+  };
+  afterEach(() => device(realUa, false));
+  const meet = () => {
+    h.room = remote(sessionRoom({}, {}, 'google_meet'));
+  };
+
+  it('Join opens in this window and asks the route for Safari', () => {
+    device(IPHONE_17, true);
+    meet();
+    renderAt('16:56:00');
+    const join = screen.getByRole('link', { name: 'Join on Google Meet' });
+    expect(join).toHaveAttribute('href', '/sessions/b1/enter?open=safari');
+    expect(join).not.toHaveAttribute('target');
+    expect(join).not.toHaveAttribute('rel');
+    expect(screen.getByText('Opens Google Meet in Safari, where you’re signed in.')).toBeVisible();
+  });
+
+  it('Daily in the same app keeps its new-tab link', () => {
+    device(IPHONE_17, true);
+    renderAt('16:56:00');
+    const join = screen.getByRole('link', { name: 'Join session (opens in a new tab)' });
+    expect(join).toHaveAttribute('href', '/sessions/b1/enter');
+    expect(join).toHaveAttribute('target', '_blank');
+  });
+
+  it('Meet in Safari itself (not the installed app) keeps its new-tab link', () => {
+    device(IPHONE_17, false);
+    meet();
+    renderAt('16:56:00');
+    expect(
+      screen.getByRole('link', { name: 'Join on Google Meet (opens in a new tab)' }),
+    ).toHaveAttribute('href', '/sessions/b1/enter');
+  });
+
+  it('Meet in the installed app before iOS 17 keeps its new-tab link', () => {
+    device(IPHONE_17.replace('17_5', '16_7'), true);
+    meet();
+    renderAt('16:56:00');
+    expect(
+      screen.getByRole('link', { name: 'Join on Google Meet (opens in a new tab)' }),
+    ).toHaveAttribute('href', '/sessions/b1/enter');
+  });
+});
+
+describe('on a phone, EduFurther video says to keep the call on screen', () => {
+  const tip = 'Keep the call on screen, or your phone pauses your camera and mic.';
+
+  it('under Join, in place of the browser hint', () => {
+    h.phone = true;
+    renderAt('16:56:00');
+    expect(screen.getByText(tip)).toBeVisible();
+    expect(
+      screen.queryByText('Opens in your browser. No download needed.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('under Rejoin too', () => {
+    h.phone = true;
+    h.room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:00:10Z' }));
+    renderAt('17:05:00');
+    expect(screen.getByRole('link', { name: /Rejoin call/ })).toBeVisible();
+    expect(screen.getByText(tip)).toBeVisible();
+  });
+
+  it('not on a computer', () => {
+    renderAt('16:56:00');
+    expect(screen.queryByText(tip)).not.toBeInTheDocument();
+  });
+
+  it('not for Google Meet, which keeps its own hint', () => {
+    h.phone = true;
+    h.room = remote(sessionRoom({}, {}, 'google_meet'));
+    renderAt('16:56:00');
+    expect(screen.queryByText(tip)).not.toBeInTheDocument();
+    expect(screen.getByText('Opens Google Meet in a new tab.')).toBeVisible();
+  });
+});

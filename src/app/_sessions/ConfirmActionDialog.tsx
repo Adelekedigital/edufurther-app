@@ -21,7 +21,7 @@ import {
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { ActionInput, BookingAction } from '@/lib/api/data/bookingActions';
-import { canCancel, refundOnCancel, refundWindowFor } from '@/lib/utils/bookings';
+import { canCancel, canMoveSession, refundOnCancel, refundWindowFor } from '@/lib/utils/bookings';
 import { dayLabel, formatTime } from '@/lib/utils/format';
 import { MOVE_COPY } from '@/lib/copy/session';
 import type { AppError, SessionType } from '@/types/mentor';
@@ -44,7 +44,7 @@ type ConfirmActionDialogProps = {
   /** Injected in tests and stories; the clock otherwise. */
   now?: Date;
   /**
-   * The mentee's move (PRD fix 1), Session Join only: given with the session's
+   * The mentee's move (PRD fix 1), from `useCancelMove`: given with the session's
    * type as the mentor offers it now (unknown: not given), or `loading` while
    * that is still being read. The dialog opens on it while the session is
    * confirmed and cancelling still refunds by the row's own deadline;
@@ -207,17 +207,9 @@ export function ConfirmActionDialog({
   const offering = canSuggest && suggestOn;
   const when = { day: dayLabel(b.startsAt, timeZone), start: formatTime(b.startsAt, timeZone) };
   // Offered only while the credit comes back (12+ hours out) by the row's own
-  // deadline: a move later would cost a second credit, so the plain cancel
-  // shows (owner default, open question 1), and with no deadline on the row
-  // there is no guessing one from the device clock. Re-read on every tick,
-  // like `tooLate`.
-  const moveFits =
-    action === 'cancel' &&
-    !isMentor &&
-    b.status === 'confirmed' &&
-    !!b.refundUntil &&
-    refunds &&
-    !tooLate;
+  // deadline, else the plain cancel shows (owner default, open question 1).
+  // Re-read on every tick, like `tooLate`.
+  const moveFits = action === 'cancel' && canMoveSession(b, now);
   const canMove = !!move && moveFits;
   // Latched while it runs: the deadline passing mid-move must not swap in the
   // plain cancel under "Working…".

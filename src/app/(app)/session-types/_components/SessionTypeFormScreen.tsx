@@ -6,7 +6,7 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SessionTypeWizard } from '@/components/organisms/SessionTypeWizard/SessionTypeWizard';
-import { ConfirmDialog } from '@/components/templates/ConfirmDialog/ConfirmDialog';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useConferencing } from '@/lib/api/data/conferencing';
 import { useTopics } from '@/lib/api/data/mentors';
 import { useMentorSettings } from '@/lib/api/data/mentorSettings';
@@ -27,11 +27,25 @@ import { useAppShell } from '@/app/_shell/useAppShell';
 import { lockedPageGate, memberGate, SESSION_TYPES_GATE } from '@/app/_shell/MentorGate';
 // Bundled, not lazy: they are the only word that a save or a publish went
 // through (and which hours didn't), so they must never fail to show.
-import { PublishedModal, SavedModal } from './SessionTypeFormModals';
 import styles from './SessionTypesScreen.module.css';
 import { useLeaveGuard, useSessionTypeDraft, type EditTarget } from './useSessionTypeDraft';
 import { useSessionTypeSubmit } from './useSessionTypeSubmit';
 import { useWizardSteps } from './useWizardSteps';
+
+// The wizard's dialogs open from a press or a save, never at first paint:
+// they load then (performance budget, 350kB first-load JS). A failed load
+// closes them, so the press works again.
+const ConfirmDialog = lazyPart(
+  () => import('@/components/templates/ConfirmDialog/ConfirmDialog').then((m) => m.ConfirmDialog),
+  { close: (p) => p.onKeep() },
+);
+const SavedModal = lazyPart(() => import('./SessionTypeFormModals').then((m) => m.SavedModal), {
+  close: (p) => p.onDone(),
+});
+const PublishedModal = lazyPart(
+  () => import('./SessionTypeFormModals').then((m) => m.PublishedModal),
+  { close: (p) => p.onDone() },
+);
 
 export type { EditTarget } from './useSessionTypeDraft';
 

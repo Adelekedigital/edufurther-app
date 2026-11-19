@@ -4,6 +4,8 @@
 - Date: 2026-10-17
 - Deciders: product (owner, issue #207)
 - Supersedes: —
+- Amended by: 0013 (the installed iPhone app opens a Google Meet Join in the same window,
+  and the route hands the call to Safari)
 
 ## Context and problem statement
 
@@ -61,6 +63,7 @@ return.
 ## Consequences
 
 Good:
+
 - Every way of opening Join records the arrival: click, middle-click, new tab, drag, a
   bookmark of the route.
 - The server's clock decides the window; a device clock can't let anyone in late.
@@ -68,6 +71,7 @@ Good:
 - No popup, no blank tab, no blocked-window notice.
 
 Bad, accepted:
+
 - A GET with a side effect. Mitigated by the `Sec-Fetch-Site` check, the refusal of
   requests that announce themselves as prefetches, and never using next/link (the router
   never prefetches it).

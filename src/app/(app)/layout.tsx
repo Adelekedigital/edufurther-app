@@ -7,6 +7,7 @@ import { PushPrompt } from '@/app/_shell/PushPrompt';
 import { RoleRedirect } from '@/app/_shell/RoleRedirect';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useOnline } from '@/lib/utils/useOnline';
+import { openInstallNudge, useInstallAvailable } from '@/lib/pwa/installPrompt';
 
 /**
  * Which nav item the current route is, by its first path segment. The shell is
@@ -76,6 +77,8 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const { chrome, account, nav, access, messages, adminEmails, adminAnalytics, onPreview, member } =
     useAppShell();
   const online = useOnline();
+  // A phone browser that can install (lib/pwa/installPrompt): More's last item.
+  const installable = useInstallAvailable();
 
   return (
     <AppShell
@@ -88,6 +91,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       account={account}
       access={access}
       onPreview={onPreview}
+      onInstall={chrome === 'member' && installable ? openInstallNudge : undefined}
       offline={!online}
     >
       <RoleRedirect>{children}</RoleRedirect>

@@ -13,6 +13,13 @@ export const LOBBY_COPY = {
   joinLockedHint: (min: number) => `The button becomes active ${min} minutes before the start.`,
   /** Join again, for someone who has been in. */
   rejoin: 'Rejoin call',
+  /** Under Join in the installed iPhone app, for Google Meet (ADR 0013). */
+  meetInSafariHint: 'Opens Google Meet in Safari, where you’re signed in.',
+  /**
+   * Under Join on a phone, for EduFurther video: a phone pauses a web page's
+   * camera and mic once it is off screen (owner, 19 Nov 2026).
+   */
+  dailyPhoneHint: 'Keep the call on screen, or your phone pauses your camera and mic.',
   /** Both roles (PRD fix 1). */
   cancel: 'Cancel',
   /** The pill when a move canceled the session but couldn’t book the new time. */
@@ -190,6 +197,8 @@ export const MOVE_COPY = {
   pickerLabel: 'New time',
   keep: 'Keep session',
   confirm: (request: boolean) => (request ? 'Send request' : 'Move session'),
+  /** Bookings' live region, once a move sent as a request has landed. */
+  requestSent: (first: string) => `Request sent to ${first}. It’s on Pending now.`,
   /** A press with no time picked. */
   pickFirst: 'Pick a time, or switch this off to cancel instead.',
   /** The picker with nothing to show, mentee side. */

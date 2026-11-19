@@ -7,6 +7,8 @@ import { fontVariables } from './fonts';
 import { Providers } from './providers';
 import { RouteFocusManager } from './_shell/RouteFocusManager';
 import { ServiceWorkerRegistration } from './_shell/ServiceWorkerRegistration';
+import { InstallNudgeRoot } from './_shell/InstallNudgeRoot';
+import { EARLY_CAPTURE } from '@/lib/pwa/earlyPrompt';
 import { APPLE_STARTUP_IMAGES } from './pwa-splash/sizes';
 import '@/styles/globals.css';
 import { BRAND_BLUE } from '@/styles/brand';
@@ -51,9 +53,15 @@ async function sessionHint(): Promise<SessionState | null> {
 export default async function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={fontVariables}>
+      <head>
+        {/* Android's install prompt can fire before any bundle runs: kept here
+            for the install nudge (lib/pwa/earlyPrompt). A fixed string, no input. */}
+        <script dangerouslySetInnerHTML={{ __html: EARLY_CAPTURE }} />
+      </head>
       <body>
         <RouteFocusManager />
         <ServiceWorkerRegistration />
+        <InstallNudgeRoot />
         <Providers session={await sessionHint()}>{children}</Providers>
       </body>
     </html>

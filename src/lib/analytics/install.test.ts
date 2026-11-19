@@ -1,7 +1,8 @@
 const track = vi.hoisted(() => vi.fn());
 vi.mock('./track', () => ({ track }));
 
-import { INSTALL_SENT_KEY, isStandalone, reportInstallOnce, resetInstallForTests } from './install';
+import { isStandalone } from '@/lib/utils/standalone';
+import { INSTALL_SENT_KEY, reportInstallOnce, resetInstallForTests } from './install';
 
 const standalone = (on: boolean) => {
   window.matchMedia = vi.fn().mockReturnValue({ matches: on }) as never;

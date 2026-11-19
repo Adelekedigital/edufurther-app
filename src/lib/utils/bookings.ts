@@ -529,6 +529,16 @@ export function refundOnCancel(b: Booking, now = new Date()): boolean {
 }
 
 /**
+ * Whether a mentee's cancel may offer to move the session instead (PRD fix 1):
+ * a confirmed session they booked, still cancellable, while the credit comes
+ * back by the row's own deadline. A move later would cost a second credit, and
+ * with no deadline on the row there is no guessing one from the device clock.
+ */
+export function canMoveSession(b: Booking, now = new Date()): boolean {
+  return b.side === 'mentee' && !!b.refundUntil && refundOnCancel(b, now) && canCancel(b, now);
+}
+
+/**
  * How many hours before the start this session's refund deadline sits, for the
  * copy that has to name it. Derived from the server's own deadline rather than
  * assumed, so a changed window changes the sentence with it.

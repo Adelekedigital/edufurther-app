@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { enterSession } from '@/lib/api/data/sessionEnter';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
-import { ENTER_PARAM, SESSION_ID } from '@/lib/utils/sessionEnter';
+import {
+  ENTER_PARAM,
+  OPEN_IN_SAFARI,
+  OPEN_PARAM,
+  SESSION_ID,
+  safariHandoff,
+} from '@/lib/utils/sessionEnter';
 import { ACCESS_TOKEN_HEADER } from '@/lib/vendor/supabase/server';
 import { safeDecode } from '@/lib/utils/text';
 
@@ -38,8 +44,12 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
     origin: request.nextUrl.origin,
   });
   switch (outcome.to) {
-    case 'call':
-      return see(request, outcome.url);
+    case 'call': {
+      // The installed app on iOS asked for Safari (ADR 0013): a Meet link only,
+      // and only the server's own. Anything else goes as before.
+      const asked = request.nextUrl.searchParams.get(OPEN_PARAM) === OPEN_IN_SAFARI;
+      return see(request, (asked && safariHandoff(outcome.url)) || outcome.url);
+    }
     case 'login':
       return see(request, `/login?next=${encodeURIComponent(safeReturnTo(page, '/bookings'))}`);
     case 'page':

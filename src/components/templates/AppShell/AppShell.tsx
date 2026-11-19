@@ -11,6 +11,7 @@ import { IconButton } from '@/components/atoms/IconButton/IconButton';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { AccountMenu, type AccountMenuItem } from '@/components/molecules/AccountMenu/AccountMenu';
 import { OfflineBanner } from '@/components/molecules/OfflineBanner/OfflineBanner';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { lockScroll } from '@/lib/utils/scrollLock';
 import { hasUnsavedChanges, heldLink, discardUnsaved, unsavedLabel } from '@/lib/utils/leaveGuard';
 import { fullNavigate } from '@/lib/utils/hardNavigate';
@@ -18,11 +19,24 @@ import { CreditsPill } from '@/components/molecules/CreditsPill/CreditsPill';
 import { CreditsSummary } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import type { CreditsView } from '@/lib/utils/credits';
 import type { Access, NavKey } from '@/lib/utils/access';
-import { CreditsExplainer } from './CreditsExplainer';
-import { LockExplainer } from './LockExplainer';
-import { UnsavedChangesDialog } from './UnsavedChangesDialog';
 import { cx } from '@/lib/utils/cx';
+import { INSTALL_MENU_COPY } from '@/lib/copy/installMenu';
 import styles from './AppShell.module.css';
+
+// The shell's dialogs open from a press (or a held link), never at first
+// paint: they load then (performance budget, 350kB first-load JS). A failed
+// load closes them, so their opener works again.
+const LockExplainer = lazyPart(() => import('./LockExplainer').then((m) => m.LockExplainer), {
+  close: (p) => p.onClose(),
+});
+const CreditsExplainer = lazyPart(
+  () => import('./CreditsExplainer').then((m) => m.CreditsExplainer),
+  { close: (p) => p.onClose() },
+);
+const UnsavedChangesDialog = lazyPart(
+  () => import('./UnsavedChangesDialog').then((m) => m.UnsavedChangesDialog),
+  { close: (p) => p.onKeep() },
+);
 
 /** Rail group: `daily` above the divider, `setup` below (design sidebar=grouped). */
 type NavItem = { label: string; href: string; icon: IconName; group: 'daily' | 'setup' };
@@ -171,6 +185,12 @@ type AppShellProps = {
    * preview, while not previewing. The header's preview icon opens the bar.
    */
   onPreview?: () => void;
+  /**
+   * The install nudge's way back (phones): "Install the app", last in the
+   * More sheet. Passed only where the sheet can help (a phone browser that can
+   * install); the caller opens it.
+   */
+  onInstall?: () => void;
   offline: boolean;
   children: ReactNode;
 };
@@ -189,6 +209,7 @@ export function AppShell({
   account,
   access,
   onPreview,
+  onInstall,
   offline,
   children,
 }: AppShellProps) {
@@ -564,6 +585,29 @@ export function AppShell({
                   )}
                 </li>
               ))}
+              {onInstall && (
+                <li className={styles.sheetInstall}>
+                  <button
+                    type="button"
+                    className={styles.sheetItem}
+                    aria-haspopup="dialog"
+                    onClick={() => {
+                      setMoreOpen(false);
+                      // The item goes with the sheet: the nudge hands focus back to More.
+                      moreRef.current?.focus();
+                      onInstall();
+                    }}
+                  >
+                    <span className={styles.sheetInstallIcon}>
+                      <Icon name="download" size={18} />
+                    </span>
+                    <span className={styles.sheetInstallText}>
+                      <span className={styles.sheetInstallLabel}>{INSTALL_MENU_COPY.label}</span>
+                      <span className={styles.sheetInstallSub}>{INSTALL_MENU_COPY.sub}</span>
+                    </span>
+                  </button>
+                </li>
+              )}
             </ul>
           </div>
         </>
