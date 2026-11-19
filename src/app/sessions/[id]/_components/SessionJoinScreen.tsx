@@ -63,6 +63,7 @@ import {
 import { outcomeView } from '@/lib/utils/sessionOutcome';
 import { entryFor, isFinal, sessionPhase } from '@/lib/utils/sessionPhase';
 import { useOnline } from '@/lib/utils/useOnline';
+import { PHONE_QUERY, useMediaQuery } from '@/lib/utils/useMediaQuery';
 import type { CalendarEvent } from '@/lib/utils/calendarLinks';
 import type { AnswerFile } from '@/types/booking';
 import {
@@ -159,6 +160,7 @@ function useNow(ticking: boolean): Date {
 export function SessionJoinScreen({ id }: { id: string }) {
   const viewer = useViewer();
   const online = useOnline();
+  const onPhone = useMediaQuery(PHONE_QUERY);
   const router = useRouter();
   const member = viewer.kind === 'member' ? viewer : null;
   const userId = member?.id ?? null;
@@ -403,6 +405,7 @@ export function SessionJoinScreen({ id }: { id: string }) {
       timeZone,
       enterHref: enterPath(id, { inSafari }),
       inSafari,
+      onPhone,
       onFollow: () => {
         setProblem(null);
         track('session_join_clicked', {

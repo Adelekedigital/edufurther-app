@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { isStandalone } from '@/lib/utils/standalone';
+import { PHONE_QUERY } from '@/lib/utils/useMediaQuery';
 import type { InstallPlatform, InstallTrigger } from '@/lib/analytics/events';
 import { EARLY_PROMPT } from './earlyPrompt';
 
@@ -44,8 +45,7 @@ export type DeferredPrompt = Event & {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 };
 
-/** A phone: the app's 768px breakpoint, and a touch screen (a narrow desktop window isn't one). */
-export const PHONE_QUERY = '(max-width: 767px) and (pointer: coarse)';
+export { PHONE_QUERY };
 
 /**
  * A moment waiting for its screen, kept for this tab (installNudge.ts writes
