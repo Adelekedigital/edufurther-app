@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from 'react';
 import { isStandalone } from '@/lib/utils/standalone';
 import type { InstallPlatform, InstallTrigger } from '@/lib/analytics/events';
+import { EARLY_PROMPT } from './earlyPrompt';
 
 /**
  * The install nudge's eager core (owner, 2026-11-18), kept to what every page
@@ -46,6 +47,15 @@ export type DeferredPrompt = Event & {
 /** A phone: the app's 768px breakpoint, and a touch screen (a narrow desktop window isn't one). */
 export const PHONE_QUERY = '(max-width: 767px) and (pointer: coarse)';
 
+/**
+ * A moment waiting for its screen, kept for this tab (installNudge.ts writes
+ * it): a full page load between the moment and its screen (a reload, a new
+ * deploy turning a move into a page load) would otherwise lose it.
+ */
+export const PENDING_KEY = 'ef-install-nudge-pending';
+
+type EarlyWindow = Window & { [EARLY_PROMPT]?: DeferredPrompt | null };
+
 let deferred: DeferredPrompt | null = null;
 let open: InstallNudge | null = null;
 const listeners = new Set<() => void>();
@@ -58,6 +68,7 @@ function emit() {
 export function resetInstallPromptForTests(): void {
   deferred = null;
   open = null;
+  (window as EarlyWindow)[EARLY_PROMPT] = null;
   emit();
 }
 
@@ -71,11 +82,19 @@ let release: (() => void) | null = null;
  */
 export function captureInstallPrompt(): () => void {
   if (release) return release;
+  // One that came before this ran, kept by the layout's script.
+  const early = (window as EarlyWindow)[EARLY_PROMPT];
+  if (early && !deferred) {
+    deferred = early;
+    emit();
+  }
   const onPrompt = (e: Event) => {
     // No mini-infobar: the prompt is offered at a moment that means something.
     e.preventDefault();
     deferred = e as DeferredPrompt;
     emit();
+    // Android can't show before the prompt is in: a kept moment waits for it.
+    resumeInstallMoment();
   };
   const onInstalled = () => {
     deferred = null;
@@ -90,9 +109,6 @@ export function captureInstallPrompt(): () => void {
   };
   return release;
 }
-
-// Capture from the moment this bundle runs, not from the first effect.
-if (typeof window !== 'undefined') captureInstallPrompt();
 
 /**
  * Safari on an iPhone or iPad. Add to Home Screen is Safari's on older iOS,
@@ -132,7 +148,34 @@ const nudge = () => import('./installNudge');
 export function noteInstallMoment(moment: InstallMoment): void {
   if (!installPlatform()) return;
   const from = location.pathname;
-  void nudge().then((n) => n.admit(moment, from));
+  void nudge().then(
+    (n) => n.admit(moment, from),
+    () => {},
+  );
+}
+
+/**
+ * A page load with a moment kept for this tab (PENDING_KEY): the rules pick
+ * it up again. Only reads a key here; nothing loads unless one is kept and
+ * the sheet can show on this device.
+ */
+export function resumeInstallMoment(): void {
+  try {
+    if (!sessionStorage.getItem(PENDING_KEY) || !installPlatform()) return;
+  } catch {
+    return;
+  }
+  void nudge().then(
+    (n) => n.resumePending(),
+    () => {},
+  );
+}
+
+// From the moment this bundle runs, not from the first effect: the prompt,
+// and a moment kept across a page load.
+if (typeof window !== 'undefined') {
+  captureInstallPrompt();
+  resumeInstallMoment();
 }
 
 /** The More menu's "Install the app": the sheet now, whatever the rules. */
@@ -158,6 +201,7 @@ export function setOpen(next: InstallNudge | null): InstallNudge | null {
 export function takeDeferredPrompt(): DeferredPrompt | null {
   const p = deferred;
   deferred = null;
+  (window as EarlyWindow)[EARLY_PROMPT] = null;
   emit();
   return p;
 }
