@@ -16,6 +16,10 @@ const followed = vi.fn();
 beforeEach(async () => {
   vi.resetModules();
   ({ AppShell } = await import('./AppShell'));
+  // Fresh modules come after vitest.setup's wait for lazy parts: let the
+  // shell's dialog load before the test presses anything.
+  await import('./UnsavedChangesDialog');
+  await new Promise((r) => setTimeout(r, 0));
   ({ useLeaveGuard } = await import('@/lib/utils/leaveGuard'));
   fullNavigate.mockReset();
   followed.mockReset();

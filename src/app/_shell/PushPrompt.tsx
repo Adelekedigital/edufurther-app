@@ -52,11 +52,23 @@ export function PushPrompt({
   const ask = useCallback((moment: Ask) => {
     if (!askable.current || pushAsked() || pending.current) return;
     pending.current = true;
-    setTimeout(() => {
-      if (!askable.current || pushAsked()) {
+    setTimeout(async () => {
+      // One ask per visit with the install nudge (up, waiting, or shown): its
+      // rules load here, at the ask, not with the page.
+      let nudge: typeof import('@/lib/pwa/installNudge');
+      try {
+        nudge = await import('@/lib/pwa/installNudge');
+        if (!askable.current || pushAsked() || nudge.installNudgeBusy()) {
+          pending.current = false;
+          return;
+        }
+      } catch {
+        // Its code didn't load (a deploy swapped it, or offline): skip this
+        // moment, and let a later one ask (review on PR 660).
         pending.current = false;
         return;
       }
+      nudge.notePushAskShown();
       setToast({ text: PUSH_COPY.ask[moment], stamp: Date.now(), ask: true });
     }, ASK_DELAY_MS);
   }, []);

@@ -1,0 +1,75 @@
+/* The install nudge (design boards Main / IphoneSheet, layout only). */
+
+/* The home-screen icon is white: a hairline keeps it off the white sheet. */
+.mark {
+  flex: none;
+  width: var(--space-8);
+  height: var(--space-8);
+  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--ink-100);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.lead {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-primary);
+}
+
+.reason {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+
+.steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* IphoneSheet.dc.html: a numbered row on a grey ground. */
+.step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-xl);
+  background: var(--surface-subtle);
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.step strong {
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.num {
+  flex: none;
+  width: var(--space-7);
+  height: var(--space-7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--blue-500);
+  color: var(--white);
+  font-size: var(--text-p-sm);
+  font-weight: var(--weight-bold);
+}
+
+.share {
+  color: var(--blue-500);
+  vertical-align: text-bottom;
+}
