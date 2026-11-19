@@ -171,6 +171,8 @@ export type LobbyInput = {
    * same window and the route hands the call to Safari (ADR 0013).
    */
   inSafari?: boolean;
+  /** A phone: EduFurther video's hint says to keep the call on screen. */
+  onPhone?: boolean;
   /** Join was followed: the page drops its last Join problem. */
   onFollow?: () => void;
   /**
@@ -205,6 +207,7 @@ export function lobbyModel({
   timeZone,
   enterHref,
   inSafari = false,
+  onPhone = false,
   onFollow,
   onCancel,
   pageUrl,
@@ -229,7 +232,11 @@ export function lobbyModel({
       enabled: true,
       href: enterHref,
       onFollow,
-      hint: inSafari ? LOBBY_COPY.meetInSafariHint : pv.hint,
+      hint: inSafari
+        ? LOBBY_COPY.meetInSafariHint
+        : onPhone && b.provider === 'daily'
+          ? LOBBY_COPY.dailyPhoneHint
+          : pv.hint,
       ...(inSafari ? { sameWindow: true } : {}),
     };
   } else if (phase === 'closed' && b.joinClosesAt && !room.me.joinedAt) {

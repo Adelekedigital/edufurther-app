@@ -640,3 +640,37 @@ describe('the installed iPhone app joining Google Meet (ADR 0013)', () => {
     ).toHaveAttribute('href', '/sessions/b1/enter');
   });
 });
+
+describe('on a phone, EduFurther video says to keep the call on screen', () => {
+  const tip = 'Keep the call on screen, or your phone pauses your camera and mic.';
+
+  it('under Join, in place of the browser hint', () => {
+    h.phone = true;
+    renderAt('16:56:00');
+    expect(screen.getByText(tip)).toBeVisible();
+    expect(
+      screen.queryByText('Opens in your browser. No download needed.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('under Rejoin too', () => {
+    h.phone = true;
+    h.room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:00:10Z' }));
+    renderAt('17:05:00');
+    expect(screen.getByRole('link', { name: /Rejoin call/ })).toBeVisible();
+    expect(screen.getByText(tip)).toBeVisible();
+  });
+
+  it('not on a computer', () => {
+    renderAt('16:56:00');
+    expect(screen.queryByText(tip)).not.toBeInTheDocument();
+  });
+
+  it('not for Google Meet, which keeps its own hint', () => {
+    h.phone = true;
+    h.room = remote(sessionRoom({}, {}, 'google_meet'));
+    renderAt('16:56:00');
+    expect(screen.queryByText(tip)).not.toBeInTheDocument();
+    expect(screen.getByText('Opens Google Meet in a new tab.')).toBeVisible();
+  });
+});

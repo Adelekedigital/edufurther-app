@@ -15,6 +15,11 @@ export const LOBBY_COPY = {
   rejoin: 'Rejoin call',
   /** Under Join in the installed iPhone app, for Google Meet (ADR 0013). */
   meetInSafariHint: 'Opens Google Meet in Safari, where you’re signed in.',
+  /**
+   * Under Join on a phone, for EduFurther video: a phone pauses a web page's
+   * camera and mic once it is off screen (owner, 19 Nov 2026).
+   */
+  dailyPhoneHint: 'Keep the call on screen, or your phone pauses your camera and mic.',
   /** Both roles (PRD fix 1). */
   cancel: 'Cancel',
   /** The pill when a move canceled the session but couldn’t book the new time. */
