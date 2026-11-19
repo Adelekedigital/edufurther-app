@@ -26,6 +26,7 @@ import { formatTime, viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
+import { FOCUSABLE } from '@/lib/utils/useFocusTrap';
 import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { BOOKINGS_GATE, lockedPageGate, memberGate } from '@/app/_shell/MentorGate';
@@ -248,7 +249,9 @@ export function BookingsScreen() {
     onMoved: (newId, confirmed) => {
       const to = encodeURIComponent(newId);
       if (confirmed) {
-        // A confirmed session has its own page; Bookings stays one Back away.
+        // A confirmed session has its own page; Bookings stays one Back away,
+        // so the dialog goes now: Back must not restore it on "Working…".
+        setConfirming(null);
         router.push(`/sessions/${to}`);
         return 'leaving';
       }
@@ -256,13 +259,33 @@ export function BookingsScreen() {
       // (the dialog closing is all a screen reader would otherwise get).
       if (confirming) say(MOVE_COPY.requestSent(confirming.booking.other.firstName));
       setConfirming(null);
+      setFocusNew(newId);
       router.replace(`/bookings?tab=pending&booking=${to}`, { scroll: false });
       return 'done';
     },
   });
+  // The request a move just sent: its panel takes focus once the URL has
+  // swapped to it, as the dialog's opener (the old Cancel session) is gone.
+  const [focusNew, setFocusNew] = useState<string | null>(null);
+  useEffect(() => {
+    if (!focusNew || openId !== focusNew) return;
+    setFocusNew(null);
+    // After the dialog's own focus return, which finds its opener gone.
+    requestAnimationFrame(() => {
+      const panel = document.getElementById(PANEL_ID);
+      // The aside takes focus itself; the phone sheet, its first control.
+      const to = panel?.hasAttribute('tabindex')
+        ? panel
+        : panel?.querySelector<HTMLElement>(FOCUSABLE);
+      to?.focus();
+    });
+  }, [focusNew, openId]);
   const callOff = (action: 'decline' | 'withdraw' | 'cancel', b: Booking) => {
     setConfirming({ action, booking: b });
+    // Every call-off starts the move clean, so no earlier move's "Working…"
+    // or snapshot reaches a decline or withdraw either.
     if (action === 'cancel') cancelMove.open(b);
+    else cancelMove.close();
   };
   const closeConfirm = () => {
     setConfirming(null);
@@ -697,7 +720,7 @@ export function BookingsScreen() {
               onClose={() => {
                 // Escape and the ✕ go through here too, so the in-flight guard
                 // has to live at this level rather than only on "Keep it".
-                if (pendingAction.isPending || cancelMove.busy) return;
+                if (pendingAction.isPending || cancelMove.holding) return;
                 pendingAction.reset();
                 closeConfirm();
               }}

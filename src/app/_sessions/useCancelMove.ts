@@ -62,12 +62,17 @@ export function useCancelMove({ live, now, onMoved }: Options) {
     setMoveType(liveType);
   }
 
-  const close = () => {
+  // Every way in and out starts clean: a page restored from the router cache
+  // after a move has left must not open its next Cancel on "Working…".
+  const reset = (b: Booking | null) => {
     move.reset();
-    setTarget(null);
+    setTarget(b);
     setMoveType(null);
-    setAwaitingType(false);
+    setAwaitingType(!!b);
+    setMoved(false);
+    setMovingFrom(null);
   };
+  const close = () => reset(null);
 
   // The latest copy of the row being cancelled, for the request.
   const current = target && live?.id === target.id ? live : target;
@@ -86,10 +91,7 @@ export function useCancelMove({ live, now, onMoved }: Options) {
               setMovingFrom(current);
               move.move({ booking: current, startsAt, message }, (newId, confirmed) => {
                 if (onMoved(newId, confirmed) === 'leaving') setMoved(true);
-                else {
-                  setMovingFrom(null);
-                  close();
-                }
+                else close();
               });
             },
           }
@@ -97,12 +99,8 @@ export function useCancelMove({ live, now, onMoved }: Options) {
 
   return {
     /** Cancel was pressed on this booking. */
-    open: (b: Booking) => {
-      setTarget(b);
-      setMoveType(null);
-      setAwaitingType(true);
-    },
-    /** The dialog closed. Not while `busy`: vanishing reads as "done". */
+    open: (b: Booking) => reset(b),
+    /** The dialog closed. Not while `holding`: vanishing reads as "done". */
     close,
     /** Cancel is open on a booking. */
     isOpen: !!target,
@@ -112,7 +110,5 @@ export function useCancelMove({ live, now, onMoved }: Options) {
     holding,
     /** The booking as it was when Move was pressed, while `holding`. */
     movingFrom: holding ? movingFrom : null,
-    /** The move's call is in flight. */
-    busy: move.isPending,
   };
 }

@@ -1,5 +1,6 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { Booking } from '@/types/booking';
 import type { SessionType } from '@/types/mentor';
 import { moveHook, sessionTypes } from '@/app/_sessions/cancelMove.harness';
 import { BookingsScreen } from './BookingsScreen';
@@ -161,12 +162,33 @@ describe('where a move from Bookings lands', () => {
     expect(actions.cancel!.mutate).not.toHaveBeenCalled();
   });
 
-  it('confirmed: to the new session’s page, still Working… until it lands', async () => {
+  it('confirmed: to the new session’s page, and the dialog goes with it', async () => {
     render(<BookingsScreen />);
     const { onMoved } = await openAndMove();
     act(() => onMoved('b-new', true));
     expect(push).toHaveBeenCalledWith('/sessions/b-new');
-    expect(screen.getByRole('button', { name: 'Working…' })).toBeVisible();
+    // Back restores the screen from the router cache: never on "Working…".
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('back on Bookings after a confirmed move, the next Cancel opens clean', async () => {
+    render(<BookingsScreen />);
+    const { onMoved } = await openAndMove();
+    act(() => onMoved('b-new', true));
+    await userEvent.click(panel().getByRole('button', { name: 'Cancel session' }));
+    expect(screen.getByRole('dialog', { name: 'Move this session?' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'Working…' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Move session' })).toBeVisible();
+  });
+
+  it('and a remount after it opens clean too', async () => {
+    const view = render(<BookingsScreen />);
+    const { onMoved } = await openAndMove();
+    act(() => onMoved('b-new', true));
+    view.unmount();
+    render(<BookingsScreen />);
+    await userEvent.click(panel().getByRole('button', { name: 'Cancel session' }));
+    expect(screen.getByRole('button', { name: 'Move session' })).toBeVisible();
   });
 
   it('a request (approval on): stays on Bookings and opens it on Pending', async () => {
@@ -181,6 +203,37 @@ describe('where a move from Bookings lands', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('Request sent to Amara. It’s on Pending now.')).toBeInTheDocument();
   });
+
+  it.each([
+    ['beside the list', false],
+    ['in the phone sheet', true],
+  ])(
+    'a request: once the panel has swapped to it, focus lands on it (%s), not the page body',
+    async (_where, narrow) => {
+      h.narrow = narrow;
+      sessionTypes.data = [{ ...TYPE, requiresConfirmation: true }];
+      const view = render(<BookingsScreen />);
+      const { onMoved } = await openAndMove('Send request');
+      act(() => onMoved('b-new', false));
+      // The replace lands: Pending, the new request still loading, so the
+      // panel's old controls (the dialog's opener) are gone.
+      h.tab = 'pending';
+      h.selectedBooking = 'b-new';
+      h.pending = remote<Booking[]>(null, { isLoading: true });
+      view.rerender(<BookingsScreen />);
+      // Then it arrives.
+      h.pending = remote([
+        session({ id: 'b-new', status: 'pending', respondBy: at(20), refundUntil: null }),
+      ]);
+      view.rerender(<BookingsScreen />);
+      await waitFor(() => {
+        expect(document.activeElement).not.toBe(document.body);
+        expect(document.getElementById('booking-details')).toContainElement(
+          document.activeElement as HTMLElement,
+        );
+      });
+    },
+  );
 
   it('refused: stays in the dialog, in the move’s words, and nothing has changed', async () => {
     moveHook.error = {

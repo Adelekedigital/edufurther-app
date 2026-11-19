@@ -160,6 +160,29 @@ describe('where the move lands', () => {
     expect(option(result.current.move).pending).toBe(true);
   });
 
+  it('after leaving, the next Cancel opens clean, never on "Working…"', () => {
+    const { result } = setup();
+    act(() => result.current.open(session()));
+    act(() => option(result.current.move).onMove({ startsAt: 'T', message: '' }));
+    act(() => moveHook.calls.at(-1)!.onMoved('b-new', true));
+    act(() => result.current.close());
+    expect(result.current.holding).toBe(false);
+    act(() => result.current.open(session()));
+    expect(result.current.holding).toBe(false);
+    expect(result.current.movingFrom).toBeNull();
+    expect(option(result.current.move).pending).toBe(false);
+  });
+
+  it('open again without closing (a page restored after leaving): clean too', () => {
+    const { result } = setup();
+    act(() => result.current.open(session()));
+    act(() => option(result.current.move).onMove({ startsAt: 'T', message: '' }));
+    act(() => moveHook.calls.at(-1)!.onMoved('b-new', true));
+    act(() => result.current.open(session()));
+    expect(result.current.holding).toBe(false);
+    expect(option(result.current.move).pending).toBe(false);
+  });
+
   it('done: the dialog closes where it is, and nothing is held', () => {
     const { result, onMoved } = setup(session(), 'done');
     act(() => result.current.open(session()));

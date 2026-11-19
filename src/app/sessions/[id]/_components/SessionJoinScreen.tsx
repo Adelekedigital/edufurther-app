@@ -603,7 +603,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
           error={cancel.error}
           onClose={() => {
             // Not while the POST is in flight: vanishing reads as "done".
-            if (cancel.isPending || cancelMove.busy) return;
+            // Nor once a move has landed: "Working…" until the page has gone.
+            if (cancel.isPending || cancelMove.holding) return;
             cancel.reset();
             cancelMove.close();
           }}
