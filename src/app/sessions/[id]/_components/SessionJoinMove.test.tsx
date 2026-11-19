@@ -9,6 +9,7 @@ import {
   remote,
   replace,
   sessionRoom,
+  sessionTypes,
   setupSessionJoinHarness,
 } from './sessionJoin.harness';
 import { SessionJoinScreen } from './SessionJoinScreen';
@@ -89,7 +90,7 @@ function renderAt(iso: string) {
 beforeEach(() => {
   h.viewer = MENTEE;
   h.room = remote(menteeSession());
-  h.types = [TYPE];
+  sessionTypes.data = [TYPE];
   h.slots = [NEW_TIME];
 });
 
@@ -114,7 +115,7 @@ describe('Cancel on a mentee’s session', () => {
   });
 
   it('pressed before the types answer: a skeleton with no reasons to pick, then the move view', async () => {
-    h.typesLoading = true;
+    sessionTypes.loading = true;
     const view = renderAt('2026-10-03T12:00:00Z');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     // Nothing to touch that the move view would then cover (GitHub review, PR 431).
@@ -124,23 +125,23 @@ describe('Cancel on a mentee’s session', () => {
     );
     expect(screen.queryByRole('button', { name: 'I no longer need it' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Yes, cancel session' })).not.toBeInTheDocument();
-    h.typesLoading = false;
+    sessionTypes.loading = false;
     view.rerender(<SessionJoinScreen id="b1" />);
     expect(screen.getByRole('dialog', { name: 'Move this session?' })).toBeVisible();
   });
 
   it('pressed before the types answer, and the type is gone: then the cancel as built', async () => {
-    h.typesLoading = true;
-    h.types = [];
+    sessionTypes.loading = true;
+    sessionTypes.data = [];
     const view = renderAt('2026-10-03T12:00:00Z');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-    h.typesLoading = false;
+    sessionTypes.loading = false;
     view.rerender(<SessionJoinScreen id="b1" />);
     expect(screen.getByRole('dialog', { name: 'Cancel this booking?' })).toBeVisible();
   });
 
   it('a session type the mentor no longer offers opens the cancel as built', async () => {
-    h.types = [];
+    sessionTypes.data = [];
     renderAt('2026-10-03T12:00:00Z');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByRole('dialog', { name: 'Cancel this booking?' })).toBeVisible();
@@ -170,7 +171,7 @@ describe('where the move ends', () => {
   });
 
   it('moved as a request (approval on): straight to it in Bookings', async () => {
-    h.types = [{ ...TYPE, requiresConfirmation: true }];
+    sessionTypes.data = [{ ...TYPE, requiresConfirmation: true }];
     renderAt('2026-10-03T12:00:00Z');
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     await userEvent.click(screen.getByRole('radio', { name: 'Tue, Oct 6 · 3:00 pm' }));

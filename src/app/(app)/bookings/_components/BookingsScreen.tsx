@@ -21,10 +21,12 @@ import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
 import { BOOKINGS_COPY } from '@/lib/copy/bookings';
+import { MOVE_COPY } from '@/lib/copy/session';
 import { formatTime, viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
+import { FOCUSABLE } from '@/lib/utils/useFocusTrap';
 import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
 import { canBookFor } from '@/app/_shell/bookBlocked';
 import { BOOKINGS_GATE, lockedPageGate, memberGate } from '@/app/_shell/MentorGate';
@@ -40,6 +42,7 @@ import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
 import { bookingRecipient } from '@/lib/utils/messageRecipient';
 import type { MessageRecipient } from '@/types/messages';
 import { useReviewAndRebook } from '@/app/_sessions/useReviewAndRebook';
+import { useCancelMove } from '@/app/_sessions/useCancelMove';
 import {
   bookingHeading,
   canAccept,
@@ -238,6 +241,76 @@ export function BookingsScreen() {
     booking: Booking;
   } | null>(null);
   const pendingAction = confirming ? { decline, withdraw, cancel }[confirming.action] : null;
+  // A mentee cancelling a confirmed session may move it instead, as on Session
+  // Join: the same hook, so the dialog is the same wherever Cancel is pressed.
+  const cancelMove = useCancelMove({
+    live: open ?? null,
+    now,
+    onMoved: (newId, confirmed) => {
+      const to = encodeURIComponent(newId);
+      if (confirmed) {
+        // A confirmed session has its own page; Bookings stays one Back away,
+        // so the dialog goes now: Back must not restore it on "Working…".
+        setConfirming(null);
+        router.push(`/sessions/${to}`);
+        return 'leaving';
+      }
+      // A request waits for the mentor: open it here, on Pending, and say so
+      // (the dialog closing is all a screen reader would otherwise get).
+      if (confirming) say(MOVE_COPY.requestSent(confirming.booking.other.firstName));
+      setConfirming(null);
+      setFocusNew({ id: newId, from: selected, arrived: false });
+      router.replace(`/bookings?tab=pending&booking=${to}`, { scroll: false });
+      return 'done';
+    },
+  });
+  // The request a move just sent: its panel takes focus once the URL has
+  // swapped to it and it has loaded, as the dialog's opener (the old Cancel
+  // session) is gone. Latched only until then: the viewer opening another
+  // booking or closing the panel drops it, so it never moves focus later.
+  const [focusNew, setFocusNew] = useState<{
+    id: string;
+    /** The booking open when the move was pressed, before the URL swaps. */
+    from: string | null;
+    arrived: boolean;
+  } | null>(null);
+  const loadFailed = !!fetched.error;
+  useEffect(() => {
+    if (!focusNew) return;
+    if (!focusNew.arrived) {
+      if (selected === focusNew.id) setFocusNew({ ...focusNew, arrived: true });
+      else if (selected !== focusNew.from) setFocusNew(null);
+      return;
+    }
+    if (selected !== focusNew.id) return setFocusNew(null);
+    const failed = openId !== focusNew.id && loadFailed;
+    if (openId !== focusNew.id && !failed) return;
+    setFocusNew(null);
+    // After the dialog's own focus return, which finds its opener gone.
+    requestAnimationFrame(() => {
+      const panel = document.getElementById(PANEL_ID);
+      // Loaded: the aside takes focus itself; the phone sheet, its first
+      // control. Failed: its Try again, else its close.
+      const to = failed
+        ? (panel?.querySelector<HTMLElement>('[role="alert"] button') ??
+          panel?.querySelector<HTMLElement>(FOCUSABLE))
+        : panel?.hasAttribute('tabindex')
+          ? panel
+          : panel?.querySelector<HTMLElement>(FOCUSABLE);
+      to?.focus();
+    });
+  }, [focusNew, selected, openId, loadFailed]);
+  const callOff = (action: 'decline' | 'withdraw' | 'cancel', b: Booking) => {
+    setConfirming({ action, booking: b });
+    // Every call-off starts the move clean, so no earlier move's "Working…"
+    // or snapshot reaches a decline or withdraw either.
+    if (action === 'cancel') cancelMove.open(b);
+    else cancelMove.close();
+  };
+  const closeConfirm = () => {
+    setConfirming(null);
+    cancelMove.close();
+  };
 
   // Which completed sessions this mentee can still review. The list is the
   // authority — it already applies "completed only", "not already reviewed" and
@@ -341,11 +414,7 @@ export function BookingsScreen() {
         <>
           {/* Under 24 hours left for the mentor (`menteeReminder` on). */}
           {reminders.buttonFor(b)}
-          <Button
-            variant="text-destructive"
-            size="small"
-            onClick={() => setConfirming({ action: 'withdraw', booking: b })}
-          >
+          <Button variant="text-destructive" size="small" onClick={() => callOff('withdraw', b)}>
             Cancel request
           </Button>
         </>
@@ -390,11 +459,7 @@ export function BookingsScreen() {
               ? 'Accept request'
               : 'Accept'}
         </Button>
-        <Button
-          variant="text-destructive"
-          size={size}
-          onClick={() => setConfirming({ action: 'decline', booking: b })}
-        >
+        <Button variant="text-destructive" size={size} onClick={() => callOff('decline', b)}>
           Decline
         </Button>
       </>
@@ -589,7 +654,7 @@ export function BookingsScreen() {
                 asSheet={asSheet}
                 // The row's view of it, so the panel's pill agrees with the row's.
                 booking={open ? reminders.withReminder(open) : null}
-                onCallOff={(action) => open && setConfirming({ action, booking: open })}
+                onCallOff={(action) => open && callOff(action, open)}
                 // Pressing Details on a request awaiting an answer used to open
                 // a panel saying "Respond within 2 days" with nothing to
                 // respond with, and on a phone the sheet covered the row's own
@@ -663,7 +728,9 @@ export function BookingsScreen() {
           {confirming && pendingAction && (
             <ConfirmActionDialog
               action={confirming.action}
-              booking={confirming.booking}
+              // While a move runs, the session as it was when Move was pressed.
+              booking={cancelMove.movingFrom ?? confirming.booking}
+              move={confirming.action === 'cancel' ? cancelMove.move : undefined}
               timeZone={timeZone}
               viewerId={userId ?? ''}
               accountZone={accountZone}
@@ -673,16 +740,16 @@ export function BookingsScreen() {
               onClose={() => {
                 // Escape and the ✕ go through here too, so the in-flight guard
                 // has to live at this level rather than only on "Keep it".
-                if (pendingAction.isPending) return;
+                if (pendingAction.isPending || cancelMove.holding) return;
                 pendingAction.reset();
-                setConfirming(null);
+                closeConfirm();
               }}
               onConfirm={(input) =>
                 pendingAction.mutate(
                   { bookingId: confirming.booking.id, ...input },
                   // Closed only on success: a refusal stays on screen with the
                   // reason still typed, so it can be sent again.
-                  { onSuccess: () => setConfirming(null) },
+                  { onSuccess: closeConfirm },
                 )
               }
             />

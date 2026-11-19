@@ -192,6 +192,8 @@ export const MOVE_COPY = {
   pickerLabel: 'New time',
   keep: 'Keep session',
   confirm: (request: boolean) => (request ? 'Send request' : 'Move session'),
+  /** Bookings' live region, once a move sent as a request has landed. */
+  requestSent: (first: string) => `Request sent to ${first}. It’s on Pending now.`,
   /** A press with no time picked. */
   pickFirst: 'Pick a time, or switch this off to cancel instead.',
   /** The picker with nothing to show, mentee side. */

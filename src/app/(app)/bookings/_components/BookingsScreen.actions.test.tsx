@@ -57,10 +57,12 @@ vi.mock('@/app/_reviews/ReviewDialog', async () =>
 vi.mock('@/app/_shell/BookingLauncher/BookingLauncher', async () =>
   (await import('@/app/_sessions/reviewAndRebook.harness')).reviewAndRebookMocks.bookingLauncher(),
 );
-vi.mock('@/lib/api/data/booking', async (orig) => ({
-  ...(await orig<Record<string, unknown>>()),
-  useSlots: () => ({ data: [], isLoading: false, error: null, retry: vi.fn() }),
-}));
+vi.mock('@/lib/api/data/booking', async (orig) =>
+  (await import('./bookingsScreen.harness')).mocks.booking(await orig()),
+);
+vi.mock('@/lib/api/data/moveSession', async () =>
+  (await import('./bookingsScreen.harness')).mocks.moveSession(),
+);
 vi.mock('@/lib/api/data/privateFiles', async () =>
   (await import('./bookingsScreen.harness')).mocks.privateFiles(),
 );
