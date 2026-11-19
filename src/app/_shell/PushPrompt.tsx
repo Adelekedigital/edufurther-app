@@ -55,8 +55,16 @@ export function PushPrompt({
     setTimeout(async () => {
       // One ask per visit with the install nudge (up, waiting, or shown): its
       // rules load here, at the ask, not with the page.
-      const nudge = await import('@/lib/pwa/installNudge');
-      if (!askable.current || pushAsked() || nudge.installNudgeBusy()) {
+      let nudge: typeof import('@/lib/pwa/installNudge');
+      try {
+        nudge = await import('@/lib/pwa/installNudge');
+        if (!askable.current || pushAsked() || nudge.installNudgeBusy()) {
+          pending.current = false;
+          return;
+        }
+      } catch {
+        // Its code didn't load (a deploy swapped it, or offline): skip this
+        // moment, and let a later one ask (review on PR 660).
         pending.current = false;
         return;
       }

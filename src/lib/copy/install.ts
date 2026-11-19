@@ -5,7 +5,9 @@ export const INSTALL_COPY = {
   lead: {
     booking: (name: string | null) =>
       name ? `Get a reminder before ${name}’s session.` : 'Get a reminder before your session.',
-    message: (name: string | null) => `Know the moment ${name ?? 'your mentor'} replies.`,
+    // Either role sends a first message, so no "your mentor" when the name is unknown.
+    message: (name: string | null) =>
+      name ? `Know the moment ${name} replies.` : 'Know the moment they reply.',
     onboarding: 'Your matches, messages and session reminders, one tap from your home screen.',
     /** A mentor's onboarding (no matches) and the More menu. */
     general: 'Your messages and session reminders, one tap from your home screen.',

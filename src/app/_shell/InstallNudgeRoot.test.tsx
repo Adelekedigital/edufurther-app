@@ -189,7 +189,7 @@ describe('leadFor: the line by what happened', () => {
     );
     expect(leadFor({ ...n, trigger: 'booking' })).toBe('Get a reminder before your session.');
     expect(leadFor({ ...n, trigger: 'message', name: 'Ada' })).toBe('Know the moment Ada replies.');
-    expect(leadFor({ ...n, trigger: 'message' })).toBe('Know the moment your mentor replies.');
+    expect(leadFor({ ...n, trigger: 'message' })).toBe('Know the moment they reply.');
   });
   it('a mentor’s onboarding and the menu: no matches mentioned', async () => {
     expect(leadFor({ ...n, trigger: 'onboarding', mentor: true })).toBe(
