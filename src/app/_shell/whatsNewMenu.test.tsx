@@ -5,7 +5,7 @@ import type { Access } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
 
 // The "What's new" item in the account menu (desktop) and More sheet (phones),
-// offered for the release's 30 days (owner, 2026-11-20).
+// offered until the release's replay window ends (23 Dec) (owner, 2026-11-20).
 const flag = vi.hoisted(() => ({ on: true }));
 vi.mock('@/lib/config/whatsNew', () => ({
   get WHATS_NEW_LIVE() {
@@ -91,7 +91,7 @@ describe('the What’s new menu item', () => {
     }
   });
 
-  it('gone after the 30 days', async () => {
+  it('gone once the replay window ends (23 Dec)', async () => {
     shell(AFTER);
     await userEvent.click(tabs().getByRole('button', { name: 'More' }));
     expect(screen.queryByRole('link', { name: 'What’s new' })).toBeNull();

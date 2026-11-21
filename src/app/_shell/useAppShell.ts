@@ -114,7 +114,7 @@ export function accountItems(
               },
         ]
       : []),
-    // The tour's replay, for 30 days from its release (owner, 2026-11-20).
+    // The tour's replay, inside its release's replay window (owner, 2026-11-20).
     ...(whatsNew && !inAdmin && !(access && inSetup(access))
       ? [
           {

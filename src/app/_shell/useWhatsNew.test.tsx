@@ -120,7 +120,7 @@ describe('useWhatsNew: when it opens', () => {
   });
 
   it('not before the release day; after the replay window it still opens, without the replay line', async () => {
-    vi.setSystemTime(Date.parse('2026-11-22T23:00:00Z'));
+    vi.setSystemTime(Date.parse('2026-11-20T23:00:00Z'));
     const early = host();
     expect(early.result.current.holding).toBe(false);
     early.unmount();
@@ -209,8 +209,8 @@ describe('tourReplay', () => {
     expect(tourReplay(member({ isMentor: true }), false, DAY2)).toBe('/dashboard?tour=replay');
   });
 
-  it('not before the release day or after its 30 days', () => {
-    expect(tourReplay(member(), false, Date.parse('2026-11-22T23:59:59Z'))).toBeUndefined();
+  it('not before the release day or after its replay window (to 23 Dec)', () => {
+    expect(tourReplay(member(), false, Date.parse('2026-11-20T23:59:59Z'))).toBeUndefined();
     expect(tourReplay(member(), false, Date.parse('2026-12-23T00:00:00Z'))).toBeUndefined();
   });
 
