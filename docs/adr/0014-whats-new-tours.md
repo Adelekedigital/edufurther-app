@@ -58,6 +58,11 @@ Option 3, with the content in one typed file.
   welcome whether seen or not (replay never un-sees). Offered per release from `liveFrom` for
   `replayDays` (default 30), same audience rules. Per-user windows (30 days from when each
   person saw it) would need `seen_at` from the backend; deliberately not done.
+- **Get the app**: a step marked `install` shows only where the device can install the app
+  (`installPlatform`, so never in the installed app or on desktop today), points at the phone's
+  More tab, and its Install app button opens the install nudge's own sheet (trigger `tour`).
+  The tour and the automatic nudge still never share a visit; the nudge's dismissals stay
+  per device in browser storage, never in `seen_items`.
 - **Done card**: an optional `doneAction` (label, href) per role leads on (mentors: "Check my
   hours" to Calendar) beside "Got it"; `tour_completed` says which (`cta` or `dismiss`).
 - **Seen**: on Not now, Skip, Escape and Finish. Optimistic: this visit's list and the cached

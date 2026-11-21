@@ -1,5 +1,7 @@
 import { WHATS_NEW_LIVE } from '@/lib/config/whatsNew';
+import type { InstallPlatform } from '@/lib/analytics/events';
 import {
+  TOUR_COPY,
   TOUR_RELEASES,
   type TourRelease,
   type TourRole,
@@ -140,26 +142,39 @@ export function tourMayStart(m: TourMoment): boolean {
  */
 export type TargetPlace = 'shown' | 'more' | null;
 
-export type ResolvedStep = TourStep & { place: Exclude<TargetPlace, null>; body: string };
+/** `center`: an install step with nothing to point at (desktop): the card sits centred. */
+export type ResolvedStep = TourStep & {
+  place: Exclude<TargetPlace, null> | 'center';
+  body: string;
+};
 
 /**
  * The steps this viewer can follow, in order. A missing optional step is
  * dropped (the count then reads "of N" without it); a missing required step
  * holds the whole tour back (null). Phones read `phoneBody` when there is one.
+ * An install step shows only where the app can be installed (`install`, from
+ * lib/pwa/installPrompt's installPlatform); on iPhone it adds Safari's steps.
  */
 export function tourSteps(
   content: TourRoleContent,
   placeOf: (t: TourTarget) => TargetPlace,
   phone: boolean,
+  install: InstallPlatform | null = null,
 ): ResolvedStep[] | null {
   const out: ResolvedStep[] = [];
   for (const s of content.steps) {
-    const place = placeOf(s.target);
+    if (s.install && !install) continue;
+    const place = placeOf(s.target) ?? (s.install ? 'center' : null);
     if (!place) {
       if (s.required) return null;
       continue;
     }
-    out.push({ ...s, place, body: phone && s.phoneBody ? s.phoneBody : s.body });
+    const body = phone && s.phoneBody ? s.phoneBody : s.body;
+    out.push({
+      ...s,
+      place,
+      body: s.install && install === 'ios' ? `${body} ${TOUR_COPY.iosInstallHint}` : body,
+    });
   }
   return out;
 }

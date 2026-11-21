@@ -140,6 +140,35 @@ describe('tourSteps', () => {
     expect(steps[1]!.body).toMatch(/Find it under More, then Sessions\.$/);
   });
 
+  it('Get the app comes last, only where the app can be installed', () => {
+    expect(tourSteps(mentor, all, true)!.map((s) => s.target)).toEqual([
+      'nav-calendar',
+      'nav-sessions',
+      'nav-bookings',
+    ]);
+    const android = tourSteps(mentor, all, true, 'android')!;
+    expect(android.map((s) => s.target)).toEqual([
+      'nav-calendar',
+      'nav-sessions',
+      'nav-bookings',
+      'nav-more',
+    ]);
+    expect(android[3]).toMatchObject({ install: true, title: 'Get the EduFurther app' });
+    expect(android[3]!.body).not.toContain('Safari');
+  });
+
+  it('on iPhone the step adds Safari’s Add to Home Screen steps', () => {
+    const ios = tourSteps(mentee, all, true, 'ios')!.at(-1)!;
+    expect(ios.body).toBe(
+      'Add EduFurther to your home screen for one-tap access and notifications about your sessions. Tap Share in Safari’s toolbar, then choose Add to Home Screen.',
+    );
+  });
+
+  it('with no More tab to point at, the install step is centred', () => {
+    const steps = tourSteps(mentee, (t) => (t === 'nav-more' ? null : 'shown'), false, 'android')!;
+    expect(steps.at(-1)).toMatchObject({ target: 'nav-more', place: 'center' });
+  });
+
   it('on desktop the same step names Sessions only', () => {
     expect(tourSteps(mentor, all, false)![1]!.body).toMatch(/Find it under Sessions\.$/);
   });

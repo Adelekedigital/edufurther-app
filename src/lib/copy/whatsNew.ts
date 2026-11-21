@@ -1,5 +1,8 @@
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import type { TourRole } from '@/lib/analytics/events';
+import { INSTALL_COPY } from './install';
+
+const S = INSTALL_COPY.steps;
 
 export type { TourRole };
 
@@ -23,6 +26,7 @@ export type TourTarget =
   | 'nav-sessions'
   | 'nav-messages'
   | 'nav-settings'
+  | 'nav-more'
   | 'credits-pill';
 
 /** The badge's tone: blue Improved, green New, orange Changed / Check this. */
@@ -40,6 +44,12 @@ export type TourStep = {
    * default): the step is dropped and the count reads "of N" without it.
    */
   required?: boolean;
+  /**
+   * "Get the app": shown only where this device can install the app (not
+   * already installed); its buttons are Install app and Finish. With no target
+   * on screen (desktop), the card is centred.
+   */
+  install?: boolean;
 };
 
 export type TourRoleContent = {
@@ -96,9 +106,21 @@ export const TOUR_COPY = {
   replay: 'Replay tour',
   /** The account menu and More sheet item. */
   menuItem: 'What’s new',
+  installApp: 'Install app',
+  /** iPhone Safari has no prompt: the install sheet's steps, in one line. */
+  iosInstallHint: `${S.shareBefore} ${S.share} ${S.shareAfter}, then ${S.choose.toLowerCase()} ${S.addToHome}.`,
 } as const;
 
 const DONE_TITLE = 'You’re all set';
+
+/** The last step for every role, where the device can install the app. */
+const GET_THE_APP: TourStep = {
+  target: 'nav-more',
+  install: true,
+  badge: { label: 'New', tone: 'green' },
+  title: 'Get the EduFurther app',
+  body: 'Add EduFurther to your home screen for one-tap access and notifications about your sessions.',
+};
 
 /** Accounts carried over from the old app (`/me.is_migrated`), launch 23 Nov 2026. */
 export const MIGRATION_2026_11: TourRelease = {
@@ -114,8 +136,8 @@ export const MIGRATION_2026_11: TourRelease = {
         rows: [
           {
             icon: 'join',
-            title: 'Mentors matched to your plans',
-            meta: 'Home shows who fits your goals best, and why.',
+            title: 'Matches and progress on Home',
+            meta: 'Mentors who fit your plans, and your session stats.',
           },
           {
             icon: 'video_chat',
@@ -133,8 +155,8 @@ export const MIGRATION_2026_11: TourRelease = {
         {
           target: 'nav-home',
           badge: { label: 'Improved', tone: 'blue' },
-          title: 'Mentors matched to your plans',
-          body: 'Home shows the mentors who fit your study plans best, and why each one fits. Change your answers anytime to refresh them.',
+          title: 'Your matches and your progress',
+          body: 'Home shows the mentors who fit your study plans best, and why. Your stats, like sessions held and hours of guidance, are here too, so you can track your progress.',
         },
         {
           target: 'nav-bookings',
@@ -148,6 +170,7 @@ export const MIGRATION_2026_11: TourRelease = {
           title: '3 free sessions every month',
           body: 'Your credits refill each month. Tap here to see what’s left and how credits work.',
         },
+        GET_THE_APP,
       ],
       done: {
         title: DONE_TITLE,
@@ -196,6 +219,7 @@ export const MIGRATION_2026_11: TourRelease = {
           title: 'No more manual meeting links',
           body: 'Every booking gets its own video link, created automatically. Join from Bookings.',
         },
+        GET_THE_APP,
       ],
       done: {
         title: DONE_TITLE,
@@ -218,5 +242,6 @@ export const TARGET_LABELS: Record<TourTarget, string> = {
   'nav-sessions': 'Sessions',
   'nav-messages': 'Messages',
   'nav-settings': 'Settings',
+  'nav-more': 'More',
   'credits-pill': 'Your credits',
 };

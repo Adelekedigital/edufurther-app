@@ -31,8 +31,8 @@ export type Role = Schemas['PrimaryRole'];
 export type ShareKind = 'mentor_profile' | 'invite';
 /** How it left: the link copied (with its message), or the device's share sheet. */
 export type ShareMethod = 'copy' | 'native';
-/** What opened the install nudge: one of its three moments, or the More menu. */
-export type InstallTrigger = 'booking' | 'message' | 'onboarding' | 'menu';
+/** What opened the install nudge: one of its three moments, the More menu, or the What's new tour's step. */
+export type InstallTrigger = 'booking' | 'message' | 'onboarding' | 'menu' | 'tour';
 /** How this device installs: the browser's prompt, or Safari's Share steps. */
 export type InstallPlatform = 'android' | 'ios';
 /** Whose version of a "What's new" tour. */
