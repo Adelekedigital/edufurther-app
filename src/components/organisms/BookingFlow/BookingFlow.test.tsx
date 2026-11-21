@@ -403,7 +403,7 @@ describe('BookingFlow on real slots', () => {
         {...props({ slots: remote(['2026-09-29T02:00:00Z']), deviceZone: 'America/New_York' })}
       />,
     );
-    expect(screen.getByText('Mon, Sep 28 · 1 time')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Mon, Sep 28' })).toBeChecked();
     expect(screen.getByRole('radio', { name: '10:00 pm' })).toBeInTheDocument();
   });
 
@@ -456,7 +456,7 @@ describe('BookingFlow on real slots', () => {
     expect(onSessionTypeChange).toHaveBeenCalledWith('st2');
   });
 
-  it('switching type starts it over: this week, no time chosen', async () => {
+  it('switching type starts it over: the first open day, no time chosen', async () => {
     const user = userEvent.setup();
     function Page() {
       const [typeId, setTypeId] = useState('st2');
@@ -471,11 +471,11 @@ describe('BookingFlow on real slots', () => {
       );
     }
     render(<Page />);
-    await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    await user.click(screen.getByRole('radio', { name: '9:00 am' })); // Tue, Oct 6
+    await user.click(screen.getByRole('radio', { name: 'Tue, Oct 6' }));
+    await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     expect(screen.getByRole('button', { name: /^Request Tue, Oct 6/ })).toBeEnabled();
     await pickOption(user, screen.getByRole('combobox', { name: 'Session type' }), 'st1');
-    expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Mon, Sep 28' })).toBeChecked();
     expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
   });
 

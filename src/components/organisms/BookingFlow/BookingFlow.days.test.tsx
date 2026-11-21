@@ -17,16 +17,16 @@ import { pickOption } from '@/test-utils/select';
 
 pinToday();
 
-describe('BookingFlow week view (7 days at a time)', () => {
+describe('BookingFlow day row (open days only, owner 2026-11-21)', () => {
   beforeEach(() => setPhone(false));
 
-  it('says no open times when none of the four weeks has any, even if the fetch had some beyond', () => {
+  it('says no open times when the window has none, even if the fetch had some beyond', () => {
     // Today is Sep 27; Oct 25 is today+28, fetched as margin but never shown.
     render(<BookingFlow {...props({ slots: remote(['2026-10-25T12:00:00Z']) })} />);
     expect(screen.getByText('No open times at the moment')).toBeInTheDocument();
   });
 
-  it('clears the chosen time when the week changes', async () => {
+  it('clears the chosen time when another day is picked', async () => {
     const user = userEvent.setup();
     render(
       <BookingFlow
@@ -35,19 +35,20 @@ describe('BookingFlow week view (7 days at a time)', () => {
     );
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     expect(screen.getByRole('button', { name: /^Request Mon, Sep 28/ })).toBeEnabled();
-    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    await user.click(screen.getByRole('radio', { name: 'Tue, Oct 6' }));
     expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
   });
 
-  it('moves the week on at midnight while the modal is open', () => {
+  it('drops a day that has passed at midnight while the modal is open', () => {
     vi.useFakeTimers({ toFake: ['Date', 'setInterval', 'clearInterval'] });
     try {
       vi.setSystemTime(new Date('2026-09-27T23:59:30Z'));
-      render(<BookingFlow {...props()} />);
-      expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+      render(<BookingFlow {...props({ slots: remote(['2026-09-27T10:00:00Z', ...slots]) })} />);
+      expect(screen.getByRole('radio', { name: 'Sun, Sep 27' })).toBeChecked();
       vi.setSystemTime(new Date('2026-09-28T00:00:30Z'));
       act(() => vi.advanceTimersByTime(60 * 1000));
-      expect(screen.getByText('Next 7 days · Sep 28 – Oct 4')).toBeInTheDocument();
+      expect(screen.queryByRole('radio', { name: 'Sun, Sep 27' })).toBeNull();
+      expect(screen.getByRole('radio', { name: 'Mon, Sep 28' })).toBeChecked();
     } finally {
       // Back to the file's pinned clock, pass or fail, so later tests see Sep 27.
       vi.useFakeTimers({ toFake: ['Date'] });
@@ -55,15 +56,22 @@ describe('BookingFlow week view (7 days at a time)', () => {
     }
   });
 
-  it('always opens on the next 7 days from today, empty days disabled', () => {
-    render(<BookingFlow {...props()} />);
-    expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Sun, Sep 27, no open times/ })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: /Mon, Sep 28, 1 time/ })).toBeChecked();
-    expect(screen.getByRole('button', { name: 'Earlier dates' })).toBeDisabled();
+  it('shows only the days with times, soonest first, the first one chosen', () => {
+    render(<BookingFlow {...props({ slots: remote([...slots, '2026-10-20T09:00:00Z']) })} />);
+    const days = screen.getAllByRole('radio', { name: /^\w{3}, \w{3} \d+$/ });
+    expect(days.map((d) => d.getAttribute('aria-label'))).toEqual([
+      'Mon, Sep 28',
+      'Tue, Sep 29',
+      'Tue, Oct 20',
+    ]);
+    expect(days[0]).toBeChecked();
+    // No empty days and no week pages.
+    expect(screen.queryByRole('radio', { name: /Sun, Sep 27/ })).toBeNull();
+    expect(screen.queryByText(/Next 7 days/)).toBeNull();
+    expect(screen.getByText('Pick a day')).toBeInTheDocument();
   });
 
-  it('opens on a given time: its week, its day, the time picked', () => {
+  it('opens on a given time: its day chosen, the time picked', () => {
     render(
       <BookingFlow
         {...props({
@@ -74,8 +82,7 @@ describe('BookingFlow week view (7 days at a time)', () => {
         })}
       />,
     );
-    expect(screen.getByText('Oct 4 – Oct 10')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Tue, Oct 6, 1 time/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Tue, Oct 6' })).toBeChecked();
     expect(screen.getByRole('radio', { name: '9:00 am' })).toBeChecked();
     expect(screen.getByRole('button', { name: /^Request Tue, Oct 6/ })).toBeEnabled();
   });
@@ -102,9 +109,9 @@ describe('BookingFlow week view (7 days at a time)', () => {
       />,
     );
     expect(screen.getByRole('radio', { name: '9:00 am' })).toBeChecked();
-    expect(screen.getByText('Oct 4 – Oct 10')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Tue, Oct 6' })).toBeChecked();
     // A refetch after the viewer moved on doesn't pull them back.
-    await user.click(screen.getByRole('button', { name: 'Earlier dates' }));
+    await user.click(screen.getByRole('radio', { name: 'Mon, Sep 28' }));
     rerender(
       <BookingFlow
         {...props({
@@ -114,7 +121,7 @@ describe('BookingFlow week view (7 days at a time)', () => {
         })}
       />,
     );
-    expect(screen.getByText('Next 7 days · Sep 27 – Oct 3')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Mon, Sep 28' })).toBeChecked();
   });
 
   it('finds the time on another offering, and says so when no offering has it', () => {
@@ -205,49 +212,17 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.getByRole('combobox')).toHaveValue('st2');
     await pickOption(user, screen.getByRole('combobox'), 'st1');
     expect(screen.getByRole('combobox')).toHaveValue('st1');
-    expect(screen.getByRole('radio', { name: /Mon, Sep 28, 1 time/ })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Mon, Sep 28' })).toBeInTheDocument();
     expect(screen.queryByText(/just taken/)).not.toBeInTheDocument();
   });
 
-  it('an empty week offers the next week with times, or points back', async () => {
-    const user = userEvent.setup();
-    const { unmount } = render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', slots: remote(['2026-10-13T09:00:00Z']) })} />,
-    );
-    expect(screen.getByText('No open times this week')).toBeInTheDocument();
-    expect(screen.getByText('Try later dates.')).toBeInTheDocument();
-    // Oct 13 is in the third week (Oct 11 – Oct 17), past an empty second week.
-    await user.click(screen.getByRole('button', { name: 'Show Oct 11 – Oct 17' }));
-    expect(screen.getByText('Oct 11 – Oct 17')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Tue, Oct 13, 1 time/ })).toBeChecked();
-    unmount();
-    // Nothing later in the four weeks, but this week had times: no link, and
-    // it points back rather than saying "Check back soon" (review of #26).
-    render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', slots: remote(['2026-09-27T20:00:00Z']) })} />,
-    );
-    await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    expect(screen.getByText('Try earlier dates.')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /^Show / })).not.toBeInTheDocument();
-  });
-
-  it('the week link keeps focus in the modal, on the new week’s chosen day', async () => {
-    const user = userEvent.setup();
+  it('a first time weeks away is the first day shown: no empty week to page past', () => {
     render(
       <BookingFlow {...props({ sessionTypeId: 'st2', slots: remote(['2026-10-13T09:00:00Z']) })} />,
     );
-    await user.click(screen.getByRole('button', { name: 'Show Oct 11 – Oct 17' }));
-    expect(screen.getByRole('radio', { name: /Tue, Oct 13, 1 time/ })).toHaveFocus();
-  });
-
-  it('an empty week after the open ones says to try earlier dates', async () => {
-    const user = userEvent.setup();
-    render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', slots: remote(['2026-09-28T09:00:00Z']) })} />,
-    );
-    await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    expect(screen.getByText('Try earlier dates.')).toBeInTheDocument();
-    expect(screen.queryByText('Check back soon.')).not.toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Tue, Oct 13' })).toBeChecked();
+    expect(screen.queryByText(/No open times this week/)).toBeNull();
+    expect(screen.getByRole('radio', { name: '9:00 am' })).toBeInTheDocument();
   });
 
   it('shows the first-mentees reasons on the first step only, when given', async () => {
@@ -272,73 +247,27 @@ describe('BookingFlow week view (7 days at a time)', () => {
     expect(screen.queryByText(/first mentees/)).not.toBeInTheDocument();
   });
 
-  it('opens on this week even when the first time is later, and ‹ › reach it', async () => {
-    const user = userEvent.setup();
-    render(<BookingFlow {...props({ slots: remote(['2026-10-06T09:00:00Z']) })} />);
-    expect(screen.getByText(/No open times this week/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    expect(screen.getByText('Oct 4 – Oct 10')).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: /Tue, Oct 6, 1 time/ })).toBeChecked();
-    await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
-  });
-
-  it('pages only as far as the session type can be booked: one week for 7 days, eight for 56', async () => {
-    const user = userEvent.setup();
+  it('offers only days inside the session type’s window: 7 days, or 56', () => {
     const typed = (windowDays: number) => remote(sessionTypes.map((t) => ({ ...t, windowDays })));
-    const { unmount } = render(
-      <BookingFlow
-        {...props({
-          sessionTypes: typed(7),
-          slots: remote(['2026-10-01T09:00:00Z', '2026-10-06T09:00:00Z']),
-        })}
-      />,
-    );
-    // Oct 6 is past a 7-day window: never offered, and there's no later page.
-    expect(screen.getByRole('radio', { name: /Oct 1, 1 time/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
-    expect(screen.queryByRole('radio', { name: /Oct 6/ })).toBeNull();
+    const two = remote(['2026-10-01T09:00:00Z', '2026-11-15T09:00:00Z']);
+    const { unmount } = render(<BookingFlow {...props({ sessionTypes: typed(7), slots: two })} />);
+    expect(screen.getByRole('radio', { name: 'Thu, Oct 1' })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /Nov 15/ })).toBeNull();
     unmount();
-    render(<BookingFlow {...props({ sessionTypes: typed(56) })} />);
-    for (let i = 0; i < 7; i++)
-      await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
+    render(<BookingFlow {...props({ sessionTypes: typed(56), slots: two })} />);
+    expect(screen.getByRole('radio', { name: 'Sun, Nov 15' })).toBeInTheDocument();
   });
 
-  it('a window that isn’t whole weeks: the last page stops at its end, labelled to it', async () => {
-    const user = userEvent.setup();
-    render(
-      <BookingFlow
-        {...props({ sessionTypes: remote(sessionTypes.map((t) => ({ ...t, windowDays: 10 }))) })}
-      />,
-    );
-    await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    // Sep 27 + 10 days: Oct 4, 5 and 6, and nothing past the window.
-    expect(screen.getByText('Oct 4 – Oct 6')).toBeInTheDocument();
-    expect(screen.getAllByRole('radio', { name: /^\w{3}, Oct \d/ })).toHaveLength(3);
-    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
-  });
-
-  it('a window that shrinks while a later page is open shows the last page it still has', async () => {
-    const user = userEvent.setup();
+  it('a window that shrinks drops the days past its new end', () => {
     const typed = (windowDays: number) => remote(sessionTypes.map((t) => ({ ...t, windowDays })));
-    const { rerender } = render(<BookingFlow {...props({ sessionTypes: typed(56) })} />);
-    for (let i = 0; i < 3; i++)
-      await user.click(screen.getByRole('button', { name: 'Later dates' }));
-    // The types refresh with a 14-day window: page 4 no longer exists.
-    rerender(<BookingFlow {...props({ sessionTypes: typed(14) })} />);
-    expect(screen.getByText('Oct 4 – Oct 10')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
-  });
-
-  it('a window under a week says how many days its page has', () => {
-    render(
-      <BookingFlow
-        {...props({ sessionTypes: remote(sessionTypes.map((t) => ({ ...t, windowDays: 5 }))) })}
-      />,
+    const later = remote([...slots, '2026-10-20T09:00:00Z']);
+    const { rerender } = render(
+      <BookingFlow {...props({ sessionTypes: typed(56), slots: later })} />,
     );
-    expect(screen.getByText('Next 5 days · Sep 27 – Oct 1')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Tue, Oct 20' })).toBeInTheDocument();
+    rerender(<BookingFlow {...props({ sessionTypes: typed(14), slots: later })} />);
+    expect(screen.queryByRole('radio', { name: 'Tue, Oct 20' })).toBeNull();
+    expect(screen.getByRole('radio', { name: 'Mon, Sep 28' })).toBeChecked();
   });
 
   it('opens on the questions with the remembered time (a guest back from onboarding)', () => {
