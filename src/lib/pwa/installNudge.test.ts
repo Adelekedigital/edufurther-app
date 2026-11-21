@@ -130,7 +130,7 @@ describe('how often it shows by itself', () => {
 });
 
 describe('the buttons and what they count', () => {
-  it('Android "Add to home screen": the browser’s prompt, accepted', async () => {
+  it('Android "Install the app": the browser’s prompt, accepted', async () => {
     const e = offerPrompt('accepted');
     noteInstallMoment({ trigger: 'message', name: 'Ada' });
     showPending();

@@ -7,8 +7,11 @@ import {
   at,
   cancel,
   h,
+  MEMBER,
+  MENTEE,
   remote,
   replace,
+  replaceQuery,
   sessionRoom,
   setSearch,
   slotZones,
@@ -28,6 +31,9 @@ vi.mock('@/lib/config/auth', async (orig) =>
   (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
 );
 vi.mock('next/navigation', async () => (await import('./sessionJoin.harness')).mocks.navigation());
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./sessionJoin.harness')).mocks.replaceQuery(),
+);
 vi.mock('@/lib/api/data/viewer', async () =>
   (await import('./sessionJoin.harness')).mocks.viewer(),
 );
@@ -316,6 +322,7 @@ describe('the window is open', () => {
     await userEvent.click(join);
     expect(open).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     // PRD 30: once per press, minutes before the start (4 early is +4).
     expect(track.mock.calls).toEqual([
       ['session_join_clicked', { session_id: 'b1', minutes_from_start: 4 }],
@@ -350,7 +357,7 @@ describe('back from the entry route (?enter=)', () => {
     expect(
       screen.getAllByRole('status').filter((el) => el.textContent?.includes(text)),
     ).toHaveLength(1);
-    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
     expect(track.mock.calls).toEqual([['session_join_failed', { session_id: 'b1' }]]);
   });
 
@@ -363,7 +370,7 @@ describe('back from the entry route (?enter=)', () => {
     expect(
       screen.queryByText('This session isn’t open to join right now.'),
     ).not.toBeInTheDocument();
-    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
   });
 
   it('closed, on an older row with no window: the plain refusal', () => {
@@ -390,16 +397,17 @@ describe('back from the entry route (?enter=)', () => {
     h.search = new URLSearchParams('enter=failed');
     const view = renderAt('16:56:00');
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     h.room = remote(sessionRoom());
     view.rerender(<SessionJoinScreen id="b1" />);
     expect(visible('We couldn’t join you. Try again in a moment.')).toBeVisible();
-    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
   });
 
   it('keeps other parameters, and drops an unknown value without a word', () => {
     h.search = new URLSearchParams('enter=whatever&x=1');
     renderAt('16:56:00');
-    expect(replace).toHaveBeenCalledWith('/sessions/b1?x=1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1?x=1');
     expect(screen.queryByText(/Try again in a moment/)).not.toBeInTheDocument();
     expect(track).not.toHaveBeenCalled();
   });
@@ -407,6 +415,7 @@ describe('back from the entry route (?enter=)', () => {
   it('nothing to say, and nothing replaced, without the parameter', () => {
     renderAt('16:56:00');
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 
   it('the line stays after the parameter goes, and is said only once', () => {
@@ -416,7 +425,7 @@ describe('back from the entry route (?enter=)', () => {
     expect(said).toHaveTextContent('We couldn’t join you. Try again in a moment.');
     // The strip re-rendered the page without the parameter.
     expect(h.search.get('enter')).toBeNull();
-    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replaceQuery).toHaveBeenCalledTimes(1);
     expect(visible('We couldn’t join you. Try again in a moment.')).toBeVisible();
     // The same node: the region was not handed the words a second time.
     expect(srStatus().firstElementChild).toBe(said);
@@ -469,7 +478,7 @@ describe('back from the entry route (?enter=)', () => {
     h.room = remote<SessionRoom>(null, { error: { status: 500 } as AppError });
     h.search = new URLSearchParams('enter=failed');
     renderAt('16:56:00');
-    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
     expect(screen.getByText('We couldn’t load this session')).toBeVisible();
     expect(screen.queryByText(/couldn’t join you/)).not.toBeInTheDocument();
   });
@@ -480,6 +489,7 @@ describe('back from the entry route (?enter=)', () => {
     renderAt('15:15:00');
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith('/bookings?booking=b1');
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 });
 
@@ -536,6 +546,7 @@ describe('during the call', () => {
     h.room = remote(sessionRoom({ status: 'completed' }, { joinedAt: '2026-10-04T17:01:00Z' }));
     renderAt('17:20:00');
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     expect(screen.getByRole('link', { name: 'Rejoin call (opens in a new tab)' })).toBeVisible();
   });
 
@@ -672,5 +683,94 @@ describe('on a phone, EduFurther video says to keep the call on screen', () => {
     renderAt('16:56:00');
     expect(screen.queryByText(tip)).not.toBeInTheDocument();
     expect(screen.getByText('Opens Google Meet in a new tab.')).toBeVisible();
+  });
+});
+
+describe('Google Meet names the Google account to join with (owner, 21 Nov 2026)', () => {
+  const IPHONE_17 =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+  const realUa = navigator.userAgent;
+  afterEach(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: realUa, configurable: true });
+    Object.defineProperty(navigator, 'standalone', { value: false, configurable: true });
+  });
+  const EMAIL = 'gbenga.ogundipe@example.com';
+  const hint = `Join with the Google account ${EMAIL}.`;
+  const meet = (side: 'mentor' | 'mentee' = 'mentor') => {
+    h.room = remote(sessionRoom({ side }, {}, 'google_meet'));
+  };
+
+  it('a mentor sees the email under Join, in place of the new-tab hint', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    meet();
+    renderAt('16:56:00');
+    expect(screen.getByText(hint)).toBeVisible();
+    expect(screen.queryByText('Opens Google Meet in a new tab.')).not.toBeInTheDocument();
+    // The link still says it opens a new tab.
+    expect(
+      screen.getByRole('link', { name: 'Join on Google Meet (opens in a new tab)' }),
+    ).toBeVisible();
+  });
+
+  it('a mentee sees their own email', () => {
+    h.viewer = { ...MENTEE, email: 'amara@example.com' };
+    meet('mentee');
+    renderAt('16:56:00');
+    expect(
+      screen.getByText('Join with the Google account amara@example.com.'),
+    ).toBeVisible();
+  });
+
+  it('under Rejoin too', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    h.room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:00:10Z' }, 'google_meet'));
+    renderAt('17:05:00');
+    expect(screen.getByRole('link', { name: /Rejoin call/ })).toBeVisible();
+    expect(screen.getByText(hint)).toBeVisible();
+  });
+
+  it('the installed iPhone app says Safari and the email in one sentence', () => {
+    Object.defineProperty(navigator, 'userAgent', { value: IPHONE_17, configurable: true });
+    Object.defineProperty(navigator, 'standalone', { value: true, configurable: true });
+    h.phone = true;
+    h.viewer = { ...MENTEE, email: EMAIL };
+    meet('mentee');
+    renderAt('16:56:00');
+    expect(
+      screen.getByText(
+        `Opens in Safari. Join with the Google account ${EMAIL}.`,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText('Opens Google Meet in Safari, where you’re signed in.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('no email known: the old hint', () => {
+    h.viewer = { ...MEMBER, email: '' };
+    meet();
+    renderAt('16:56:00');
+    expect(screen.getByText('Opens Google Meet in a new tab.')).toBeVisible();
+    expect(screen.queryByText(/Google account/)).not.toBeInTheDocument();
+  });
+
+  it('EduFurther video keeps its hints, with or without an email', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    const { unmount } = renderAt('16:56:00');
+    expect(screen.getByText('Opens in your browser. No download needed.')).toBeVisible();
+    expect(screen.queryByText(/Google account/)).not.toBeInTheDocument();
+    unmount();
+    h.phone = true;
+    renderAt('16:56:00');
+    expect(
+      screen.getByText('Keep the call on screen, or your phone pauses your camera and mic.'),
+    ).toBeVisible();
+  });
+
+  it('no email before Join opens: the locked hint stays', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    meet();
+    renderAt('16:00:00');
+    expect(screen.queryByText(/Google account/)).not.toBeInTheDocument();
   });
 });

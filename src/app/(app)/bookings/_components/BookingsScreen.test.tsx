@@ -15,7 +15,7 @@ import {
   party,
   push,
   remote,
-  replace,
+  replaceQuery,
   resetHarness,
 } from './bookingsScreen.harness';
 import {
@@ -32,6 +32,9 @@ import {
 // that is not initialised yet — the shape profileScreen.harness uses.
 vi.mock('next/navigation', async () =>
   (await import('./bookingsScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./bookingsScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./bookingsScreen.harness')).mocks.appShell(),
@@ -120,7 +123,7 @@ describe('the shell', () => {
   it('switching tab puts it in the URL, and Upcoming leaves it out', async () => {
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('tab', { name: /Pending/ }));
-    expect(replace).toHaveBeenCalledWith('/bookings?tab=pending', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings?tab=pending');
   });
 });
 
@@ -345,7 +348,7 @@ describe('History', () => {
     h.filter = 'missed';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'Missed' }));
-    expect(replace).toHaveBeenLastCalledWith('/bookings?tab=history', { scroll: false });
+    expect(replaceQuery).toHaveBeenLastCalledWith('/bookings?tab=history');
   });
 
   it('an unknown ?filter= is ignored', () => {
@@ -473,7 +476,7 @@ describe('the details panel', () => {
   it('opening it puts the booking in the URL', async () => {
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('button', { name: /^Details for .*Visa practice/ }));
-    expect(replace).toHaveBeenCalledWith('/bookings?booking=b', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings?booking=b');
   });
 
   it('a ?booking= link opens it, with the row marked', () => {
@@ -486,7 +489,7 @@ describe('the details panel', () => {
     h.selectedBooking = 'b';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('button', { name: 'Close details' }));
-    expect(replace).toHaveBeenCalledWith('/bookings', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings');
   });
 
   it('a booking already in the list is not fetched again', () => {
@@ -537,7 +540,7 @@ describe('the review round on the panel', () => {
     render(<BookingsScreen />);
     const hero = screen.getByRole('region', { name: 'Next session' });
     await userEvent.click(within(hero).getByRole('button', { name: /^Details for / }));
-    expect(replace).toHaveBeenCalledWith('/bookings?booking=a', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings?booking=a');
   });
 
   it('pressing it again closes the panel, and says so while open', async () => {
@@ -549,14 +552,14 @@ describe('the review round on the panel', () => {
     const open = screen.getByRole('button', { name: /^Details for .*Visa practice/ });
     expect(open).toHaveAttribute('aria-expanded', 'true');
     await userEvent.click(open);
-    expect(replace).toHaveBeenCalledWith('/bookings', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings');
   });
 
   it('switching tab closes the panel: its row is no longer on screen', async () => {
     h.selectedBooking = 'b';
     render(<BookingsScreen />);
     await userEvent.click(screen.getByRole('tab', { name: /History/ }));
-    expect(replace).toHaveBeenCalledWith('/bookings?tab=history', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings?tab=history');
   });
 
   it('the aside takes focus when it opens, so the action is not silent', async () => {
@@ -690,7 +693,7 @@ describe('the answers preview on the rows', () => {
     await userEvent.click(
       screen.getByRole('button', { name: /See all 4 answers for Visa practice/ }),
     );
-    expect(replace).toHaveBeenCalledWith('/bookings?booking=b', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings?booking=b');
     // Expanded on arrival, rather than opening collapsed and then jumping.
     expect(screen.getByRole('button', { name: 'Show less' })).toBeVisible();
     expect(screen.getByText('A4.')).toBeVisible();
@@ -802,7 +805,7 @@ describe('the desktop panel is not a keyboard dead end', () => {
     const panel = screen.getByRole('complementary', { name: 'Booking details' });
     expect(panel).toBeVisible();
     await userEvent.keyboard('{Escape}');
-    expect(replace).toHaveBeenCalledWith('/bookings', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings');
   });
 
   it('Escape elsewhere on the page is left alone', async () => {
@@ -812,7 +815,7 @@ describe('the desktop panel is not a keyboard dead end', () => {
     // swallow Escape from a menu or dialog that is not inside it.
     screen.getByRole('tab', { name: /Upcoming/ }).focus();
     await userEvent.keyboard('{Escape}');
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 });
 

@@ -5,7 +5,7 @@ import type { MyReview } from '@/types/mentor';
 import {
   h,
   remote,
-  replace,
+  replaceQuery,
   reviewableArgs,
   reviewsArgs,
   reviewsState,
@@ -18,6 +18,9 @@ import { MentorProfileScreen } from './MentorProfileScreen';
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
   (await import('./profileScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./profileScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./profileScreen.harness')).mocks.appShell(),
@@ -61,7 +64,7 @@ describe('MentorProfileScreen — Reviews tab', () => {
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('tab', { name: 'Reviews (7)' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /4\.9\s*\(7 reviews\)/ }));
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=reviews', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga?tab=reviews');
     // Nothing fetched until the tab is open.
     expect(reviewsArgs).toHaveBeenLastCalledWith(
       'gbenga',

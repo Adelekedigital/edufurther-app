@@ -75,21 +75,21 @@ export function MenteeNewView(p: MenteeNewViewProps) {
           }
         : {
             art: 'team' as const,
-            kicker:
-              stage === 'firstDone' || !p.booked
-                ? NEXT_STEP.firstDone.kicker
-                : withLine(
-                    p.booked.confirmed,
-                    p.booked.mentorFirst,
-                    when(p.booked.startsAt, p.timeZone),
-                  ),
+            // stage 'booked' always has a booking (stageFor).
+            kicker: p.booked
+              ? withLine(
+                  p.booked.confirmed,
+                  p.booked.mentorFirst,
+                  when(p.booked.startsAt, p.timeZone),
+                )
+              : NEXT_STEP.incomplete.kicker,
             title: INVITE_COPY.title,
             body: inviteBody,
             invite: p.invite,
           };
 
   // The current step is the one the card is about (incomplete: profile; ready:
-  // book; booked and after: invite), so the list and the card always agree.
+  // book; booked: invite), so the list and the card always agree.
   const current = stage === 'incomplete' ? 'profile' : stage === 'ready' ? 'book' : 'invite';
   const state = (done: boolean, key: string): StepState =>
     done ? 'done' : key === current ? 'now' : 'todo';
@@ -98,9 +98,7 @@ export function MenteeNewView(p: MenteeNewViewProps) {
     : p.friendJoined
       ? G.invitedNote.friendJoined
       : p.invited
-        ? p.firstDone
-          ? G.invitedNote.sharedAfterFirst
-          : G.invitedNote.shared
+        ? G.invitedNote.shared
         : G.invitedNote.none;
   const rows: GettingStartedRow[] = [
     { key: 'account', label: G.account, note: G.done, state: 'done', href: '/settings' },
@@ -115,13 +113,9 @@ export function MenteeNewView(p: MenteeNewViewProps) {
     {
       key: 'book',
       label: G.book,
-      note: p.firstDone
-        ? p.firstDone.mentorFirst && p.firstDone.startsAt
-          ? G.doneWith(p.firstDone.mentorFirst, dayLabel(p.firstDone.startsAt, p.timeZone))
-          : G.done
-        : p.booked
-          ? withLine(p.booked.confirmed, p.booked.mentorFirst, when(p.booked.startsAt, p.timeZone))
-          : G.starter,
+      note: p.booked
+        ? withLine(p.booked.confirmed, p.booked.mentorFirst, when(p.booked.startsAt, p.timeZone))
+        : G.starter,
       state: state(steps.booked, 'book'),
       href: steps.booked ? '/bookings' : '/explore',
     },

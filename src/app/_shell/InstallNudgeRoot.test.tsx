@@ -130,7 +130,7 @@ describe('InstallNudgeRoot', () => {
     expect(screen.getByRole('dialog')).not.toHaveTextContent('no app store');
   });
 
-  it('Android: the one reason and "Add to home screen", which calls the browser’s prompt', async () => {
+  it('Android: the one reason and "Install the app", which calls the browser’s prompt', async () => {
     phone('Mozilla/5.0 (Linux; Android 14) Chrome/126.0 Mobile Safari/537.36');
     render(<InstallNudgeRoot />);
     const e = offerPrompt();
@@ -140,7 +140,7 @@ describe('InstallNudgeRoot', () => {
     );
     expect(screen.queryByRole('list')).toBeNull();
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Add to home screen' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Install the app' }));
     });
     expect(e.prompt).toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -283,7 +283,7 @@ describe('a page load between the moment and its screen (staging, 2026-11-18)', 
     const e = offerPrompt();
     await wait();
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Add to home screen' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Install the app' }));
     });
     expect(e.prompt).toHaveBeenCalled();
   });

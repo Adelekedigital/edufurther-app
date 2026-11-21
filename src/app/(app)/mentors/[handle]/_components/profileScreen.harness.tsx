@@ -116,7 +116,10 @@ export const h = {
   onAwardAdded: null as null | (() => void),
 };
 
+// Page changes (the setup detour) go through the router.
 export const replace = vi.fn();
+// A tab change or a dropped link parameter: the page edits its own query in place.
+export const replaceQuery = vi.fn();
 export const reviewsArgs = vi.fn();
 export const sendReview = vi.fn();
 export const similarArgs = vi.fn();
@@ -530,6 +533,7 @@ const authMock = () => ({ startGoogleSignIn: startGoogle });
 /** The mocked modules, by name; each test file registers them with vi.mock. */
 export const mocks = {
   navigation: navigationMock,
+  replaceQuery: () => ({ replaceQuery }),
   appShell: appShellMock,
   reviews: reviewsMock,
   reviewWrite: reviewWriteMock,
@@ -584,6 +588,7 @@ beforeEach(() => {
   h.sessionTypesRemote = idle;
   h.slotsRemote = idle;
   replace.mockReset();
+  replaceQuery.mockReset();
   h.editOk = true;
   h.introErrors = {};
   h.aboutError = null;

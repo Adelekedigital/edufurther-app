@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { VIA_PARAM } from '@/lib/utils/mentorPath';
 import type { MentorProfile } from '@/types/mentor';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 type Options = {
   profile: MentorProfile | null;
@@ -44,7 +45,6 @@ type Options = {
  * along into anything they shared.
  */
 export function useBookLink({ profile, gone, ready, allowed, open, onDropped }: Options) {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const asked = params.get('book');
@@ -71,6 +71,6 @@ export function useBookLink({ profile, gone, ready, allowed, open, onDropped }: 
     // params read before that, must not put it back.
     next.delete(VIA_PARAM);
     const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [asked, at, gone, ready, profile, allowed, open, onDropped, params, pathname, router]);
+    replaceQuery(qs ? `${pathname}?${qs}` : pathname);
+  }, [asked, at, gone, ready, profile, allowed, open, onDropped, params, pathname]);
 }

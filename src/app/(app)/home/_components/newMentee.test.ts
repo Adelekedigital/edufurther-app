@@ -76,24 +76,19 @@ describe('profile details', () => {
 const base: NewMenteeState = {
   profileDone: false,
   booked: null,
-  firstDone: null,
   invited: false,
   friendJoined: false,
 };
 const booked = { mentorFirst: 'Mariam', startsAt: '2026-10-29T17:00:00Z', confirmed: false };
 
 describe('stageFor', () => {
-  it('goes incomplete, ready, booked, first session done', () => {
+  it('goes incomplete, ready, booked', () => {
     expect(stageFor(base)).toEqual({ stage: 'incomplete', oneStepLeft: false });
     expect(stageFor({ ...base, profileDone: true })).toEqual({
       stage: 'ready',
       oneStepLeft: false,
     });
     expect(stageFor({ ...base, booked }).stage).toBe('booked');
-    expect(
-      stageFor({ ...base, booked, firstDone: { mentorFirst: 'Mariam', startsAt: booked.startsAt } })
-        .stage,
-    ).toBe('firstDone');
   });
 
   it('booked with the link shared and the profile short: the profile card, "One step left"', () => {
@@ -108,10 +103,9 @@ describe('stepsDone', () => {
   it('a friend joining counts as the invite step; all three make it done', () => {
     expect(stepsDone({ ...base, friendJoined: true }).invite).toBe(true);
     expect(stepsDone({ ...base, unlocked: true }).invite).toBe(true);
-    expect(
-      stepsDone({ profileDone: true, booked, firstDone: null, invited: true, friendJoined: false })
-        .all,
-    ).toBe(true);
+    expect(stepsDone({ profileDone: true, booked, invited: true, friendJoined: false }).all).toBe(
+      true,
+    );
     expect(stepsDone({ ...base, profileDone: true, booked }).all).toBe(false);
   });
 });

@@ -173,6 +173,12 @@ export type LobbyInput = {
   inSafari?: boolean;
   /** A phone: EduFurther video's hint says to keep the call on screen. */
   onPhone?: boolean;
+  /**
+   * The address the viewer's Google Meet invite went to, named under Join so
+   * they join with that Google account and skip the host's admit step.
+   * Absent or empty: the plain Meet hint.
+   */
+  meetEmail?: string | null;
   /** Join was followed: the page drops its last Join problem. */
   onFollow?: () => void;
   /**
@@ -199,6 +205,18 @@ export function joiningClosedNote(b: SessionRoom['booking'], timeZone: string): 
   return `Joining closed at ${formatTime(b.joinClosesAt, timeZone)}, ${after} minutes after the start.`;
 }
 
+/** Google Meet's hint under a pressable Join; null for any other venue. */
+function meetHint(
+  provider: string | null,
+  inSafari: boolean,
+  email: string | null | undefined,
+): string | null {
+  if (provider !== 'google_meet') return null;
+  if (email)
+    return inSafari ? LOBBY_COPY.meetInSafariAccountHint(email) : LOBBY_COPY.meetAccountHint(email);
+  return inSafari ? LOBBY_COPY.meetInSafariHint : null;
+}
+
 /** Everything the lobby shows, from the session, the phase and the clock. */
 export function lobbyModel({
   room,
@@ -208,6 +226,7 @@ export function lobbyModel({
   enterHref,
   inSafari = false,
   onPhone = false,
+  meetEmail,
   onFollow,
   onCancel,
   pageUrl,
@@ -232,11 +251,9 @@ export function lobbyModel({
       enabled: true,
       href: enterHref,
       onFollow,
-      hint: inSafari
-        ? LOBBY_COPY.meetInSafariHint
-        : onPhone && b.provider === 'daily'
-          ? LOBBY_COPY.dailyPhoneHint
-          : pv.hint,
+      hint:
+        meetHint(b.provider, inSafari, meetEmail) ??
+        (onPhone && b.provider === 'daily' ? LOBBY_COPY.dailyPhoneHint : pv.hint),
       ...(inSafari ? { sameWindow: true } : {}),
     };
   } else if (phase === 'closed' && b.joinClosesAt && !room.me.joinedAt) {

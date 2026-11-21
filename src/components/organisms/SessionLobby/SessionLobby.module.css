@@ -72,6 +72,10 @@
   color: var(--ink-700);
   text-align: center;
 }
+.hint {
+  /* A long email in the Google Meet hint wraps instead of widening the column. */
+  overflow-wrap: anywhere;
+}
 .note {
   margin: 0;
   max-width: 360px;

@@ -61,6 +61,7 @@ import { noteProfileSource, profileLinkSource } from '@/lib/analytics/profileSou
 import { useReminders } from './useReminders';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 /** The details panel's element id, as BookingDetailsPanel renders it. */
 const PANEL_ID = 'booking-details';
@@ -260,7 +261,7 @@ export function BookingsScreen() {
       if (confirming) say(MOVE_COPY.requestSent(confirming.booking.other.firstName));
       setConfirming(null);
       setFocusNew({ id: newId, from: selected, arrived: false });
-      router.replace(`/bookings?tab=pending&booking=${to}`, { scroll: false });
+      replaceQuery(`/bookings?tab=pending&booking=${to}`);
       return 'done';
     },
   });

@@ -6,6 +6,7 @@ import { usePreview, type usePreviewActions } from '@/lib/api/data/preview';
 import { previewStore } from '@/lib/api/data/previewStore';
 import { safeReturnTo } from '@/lib/utils/safeReturnTo';
 import type { Viewer } from '@/types/mentor';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 export const VIEW_AS_PARAM = 'viewAs';
 
@@ -46,7 +47,7 @@ export function useViewAsParam(
       return;
     }
     url.searchParams.delete(VIEW_AS_PARAM);
-    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    replaceQuery(url.pathname + url.search + url.hash);
     if (!may) {
       previewStore.deny(url.pathname);
       return;

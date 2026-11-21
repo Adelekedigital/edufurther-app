@@ -112,7 +112,7 @@ export function TourStepCard({
     ref.current?.querySelector<HTMLElement>('[data-autofocus]')?.focus({ preventScroll: true });
   }, [index]);
 
-  const badge = BADGE[step.badge.tone];
+  const badge = step.badge && BADGE[step.badge.tone];
   const { card, hole, pointer } = anchor;
   const style = {
     ...card,
@@ -147,9 +147,11 @@ export function TourStepCard({
       >
         <div className={styles.cardHead}>
           <span className={styles.eyebrowText}>{C.stepOf(index + 1, total)}</span>
-          <Badge type={badge.type} color={badge.color} size="sm">
-            {step.badge.label}
-          </Badge>
+          {step.badge && badge && (
+            <Badge type={badge.type} color={badge.color} size="sm">
+              {step.badge.label}
+            </Badge>
+          )}
         </div>
         <h2 id={titleId} className={styles.cardTitle}>
           {step.title}

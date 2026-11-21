@@ -9,14 +9,25 @@
 /* Standing clearance for the fixed FloatingHelp pill (bottom-right): the last
    content must never sit under it at full scroll. The shell's .main already pads
    the bottom (48px desktop, ~80px with the phone tab bar); this adds enough to
-   clear the pill, which rests MOBILE_BASE/DESKTOP_BASE up (FloatingHelp.tsx) —
-   keep these in sync. Only when the pill is shown (data-help). */
+   clear the pill, which rests MOBILE_BASE/DESKTOP_BASE up (FloatingHelp.tsx);
+   keep these in sync. Only when the pill is shown (data-help).
+   scroll-padding-bottom does the same for a control scrolled or tabbed to
+   (WCAG 2.4.11): it stops above the pill, which is at most --space-14 tall,
+   not under it (as the profile's .pillRoom does for its Book pill). */
 .page[data-help] {
   padding-bottom: var(--space-12);
+}
+:global(html):has(body .page[data-help]) {
+  scroll-padding-bottom: calc(var(--space-6) + var(--space-14) + var(--space-2));
 }
 @media (max-width: 767px) {
   .page[data-help] {
     padding-bottom: var(--space-16);
+  }
+  :global(html):has(body .page[data-help]) {
+    scroll-padding-bottom: calc(
+      var(--bottom-chrome-h) + var(--space-4) + var(--space-14) + var(--space-2)
+    );
   }
 }
 

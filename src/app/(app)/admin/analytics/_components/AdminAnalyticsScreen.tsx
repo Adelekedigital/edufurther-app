@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -43,6 +43,7 @@ import { isSupplyEmpty, SupplyTab } from './SupplyTab';
 import { TabState } from './TabState';
 import { WindowControls } from './WindowControls';
 import styles from './AdminAnalyticsScreen.module.css';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 const panelId = (t: AnalyticsTab) => `admin-analytics-${t}`;
 
@@ -90,7 +91,6 @@ export function AdminAnalyticsScreen() {
   const viewer = useViewer();
   const adminId = viewer.kind === 'member' && viewer.isAdmin ? viewer.id : null;
   const params = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const raw = params.get('tab');
   const tab: AnalyticsTab = isAnalyticsTab(raw) ? raw : 'overview';
@@ -166,7 +166,7 @@ export function AdminAnalyticsScreen() {
       if (next.by && next.by !== 'all') q.set('by', next.by);
     }
     const qs = q.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    replaceQuery(qs ? `${pathname}?${qs}` : pathname);
   };
 
   const items = ANALYTICS_TABS.map((t) => ({ ...t, panelId: panelId(t.value) }));

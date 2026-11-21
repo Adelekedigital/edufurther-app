@@ -115,7 +115,11 @@ export const MENTOR: Extract<Viewer, { kind: 'member' }> = {
   mentorApprovedSeen: true,
 };
 
-export const replace = vi.fn();
+// Switching or closing a chat on desktop edits the query in place.
+export const replaceQuery = vi.fn();
+// Opening a chat on phones: a new entry, still in place.
+export const pushQuery = vi.fn();
+// Another page (a booking, a profile) goes through the router.
 export const push = vi.fn();
 export const saveSettings = vi.fn();
 
@@ -197,8 +201,9 @@ export function resetHarness() {
   uploaded.mockReset();
   markRead.mockReset();
   loadOlder.mockReset();
-  replace.mockReset();
+  replaceQuery.mockReset();
   push.mockReset();
+  pushQuery.mockReset();
   saveSettings.mockReset();
   setPhone(false);
 }
@@ -219,9 +224,10 @@ export function setPhone(phone: boolean) {
 }
 
 export const mocks = {
+  replaceQuery: () => ({ replaceQuery, pushQuery }),
   navigation: () => ({
     usePathname: () => '/messages',
-    useRouter: () => ({ replace, push }),
+    useRouter: () => ({ push }),
     useSearchParams: () => new URLSearchParams(h.search),
   }),
   appShell: () => ({

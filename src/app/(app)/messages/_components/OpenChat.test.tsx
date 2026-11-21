@@ -15,6 +15,7 @@ import {
   NOW,
   person,
   push,
+  pushQuery,
   remote,
   resetHarness,
   retried,
@@ -26,6 +27,9 @@ import { reportHref } from './ChatMenu';
 
 vi.mock('next/navigation', async () =>
   (await import('./messagesScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./messagesScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./messagesScreen.harness')).mocks.appShell(),
@@ -449,7 +453,9 @@ describe('the More options menu', () => {
     const items = screen.getAllByRole('menuitem').map(menuName);
     expect(items).toEqual(['View profile', 'View booking', 'Report']);
     await user.click(screen.getByRole('menuitem', { name: 'View booking' }));
+    // Another page: the router, never an in-place push.
     expect(push).toHaveBeenCalledWith('/bookings?tab=upcoming&booking=b-201');
+    expect(pushQuery).not.toHaveBeenCalled();
   });
 
   it('View profile: the visit it opens came from Messages (PRD 30)', async () => {
