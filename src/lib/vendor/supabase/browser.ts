@@ -48,6 +48,17 @@ export async function getAccessToken(): Promise<string | null> {
   return data.session?.access_token ?? null;
 }
 
+/**
+ * The signed-in user's id, read from the SDK now: right after sign-in the
+ * session store (onSessionChange) may not have caught up yet.
+ */
+export async function sessionUserId(): Promise<string | null> {
+  const sb = supabase();
+  if (!sb) return null;
+  const { data } = await sb.auth.getSession();
+  return data.session?.user.id ?? null;
+}
+
 /** Force a refresh (after a 401). Null when the session can't be renewed. */
 export async function refreshAccessToken(): Promise<string | null> {
   const sb = supabase();

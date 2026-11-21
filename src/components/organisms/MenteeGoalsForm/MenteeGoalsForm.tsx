@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState, type Ref } from 'react';
-import { Input } from '@/components/atoms/Input/Input';
+import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import {
@@ -11,7 +11,13 @@ import {
 import { RadioChips } from '@/components/molecules/RadioChips/RadioChips';
 import { SchoolChips, type SchoolOption } from '@/components/molecules/SchoolChips/SchoolChips';
 import { HelpAreaPicker } from '@/components/organisms/HelpAreaPicker/HelpAreaPicker';
-import { DEGREE_OPTIONS, FIELD_MAX, HELP_LIMIT, TOP_DESTINATIONS } from '@/lib/copy/onboarding';
+import {
+  DEGREE_OPTIONS,
+  FIELD_MAX,
+  FIELD_SUGGESTIONS,
+  HELP_LIMIT,
+  TOP_DESTINATIONS,
+} from '@/lib/copy/onboarding';
 import {
   GOAL_COUNTRY_MAX,
   GOAL_SCHOOL_CHARS,
@@ -46,6 +52,12 @@ type MenteeGoalsFormProps = {
   /** The help areas (catalogue service offerings). */
   topics: TopicOption[];
   schools: SchoolSearch;
+  /**
+   * Field-of-study suggestions (`/catalog/fields-of-study`), as onboarding offers
+   * them; the short built-in list until they load. Suggestions only: a typed
+   * answer is saved as typed.
+   */
+  fields?: string[] | null;
 };
 
 /**
@@ -62,6 +74,7 @@ export function MenteeGoalsForm({
   countries,
   topics,
   schools,
+  fields,
 }: MenteeGoalsFormProps) {
   const id = useId();
   const [countryQuery, setCountryQuery] = useState('');
@@ -143,13 +156,19 @@ export function MenteeGoalsForm({
           <label htmlFor={ids('field')} className={styles.label}>
             {C.field}
           </label>
-          <Input
+          {/* The same searchable field as onboarding (StudyPlansForm): one control
+              for one answer, wherever it's edited (owner, 21 Nov 2026). */}
+          <Select
             id={ids('field')}
             data-ff="field"
-            autoComplete="off"
+            searchable
+            allowCustom
             maxLength={FIELD_MAX}
             placeholder={C.fieldPlaceholder}
+            query={values.field}
+            onQueryChange={(field) => onChange({ field })}
             value={values.field}
+            options={(fields ?? FIELD_SUGGESTIONS).map((f) => ({ value: f, label: f }))}
             invalid={has('field')}
             aria-describedby={described(null, 'field')}
             onChange={(e) => onChange({ field: e.target.value })}

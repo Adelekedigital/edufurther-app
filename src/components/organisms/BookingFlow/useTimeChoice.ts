@@ -15,7 +15,8 @@ type Args = {
   types: SessionType[];
   session: SessionType | null;
   slots: Remote<string[]>;
-  deviceZone: string;
+  /** The zone the times open in (saved, else the device's). */
+  initialZone: string;
   initialTime?: string | null;
   requestDone: boolean;
   onSessionTypeChange: (id: string) => void;
@@ -31,7 +32,7 @@ export function useTimeChoice(a: Args) {
   // The day the viewer picked (YYYY-MM-DD in their zone), or null → the week's first open day.
   const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [picked_, setTime] = useState<string | null>(null);
-  const [zone, setZone] = useState(a.deviceZone);
+  const [zone, setZone] = useState(a.initialZone);
 
   // As far ahead as this type can be booked (its window), a week at a time.
   const horizon = session?.windowDays ?? DEFAULT_HORIZON_DAYS;

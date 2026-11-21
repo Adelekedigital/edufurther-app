@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import { SAVE_COPY } from '@/lib/copy/settings';
 import { SOCIAL_LINKS_COPY as C } from '@/lib/copy/socialLinks';
@@ -7,9 +7,10 @@ import type { SocialKind } from '@/types/mentor';
 import type { SocialRow, SocialSave } from '@/types/mentorSettings';
 
 export type { SocialRow, SocialSave };
-import { apiError, ApiError, normaliseError, retryOnce } from './errors';
+import { apiError, ApiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { patchMe, useMeSlice, type MeRead } from './me';
 
 type LinkRead = components['schemas']['LinkRead'];
 
@@ -53,30 +54,15 @@ function rowsOf(linkedin: string | null | undefined, links: LinkRead[]): SocialR
   ];
 }
 
-/** Settings › Social links: one /me read holds LinkedIn and the links. */
+const linksOf = ({ me }: MeRead) => rowsOf(me.profile?.social_linkedin, me.links ?? []);
+
+/**
+ * Settings › Social links: LinkedIn and the links, a slice of the one /me
+ * (me.ts). Error before content: a failed refetch of a loaded list keeps it.
+ */
 export function useMyLinks(userId: string | null) {
-  const query = useQuery({
-    queryKey: keys.viewer.links(userId ?? 'none'),
-    enabled: userId !== null,
-    retry: retryOnce,
-    queryFn: async ({ signal }): Promise<SocialRow[]> => {
-      const { data, error, response } = await api.GET('/api/v1/me', { signal });
-      if (!data) throw apiError(response.status, error);
-      return rowsOf(data.profile?.social_linkedin, data.links ?? []);
-    },
-  });
-  // Error before content: a failed refetch of a loaded list keeps it.
-  const status: 'loading' | 'error' | 'ready' = query.data
-    ? 'ready'
-    : query.error
-      ? 'error'
-      : 'loading';
-  return {
-    rows: query.data ?? null,
-    status,
-    retry: () => void query.refetch(),
-    retrying: query.isFetching,
-  };
+  const { data, status, retry, retrying } = useMeSlice(userId !== null, linksOf);
+  return { rows: data, status, retry, retrying };
 }
 
 /** A refused save, in the page's words. */
@@ -103,10 +89,15 @@ function saveCopy(e: unknown, kind: SocialKind): string {
  */
 export function useSaveSocial(userId: string | null) {
   const qc = useQueryClient();
-  const mutation = useMutation<SocialRow, { copy: string }, SocialSave>({
+  // `saved`: what the server now holds, written into the one /me as it is.
+  const mutation = useMutation<
+    { row: SocialRow; saved: { linkedin: string } | { link: LinkRead } },
+    { copy: string },
+    SocialSave
+  >({
     networkMode: 'always',
-    onMutate: () =>
-      userId ? qc.cancelQueries({ queryKey: keys.viewer.links(userId) }) : undefined,
+    // A /me read already out would land after this with the old list.
+    onMutate: () => qc.cancelQueries({ queryKey: keys.viewer.meAll }),
     mutationFn: async ({ kind, value, id }) => {
       try {
         if (!userId) throw new Error('no user');
@@ -118,7 +109,10 @@ export function useSaveSocial(userId: string | null) {
             body: { social_linkedin: url } as never,
           });
           if (!response.ok) throw apiError(response.status, error);
-          return { id: LINKEDIN_ROW, kind, value: value.trim(), url, mark: 'linkedin' };
+          return {
+            row: { id: LINKEDIN_ROW, kind, value: value.trim(), url, mark: 'linkedin' },
+            saved: { linkedin: url },
+          };
         }
         const { data, error, response } = id
           ? await api.PATCH('/api/v1/me/links/{link_id}', {
@@ -129,25 +123,27 @@ export function useSaveSocial(userId: string | null) {
               body: { platform: kind, value: value.trim() },
             });
         if (!data) throw apiError(response.status, error);
-        return linkRow(data);
+        return { row: linkRow(data), saved: { link: data } };
       } catch (e) {
         throw { copy: saveCopy(e, kind) };
       }
     },
-    onSuccess: (row, { id }) => {
+    onSuccess: ({ saved }) => {
       if (!userId) return;
-      qc.setQueryData<SocialRow[]>(keys.viewer.links(userId), (rows = []) =>
-        row.kind === 'linkedin'
-          ? [row, ...rows.filter((r) => r.id !== LINKEDIN_ROW)]
-          : id
-            ? rows.map((r) => (r.id === id ? row : r))
-            : // A read that landed meanwhile may hold it already.
-              [...rows.filter((r) => r.id !== row.id), row],
+      patchMe(qc, (me) =>
+        'linkedin' in saved
+          ? { ...me, profile: me.profile && { ...me.profile, social_linkedin: saved.linkedin } }
+          : {
+              ...me,
+              // A change keeps its place; a new one goes last (a read that
+              // landed meanwhile may hold it already).
+              links: me.links.some((l) => l.id === saved.link.id)
+                ? me.links.map((l) => (l.id === saved.link.id ? saved.link : l))
+                : [...me.links, saved.link],
+            },
       );
-      // LinkedIn is on /me's profile, which other screens read too.
-      void qc.invalidateQueries({
-        queryKey: row.kind === 'linkedin' ? keys.viewer.all : keys.viewer.links(userId),
-      });
+      // /me is read again: the one source for the shell, Settings and this list.
+      void qc.invalidateQueries({ queryKey: keys.viewer.all });
       // The public profile shows them.
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
@@ -156,7 +152,7 @@ export function useSaveSocial(userId: string | null) {
     onError: () => void qc.invalidateQueries({ queryKey: keys.viewer.all }),
   });
   return {
-    save: mutation.mutateAsync,
+    save: (s: SocialSave) => mutation.mutateAsync(s).then((r) => r.row),
     isPending: mutation.isPending,
     error: mutation.error?.copy ?? null,
     reset: mutation.reset,
@@ -168,8 +164,7 @@ export function useRemoveSocial(userId: string | null) {
   const qc = useQueryClient();
   const mutation = useMutation<string, { copy: string }, SocialRow>({
     networkMode: 'always',
-    onMutate: () =>
-      userId ? qc.cancelQueries({ queryKey: keys.viewer.links(userId) }) : undefined,
+    onMutate: () => qc.cancelQueries({ queryKey: keys.viewer.meAll }),
     mutationFn: async (row) => {
       try {
         if (!userId) throw new Error('no user');
@@ -193,12 +188,12 @@ export function useRemoveSocial(userId: string | null) {
     },
     onSuccess: (gone) => {
       if (!userId) return;
-      qc.setQueryData<SocialRow[]>(keys.viewer.links(userId), (rows = []) =>
-        rows.filter((r) => r.id !== gone),
+      patchMe(qc, (me) =>
+        gone === LINKEDIN_ROW
+          ? { ...me, profile: me.profile && { ...me.profile, social_linkedin: null } }
+          : { ...me, links: me.links.filter((l) => l.id !== gone) },
       );
-      void qc.invalidateQueries({
-        queryKey: gone === LINKEDIN_ROW ? keys.viewer.all : keys.viewer.links(userId),
-      });
+      void qc.invalidateQueries({ queryKey: keys.viewer.all });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
     },
   });

@@ -1,11 +1,13 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { menteeByChoice } from './roles';
 import { deviceTimeZone } from '@/lib/utils/format';
 import { NAME_PROBLEM_COPY, splitFullName, tidyName } from '@/lib/utils/name';
+import { sessionUserId } from '@/lib/vendor/supabase/browser';
 import { api } from './http';
 import { keys } from './keys';
+import { isMeRead, meQuery } from './me';
 
 /** The account behind a fresh sign-in, as far as where to send them goes. */
 export type SignInAccount =
@@ -37,15 +39,24 @@ export type SignInAccount =
   | { kind: 'error' };
 
 /**
- * GET /me right after the code or Google, outside the query cache: the cache
- * is keyed by a session that didn't exist a moment ago. The viewer query then
- * fetches as usual for the page they land on.
+ * The one /me (me.ts), read for this session as it is now: the SDK's user id
+ * keys it, since the session store may not have caught up a moment after
+ * sign-in. Asked afresh, never from the cache; what it reads is cached where
+ * the page they land on looks, so that page doesn't ask again. No retry here:
+ * the caller decides (loadAccount).
  */
-export async function fetchSignInAccount(): Promise<SignInAccount> {
+async function readMeNow(qc: QueryClient) {
+  const authId = await sessionUserId();
+  if (!authId) throw new Error('no session');
+  return qc.fetchQuery({ ...meQuery(authId), staleTime: 0, retry: false });
+}
+
+/** GET /me right after the code or Google: where to send them. */
+export async function fetchSignInAccount(qc: QueryClient): Promise<SignInAccount> {
   try {
-    const { data, response } = await api.GET('/api/v1/me');
-    if (response.status === 404 || response.status === 409) return { kind: 'noAccount' };
-    if (!data) return { kind: 'error' };
+    const entry = await readMeNow(qc);
+    if (!isMeRead(entry)) return { kind: 'noAccount' };
+    const data = entry.me;
     return {
       kind: 'member',
       id: data.id,
@@ -124,12 +135,12 @@ async function patchName(userId: string, body: NameBody) {
   }
 }
 
-/** Whether /me now has the first name we sent: a save a proxy failed may have landed. */
-async function nameLanded(body: NameBody) {
+/** Whether /me, read afresh, now has the first name we sent: a save a proxy failed may have landed. */
+async function nameLanded(qc: QueryClient, body: NameBody) {
   const first = 'first_name' in body ? body.first_name : splitFullName(body.full_name).firstName;
   try {
-    const { data } = await api.GET('/api/v1/me');
-    return !!first && data?.first_name === first;
+    const entry = await readMeNow(qc);
+    return !!first && isMeRead(entry) && entry.me.first_name === first;
   } catch {
     return false;
   }
@@ -149,7 +160,7 @@ function nameRefusal(res: NonNullable<Awaited<ReturnType<typeof patchName>>>) {
  * The PATCH with its proxy retry. `saved` when it went through, or when a
  * proxy failed the first try and /me shows the name landed anyway.
  */
-async function sendName(userId: string, body: NameBody) {
+async function sendName(qc: QueryClient, userId: string, body: NameBody) {
   const first = await patchName(userId, body);
   let res = first;
   if (!res) {
@@ -158,7 +169,7 @@ async function sendName(userId: string, body: NameBody) {
   }
   if (res?.response.ok) return { saved: true as const };
   // The first try may have landed behind the proxy error, whatever the retry says.
-  if (!first && (await nameLanded(body))) return { saved: true as const };
+  if (!first && (await nameLanded(qc, body))) return { saved: true as const };
   return { saved: false as const, res };
 }
 
@@ -189,9 +200,9 @@ export function useSaveName() {
         'fullName' in name
           ? { full_name: tidyName(name.fullName) }
           : { first_name: tidyName(name.firstName), last_name: tidyName(name.lastName) };
-      let sent = await sendName(userId, timezone ? { ...named, timezone } : named);
+      let sent = await sendName(qc, userId, timezone ? { ...named, timezone } : named);
       if (timezone && !sent.saved && sent.res?.response.status === 422 && !nameRefusal(sent.res)) {
-        sent = await sendName(userId, named);
+        sent = await sendName(qc, userId, named);
       }
       if (sent.saved) return;
       const { res } = sent;

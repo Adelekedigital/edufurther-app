@@ -1,11 +1,11 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { AppError, Remote } from '@/types/mentor';
-import { ApiError, apiError, normaliseError, retryOnce } from './errors';
-import { keys } from './keys';
+import { ApiError, apiError, normaliseError } from './errors';
 import type { components } from '@/lib/api/generated/schema';
 import { api } from './http';
+import { patchMe, useMeSlice, type MeRead } from './me';
 import { isPreviewing } from './previewStore';
 import { patchViewer } from './viewer';
 import { useSetPrimaryRole } from './roleHooks';
@@ -60,30 +60,27 @@ export function toMentorApplication(me: UserRead): MentorApplication {
   return { stage: 'pending', ...person };
 }
 
-/** GET /me, read for the application only (the viewer drops these fields). */
+const applicationOf = ({ me }: MeRead) => toMentorApplication(me);
+
+/**
+ * The application's stage, a slice of the one /me (me.ts). The page decides
+ * once what it shows (approved-seen flips it), so this read asks /me afresh
+ * as the page opens: a cached one from earlier in the visit (or another tab)
+ * may predate approved-seen. A refocus doesn't ask again from here.
+ */
 export function useMentorApplication(
   userId: string | null,
 ): Remote<MentorApplication> & { fresh: boolean } {
-  const query = useQuery({
-    queryKey: keys.viewer.mentorApplication(userId ?? 'none'),
-    enabled: userId !== null,
-    queryFn: async ({ signal }) => {
-      const { data, error, response } = await api.GET('/api/v1/me', { signal });
-      if (!data) throw apiError(response.status, error);
-      return toMentorApplication(data);
-    },
-    retry: retryOnce,
-    // What the page shows is decided once (approved-seen flips it), so a
-    // refocus must not move the mentor off the screen they are reading.
+  const read = useMeSlice(userId !== null, applicationOf, {
+    refetchOnMount: 'always',
     refetchOnWindowFocus: false,
   });
   return {
-    data: query.data ?? null,
-    isLoading: query.isPending && userId !== null,
-    error: query.error ? normaliseError(query.error) : null,
-    retry: () => void query.refetch(),
-    // A cached read from earlier in the visit may predate approved-seen.
-    fresh: !query.isFetching,
+    data: read.data,
+    isLoading: read.status === 'loading' && userId !== null,
+    error: read.status === 'error' ? normaliseError(read.error) : null,
+    retry: read.retry,
+    fresh: !read.retrying,
   };
 }
 
@@ -106,11 +103,15 @@ export function useMarkApprovedSeen(userId: string | null) {
     onSuccess: () => {
       // Nothing was sent in preview: the previewed mentor hasn't seen it, so the cache says so too.
       if (isPreviewing()) return;
-      qc.setQueryData<MentorApplication>(keys.viewer.mentorApplication(userId ?? 'none'), (a) =>
-        a?.stage === 'approved' ? { ...a, seen: true } : a,
+      // Into the one /me: this page's read and the viewer (Home stops sending
+      // them back here, and its toast) both say seen now.
+      const at = new Date().toISOString();
+      patchMe(qc, (me) =>
+        me.mentor_profile?.approval_status === 'approved' &&
+        me.mentor_profile.approved_seen_at === null
+          ? { ...me, mentor_profile: { ...me.mentor_profile, approved_seen_at: at } }
+          : me,
       );
-      // And the viewer: Home stops sending them back here (and its toast).
-      patchViewer(qc, { mentorApprovedSeen: true });
     },
   });
   return { markSeen: mutation.mutate, isPending: mutation.isPending };

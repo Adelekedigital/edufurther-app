@@ -308,7 +308,7 @@ export function useSignInFlow({
     async (via: Method) => {
       method.current = via;
       rememberSignInMethod(via);
-      const acct = await loadAccount();
+      const acct = await loadAccount(qc);
       if (!mounted.current) return;
       // `/` explains a missing or unlinked account (409), so never skip it for
       // `next`; a /me that keeps failing goes on rather than stranding them.
@@ -359,7 +359,7 @@ export function useSignInFlow({
       }
       setStep('finish');
     },
-    [complete, finish, fullName, mode, name, next, router, setEmail],
+    [complete, finish, fullName, mode, name, next, qc, router, setEmail],
   );
 
   /** Something threw after sign-in (storage, the SDK): go on rather than hang on "Checking...". */
@@ -395,7 +395,7 @@ export function useSignInFlow({
     if (session.status !== 'present' || handling.current) return;
     handling.current = true;
     void (async () => {
-      const acct = await loadAccount();
+      const acct = await loadAccount(qc);
       if (!mounted.current) return;
       if (acct.kind === 'member' && acct.firstName === null) {
         account.current = toAccount(acct);
@@ -410,7 +410,7 @@ export function useSignInFlow({
       if (acct.kind === 'member') clearInviteCode();
       router.replace(next ?? (acct.kind === 'member' ? accountHome(acct) : '/'));
     })();
-  }, [session.status, next, router, setEmail]);
+  }, [session.status, next, qc, router, setEmail]);
 
   // The sign-up funnel's first step (PRD 30), on /signup only: the page's role.
   const signupStarted = useSignupStarted(role);

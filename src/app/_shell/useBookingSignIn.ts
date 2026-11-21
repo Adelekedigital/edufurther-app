@@ -72,7 +72,7 @@ export function useBookingSignIn({ profileHref }: { profileHref: string }): Gues
       // Signed in either way: whatever fails from here, the booking carries on.
       try {
         rememberSignInMethod('email');
-        const acct = await loadAccount();
+        const acct = await loadAccount(qc);
         // Closed while the code was checked: nothing on this page to change.
         if (!mounted.current) return;
         // No account behind this sign-in (or one not linked to it): `/` explains it.

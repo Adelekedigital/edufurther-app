@@ -313,6 +313,9 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE_URL: /api/mock
           NEXT_PUBLIC_MOCK_VIEWER: mentee
+          # Messages is on in staging: /messages only renders with it, and every
+          # Message button and SendMessage launcher is measured as shipped.
+          NEXT_PUBLIC_MESSAGES_ENABLED: "true"
       - run: pnpm start &
         env:
           ENABLE_MOCK_API: "1"
@@ -333,7 +336,9 @@ jobs:
           # Page speed budget (roadmap): the three pages a slow load costs most on.
           # /home is the mentee's home, /dashboard?mockViewer=mentor the mentor's;
           # /sessions/j-1 is the join page minutes before a call (sessions mock).
-          for route in /explore /home "/dashboard?mockViewer=mentor" /sessions/j-1 /mentors/olajuwon-samuel /session-types "/session-types/new?template=sop-review" "/invite/damilola-7k2x?mockViewer=guest" "/invite/gone-0000?mockViewer=guest" /invite/tunde-9q4z ; do
+          # /bookings and /messages: unmeasured until /bookings went over the JS
+          # budget unseen (the move view, PR 661, in its eager cancel dialog).
+          for route in /explore /home "/dashboard?mockViewer=mentor" /sessions/j-1 /bookings /messages /mentors/olajuwon-samuel /session-types "/session-types/new?template=sop-review" "/invite/damilola-7k2x?mockViewer=guest" "/invite/gone-0000?mockViewer=guest" /invite/tunde-9q4z ; do
             # Every route runs, so one push shows every page over budget.
             node scripts/review-page.mjs "$route" || failed="$failed $route"
           done

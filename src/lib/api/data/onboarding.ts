@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { DEGREE_OPTIONS, NOT_SURE, type MissingKey } from '@/lib/copy/onboarding';
 import type { AppError } from '@/types/mentor';
 import type { PlanAnswers } from '@/types/onboarding';
@@ -8,6 +8,7 @@ import type { CatalogOption } from './catalog';
 import { ApiError, apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { useMeSlice, type MeRead } from './me';
 import { patchViewer } from './viewer';
 import type { components } from '@/lib/api/generated/schema';
 import type { PendingIncomplete } from './pending';
@@ -90,37 +91,29 @@ export function toState(saved: Saved, countries: CatalogOption[]): OnboardingSta
 }
 
 /**
- * One read: `GET /me` carries the goal, and (pending) the origin and the
- * onboarding gaps. A signed-in member always gets a 200, so "never started"
- * is an empty goal, not a 404 in the console.
+ * What resuming reads from /me: the goal, the origin and the onboarding
+ * progress. A signed-in member always gets a 200, so "never started" is an
+ * empty goal, not a 404 in the console.
  */
-async function readSaved(signal: AbortSignal): Promise<Saved> {
-  const { data, response } = await api.GET('/api/v1/me', { signal });
-  if (!data) throw new ApiError(response.status);
-  return {
-    goal: data.goal ?? null,
-    originCode: data.profile?.origin_country?.code ?? null,
-    onboarding: data.onboarding ?? null,
-  };
-}
+const savedOf = ({ me }: MeRead): Saved => ({
+  goal: me.goal ?? null,
+  originCode: me.profile?.origin_country?.code ?? null,
+  onboarding: me.onboarding ?? null,
+});
 
 /**
  * Where the mentee got to and what they answered, to resume (PRD F1: from the
- * server, not the device). `countries` maps the goal's country back to an id.
+ * server, not the device): a slice of the one /me (me.ts). `countries` maps
+ * the goal's country back to an id.
  */
 export function useOnboarding(userId: string | null, countries: CatalogOption[]) {
-  const query = useQuery({
-    queryKey: keys.onboarding.state(userId ?? 'none'),
-    queryFn: ({ signal }) => readSaved(signal),
-    enabled: userId !== null,
-    retry: retryOnce,
-  });
+  const read = useMeSlice(userId !== null, savedOf);
   return {
-    saved: query.data ?? null,
-    state: query.data ? toState(query.data, countries) : null,
-    isLoading: userId !== null && query.isPending,
-    error: query.error ? normaliseError(query.error) : null,
-    retry: () => void query.refetch(),
+    saved: read.data,
+    state: read.data ? toState(read.data, countries) : null,
+    isLoading: userId !== null && read.status === 'loading',
+    error: read.status === 'error' ? normaliseError(read.error) : null,
+    retry: read.retry,
   };
 }
 
@@ -258,6 +251,9 @@ export function useSaveOnboarding(
     },
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.onboarding.all });
+      // A step may have landed partly before a failure: the answers (the one
+      // /me) are read again either way.
+      void qc.invalidateQueries({ queryKey: keys.viewer.meAll });
     },
   });
   return {
