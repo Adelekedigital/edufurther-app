@@ -165,6 +165,7 @@ export function toBooking(s: SessionRead, viewerId: string): Booking {
     // Optional in the spec and defaulted, as the backend asked (#409).
     menteeAttendanceSessions: s.mentee_attendance_sessions ?? 0,
     provider: s.meeting_provider ?? null,
+    meetInviteEmail: s.meet_invite_email ?? null,
   };
 }
 

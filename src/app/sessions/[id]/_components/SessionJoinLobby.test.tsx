@@ -716,9 +716,7 @@ describe('Google Meet names the Google account to join with (owner, 21 Nov 2026)
     h.viewer = { ...MENTEE, email: 'amara@example.com' };
     meet('mentee');
     renderAt('16:56:00');
-    expect(
-      screen.getByText('Join with the Google account amara@example.com.'),
-    ).toBeVisible();
+    expect(screen.getByText('Join with the Google account amara@example.com.')).toBeVisible();
   });
 
   it('under Rejoin too', () => {
@@ -737,9 +735,7 @@ describe('Google Meet names the Google account to join with (owner, 21 Nov 2026)
     meet('mentee');
     renderAt('16:56:00');
     expect(
-      screen.getByText(
-        `Opens in Safari. Join with the Google account ${EMAIL}.`,
-      ),
+      screen.getByText(`Opens in Safari. Join with the Google account ${EMAIL}.`),
     ).toBeVisible();
     expect(
       screen.queryByText('Opens Google Meet in Safari, where you’re signed in.'),
@@ -765,6 +761,29 @@ describe('Google Meet names the Google account to join with (owner, 21 Nov 2026)
     expect(
       screen.getByText('Keep the call on screen, or your phone pauses your camera and mic.'),
     ).toBeVisible();
+  });
+
+  it('the invited address wins over the sign-in email when they differ', () => {
+    h.viewer = { ...MEMBER, email: 'ada.obi+edu@gmail.com' };
+    h.room = remote(sessionRoom({ meetInviteEmail: 'ada.obi@gmail.com' }, {}, 'google_meet'));
+    renderAt('16:56:00');
+    expect(screen.getByText('Join with the Google account ada.obi@gmail.com.')).toBeVisible();
+    expect(screen.queryByText(/ada\.obi\+edu/)).not.toBeInTheDocument();
+  });
+
+  it('no invited address (a migrated session): the sign-in email', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    h.room = remote(sessionRoom({ meetInviteEmail: null }, {}, 'google_meet'));
+    renderAt('16:56:00');
+    expect(screen.getByText(hint)).toBeVisible();
+  });
+
+  it('EduFurther video ignores an invited address', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    h.room = remote(sessionRoom({ meetInviteEmail: 'ada.obi@gmail.com' }));
+    renderAt('16:56:00');
+    expect(screen.getByText('Opens in your browser. No download needed.')).toBeVisible();
+    expect(screen.queryByText(/Google account/)).not.toBeInTheDocument();
   });
 
   it('no email before Join opens: the locked hint stays', () => {
