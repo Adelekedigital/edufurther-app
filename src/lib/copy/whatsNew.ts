@@ -131,8 +131,10 @@ export const MIGRATION_2026_11: TourRelease = {
   id: 'whats-new:2026-11-migration',
   audience: 'migrated',
   enabled: true,
-  liveFrom: '2026-11-23',
-  replayDays: 30,
+  // A day early for the staging check; production waits on NEXT_PUBLIC_WHATS_NEW_ENABLED.
+  liveFrom: '2026-11-21',
+  // The replay window still ends on 23 Dec.
+  replayDays: 32,
   roles: {
     mentee: {
       welcome: {

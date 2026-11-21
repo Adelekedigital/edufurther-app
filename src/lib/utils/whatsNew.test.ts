@@ -9,6 +9,7 @@ import {
 import {
   activeReleases,
   inReplayWindow,
+  isReleased,
   releaseFor,
   REPLAY_DAYS,
   replayHref,
@@ -27,7 +28,13 @@ beforeAll(() => {
 });
 afterAll(() => vi.useRealTimers());
 
-const live: TourRelease = { ...MIGRATION_2026_11, enabled: true };
+// A fixture with its own dates, so the boundary tests don't follow the real release's.
+const live: TourRelease = {
+  ...MIGRATION_2026_11,
+  enabled: true,
+  liveFrom: '2026-11-23',
+  replayDays: 30,
+};
 const ID = live.id;
 const migrated = (role: 'mentee' | 'mentor' | null, seenItems: string[] | undefined = []) => ({
   role,
@@ -295,8 +302,16 @@ describe('the off switches', () => {
 describe('the replay window', () => {
   const at = (iso: string) => Date.parse(iso);
 
+  it('the migration release: from 21 Nov (staging; production waits on the flag) to the end of 22 Dec', () => {
+    const real = { ...MIGRATION_2026_11, enabled: true };
+    expect(real.liveFrom).toBe('2026-11-21');
+    expect(isReleased(real, at('2026-11-20T23:59:59.999Z'))).toBe(false);
+    expect(isReleased(real, at('2026-11-21T00:00:00Z'))).toBe(true);
+    expect(inReplayWindow(real, at('2026-12-22T23:59:59.999Z'))).toBe(true);
+    expect(inReplayWindow(real, at('2026-12-23T00:00:00Z'))).toBe(false);
+  });
+
   it('opens on the release day (UTC) and closes after replayDays', () => {
-    expect(live.liveFrom).toBe('2026-11-23');
     expect(inReplayWindow(live, at('2026-11-22T23:59:59.999Z'))).toBe(false);
     expect(inReplayWindow(live, at('2026-11-23T00:00:00Z'))).toBe(true);
     expect(inReplayWindow(live, at('2026-12-22T23:59:59.999Z'))).toBe(true);
