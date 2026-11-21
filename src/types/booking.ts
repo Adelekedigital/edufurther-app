@@ -188,6 +188,13 @@ export type Booking = {
   menteeAttendanceSessions: number;
   /** Where it happens (`meeting_provider`); null on an older row with no venue recorded. */
   provider: MeetingProvider | null;
+  /**
+   * On a Google Meet session, the address the viewer's own invite went to
+   * (`meet_invite_email`; a Gmail "+" alias arrives as the plain address). Null
+   * on any other venue, or a Meet session with no invite (a migrated row).
+   * Optional so a fixture that is not about Meet can leave it out.
+   */
+  meetInviteEmail?: string | null;
 };
 
 /** Which tab a booking belongs to. */

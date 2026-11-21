@@ -61,6 +61,13 @@ describe('toBooking', () => {
     expect(toBooking(row({ meeting_provider: null }), 'me').provider).toBeNull();
   });
 
+  it('carries the Meet invite address, null when there is none', () => {
+    const meet = row({ meeting_provider: 'google_meet', meet_invite_email: 'ada.obi@gmail.com' });
+    expect(toBooking(meet, 'me').meetInviteEmail).toBe('ada.obi@gmail.com');
+    expect(toBooking(row({ meet_invite_email: null }), 'me').meetInviteEmail).toBeNull();
+    expect(toBooking(row(), 'me').meetInviteEmail).toBeNull();
+  });
+
   it('derives the end from the duration', () => {
     expect(toBooking(row(), 'me').endsAt).toBe('2026-10-04T16:45:00.000Z');
   });
