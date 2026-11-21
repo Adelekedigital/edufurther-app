@@ -108,6 +108,7 @@ vi.mock('@/lib/api/data/mentors', () => ({
 }));
 vi.mock('@/lib/api/data/catalog', () => ({
   useDegreeLevels: () => ({ levels: [], status: 'ready' }),
+  useFieldsOfStudy: () => null,
 }));
 vi.mock('@/lib/api/data/goals', () => ({
   useMenteeGoals: () => ({

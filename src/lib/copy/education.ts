@@ -6,6 +6,10 @@
 export type EducationAudience = 'mentor' | 'mentee';
 
 export const EDUCATION_FIELD_COPY = {
+  // The same words as Goals and onboarding (owner 2026-11-21: "Course of study" retired).
+  field: 'Field of study',
+  fieldPlaceholder: 'e.g. Public Health',
+  fieldRequired: 'Add your field of study.',
   currentHint: {
     mentor: 'Shown under your name and on your mentor card.',
     mentee: 'Marks the degree you’re studying now or finished most recently.',

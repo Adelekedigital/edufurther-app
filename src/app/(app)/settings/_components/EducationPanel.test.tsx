@@ -47,6 +47,7 @@ vi.mock('@/lib/api/data/profileEntries', async (orig) => ({
   }),
 }));
 vi.mock('@/lib/api/data/catalog', () => ({
+  useFieldsOfStudy: () => null,
   useDegreeLevels: () => ({
     levels: [
       { id: 'dl-undergraduate', code: 'undergraduate' },
@@ -172,7 +173,7 @@ describe('EducationPanel', () => {
     );
     await user.type(within(dialog).getByRole('combobox', { name: 'School' }), 'UCL');
     await pickOption(user, within(dialog).getByRole('combobox', { name: 'Degree' }), 'MSc');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Data');
+    await user.type(within(dialog).getByRole('combobox', { name: 'Field of study' }), 'Data');
     await user.click(within(dialog).getByRole('button', { name: 'Add education' }));
     expect(addEducation).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -201,7 +202,7 @@ describe('EducationPanel', () => {
     await user.type(within(dialog).getByRole('combobox', { name: 'School' }), 'Lagos');
     expect(searched).toHaveBeenLastCalledWith('Lagos');
     await user.click(screen.getByRole('option', { name: /University of Lagos/ }));
-    await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Data');
+    await user.type(within(dialog).getByRole('combobox', { name: 'Field of study' }), 'Data');
     await user.click(within(dialog).getByRole('button', { name: 'Add education' }));
     expect(addEducation).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -234,7 +235,7 @@ describe('EducationPanel', () => {
     rerender(<EducationPanel userId="u1" />);
     const dialog = screen.getByRole('dialog', { name: 'Edit education' });
     expect(within(dialog).queryByText(/We couldn’t load your education/)).toBeNull();
-    const course = within(dialog).getByRole('textbox', { name: 'Course of study' });
+    const course = within(dialog).getByRole('combobox', { name: 'Field of study' });
     await user.clear(course);
     await user.type(course, 'Biochemistry');
     await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));
@@ -249,7 +250,7 @@ describe('EducationPanel', () => {
     render(<EducationPanel userId="u1" />);
     await user.click(screen.getByRole('button', { name: 'Edit BSc, Microbiology' }));
     const dialog = screen.getByRole('dialog', { name: 'Edit education' });
-    const course = within(dialog).getByRole('textbox', { name: 'Course of study' });
+    const course = within(dialog).getByRole('combobox', { name: 'Field of study' });
     expect(course).toHaveValue('Microbiology');
     await user.clear(course);
     await user.type(course, 'Biochemistry');
@@ -266,7 +267,7 @@ describe('EducationPanel', () => {
     const edit = async (course: string) => {
       await user.click(screen.getByRole('button', { name: 'Edit BSc, Microbiology' }));
       const dialog = screen.getByRole('dialog', { name: 'Edit education' });
-      const field = within(dialog).getByRole('textbox', { name: 'Course of study' });
+      const field = within(dialog).getByRole('combobox', { name: 'Field of study' });
       await user.clear(field);
       await user.type(field, course);
       await user.click(within(dialog).getByRole('button', { name: 'Save changes' }));

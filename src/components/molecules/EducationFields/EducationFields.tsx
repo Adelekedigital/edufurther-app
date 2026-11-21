@@ -1,10 +1,10 @@
 import { useId } from 'react';
 import { Checkbox } from '@/components/atoms/Checkbox/Checkbox';
-import { Input } from '@/components/atoms/Input/Input';
 import { Select } from '@/components/atoms/Select/Select';
 import { FormField } from '@/components/molecules/FormField/FormField';
 import { SchoolSelect, type SchoolSearch } from '@/components/molecules/SchoolSelect/SchoolSelect';
 import { EDUCATION_FIELD_COPY, type EducationAudience } from '@/lib/copy/education';
+import { FIELD_SUGGESTIONS } from '@/lib/copy/onboarding';
 import { DEGREES } from '@/lib/utils/degrees';
 import { cx } from '@/lib/utils/cx';
 import type { EducationValues } from '@/types/mentor';
@@ -26,10 +26,12 @@ type EducationFieldsProps = {
   /** Who is editing: only a mentor has a mentor card to mention. */
   audience: EducationAudience;
   schools: SchoolSearchProps;
+  /** The catalogue's fields of study (the page loads them); null: the built-in suggestions. */
+  fields?: string[] | null;
 };
 
 /**
- * A degree (ProfileItemModal.dc.html `education`): school; degree and course;
+ * A degree (ProfileItemModal.dc.html `education`): school; degree and field of study;
  * start and end years; and whether it's the current or most recent one.
  * Rendered as siblings, so the modal's own gap spaces the rows as drawn.
  */
@@ -41,6 +43,7 @@ export function EducationFields({
   hasOther,
   audience,
   schools,
+  fields,
 }: EducationFieldsProps) {
   const hintId = useId();
   // The design's 40 years, plus a saved year outside them (review of #93), newest first.
@@ -91,15 +94,23 @@ export function EducationFields({
             />
           )}
         </FormField>
-        <FormField label="Course of study" error={errors.course}>
+        {/* One word and one control for it across the app: Goals, onboarding
+            and here (owner 2026-11-21). The catalogue's names, or what's typed. */}
+        <FormField label={EDUCATION_FIELD_COPY.field} error={errors.course}>
           {(c) => (
-            <Input
+            <Select
               {...c}
-              value={values.course}
-              onChange={(e) => set('course', e.target.value)}
-              placeholder="e.g. Sociology"
+              text="sm"
+              searchable
+              allowCustom
+              required
               maxLength={200}
-              aria-required
+              placeholder={EDUCATION_FIELD_COPY.fieldPlaceholder}
+              query={values.course}
+              onQueryChange={(q) => set('course', q)}
+              value={values.course}
+              options={(fields ?? FIELD_SUGGESTIONS).map((f) => ({ value: f, label: f }))}
+              onChange={(e) => set('course', e.target.value)}
             />
           )}
         </FormField>
