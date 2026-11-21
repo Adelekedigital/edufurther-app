@@ -1,6 +1,7 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 /**
  * Which booking the details panel is showing, kept in the URL (`?booking=`)
@@ -11,7 +12,6 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
  * having, for a link opened cold.
  */
 export function useSelectedBooking() {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const selected = params.get('booking');
@@ -23,7 +23,7 @@ export function useSelectedBooking() {
     const s = qs.toString();
     // `replace`, not `push`: opening and closing a panel is not somewhere to
     // go Back to, and the row that opened it is still on screen.
-    router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
+    replaceQuery(s ? `${pathname}?${s}` : pathname);
   };
 
   return { selected, select, toggle: (id: string) => select(selected === id ? null : id) };

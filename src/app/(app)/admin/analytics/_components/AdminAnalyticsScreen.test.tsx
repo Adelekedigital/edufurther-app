@@ -22,11 +22,11 @@ vi.mock('next/navigation', async () => {
   };
   return {
     useSearchParams: () => useSyncExternalStore(subscribe, () => h.params),
-    useRouter: () => ({ replace }),
     usePathname: () => '/admin/analytics',
   };
 });
-const replace = vi.fn((url: string) => {
+vi.mock('@/lib/utils/replaceQuery', () => ({ replaceQuery: (url: string) => replaceQuery(url) }));
+const replaceQuery = vi.fn((url: string) => {
   h.params = new URLSearchParams(url.split('?')[1] ?? '');
   h.listeners.forEach((fn) => fn());
 });
@@ -58,7 +58,7 @@ const calls = (section: string) =>
 
 beforeEach(() => {
   h.GET.mockReset();
-  replace.mockClear();
+  replaceQuery.mockClear();
   h.params = new URLSearchParams('tab=credits');
 });
 
@@ -174,10 +174,10 @@ describe('Admin Analytics: the page', () => {
     expect(await screen.findByRole('region', { name: 'Platform health' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('combobox', { name: 'Show' }));
     await userEvent.click(screen.getByRole('option', { name: 'Completed sessions (North Star)' }));
-    expect(replace).toHaveBeenLastCalledWith('/admin/analytics', { scroll: false });
+    expect(replaceQuery).toHaveBeenLastCalledWith('/admin/analytics');
     await userEvent.click(screen.getByRole('combobox', { name: 'Show' }));
     await userEvent.click(screen.getByRole('option', { name: 'Active members' }));
-    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?show=active', { scroll: false });
+    expect(replaceQuery).toHaveBeenLastCalledWith('/admin/analytics?show=active');
   });
 
   it('the role filter is in the URL with Show, and the North Star drops it', async () => {
@@ -187,18 +187,16 @@ describe('Admin Analytics: the page', () => {
     const card = await screen.findByRole('region', { name: 'Platform health' });
     expect(within(card).getByRole('radio', { name: 'Mentors' })).toBeChecked();
     await userEvent.click(within(card).getByRole('radio', { name: 'Mentees' }));
-    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?show=active&role=mentee', {
-      scroll: false,
-    });
+    expect(replaceQuery).toHaveBeenLastCalledWith('/admin/analytics?show=active&role=mentee');
     await userEvent.click(within(card).getByRole('radio', { name: 'All' }));
-    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?show=active', { scroll: false });
+    expect(replaceQuery).toHaveBeenLastCalledWith('/admin/analytics?show=active');
   });
 
   it('a tab moves the URL', async () => {
     serve();
     renderScreen(<AdminAnalyticsScreen />);
     await userEvent.click(screen.getByRole('tab', { name: 'Overview' }));
-    expect(replace).toHaveBeenLastCalledWith('/admin/analytics', { scroll: false });
+    expect(replaceQuery).toHaveBeenLastCalledWith('/admin/analytics');
     expect(screen.getByRole('tab', { name: 'Overview', selected: true })).toBeInTheDocument();
   });
 });
@@ -349,9 +347,7 @@ describe('Admin Analytics: states', () => {
     await userEvent.click(
       within(items[0]!).getByRole('button', { name: 'See the sign-up funnel' }),
     );
-    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?tab=funnels&by=migrated', {
-      scroll: false,
-    });
+    expect(replaceQuery).toHaveBeenLastCalledWith('/admin/analytics?tab=funnels&by=migrated');
     // The list closes (focus going back to the count is AlertsButton's test).
     expect(screen.queryByRole('dialog', { name: 'Alerts' })).toBeNull();
   });
@@ -364,7 +360,7 @@ describe('Admin Analytics: states', () => {
     expect(list).toHaveTextContent('No sign-ups');
     expect(list).toHaveTextContent('No one has signed up in the last 7 days.');
     await userEvent.click(within(list).getByRole('button', { name: 'See the sign-up funnel' }));
-    expect(replace).toHaveBeenLastCalledWith('/admin/analytics?tab=funnels', { scroll: false });
+    expect(replaceQuery).toHaveBeenLastCalledWith('/admin/analytics?tab=funnels');
   });
 
   it('with no alerts there is no count', async () => {

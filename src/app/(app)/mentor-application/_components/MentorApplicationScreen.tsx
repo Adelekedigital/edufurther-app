@@ -23,6 +23,7 @@ import { NEW_MENTEE_HOME, ONBOARDING_LIVE } from '@/lib/config/auth';
 import { weeklyHoursSummary } from '@/lib/utils/weeklyHoursSummary';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useCalendarConnect } from '@/app/_shell/useCalendarConnect';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 const SELF = '/mentor-application';
 const APPLY = '/onboarding/mentor';
@@ -63,8 +64,8 @@ export function MentorApplicationScreen() {
     const rest = new URLSearchParams(params.toString());
     rest.delete('sent');
     const q = rest.toString();
-    router.replace(q ? `${path}?${q}` : path, { scroll: false });
-  }, [params, path, router]);
+    replaceQuery(q ? `${path}?${q}` : path);
+  }, [params, path]);
   const { viewer, member } = useAppShell();
   const userId = member?.id ?? null;
   const app = useMentorApplication(userId);

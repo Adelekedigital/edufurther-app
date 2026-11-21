@@ -6,6 +6,9 @@ import { emptyWeek } from '@/lib/utils/sessionTypeDraft';
 
 const replace = vi.fn();
 const push = vi.fn();
+// Dropping ?sent edits the query in place, not through the router.
+const { replaceQuery } = vi.hoisted(() => ({ replaceQuery: vi.fn() }));
+vi.mock('@/lib/utils/replaceQuery', () => ({ replaceQuery }));
 let search = '';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace, push }),
@@ -99,6 +102,7 @@ beforeEach(() => {
   connectState = { kind: 'idle' };
   connectFn.mockReset();
   replace.mockReset();
+  replaceQuery.mockReset();
   push.mockReset();
   markSeen.mockReset();
   continueAsMentee.mockReset();
@@ -118,9 +122,7 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Edit my application' })).toBeNull();
-    await waitFor(() =>
-      expect(replace).toHaveBeenCalledWith('/mentor-application', { scroll: false }),
-    );
+    await waitFor(() => expect(replaceQuery).toHaveBeenCalledWith('/mentor-application'));
   });
 
   it('any later visit (no ?sent): "Your application is in review"', async () => {
@@ -130,6 +132,7 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
       await screen.findByRole('heading', { level: 1, name: 'Your application is in review' }),
     ).toBeInTheDocument();
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 
   it('approved, not seen: the real hours and Intro chat, marked seen once', async () => {

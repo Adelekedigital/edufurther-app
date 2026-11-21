@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { ALREADY_APPROVED_TOAST } from '@/lib/copy/mentorApplication';
 import styles from './ApprovedToast.module.css';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 /** Mentor Dashboard v2.dc.html: the toast stays 4s. */
 export const APPROVED_TOAST_MS = 4000;
@@ -18,7 +19,6 @@ export const APPROVED_TOAST_MS = 4000;
 export function ApprovedToast() {
   const params = useSearchParams();
   const path = usePathname();
-  const router = useRouter();
   const asked = params.get('toast') === 'approved';
   // Once per arrival: closing doesn't reopen it while the address catches up.
   const [phase, setPhase] = useState<'idle' | 'open' | 'done'>('idle');
@@ -30,8 +30,8 @@ export function ApprovedToast() {
     const rest = new URLSearchParams(params.toString());
     rest.delete('toast');
     const q = rest.toString();
-    router.replace(q ? `${path}?${q}` : path, { scroll: false });
-  }, [asked, params, path, router]);
+    replaceQuery(q ? `${path}?${q}` : path);
+  }, [asked, params, path]);
 
   useEffect(() => {
     if (!open) return;

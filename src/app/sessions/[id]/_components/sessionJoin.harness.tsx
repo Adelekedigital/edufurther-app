@@ -36,13 +36,17 @@ export const h = {
   slots: [] as string[],
 };
 
-// A tiny store, so a replace() back to this page re-renders it without the
-// parameter, as the router does.
+// A tiny store, so dropping a parameter in place re-renders the page without it,
+// as Next does for replaceQuery.
 const searchListeners = new Set<() => void>();
 export function setSearch(query: string) {
   h.search = new URLSearchParams(query);
   searchListeners.forEach((l) => l());
 }
+export const replaceQuery = vi.fn((url: string) => {
+  if (url.startsWith('/sessions/')) setSearch(url.split('?')[1] ?? '');
+});
+/** Page changes: to Bookings, or a moved session's own page (its query too). */
 export const replace = vi.fn((url: string) => {
   if (url.startsWith('/sessions/')) setSearch(url.split('?')[1] ?? '');
 });
@@ -59,6 +63,7 @@ export const reasonHook: { isPending: boolean; failed: 'retry' | 'closed' | null
 
 /** The `vi.mock` factories, one per mocked module. */
 export const mocks = {
+  replaceQuery: () => ({ replaceQuery }),
   navigation: async () => {
     const { useSyncExternalStore } = await import('react');
     const subscribe = (l: () => void) => {
@@ -202,6 +207,7 @@ export function setupSessionJoinHarness() {
     resetCancelMove();
     h.reviewables = remote([{ id: 'b1', startsAt: START, typeName: '1:1 call' }]);
     replace.mockClear();
+    replaceQuery.mockClear();
     push.mockClear();
     cancel.mutate.mockReset();
   });

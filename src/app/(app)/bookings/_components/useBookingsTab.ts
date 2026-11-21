@@ -1,8 +1,9 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { HISTORY_FILTERS } from '@/lib/utils/bookings';
 import type { BookingStatus, BookingTab } from '@/types/booking';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 const TABS: BookingTab[] = ['upcoming', 'pending', 'history'];
 
@@ -17,7 +18,6 @@ const TABS: BookingTab[] = ['upcoming', 'pending', 'history'];
  * viewer's own choice.
  */
 export function useBookingsTab() {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const linkedFilter = HISTORY_FILTERS.find((f) => f.key === params.get('filter')) ?? null;
@@ -28,7 +28,7 @@ export function useBookingsTab() {
     const qs = new URLSearchParams(params.toString());
     edit(qs);
     const s = qs.toString();
-    router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
+    replaceQuery(s ? `${pathname}?${s}` : pathname);
   };
   const setTab = (next: string) =>
     replaceWith((qs) => {

@@ -27,6 +27,7 @@ import { accountHome, signInOutcome, type Outcome } from './outcome';
 import { loadAccount, toAccount } from './account';
 import { useEmailCodeAuth } from './useEmailCodeAuth';
 import { useSignupStarted } from './useSignupStarted';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 export { CODE_LIFETIME_MS, RESEND_WAIT_MS } from './useEmailCodeAuth';
 
@@ -179,7 +180,7 @@ export function useSignInFlow({
     if (!url.searchParams.has('error') && !url.searchParams.has('auth')) return;
     url.searchParams.delete('error');
     url.searchParams.delete('auth');
-    window.history.replaceState(window.history.state, '', url);
+    replaceQuery(url.pathname + url.search + url.hash);
   }, []);
 
   const finish = useCallback(

@@ -2,12 +2,15 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile } from '@/types/mentor';
-import { h, remote, replace, saveTopics, state } from './profileScreen.harness';
+import { h, remote, replaceQuery, saveTopics, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
   (await import('./profileScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./profileScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./profileScreen.harness')).mocks.appShell(),
@@ -322,7 +325,7 @@ describe('MentorProfileScreen — Profile strength', () => {
     const user = userEvent.setup();
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('button', { name: /Write your About/ }));
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga');
   });
 
   it('once a tip’s step is done, focus moves to the next tip (review of PR 106)', async () => {

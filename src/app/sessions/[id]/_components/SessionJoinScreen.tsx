@@ -81,6 +81,7 @@ import {
 import { track } from '@/lib/analytics/track';
 import { canHandOffToSafari } from '@/lib/utils/standalone';
 import styles from './SessionJoinScreen.module.css';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 // Opened from a button, never needed for the first paint of the join page:
 // each loads on open (performance budget, 350kB first-load JS) and mounts
@@ -278,8 +279,8 @@ export function SessionJoinScreen({ id }: { id: string }) {
     rest.delete(ENTER_PARAM);
     const qs = rest.toString();
     const path = `/sessions/${encodeURIComponent(id)}`;
-    router.replace(qs ? `${path}?${qs}` : path, { scroll: false });
-  }, [settledEnter, params, router, id]);
+    replaceQuery(qs ? `${path}?${qs}` : path);
+  }, [settledEnter, params, id]);
 
   const cancel = useBookingAction('cancel');
   // Why the viewer missed it, for EduFurther only (founder, Oct 21).

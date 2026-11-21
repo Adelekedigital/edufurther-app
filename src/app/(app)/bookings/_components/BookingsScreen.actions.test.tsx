@@ -15,7 +15,7 @@ import {
   party,
   push,
   remote,
-  replace,
+  replaceQuery,
   reminders,
   resetHarness,
 } from './bookingsScreen.harness';
@@ -26,6 +26,9 @@ import { entryPoints, launched, sent } from '@/app/_sessions/reviewAndRebook.har
 // that is not initialised yet — the shape profileScreen.harness uses.
 vi.mock('next/navigation', async () =>
   (await import('./bookingsScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./bookingsScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./bookingsScreen.harness')).mocks.appShell(),

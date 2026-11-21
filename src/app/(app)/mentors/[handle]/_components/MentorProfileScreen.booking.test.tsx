@@ -3,12 +3,15 @@ import userEvent from '@testing-library/user-event';
 import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import { zoneLabel } from '@/components/molecules/TimezonePicker/TimezonePicker';
 import { deviceTimeZone } from '@/lib/utils/format';
-import { h, remote, replace, state } from './profileScreen.harness';
+import { h, remote, replaceQuery, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
   (await import('./profileScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./profileScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./profileScreen.harness')).mocks.appShell(),
@@ -58,16 +61,14 @@ describe('MentorProfileScreen — ?book= links', () => {
     h.profile = state({ data: profile });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('dialog')).toHaveTextContent(`Book ${second.name}`);
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions&utm_source=x', {
-      scroll: false,
-    });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions&utm_source=x');
   });
 
   it('a copied booking link’s via is counted, never put back by the replace', () => {
     withLink(`book=${second.id}&via=copy&utm_source=x`);
     h.profile = state({ data: profile });
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?utm_source=x', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga?utm_source=x');
   });
 
   it('waits until it knows who is looking', () => {
@@ -76,7 +77,7 @@ describe('MentorProfileScreen — ?book= links', () => {
     h.profile = state({ data: profile });
     const { rerender } = render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     h.viewerLoading = false;
     rerender(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -121,7 +122,7 @@ describe('MentorProfileScreen — ?book= links', () => {
       arrange();
       render(<MentorProfileScreen handle="gbenga" />);
       expect(screen.queryByRole('dialog')).toBeNull();
-      expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
+      expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga');
       if (said) {
         // Shown, and said by a status region that was already on the page.
         expect(screen.getAllByText(said).length).toBeGreaterThan(0);
@@ -143,7 +144,7 @@ describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)'
     withLink(`book=${second.id}`);
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     online.mockReturnValue(true);
     act(() => {
       window.dispatchEvent(new Event('online'));
@@ -156,7 +157,7 @@ describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)'
     withLink(`book=${second.id}`);
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga');
   });
 
   it('closing the modal doesn’t bring it back, and the link is handled once', async () => {
@@ -168,7 +169,7 @@ describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)'
     // The URL hasn't caught up yet (the harness keeps ?book=): still no reopen.
     rerender(<MentorProfileScreen handle="gbenga" />);
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replaceQuery).toHaveBeenCalledTimes(1);
   });
 
   it('a profile that isn’t there drops the link', () => {
@@ -176,7 +177,7 @@ describe('MentorProfileScreen — ?book= links, gated like Book (review of #81)'
     h.similarRemote = { data: [], isLoading: false, error: null, retry: vi.fn() };
     withLink(`book=${second.id}`);
     render(<MentorProfileScreen handle="gbenga" />);
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga');
   });
 });
 
@@ -288,7 +289,7 @@ describe('MentorProfileScreen — ?at= rides with ?book=', () => {
     h.profile = state({ data: profile });
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('dialog')).toHaveTextContent(`Book ${second.name}`);
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?utm_source=x', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga?utm_source=x');
   });
 
   it('an `at` with no `book` opens nothing — there is no offering to book', () => {

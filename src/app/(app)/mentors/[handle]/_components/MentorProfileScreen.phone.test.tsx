@@ -2,12 +2,15 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile, sessionTypes } from '@/components/organisms/ProfileHeader/profile.fixture';
 import type { MentorProfile } from '@/types/mentor';
-import { h, remote, replace, state } from './profileScreen.harness';
+import { h, remote, replaceQuery, state } from './profileScreen.harness';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
   (await import('./profileScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./profileScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./profileScreen.harness')).mocks.appShell(),
@@ -206,7 +209,7 @@ describe('MentorProfileScreen on phones: one session in the card (owner, 17 Nov)
     await user.click(
       within(card).getByRole('button', { name: `See all ${sessionTypes.length} sessions` }),
     );
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions');
   });
 
   it('two sessions: the Sessions tab shows on phones so "See all 2 sessions" has somewhere to go', async () => {
@@ -217,7 +220,7 @@ describe('MentorProfileScreen on phones: one session in the card (owner, 17 Nov)
     render(<MentorProfileScreen handle="gbenga" />);
     expect(screen.getByRole('tab', { name: /Sessions/ })).toBeInTheDocument();
     await user.click(within(bookCard()!).getByRole('button', { name: 'See all 2 sessions' }));
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions');
   });
 
   it('not taking bookings: no card, so two sessions bring no Sessions tab (as on desktop)', () => {

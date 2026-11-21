@@ -98,7 +98,8 @@ export const MEMBER: Extract<Viewer, { kind: 'member' }> = {
   bookingCounts: { pending: 2, upcoming: 3 },
 };
 
-export const replace = vi.fn();
+// A tab, panel or filter change: the screen edits its own query in place.
+export const replaceQuery = vi.fn();
 export const push = vi.fn();
 
 export function stubAction() {
@@ -145,9 +146,10 @@ export const h = {
 };
 
 export const mocks = {
+  replaceQuery: () => ({ replaceQuery }),
   navigation: () => ({
     usePathname: () => '/bookings',
-    useRouter: () => ({ replace, push }),
+    useRouter: () => ({ push }),
     useSearchParams: () => {
       const q = new URLSearchParams(h.tab === 'upcoming' ? '' : `tab=${h.tab}`);
       if (h.selectedBooking) q.set('booking', h.selectedBooking);
@@ -255,6 +257,6 @@ export function resetHarness() {
   reminders.sent.length = 0;
   reminders.refuse = null;
   push.mockReset();
-  replace.mockReset();
+  replaceQuery.mockReset();
   resetReviewAndRebook();
 }

@@ -7,6 +7,7 @@ import { track } from '@/lib/analytics/track';
 import { recordProfileVisit } from '@/lib/api/data/profileLinks';
 import { VIA_PARAM } from '@/lib/utils/mentorPath';
 import { referralHost } from '@/lib/utils/ownHost';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 /**
  * `document.referrer` belongs to the page load, not to each profile opened in
@@ -73,7 +74,7 @@ function dropVia() {
   const url = new URL(window.location.href);
   if (!url.searchParams.has(VIA_PARAM)) return;
   url.searchParams.delete(VIA_PARAM);
-  window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+  replaceQuery(url.pathname + url.search + url.hash);
 }
 
 type View = {

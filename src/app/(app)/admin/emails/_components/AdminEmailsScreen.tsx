@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { TabPanel } from '@/components/atoms/Tabs/TabPanel';
 import { PageHeader } from '@/components/molecules/PageHeader/PageHeader';
@@ -12,6 +12,7 @@ import { EMAIL_TABS } from '@/lib/copy/adminEmails';
 import { EmailList } from './EmailList';
 import { EmailValues } from './EmailValues';
 import styles from './AdminEmailsScreen.module.css';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 type Tab = 'list' | 'variables';
 const panelId = (t: Tab) => `admin-emails-${t}`;
@@ -27,7 +28,6 @@ export function AdminEmailsScreen() {
   const adminId = viewer.kind === 'member' && viewer.isAdmin ? viewer.id : null;
   const timeZone = viewer.kind === 'member' ? viewer.timeZone : undefined;
   const params = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const tab: Tab = params.get('view') === 'variables' ? 'variables' : 'list';
 
@@ -40,7 +40,7 @@ export function AdminEmailsScreen() {
     if (t === 'variables') next.set('view', 'variables');
     else next.delete('view');
     const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    replaceQuery(qs ? `${pathname}?${qs}` : pathname);
   };
 
   const items = (['list', 'variables'] as const).map((t) => ({
