@@ -448,6 +448,7 @@ const profileItemsMock = () => ({
 });
 
 const catalogMock = () => ({
+  useFieldsOfStudy: () => null,
   useDegreeLevels: () => ({
     levels: [
       { id: 'dl-undergraduate', code: 'undergraduate' },

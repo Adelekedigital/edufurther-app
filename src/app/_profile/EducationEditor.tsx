@@ -6,7 +6,7 @@ import {
   type ItemShell,
 } from '@/components/organisms/ProfileItemModal/ProfileItemModal';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import { useDegreeLevels } from '@/lib/api/data/catalog';
+import { useDegreeLevels, useFieldsOfStudy } from '@/lib/api/data/catalog';
 import {
   educationBody,
   educationPatch,
@@ -53,6 +53,7 @@ export function EducationEditor({ userId, id, onClose, onSaved, audience }: Prop
   // The owner's own list carries what the form needs (backend reply).
   const own = useOwnEducation(userId, true);
   const levels = useDegreeLevels(true);
+  const fields = useFieldsOfStudy(true);
   // What's typed into School; a saved school isn't searched until it's changed.
   const [schoolQ, setSchoolQ] = useState('');
   const schools = useInstitutionSearch(schoolQ, NO_COUNTRIES);
@@ -93,6 +94,7 @@ export function EducationEditor({ userId, id, onClose, onSaved, audience }: Prop
       hasOther={own.entries.some((e) => e.values.current && e.id !== id)}
       audience={audience}
       schools={{ ...schools, onQueryChange: setSchoolQ }}
+      fields={fields}
       catalog={{
         status,
         onRetry: () => {

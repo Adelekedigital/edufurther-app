@@ -4,6 +4,7 @@
  * lives with the status page (lib/copy/mentorApplication.ts).
  */
 import type { MentorGap, MentorStep } from '@/types/mentorOnboarding';
+import { EDUCATION_FIELD_COPY } from './education';
 
 export const STEP_ORDER: MentorStep[] = ['help', 'education', 'about', 'hours'];
 
@@ -63,8 +64,8 @@ export const EDUCATION_COPY = {
   countryHintKnown: 'Mentees search by where you studied.',
   countryHintUnknown: 'We couldn’t find this university. Tell us where it is.',
   degree: 'Degree',
-  field: 'Field of study',
-  fieldPlaceholder: 'e.g. Public Health',
+  field: EDUCATION_FIELD_COPY.field,
+  fieldPlaceholder: EDUCATION_FIELD_COPY.fieldPlaceholder,
   start: 'Start year',
   end: 'End year (or expected)',
   yearPlaceholder: 'Year',
