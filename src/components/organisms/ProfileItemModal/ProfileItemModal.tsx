@@ -17,7 +17,7 @@ import {
 } from '@/components/molecules/EducationFields/EducationFields';
 import type { LanguageOption } from '@/components/molecules/LanguagePicker/LanguagePicker';
 import { TopicPicker } from '@/components/molecules/TopicPicker/TopicPicker';
-import type { EducationAudience } from '@/lib/copy/education';
+import { EDUCATION_FIELD_COPY, type EducationAudience } from '@/lib/copy/education';
 import type { TopicGroup } from '@/lib/utils/topicGroups';
 import type { AwardValues, EducationValues } from '@/types/mentor';
 import styles from './ProfileItemModal.module.css';
@@ -81,6 +81,8 @@ type EducationProps = Common & {
   audience: EducationAudience;
   /** The school search the page runs on what's typed. */
   schools: SchoolSearchProps;
+  /** The catalogue's fields of study, for Field of study's list. */
+  fields?: string[] | null;
   onSave: (values: EducationValues) => void;
 };
 
@@ -185,7 +187,7 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
       const v = trimEducation(edu);
       const next: EducationErrors = {
         ...(!v.school && { school: 'Add your school.' }),
-        ...(!v.course && { course: 'Add your course of study.' }),
+        ...(!v.course && { course: EDUCATION_FIELD_COPY.fieldRequired }),
         ...(v.end < v.start && { end: 'End year can’t be before the start year.' }),
       };
       setProblems(next);
@@ -286,6 +288,7 @@ export function ProfileItemModal(props: ProfileItemModalProps) {
         hasOther={props.hasOther}
         audience={props.audience}
         schools={props.schools}
+        fields={props.fields}
       />
     ) : props.kind === 'award' ? (
       <AwardFields

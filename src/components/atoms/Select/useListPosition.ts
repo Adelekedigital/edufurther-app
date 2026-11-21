@@ -63,6 +63,40 @@ export function placeList(
   return { style, above };
 }
 
+/**
+ * How far to scroll the field up so its list fits under it, above the phone
+ * keyboard: `want` is the list's height (capped by the caller), `clearTop` the visible top the field
+ * may rise to (under the sticky header). 0 when the list already fits.
+ */
+export function roomToScroll(
+  field: DOMRect,
+  want: number,
+  visible: Visible,
+  clearTop: number,
+): number {
+  const below = visible.top + visible.height - field.bottom - GAP - EDGE;
+  const need = want - below;
+  if (need <= 0) return 0;
+  return Math.max(0, Math.min(need, field.top - clearTop));
+}
+
+/** A text box is focused in the field on a touch screen: the keyboard is (or will be) up. */
+function typingOnTouch(field: HTMLElement): boolean {
+  const el = document.activeElement;
+  if (!(el instanceof HTMLInputElement) || !field.contains(el) || el.readOnly) return false;
+  return window.matchMedia?.('(pointer: coarse)').matches ?? false;
+}
+
+/** The box that scrolls the field (a dialog body), else the page. */
+function scrollerOf(field: HTMLElement): HTMLElement {
+  for (let a = field.parentElement; a && a !== document.body; a = a.parentElement) {
+    const { overflowY } = getComputedStyle(a);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && a.scrollHeight > a.clientHeight)
+      return a;
+  }
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
+}
+
 /** The field has scrolled wholly out of the box that scrolls it (a dialog body). */
 export function outOfView(field: DOMRect, box: DOMRect): boolean {
   return field.bottom <= box.top || field.top >= box.bottom;
@@ -108,6 +142,34 @@ export function useListPosition(
         ),
       );
     };
+    // On a phone, typing raises the keyboard over the lower half of the screen,
+    // and a list with no room under the field would flip above it, covering
+    // what's above and jumping as the keyboard and the page move. Instead the
+    // field scrolls up (never under the sticky header: scroll-padding-top) so
+    // its list stays under it; the scroll then places the list again.
+    const makeRoom = () => {
+      const f = field.current;
+      if (!f || !typingOnTouch(f)) return;
+      const box = scrollerOf(f);
+      const page = box === document.scrollingElement || box === document.documentElement;
+      const visible = vv
+        ? { top: vv.offsetTop, height: vv.height }
+        : { top: 0, height: window.innerHeight };
+      const pad = parseFloat(
+        getComputedStyle(page ? document.documentElement : box).scrollPaddingTop,
+      );
+      const top = page ? visible.top : Math.max(visible.top, box.getBoundingClientRect().top);
+      const max = limits.current?.max ?? LIST_MAX;
+      const want = Math.min(list.current?.scrollHeight || max, max);
+      const by = roomToScroll(f.getBoundingClientRect(), want, visible, top + (pad || 0) + EDGE);
+      // Whole pixels: a fractional scroll can round away and leave the list a hair short.
+      if (by > 0) box.scrollTop += Math.ceil(by);
+    };
+    const onViewport = () => {
+      makeRoom();
+      place();
+    };
+    makeRoom();
     place();
     const onScroll = (e: Event) => {
       // The list's own scroll doesn't move the field.
@@ -121,12 +183,12 @@ export function useListPosition(
     };
     window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', place);
-    vv?.addEventListener('resize', place);
+    vv?.addEventListener('resize', onViewport);
     vv?.addEventListener('scroll', place);
     return () => {
       window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', place);
-      vv?.removeEventListener('resize', place);
+      vv?.removeEventListener('resize', onViewport);
       vv?.removeEventListener('scroll', place);
     };
   }, [open, field, list, contentKey]);

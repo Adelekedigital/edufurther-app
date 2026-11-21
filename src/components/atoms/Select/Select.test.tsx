@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState, type ComponentProps } from 'react';
 import { Select, type SelectOption } from './Select';
 import { typeaheadIndex } from './typeahead';
-import { LIST_MAX, outOfView, placeList } from './useListPosition';
+import { LIST_MAX, outOfView, placeList, roomToScroll } from './useListPosition';
 
 const lengths: SelectOption[] = [
   { value: '30', label: '30 min' },
@@ -349,6 +349,101 @@ describe('outOfView', () => {
     expect(outOfView(r(10, 47), r(50, 400))).toBe(true);
     expect(outOfView(r(30, 67), r(50, 400))).toBe(false);
     expect(outOfView(r(410, 447), r(50, 400))).toBe(true);
+  });
+});
+
+describe('roomToScroll', () => {
+  const rect = (top: number, h = 44) => ({ top, bottom: top + h }) as DOMRect;
+
+  it('is 0 when the list already fits under the field', () => {
+    expect(roomToScroll(rect(100), 260, { top: 0, height: 664 }, 72)).toBe(0);
+  });
+
+  it('with the keyboard up, scrolls the field up just enough for the list', () => {
+    // Visible 0–328 above the keyboard; field at 220–264 leaves 52 below.
+    expect(roomToScroll(rect(220), 100, { top: 0, height: 328 }, 72)).toBe(48);
+  });
+
+  it('never scrolls the field above clearTop (under the sticky header)', () => {
+    expect(roomToScroll(rect(380), 260, { top: 0, height: 328 }, 72)).toBe(308);
+  });
+});
+
+/**
+ * The phone keyboard: a touch screen, and a visual viewport that shrinks while
+ * the layout viewport (innerHeight 768) stays. jsdom lays nothing out, so the
+ * field sits at 500–544 minus the page's scroll.
+ */
+describe('Select on a phone, as the keyboard opens', () => {
+  let scrolled = 0;
+  const vv = Object.assign(new EventTarget(), { height: 768, width: 390, offsetTop: 0 });
+  const html = document.documentElement;
+  beforeEach(() => {
+    scrolled = 0;
+    vv.height = 768;
+    Object.defineProperty(window, 'visualViewport', { value: vv, configurable: true });
+    Object.defineProperty(html, 'scrollTop', {
+      configurable: true,
+      get: () => scrolled,
+      set: (v: number) => {
+        scrolled = v;
+      },
+    });
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      (q) => ({ media: q, matches: q === '(pointer: coarse)' }) as MediaQueryList,
+    );
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+      () =>
+        ({
+          top: 500 - scrolled,
+          bottom: 544 - scrolled,
+          left: 16,
+          right: 374,
+          width: 358,
+          height: 44,
+        }) as DOMRect,
+    );
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (window as { visualViewport?: unknown }).visualViewport;
+    delete (html as { scrollTop?: unknown }).scrollTop;
+  });
+  const keyboardUp = () =>
+    act(() => {
+      vv.height = 400;
+      vv.dispatchEvent(new Event('resize'));
+    });
+
+  it('scrolls a typed-in field up so its list stays under it, not flipped above', async () => {
+    const user = userEvent.setup();
+    render(<Search allowCustom={false} />);
+    await user.click(box());
+    // Even before the keyboard: 768 - 12 - 260 = 496 is the lowest the field's bottom may sit.
+    expect(scrolled).toBe(544 - 496);
+    keyboardUp();
+    // Room for the 260px list: 400 - 12 - 260 = 128 is the lowest the field's bottom may sit.
+    expect(scrolled).toBe(544 - 128);
+    const popup = screen.getByRole('listbox').parentElement!;
+    expect(popup.style.top).not.toBe('');
+    expect(popup.style.bottom).toBe('');
+  });
+
+  it('leaves the page alone for a select-only field (no keyboard) or a mouse', async () => {
+    const user = userEvent.setup();
+    const { unmount } = render(<Plain />);
+    await user.click(screen.getByRole('combobox', { name: 'Session length' }));
+    keyboardUp();
+    expect(scrolled).toBe(0);
+    unmount();
+    vi.mocked(window.matchMedia).mockImplementation(
+      (q) => ({ media: q, matches: false }) as MediaQueryList,
+    );
+    vv.height = 768;
+    render(<Search allowCustom={false} />);
+    await user.click(box());
+    keyboardUp();
+    expect(scrolled).toBe(0);
   });
 });
 

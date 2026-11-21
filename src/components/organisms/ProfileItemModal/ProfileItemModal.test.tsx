@@ -429,7 +429,7 @@ describe('ProfileItemModal — education', () => {
     expect(current).toHaveAccessibleDescription('Shown under your name and on your mentor card.');
     await user.type(school(), ' UCL ');
     await pickOption(user, screen.getByRole('combobox', { name: 'Degree' }), 'MSc');
-    await user.type(screen.getByRole('textbox', { name: 'Course of study' }), 'Public Health');
+    await user.type(screen.getByRole('combobox', { name: 'Field of study' }), 'Public Health');
     await pickOption(user, screen.getByRole('combobox', { name: 'Start year' }), '2024');
     await pickOption(
       user,
@@ -485,12 +485,12 @@ describe('ProfileItemModal — education', () => {
 
   it('says what’s missing, and an end before the start', async () => {
     const { user, onSave } = education({ ...saved, school: '', start: 2027, end: 2023 });
-    await user.clear(screen.getByRole('textbox', { name: 'Course of study' }));
+    await user.clear(screen.getByRole('combobox', { name: 'Field of study' }));
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(onSave).not.toHaveBeenCalled();
     expect(school()).toHaveAccessibleDescription('Add your school.');
-    expect(screen.getByRole('textbox', { name: 'Course of study' })).toHaveAccessibleDescription(
-      'Add your course of study.',
+    expect(screen.getByRole('combobox', { name: 'Field of study' })).toHaveAccessibleDescription(
+      'Add your field of study.',
     );
     expect(
       screen.getByRole('combobox', { name: 'End year (or expected)' }),
@@ -527,11 +527,11 @@ describe('ProfileItemModal — education', () => {
     for (const status of ['error', 'loading'] as const) {
       rerender(<ProfileItemModal {...props} catalog={{ status, onRetry: vi.fn() }} />);
       expect(screen.queryByText(/We couldn’t load your education/)).toBeNull();
-      expect(screen.getByRole('textbox', { name: 'Course of study' })).toHaveValue('Sociology');
+      expect(screen.getByRole('combobox', { name: 'Field of study' })).toHaveValue('Sociology');
     }
   });
 
-  it('School is announced as required, like Course of study', () => {
+  it('School is announced as required, like Field of study', () => {
     education();
     expect(school()).toHaveAttribute('aria-required', 'true');
   });
@@ -569,7 +569,9 @@ describe('ProfileItemModal — education', () => {
     const listed = { ...saved, school: 'University of Lagos', institutionId: 'inst-lagos' };
     const { user, onSave } = education(listed);
     expect(school()).toHaveValue('University of Lagos');
-    await user.type(screen.getByRole('textbox', { name: 'Course of study' }), ' and Data');
+    const field = screen.getByRole('combobox', { name: 'Field of study' });
+    await user.clear(field);
+    await user.type(field, 'Sociology and Data');
     await user.click(screen.getByRole('button', { name: 'Save changes' }));
     expect(onSave).toHaveBeenLastCalledWith({ ...listed, course: 'Sociology and Data' });
     await user.clear(school());

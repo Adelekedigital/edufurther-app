@@ -114,6 +114,7 @@ vi.mock('@/lib/api/data/mentors', () => ({
 vi.mock('@/lib/api/data/catalog', async (orig) => ({
   ...(await orig<typeof import('@/lib/api/data/catalog')>()),
   useDegreeLevels: () => ({ levels: [], status: 'ready' }),
+  useFieldsOfStudy: () => null,
 }));
 vi.mock('@/lib/api/data/mentorMatches', () => ({
   useMentorMatches: () => ({ data: { matches: [] }, isLoading: false, error: null }),

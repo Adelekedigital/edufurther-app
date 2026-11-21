@@ -87,7 +87,7 @@ describe('MentorProfileScreen — education', () => {
     ).not.toBeChecked();
     await user.type(within(dialog).getByRole('combobox', { name: 'School' }), 'Unilag');
     await pickOption(user, within(dialog).getByRole('combobox', { name: 'Degree' }), 'BSc');
-    await user.type(within(dialog).getByRole('textbox', { name: 'Course of study' }), 'Sociology');
+    await user.type(within(dialog).getByRole('combobox', { name: 'Field of study' }), 'Sociology');
     await pickOption(user, within(dialog).getByRole('combobox', { name: 'Start year' }), '2015');
     await pickOption(
       user,
