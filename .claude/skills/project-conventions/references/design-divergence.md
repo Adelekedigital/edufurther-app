@@ -1261,7 +1261,6 @@ Built as `templates/InviteModal` (a dialog on `ModalShell`, as ConfirmDialog and
 | Header buttons: DS `CircleIconButton` (ring `#dbdee7` at 0.714px) | `IconButton variant="ring"`: hairline `--border-subtle` ring | No raw hex; the ring tone sits between ink-200 and ink-300 | DS tokenises the ring |
 | Filters: `role="tab"` pills | `RadioChips look="dark"` (a radio group: one choice that filters the list, no tab panels) | Tabs need panels; the list isn't one | never |
 | Message emails switch: a hand-drawn 44×24 switch | The shared `Switch` atom (39×24, DS `FormControl` toggle) | One switch across the app | never |
-| Phones: Messages in the More sheet (`pick` Home, Explore/Calendar, Bookings + More), no Messages count anywhere | While Messages is on, it is a phone tab after Bookings (five tabs: Home · Explore/Calendar · Bookings · Messages · More), its unread count on the tab as Bookings' is; not in the More sheet. Flag off: the four tabs as drawn | Owner 2026-11-20 (before launch): Messages one tap away on phones | design redraws the phone tab bar with Messages |
 | Empty inbox has no heading for the page | A visually hidden h1 "Messages" | Every page has one h1 | never |
 | A `?with=` that isn't one of my chats: not drawn | EmptyState `chat`, "This chat isn't available." (CHAT_COPY.gone) | _ours_ | design draws it |
 | `inbox.svg` | Main's stripped copy: a few pale outline strokes in the backdrop's own tint are left out | Looks the same; smaller file | the illustration changes |
