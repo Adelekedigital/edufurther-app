@@ -8,7 +8,13 @@ import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { PROFILE_SHEET as C } from '@/lib/copy/home';
 import { cx } from '@/lib/utils/cx';
-import { GOALS_HREF, doneCount, nextMissing, type ProfileField } from './newMentee';
+import {
+  GOALS_HREF,
+  doneCount,
+  nextMissing,
+  type ProfileField,
+  type ProfileKey,
+} from './newMentee';
 import styles from './ProfileSheet.module.css';
 
 export { GOALS_HREF };
@@ -27,6 +33,8 @@ type ProfileSheetProps = {
   editBio?: boolean;
   /** Has had a session: "Ready for your first session" would be wrong. */
   returning?: boolean;
+  /** The row whose action takes focus on open (the first answer owed). */
+  focusKey?: ProfileKey;
 };
 
 /**
@@ -44,6 +52,7 @@ export function ProfileSheet({
   onClose,
   editBio = false,
   returning = false,
+  focusKey,
 }: ProfileSheetProps) {
   const n = doneCount(fields);
   const next = nextMissing(fields);
@@ -104,6 +113,7 @@ export function ProfileSheet({
                       ref={f.key === 'bio' ? bioAction : undefined}
                       field={f}
                       done={done}
+                      autoFocus={f.key === focusKey}
                       onEducation={onEducation}
                       onBio={() => {
                         setError(null);
@@ -145,19 +155,22 @@ export function ProfileSheet({
 type RowActionProps = {
   field: ProfileField;
   done: boolean;
+  /** Takes focus as the sheet opens (useFocusTrap's data-autofocus). */
+  autoFocus?: boolean;
   onEducation: () => void;
   onBio: () => void;
 };
 
 /** Add (outlined) while a detail is empty, Edit (a text link) once it's saved. */
 const RowAction = forwardRef<HTMLButtonElement, RowActionProps>(function RowAction(
-  { field, done, onEducation, onBio },
+  { field, done, autoFocus, onEducation, onBio },
   ref,
 ) {
   const label = done ? C.edit : C.add;
   const name = `${label} ${field.label.toLowerCase()}`;
   const cls = done ? styles.edit : undefined;
   const variant = done ? 'text' : 'secondary-outlined';
+  const focus = autoFocus ? { 'data-autofocus': '' } : undefined;
   if (field.key === 'target' || field.key === 'help')
     return (
       <ButtonLink
@@ -167,6 +180,7 @@ const RowAction = forwardRef<HTMLButtonElement, RowActionProps>(function RowActi
         size="small"
         className={cls}
         aria-label={name}
+        {...focus}
       >
         {label}
       </ButtonLink>
@@ -178,6 +192,7 @@ const RowAction = forwardRef<HTMLButtonElement, RowActionProps>(function RowActi
       size="small"
       className={cls}
       aria-label={name}
+      {...focus}
       onClick={field.key === 'education' ? onEducation : onBio}
     >
       {label}

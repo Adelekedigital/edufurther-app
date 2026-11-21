@@ -15,6 +15,8 @@ type ProfileStrengthCardProps = {
   /** 0–100. */
   percent: number;
   tips: StrengthTip[];
+  /** One short line under the title: why the tips are worth doing now. */
+  lead?: string;
 };
 
 /**
@@ -22,7 +24,7 @@ type ProfileStrengthCardProps = {
  * the owner's profile is, and the next steps. The bar is a meter (WAI-ARIA APG
  * Meter): a percentage alone doesn't say what to do, so every tip is an action.
  */
-export function ProfileStrengthCard({ id: cardId, percent, tips }: ProfileStrengthCardProps) {
+export function ProfileStrengthCard({ id: cardId, percent, tips, lead }: ProfileStrengthCardProps) {
   const id = useId();
   const value = Math.max(0, Math.min(100, Math.round(percent)));
   return (
@@ -39,6 +41,7 @@ export function ProfileStrengthCard({ id: cardId, percent, tips }: ProfileStreng
           {value}%
         </span>
       </div>
+      {lead && <p className={styles.lead}>{lead}</p>}
       <div
         role="meter"
         aria-labelledby={`${id}-h`}

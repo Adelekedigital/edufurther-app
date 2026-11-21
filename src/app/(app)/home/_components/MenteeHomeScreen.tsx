@@ -23,6 +23,7 @@ import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/m
 import { ProfileSaveError, useSaveMenteeProfile } from '@/lib/api/data/settings';
 import { MESSAGES_LIVE } from '@/lib/config/messages';
 import {
+  COMPLETE_FOR_CREDIT,
   GETTING_STARTED,
   MENTORS_FOR_GOAL,
   NEW_SUBLINE,
@@ -45,6 +46,7 @@ import { stageFor, stepsDone, targetText, type ProfileKey } from './newMentee';
 import { MenteeProfileStrength, focusAfterTip } from './MenteeProfileStrength';
 import { goalLineFrom, recommendedFrom } from './recommended';
 import { useNewMentee } from './useNewMentee';
+import { completeForCredit, sheetRowFor } from './completeForCredit';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import styles from './MenteeHomeScreen.module.css';
 import { scrollBehavior } from '@/lib/utils/scrollBehavior';
@@ -175,7 +177,11 @@ export function MenteeHomeScreen() {
   const saveProfile = useSaveMenteeProfile(userId);
 
   const friendJoinedRead = useReferrals(userId, candidate || inviteOpen);
+  // Finishing the answers pays a credit (decision 358): /me says so, and the
+  // save that completes them refetches /me, so this goes without a reload.
+  const forCredit = completeForCredit(member);
   const state = {
+    forCredit,
     profileDone: fresh.profileDone,
     booked: fresh.booked,
     invited,
@@ -497,6 +503,7 @@ export function MenteeHomeScreen() {
                 setBioFromTip(true);
                 setProfileOpen(true);
               }}
+              lead={forCredit ? COMPLETE_FOR_CREDIT : undefined}
             />
           }
         >
@@ -557,6 +564,8 @@ export function MenteeHomeScreen() {
           }}
           editBio={bioFromTip}
           returning={!newView}
+          // Opened for the credit: on the first answer still owed.
+          focusKey={forCredit && !bioFromTip ? sheetRowFor(member.onboardingMissing) : undefined}
         />
       )}
       {eduOpen && userId && (

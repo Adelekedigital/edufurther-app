@@ -1,6 +1,12 @@
 import type { ReactNode } from 'react';
 import type { LinkShareState } from '@/components/molecules/LinkSharePanel/LinkSharePanel';
-import { GETTING_STARTED as G, INVITE_COPY, NEXT_STEP, withLine } from '@/lib/copy/home';
+import {
+  COMPLETE_FOR_CREDIT,
+  GETTING_STARTED as G,
+  INVITE_COPY,
+  NEXT_STEP,
+  withLine,
+} from '@/lib/copy/home';
 import { dayLabel, formatTime } from '@/lib/utils/format';
 import { GettingStarted, type GettingStartedRow, type StepState } from './GettingStarted';
 import { NextStepCard } from './NextStepCard';
@@ -57,7 +63,7 @@ export function MenteeNewView(p: MenteeNewViewProps) {
       ? {
           art: 'forms' as const,
           kicker: oneStepLeft ? NEXT_STEP.incomplete.kickerLeft : NEXT_STEP.incomplete.kicker,
-          title: NEXT_STEP.incomplete.title,
+          title: p.forCredit ? COMPLETE_FOR_CREDIT : NEXT_STEP.incomplete.title,
           body: NEXT_STEP.incomplete.body,
           meter: { done: n, label: NEXT_STEP.incomplete.meter(n, missing) },
           action: { label: NEXT_STEP.incomplete.action, onClick: p.onOpenProfile },

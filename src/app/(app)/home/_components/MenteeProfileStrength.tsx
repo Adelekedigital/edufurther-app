@@ -16,6 +16,8 @@ type MenteeProfileStrengthProps = {
   onEducation: () => void;
   /** The profile sheet, opened in its bio editor. */
   onBio: () => void;
+  /** One short lead line in the card (the complete-for-credit line). */
+  lead?: string;
 };
 
 /**
@@ -29,6 +31,7 @@ export function MenteeProfileStrength({
   fields,
   onEducation,
   onBio,
+  lead,
 }: MenteeProfileStrengthProps) {
   if (status !== 'ready') return null;
   const done = doneCount(fields);
@@ -42,7 +45,12 @@ export function MenteeProfileStrength({
       return { key: f.key, label, onSelect: f.key === 'education' ? onEducation : onBio };
     });
   return (
-    <ProfileStrengthCard id={STRENGTH_ID} percent={(done / fields.length) * 100} tips={tips} />
+    <ProfileStrengthCard
+      id={STRENGTH_ID}
+      percent={(done / fields.length) * 100}
+      tips={tips}
+      lead={lead}
+    />
   );
 }
 

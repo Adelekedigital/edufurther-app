@@ -12,6 +12,15 @@ describe('ProfileStrengthCard', () => {
     expect(screen.queryByRole('list')).toBeNull();
   });
 
+  it('a lead line shows under the title only when given', () => {
+    const { rerender } = render(<ProfileStrengthCard percent={50} tips={[]} />);
+    expect(screen.getByRole('region', { name: 'Profile strength' }).querySelector('p')).toBeNull();
+    rerender(<ProfileStrengthCard percent={50} tips={[]} lead="Finish it for a credit." />);
+    expect(screen.getByRole('region', { name: 'Profile strength' })).toHaveTextContent(
+      'Finish it for a credit.',
+    );
+  });
+
   it('each tip is an action: a button for an editor here, a link for elsewhere', async () => {
     const open = vi.fn();
     const user = userEvent.setup();

@@ -194,6 +194,18 @@ describe('toViewer: the setup lock fields (onboardingComplete, mentorStage)', ()
     expect(toViewer(me()).onboardingComplete).toBe(true);
   });
 
+  it('onboardingMissing is /me onboarding.missing; unknown stays unknown', () => {
+    expect(
+      toViewer(me({ onboarding: { complete: true, missing: ['help', 'degree', 'field'] } }))
+        .onboardingMissing,
+    ).toEqual(['help', 'degree', 'field']);
+    expect(toViewer(me({ onboarding: { complete: true, missing: [] } })).onboardingMissing).toEqual(
+      [],
+    );
+    expect(toViewer(me({ onboarding: null })).onboardingMissing).toBeUndefined();
+    expect(toViewer(me()).onboardingMissing).toBeUndefined();
+  });
+
   it('mentorStage follows toMentorApplication: none, unsubmitted, pending, approved, declined', () => {
     expect(toViewer(me()).mentorStage).toBe('none');
     const stage = (p: Partial<Profile>) => toViewer(me({ mentor_profile: profile(p) })).mentorStage;
