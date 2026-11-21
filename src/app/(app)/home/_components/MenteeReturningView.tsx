@@ -8,6 +8,7 @@ import { EMPTY_STATS, type MenteeStats } from '@/lib/api/data/menteeHome';
 import type { Booking } from '@/types/booking';
 import type { Remote } from '@/types/mentor';
 import { MenteeEmptyCard } from './MenteeEmptyCard';
+import { MentorsSkeleton } from './MenteeMentorsSection';
 import { MenteeNextSession } from './MenteeNextSession';
 import { returningKpis } from './menteeKpis';
 import styles from './MenteeHomeScreen.module.css';
@@ -139,31 +140,65 @@ export function MenteeReturningView(p: MenteeReturningViewProps) {
   );
 }
 
-/** One KPI tile, loading. */
-export function KpiSkeleton() {
+/**
+ * The full Home while it loads (ui-states): the progress tiles, the next-session
+ * card and Mentors, in the order and at about the size they render. The page
+ * swaps all of it for the content at once, so nothing already drawn moves.
+ */
+export function ReturningSkeleton() {
+  return (
+    <>
+      <div className={styles.kpis}>
+        {Array.from({ length: 4 }).map((_, i) => (
+          <KpiSkeleton key={i} />
+        ))}
+      </div>
+      <NextSkeleton />
+      <MentorsSkeleton />
+    </>
+  );
+}
+
+/** One KPI tile, loading: KpiCard's label, figure and trend at their own heights. */
+function KpiSkeleton() {
   return (
     <div className={styles.skelKpi}>
-      <Skeleton width="55%" height="12px" />
-      <Skeleton width="40%" height="28px" />
-      <Skeleton width="65%" height="12px" />
+      <Skeleton width="55%" className={styles.skelXs} />
+      <Skeleton width="40%" className={styles.skelFigure} />
+      <Skeleton width="65%" className={styles.skelXs} />
     </div>
   );
 }
 
-/** The Next-session card, loading. */
-export function NextSkeleton() {
+/**
+ * The Next-session card, loading, as MenteeNextSession lays it out: the
+ * card's head, the date and details, the prep row, and the action (beside the
+ * details wider up, under the prep row on phones).
+ */
+function NextSkeleton() {
   return (
     <div className={styles.skelNext}>
-      <Skeleton width="30%" height="16px" />
-      <div className={styles.skelNextRow}>
-        <Skeleton width="56px" height="56px" radius="md" />
-        <div className={styles.skelNextLines}>
-          <Skeleton width="60%" height="14px" />
-          <Skeleton width="45%" height="12px" />
-          <Skeleton width="50%" height="12px" />
-        </div>
+      <div className={styles.skelNextHead}>
+        <Skeleton width="120px" className={styles.skelMd} />
+        <Skeleton width="56px" className={styles.skelXs} />
       </div>
-      <Skeleton width="140px" height="40px" radius="md" />
+      <div className={styles.skelNextBody}>
+        <div className={styles.skelNextRow}>
+          <Skeleton width="52px" height="52px" radius="md" />
+          <div className={styles.skelNextLines}>
+            <Skeleton width="60%" className={styles.skelSm} />
+            <Skeleton width="45%" className={styles.skelXs} />
+            <Skeleton width="50%" className={styles.skelXs} />
+          </div>
+          <span className={styles.skelNextBeside}>
+            <Skeleton width="140px" height="var(--button-h-medium)" radius="md" />
+          </span>
+        </div>
+        <Skeleton height="52px" radius="lg" />
+        <span className={styles.skelNextBelow}>
+          <Skeleton height="44px" radius="md" />
+        </span>
+      </div>
     </div>
   );
 }
