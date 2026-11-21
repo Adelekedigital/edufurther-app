@@ -5,6 +5,8 @@ import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixtur
 import type { MentorProfile } from '@/types/mentor';
 import { photoErrorCopy, photoRemoveErrorCopy, useAvatarUpload } from './avatar';
 import { keys } from './keys';
+import type { MeRead, UserRead } from './me';
+import { cachedViewer, meEntry, seedMe } from './_test/meEntry';
 
 const POST = vi.fn();
 const DELETE = vi.fn();
@@ -79,18 +81,13 @@ describe('useAvatarUpload', () => {
     });
     DELETE.mockResolvedValue({ response: new Response(null, { status: 204 }) });
     const { result, qc } = setup();
-    const settings = keys.viewer.settings('m1');
-    qc.setQueryData(settings, { name: 'A B', photoUrl: null });
+    // Settings reads the one /me (me.ts); the photo goes over it at once.
+    seedMe(qc, 'm1', meEntry({ first_name: 'A', last_name: 'B' }));
+    const photo = () => qc.getQueryData<MeRead>(keys.viewer.me('m1'))!.profile?.photoUrl;
     act(() => result.current.upload(file('image/png', 10)));
-    await waitFor(() =>
-      expect(qc.getQueryData<{ photoUrl: string | null }>(settings)!.photoUrl).toBe(
-        'https://cdn/new.webp',
-      ),
-    );
+    await waitFor(() => expect(photo()).toBe('https://cdn/new.webp'));
     act(() => result.current.remove());
-    await waitFor(() =>
-      expect(qc.getQueryData<{ photoUrl: string | null }>(settings)!.photoUrl).toBeNull(),
-    );
+    await waitFor(() => expect(photo()).toBeNull());
   });
 
   it('a file we can tell is wrong is refused before sending, in our words', () => {
@@ -146,11 +143,10 @@ describe('useAvatarUpload', () => {
       response: new Response(null),
     });
     const { result, qc } = setup();
-    const me = keys.viewer.me('m1');
-    qc.setQueryData(me, { kind: 'member', id: 'm1', avatarUrl: null, avatarFocus: null });
+    seedMe(qc, 'm1', meEntry({ id: 'm1' }));
     act(() => result.current.upload(file('image/png', 10)));
     await waitFor(() => expect(result.current.uploadedStamp).toBeGreaterThan(0));
-    expect(qc.getQueryData(me)).toMatchObject({
+    expect(cachedViewer(qc, 'm1')).toMatchObject({
       avatarUrl: 'https://cdn/new.webp',
       avatarFocus: { x: 0.5, y: 0.3 },
     });
@@ -171,13 +167,14 @@ describe('useAvatarUpload', () => {
       DELETE.mockResolvedValue({ response: new Response(null, { status: 204 }) });
       const { result, qc, spy } = setup();
       withPhoto(qc);
-      const me = keys.viewer.me('m1');
-      qc.setQueryData(me, {
-        kind: 'member',
-        id: 'm1',
-        avatarUrl: 'https://cdn/me.webp',
-        avatarFocus: null,
-      });
+      seedMe(
+        qc,
+        'm1',
+        meEntry({
+          id: 'm1',
+          profile: { avatar_url: 'https://cdn/me.webp', avatar_focus: null } as UserRead['profile'],
+        }),
+      );
       act(() => result.current.remove());
       await waitFor(() => expect(result.current.removedStamp).toBeGreaterThan(0));
       expect(DELETE).toHaveBeenCalledWith('/api/v1/users/{user_id}/avatar', {
@@ -187,7 +184,7 @@ describe('useAvatarUpload', () => {
         photoUrl: null,
         photoFocus: null,
       });
-      expect(qc.getQueryData(me)).toMatchObject({ avatarUrl: null, avatarFocus: null });
+      expect(cachedViewer(qc, 'm1')).toMatchObject({ avatarUrl: null, avatarFocus: null });
       expect(spy).toHaveBeenCalledWith({ queryKey: keys.mentors.all });
       expect(spy).toHaveBeenCalledWith({ queryKey: keys.viewer.all });
     });

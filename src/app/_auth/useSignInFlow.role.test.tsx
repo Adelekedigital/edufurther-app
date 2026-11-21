@@ -1,7 +1,5 @@
 import { act, renderHook } from '@testing-library/react';
 import { QueryClient } from '@tanstack/react-query';
-import { keys } from '@/lib/api/data/keys';
-import type { Viewer } from '@/types/mentor';
 
 // The role is set at sign-up only (owner, 2026-10-20). Both flags are read
 // when the config loads: on, before the flow imports it.
@@ -44,6 +42,8 @@ vi.mock('@/lib/api/data/roles', async (orig) => ({
 
 const { useSignInFlow, TOAST_MS, ROLE_SAVE_FAILED } = await import('./useSignInFlow');
 const { onboardingDestination } = await import('@/app/onboarding/_components/OnboardingEntry');
+// After the flags: it loads the viewer, and with it the config.
+const { cachedViewer, meEntry, seedMe } = await import('@/lib/api/data/_test/meEntry');
 
 /** A brand-new account (never named): no goal, no mentor profile. */
 const fresh = (over: object = {}) => ({
@@ -149,22 +149,12 @@ describe('useSignInFlow: the mentor role, saved at sign-up', () => {
   });
 
   it('a /me cached before the save already says mentor, so /onboarding opens mentor onboarding', async () => {
-    const cached: Viewer = {
-      kind: 'member',
-      id: 'u1',
-      firstName: 'Gbenga',
-      initials: 'GE',
-      isMentee: false,
-      isApprovedMentor: false,
-      isMentor: false,
-      signedUpAsMentor: false,
-      completedSessions: 0,
-      credits: null,
-    };
-    qc.setQueryData(keys.viewer.me('u1'), cached);
+    // A new account, no goal and no mentor profile, with /me cached as a mentee sign-up.
+    seedMe(qc, 'u1', meEntry({ id: 'u1', first_name: 'Gbenga', primary_role: 'mentee' }));
+    expect(cachedViewer(qc, 'u1')).toMatchObject({ signedUpAsMentor: false });
     account.mockResolvedValueOnce(fresh());
     await byCode();
-    const v = qc.getQueryData<Viewer>(keys.viewer.me('u1'))!;
+    const v = cachedViewer(qc, 'u1')!;
     expect(onboardingDestination(v, new URLSearchParams('role=mentor'))).toBe(
       '/onboarding/mentor?role=mentor',
     );

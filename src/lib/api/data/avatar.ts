@@ -9,7 +9,7 @@ import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { patchViewer } from './viewer';
-import type { MenteeProfile } from './settings';
+import { patchProfile } from './me';
 import { sessionKey, useSession } from './session';
 
 /** What the photo upload accepts: the same as the banner (backend: JPEG, PNG or WebP, 5 MB). */
@@ -46,13 +46,9 @@ export function useAvatarUpload(handle: string, userId: string | null) {
   // Bumped when a photo is in, or gone, for the page to announce it.
   const [uploadedStamp, setUploadedStamp] = useState(0);
   const [removedStamp, setRemovedStamp] = useState(0);
-  // Settings shows the photo from its own /me read: the new one shows at once
+  // Settings shows the photo from its slice of /me: the new one shows at once
   // there too, with its note, not after the refetch.
-  const setSettingsPhoto = (photoUrl: string | null) =>
-    userId &&
-    qc.setQueryData<MenteeProfile>(keys.viewer.settings(userId), (p) =>
-      p ? { ...p, photoUrl } : p,
-    );
+  const setSettingsPhoto = (photoUrl: string | null) => userId && patchProfile(qc, { photoUrl });
 
   const upload = useMutation({
     networkMode: 'always',

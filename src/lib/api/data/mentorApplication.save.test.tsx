@@ -2,6 +2,9 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook } from '@testing-library/react';
 import { keys } from './keys';
+import { cachedMe, type UserRead } from './me';
+import { toMentorApplication } from './mentorApplicationStatus';
+import { meEntry, seedMe } from './_test/meEntry';
 import type { MentorAnswers, MentorApplicationState, SchoolDraft } from '@/types/mentorOnboarding';
 import {
   DECIDED,
@@ -205,6 +208,24 @@ describe('useSaveMentorStep: hours', () => {
     expect(second).not.toHaveProperty('options');
   });
 
+  it('the time zone saved with the hours is in the one /me at once, and /me is read again', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    seedMe(qc, 'auth-1', meEntry({ timezone: 'UTC' }));
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
+    const { result } = renderHook(() => useSaveMentorStep('u1'), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+      ),
+    });
+    await result.current.save('hours', answers({ timeZone: 'Africa/Lagos' }), state);
+    expect(PATCH).toHaveBeenCalledWith('/api/v1/users/{user_id}/profile', {
+      params: { path: { user_id: 'u1' } },
+      body: { timezone: 'Africa/Lagos' },
+    });
+    expect(cachedMe(qc)!.timezone).toBe('Africa/Lagos');
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: keys.viewer.meAll });
+  });
+
   it('a mentor helping in more than 3 areas: the Intro chat covers the first 3 (the API refuses more)', async () => {
     const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
     const six = ['o-1', 'o-2', 'o-3', 'o-4', 'o-5', 'o-6'];
@@ -290,39 +311,32 @@ describe('useSubmitMentorApplication', () => {
     await expect(result.current.submit()).rejects.toMatchObject({ type: DECIDED });
   });
 
-  it('drops the cached status read before it resolves, so the status page never reads "unsubmitted"', async () => {
+  it('the one /me says submitted as soon as it resolves, so neither the status page nor the form reads "unsubmitted"', async () => {
     POST.mockImplementation(() =>
       ok(200, { submitted_at: '2026-10-18T10:00:00Z', approval_status: 'pending' }),
     );
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    qc.setQueryData(keys.viewer.mentorApplication('u1'), { stage: 'unsubmitted' });
+    seedMe(
+      qc,
+      'auth-1',
+      meEntry({
+        mentor_profile: {
+          approval_status: 'pending',
+          submitted_at: null,
+        } as UserRead['mentor_profile'],
+      }),
+    );
+    expect(toMentorApplication(cachedMe(qc)!).stage).toBe('unsubmitted');
+    const invalidate = vi.spyOn(qc, 'invalidateQueries');
     const { result } = renderHook(() => useSubmitMentorApplication(), {
       wrapper: ({ children }: { children: ReactNode }) => (
         <QueryClientProvider client={qc}>{children}</QueryClientProvider>
       ),
     });
     await result.current.submit();
-    expect(qc.getQueryData(keys.viewer.mentorApplication('u1'))).toBeUndefined();
-  });
-
-  it('drops the form’s own cached /me too, so "Edit my application" opens fresh from step 1', async () => {
-    POST.mockImplementation(() =>
-      ok(200, { submitted_at: '2026-10-18T10:00:00Z', approval_status: 'pending' }),
-    );
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    qc.setQueryData(keys.mentorApplication.me('u1'), { mentor_profile: { submitted_at: null } });
-    const { result } = renderHook(() => useSubmitMentorApplication(), {
-      wrapper: ({ children }: { children: ReactNode }) => (
-        <QueryClientProvider client={qc}>{children}</QueryClientProvider>
-      ),
-    });
-    await result.current.submit();
-    expect(qc.getQueryData(keys.mentorApplication.me('u1'))).toBeUndefined();
-  });
-
-  it('keeps the form’s cache apart from the status page’s: the two hold different shapes', () => {
-    expect(keys.mentorApplication.me('u1')).not.toEqual(keys.viewer.mentorApplication('u1'));
-    // Still under the viewer prefix, so a new photo refreshes the answers.
-    expect(keys.mentorApplication.me('u1')[0]).toBe('viewer');
+    expect(cachedMe(qc)!.mentor_profile!.submitted_at).toBe('2026-10-18T10:00:00Z');
+    expect(toMentorApplication(cachedMe(qc)!).stage).toBe('pending');
+    // And everyone's /me (the shell's routing too) is read again.
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: keys.viewer.all });
   });
 });

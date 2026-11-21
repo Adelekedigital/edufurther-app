@@ -1,14 +1,16 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { MenteeProfileValues } from '@/types/settings';
 import { SAVE_COPY } from '@/lib/copy/settings';
 import { personInitials } from '@/lib/utils/person';
 import { countriesQuery, type CatalogOption } from './catalog';
-import { apiError, normaliseError, retryOnce } from './errors';
+import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { patchProfile, useMeSlice, type MeRead } from './me';
 import { aboutBody } from './profileEdit';
 
 /** What Settings opens with (GET /me): Profile's values, and Login and security's account facts. */
@@ -63,38 +65,36 @@ export function toMenteeProfile(
   };
 }
 
-/** The signed-in mentee's own details, for Settings › Profile and Login and security (one read of /me). */
+const readOf = (r: MeRead) => r;
+
+/**
+ * The signed-in mentee's own details, for Settings › Profile and Login and
+ * security: a slice of the one /me (me.ts), with the latest save over it
+ * until /me is read again.
+ */
 export function useMenteeProfile(userId: string | null) {
-  const qc = useQueryClient();
-  const query = useQuery({
-    queryKey: keys.viewer.settings(userId ?? 'none'),
-    enabled: userId !== null,
-    retry: retryOnce,
-    queryFn: async ({ signal }) => {
-      const { data, error, response } = await api.GET('/api/v1/me', { signal });
-      if (!data) throw apiError(response.status, error);
-      const me = data;
-      // Only a saved country needs the catalog (cached for an hour, shared with
-      // the picker). A catalog failure mustn't hide a profile that loaded: the
-      // country shows empty until the catalog answers and /me is read again.
-      const countries = me.profile?.current_country
-        ? await qc.fetchQuery(countriesQuery).catch(() => [])
-        : [];
-      return toMenteeProfile(me, countries);
-    },
-  });
+  const me = useMeSlice(userId !== null, readOf);
+  // Only a saved country needs the catalog (cached for an hour, shared with
+  // the picker). A catalog failure mustn't hide a profile that loaded: the
+  // country shows empty instead (no retry, as before: it fills in if the
+  // catalog answers later).
+  const needsCountries = !!me.data?.me.profile?.current_country;
+  const countries = useQuery({ ...countriesQuery, enabled: needsCountries, retry: false });
+  const countriesSettled = !needsCountries || countries.isSuccess || countries.isError;
+  const profile = useMemo(
+    () =>
+      me.data && countriesSettled
+        ? { ...toMenteeProfile(me.data.me, countries.data ?? []), ...me.data.profile }
+        : null,
+    [me.data, countriesSettled, countries.data],
+  );
   // Error before content: a failed refetch of a loaded profile keeps it.
-  const status: 'loading' | 'error' | 'ready' = query.data
+  const status: 'loading' | 'error' | 'ready' = profile
     ? 'ready'
-    : query.error
+    : me.status === 'error'
       ? 'error'
       : 'loading';
-  return {
-    profile: query.data ?? null,
-    status,
-    retry: () => void query.refetch(),
-    retrying: query.isFetching,
-  };
+  return { profile, status, retry: me.retry, retrying: me.retrying };
 }
 
 /** A failed save, in our words. `profileSaved`: the name, country and bio landed; the languages didn't. */
@@ -143,10 +143,7 @@ export function profileBody({ before, after, promptVersion }: ProfileSave) {
  */
 export function useSaveMenteeProfile(userId: string | null) {
   const qc = useQueryClient();
-  const remember = (v: MenteeProfileValues) =>
-    qc.setQueryData<MenteeProfile>(keys.viewer.settings(userId ?? 'none'), (p) =>
-      p ? { ...p, ...v } : p,
-    );
+  const remember = (v: MenteeProfileValues) => patchProfile(qc, v);
   return useMutation<void, ProfileSaveError, ProfileSave>({
     networkMode: 'always',
     mutationFn: async (save) => {

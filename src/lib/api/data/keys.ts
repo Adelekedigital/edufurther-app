@@ -17,32 +17,27 @@ export const keys = {
   },
   /** The owner's own education entries (GET /users/{id}/education), for editing. */
   education: (userId: string) => ['education', userId] as const,
-  /** Mentee onboarding (Mentee Onboarding v5): progress + saved answers, and the matches. */
+  /** Mentee onboarding's matches (Mentee Onboarding v5); its saved answers are a slice of `viewer.me`. */
   onboarding: {
     all: ['onboarding'] as const,
-    state: (userId: string) => ['onboarding', 'state', userId] as const,
     matchesAll: ['onboarding', 'matches'] as const,
     matches: (userId: string, forMentor: string, limit: number, excludeMet: boolean) =>
       ['onboarding', 'matches', userId, forMentor, limit, excludeMet] as const,
   },
   viewer: {
     all: ['viewer'] as const,
+    /**
+     * The one GET /me (me.ts), keyed by the session's user id. Every reader of
+     * /me selects from it: the shell, Home, Settings (goals, profile, mentor
+     * profile, social links), onboarding, the mentor application and its
+     * status page, and sign-in.
+     */
     me: (userId: string) => ['viewer', 'me', userId] as const,
-    /** The raw /me mentor application (mentorApplicationStatus.ts), under the viewer prefix. */
-    mentorApplication: (userId: string) => ['viewer', 'mentorApplication', userId] as const,
-    mentorApplicationAll: ['viewer', 'mentorApplication'] as const,
-    /** Settings' read of /me (settings.ts), under the viewer prefix so a viewer refresh reaches it. */
-    settings: (userId: string) => ['viewer', 'settings', userId] as const,
+    meAll: ['viewer', 'me'] as const,
     /** How the session logged in (Supabase identities), for Login and security. */
     loginProvider: (userId: string) => ['viewer', 'loginProvider', userId] as const,
-    /** Settings › Goals' read of /me (goals.ts): the goal, origin and current country. */
-    goals: (userId: string) => ['viewer', 'goals', userId] as const,
-    /** Mentor Settings' read of /me (mentorSettings.ts): the handle and gender. */
-    mentorSettings: (userId: string) => ['viewer', 'mentorSettings', userId] as const,
     /** Settings › Expertise's guide-to countries (mentorSettings.ts), from the owner's mentor profile. */
     guideCountries: (userId: string) => ['viewer', 'guideCountries', userId] as const,
-    /** Settings › Social links: LinkedIn and the user's links, from /me. */
-    links: (userId: string) => ['viewer', 'links', userId] as const,
   },
   // `who` = the session identity (session.ts sessionKey): signed-in lists are
   // ordered by the viewer's goals and leave the viewer out, so they can't share
@@ -216,15 +211,8 @@ export const keys = {
     /** Who an invite is from (GET /invites/{code}): public, the same for every viewer. */
     lookup: (code: string) => ['invite', 'lookup', code] as const,
   },
-  /**
-   * Mentor onboarding's read of /me (Mentor Onboarding PRD F1). Under `viewer`,
-   * so whatever refreshes the viewer (a new photo) refreshes the answers too.
-   * Its own key: the status page caches a different shape of the same /me
-   * under `viewer.mentorApplication`.
-   */
+  /** Mentor onboarding's school search (its answers are a slice of the one /me, `viewer.me`). */
   mentorApplication: {
-    all: ['viewer', 'mentorOnboarding'] as const,
-    me: (userId: string) => ['viewer', 'mentorOnboarding', userId] as const,
     institutions: (q: string) => ['institutions', q] as const,
   },
   /**

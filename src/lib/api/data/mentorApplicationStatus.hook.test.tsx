@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import type { Viewer } from '@/types/mentor';
-import { keys } from './keys';
-import { useMarkApprovedSeen, type MentorApplication } from './mentorApplicationStatus';
+import { cachedMe, type UserRead } from './me';
+import { cachedViewer, meEntry, seedMe } from './_test/meEntry';
+import { toMentorApplication, useMarkApprovedSeen } from './mentorApplicationStatus';
 import { previewStore, resetPreviewStoreForTests } from './previewStore';
 
 // Mentor onboarding on, before access.ts reads it.
@@ -15,16 +15,27 @@ const { accessFor } = await import('@/lib/utils/access');
 const POST = vi.fn();
 vi.mock('./http', () => ({ api: { POST: (...a: unknown[]) => POST(...a) } }));
 
-const person = { firstName: 'Gbenga', fullName: 'Gbenga Ekundayo', email: 'g@example.com' };
-const KEY = keys.viewer.mentorApplication('u1');
+/** The application as the status page reads it: a slice of the one /me. */
+const app = (qc: QueryClient) => toMentorApplication(cachedMe(qc)!);
 
 function setup() {
   const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-  qc.setQueryData<MentorApplication>(KEY, {
-    stage: 'approved',
-    seen: false,
-    ...person,
-  } as MentorApplication);
+  // An approved mentor who hasn't seen the approval yet, in the one /me.
+  seedMe(
+    qc,
+    'auth-1',
+    meEntry({
+      id: 'u1',
+      first_name: 'Gbenga',
+      last_name: 'Ekundayo',
+      email: 'g@example.com',
+      mentor_profile: {
+        approval_status: 'approved',
+        approved_seen_at: null,
+      } as UserRead['mentor_profile'],
+    }),
+  );
+  expect(app(qc)).toMatchObject({ stage: 'approved', seen: false, fullName: 'Gbenga Ekundayo' });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   );
@@ -39,7 +50,7 @@ describe('useMarkApprovedSeen (PRD B3)', () => {
     POST.mockResolvedValue({ response: new Response(null, { status: 200 }) });
     const { qc, result } = setup();
     result.current.markSeen();
-    await waitFor(() => expect(qc.getQueryData(KEY)).toMatchObject({ seen: true }));
+    await waitFor(() => expect(app(qc)).toMatchObject({ seen: true }));
     expect(POST).toHaveBeenCalledWith('/api/v1/me/mentor-application/approved-seen');
   });
 
@@ -56,7 +67,7 @@ describe('useMarkApprovedSeen (PRD B3)', () => {
     const { qc, result } = setup();
     result.current.markSeen();
     await waitFor(() => expect(qc.getMutationCache().getAll()[0]?.state.status).toBe('error'));
-    expect(qc.getQueryData(KEY)).toMatchObject({ seen: false });
+    expect(app(qc)).toMatchObject({ seen: false });
   });
 });
 
@@ -85,7 +96,7 @@ describe('useMarkApprovedSeen: Preview as user (PRD, Read only)', () => {
     await waitFor(() => expect(qc.getMutationCache().getAll()[0]?.state.status).toBe('success'));
     expect(POST).not.toHaveBeenCalled();
     // Nothing was sent, so the cache doesn't claim the mentor saw it (GitHub review, PR 494).
-    expect(qc.getQueryData(KEY)).toMatchObject({ seen: false });
+    expect(app(qc)).toMatchObject({ seen: false });
   });
 });
 
@@ -95,23 +106,23 @@ describe('useMarkApprovedSeen: the viewer follows', () => {
   it('marks the cached viewer seen, so Home goes back to the dashboard (no repeat toast)', async () => {
     POST.mockResolvedValue({ response: new Response(null, { status: 200 }) });
     const { qc, result } = setup();
-    const ME = keys.viewer.me('u1');
-    qc.setQueryData(ME, {
-      kind: 'member',
-      id: 'u1',
-      firstName: 'Gbenga',
-      initials: 'G',
-      isMentee: false,
-      isApprovedMentor: true,
-      isMentor: true,
-      completedSessions: 0,
-      credits: null,
-      mentorStage: 'approved',
-      mentorApprovedSeen: false,
-    } as Viewer);
-    expect(accessFor(qc.getQueryData<Viewer>(ME)!).homeHref).toBe('/mentor-application');
+    // An approved mentor who hasn't seen the approval yet, in the one /me.
+    seedMe(
+      qc,
+      'auth-1',
+      meEntry({
+        id: 'u1',
+        first_name: 'Gbenga',
+        mentor_profile: {
+          approval_status: 'approved',
+          approved_seen_at: null,
+        } as UserRead['mentor_profile'],
+      }),
+    );
+    const viewer = () => cachedViewer(qc, 'auth-1')!;
+    expect(accessFor(viewer()).homeHref).toBe('/mentor-application');
     result.current.markSeen();
-    await waitFor(() => expect(qc.getQueryData(ME)).toMatchObject({ mentorApprovedSeen: true }));
-    expect(accessFor(qc.getQueryData<Viewer>(ME)!).homeHref).toBeNull();
+    await waitFor(() => expect(viewer()).toMatchObject({ mentorApprovedSeen: true }));
+    expect(accessFor(viewer()).homeHref).toBeNull();
   });
 });

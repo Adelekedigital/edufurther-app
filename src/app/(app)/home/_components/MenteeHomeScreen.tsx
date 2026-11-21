@@ -185,7 +185,11 @@ export function MenteeHomeScreen() {
   const steps = stepsDone(state);
   const { stage } = stageFor(state);
   const inviteStage = stage === 'booked';
-  const link = useInviteLink(userId, inviteOpen || (candidate && !fresh.loading && inviteStage));
+  // Asked for as soon as the stage is known to be `booked`, not after every
+  // read settles: copying and sharing wait on it. A read still out can't put
+  // a mentee in `booked` wrongly: it needs a booking already on screen, and
+  // the details still loading only ever read as not done (stageFor).
+  const link = useInviteLink(userId, inviteOpen || (candidate && inviteStage));
 
   // All three steps done: the view stays 1.5s, then gives way to the returning
   // Home. Done before it was ever shown (an old account), it never shows.

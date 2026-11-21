@@ -15,7 +15,11 @@ beforeEach(() => {
   zone = 'America/New_York';
 });
 
+// The SDK's session as it is right after sign-in: its user id keys the one /me.
+vi.mock('@/lib/vendor/supabase/browser', () => ({ sessionUserId: async () => 'auth-1' }));
+
 const { useSaveName, fetchSignInAccount, zoneToSave } = await import('./signIn');
+const { keys } = await import('./keys');
 
 const res = (status: number, data?: unknown, error?: unknown) => ({
   data,
@@ -28,7 +32,7 @@ describe('fetchSignInAccount (who just signed in)', () => {
     GET.mockResolvedValueOnce(
       res(200, { id: 'u1', first_name: null, is_admin: false, mentor_profile: null }),
     );
-    expect(await fetchSignInAccount()).toEqual({
+    expect(await fetchSignInAccount(new QueryClient())).toEqual({
       kind: 'member',
       id: 'u1',
       firstName: null,
@@ -52,7 +56,10 @@ describe('fetchSignInAccount (who just signed in)', () => {
         mentor_profile: { approval_status: 'declined' },
       }),
     );
-    expect(await fetchSignInAccount()).toMatchObject({ isMentor: false, mentorApproved: false });
+    expect(await fetchSignInAccount(new QueryClient())).toMatchObject({
+      isMentor: false,
+      mentorApproved: false,
+    });
   });
 
   it('carries whether the approved screen was seen (pending backend approved_seen_at)', async () => {
@@ -63,7 +70,7 @@ describe('fetchSignInAccount (who just signed in)', () => {
         mentor_profile: { approval_status: 'approved', approved_seen_at: null },
       }),
     );
-    expect(await fetchSignInAccount()).toMatchObject({
+    expect(await fetchSignInAccount(new QueryClient())).toMatchObject({
       mentorApproved: true,
       mentorApprovedSeen: false,
     });
@@ -71,7 +78,7 @@ describe('fetchSignInAccount (who just signed in)', () => {
 
   it('carries /me timezone, so a zone the account has is never overwritten', async () => {
     GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: null, timezone: 'Africa/Lagos' }));
-    expect(await fetchSignInAccount()).toMatchObject({ timezone: 'Africa/Lagos' });
+    expect(await fetchSignInAccount(new QueryClient())).toMatchObject({ timezone: 'Africa/Lagos' });
   });
 
   it('carries /me onboarding.complete, so an unfinished mentee goes back to it', async () => {
@@ -84,7 +91,9 @@ describe('fetchSignInAccount (who just signed in)', () => {
         onboarding: { complete: false, missing: ['field'] },
       }),
     );
-    expect(await fetchSignInAccount()).toMatchObject({ onboardingComplete: false });
+    expect(await fetchSignInAccount(new QueryClient())).toMatchObject({
+      onboardingComplete: false,
+    });
   });
 
   it('counts any mentor profile as a mentor, approved or not', async () => {
@@ -96,7 +105,7 @@ describe('fetchSignInAccount (who just signed in)', () => {
         mentor_profile: { approval_status: 'pending' },
       }),
     );
-    expect(await fetchSignInAccount()).toMatchObject({
+    expect(await fetchSignInAccount(new QueryClient())).toMatchObject({
       firstName: 'Gbenga',
       isMentor: true,
       mentorApproved: false,
@@ -105,13 +114,30 @@ describe('fetchSignInAccount (who just signed in)', () => {
 
   it('separates no account (404 / 409) from a failure', async () => {
     GET.mockResolvedValueOnce(res(404));
-    expect(await fetchSignInAccount()).toEqual({ kind: 'noAccount' });
+    expect(await fetchSignInAccount(new QueryClient())).toEqual({ kind: 'noAccount' });
     GET.mockResolvedValueOnce(res(409));
-    expect(await fetchSignInAccount()).toEqual({ kind: 'noAccount' });
+    expect(await fetchSignInAccount(new QueryClient())).toEqual({ kind: 'noAccount' });
     GET.mockResolvedValueOnce(res(500));
-    expect(await fetchSignInAccount()).toEqual({ kind: 'error' });
+    expect(await fetchSignInAccount(new QueryClient())).toEqual({ kind: 'error' });
     GET.mockRejectedValueOnce(new Error('offline'));
-    expect(await fetchSignInAccount()).toEqual({ kind: 'error' });
+    expect(await fetchSignInAccount(new QueryClient())).toEqual({ kind: 'error' });
+  });
+
+  it('reads the one /me afresh, and caches it where the page they land on reads it', async () => {
+    const qc = new QueryClient();
+    // An older /me cached for this session: sign-in never routes on it.
+    qc.setQueryData(keys.viewer.me('auth-1'), {
+      me: { id: 'u1', first_name: 'Old', email: 'a@b.co' },
+      viewer: null,
+      profile: null,
+    });
+    GET.mockReset();
+    GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: 'Amara', email: 'a@b.co' }));
+    expect(await fetchSignInAccount(qc)).toMatchObject({ kind: 'member', firstName: 'Amara' });
+    expect(GET).toHaveBeenCalledTimes(1);
+    expect(qc.getQueryData(keys.viewer.me('auth-1'))).toMatchObject({
+      me: { first_name: 'Amara' },
+    });
   });
 });
 
@@ -337,7 +363,7 @@ describe('useSaveName (a proxy error after the save)', () => {
     const run = save();
     await act(() => run());
     expect(PATCH).toHaveBeenCalledTimes(2);
-    expect(GET).toHaveBeenCalledWith('/api/v1/me');
+    expect(GET).toHaveBeenCalledWith('/api/v1/me', expect.anything());
   });
 
   it('says "try again" when /me has no name either', async () => {
@@ -369,7 +395,7 @@ describe('useSaveName (a proxy error after the save)', () => {
     GET.mockResolvedValueOnce(res(200, { id: 'u1', first_name: 'Amara' }));
     const run = save();
     await act(() => run());
-    expect(GET).toHaveBeenCalledWith('/api/v1/me');
+    expect(GET).toHaveBeenCalledWith('/api/v1/me', expect.anything());
   });
 
   it('does not count a different name on /me as this save', async () => {
