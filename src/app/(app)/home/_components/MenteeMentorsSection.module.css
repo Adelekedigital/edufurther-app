@@ -118,6 +118,25 @@
   gap: var(--space-1);
 }
 
+/* MentorsSkeleton: the tab row at a tab's own height (Tabs' 16px padding and
+   1.45 line), and the panel head at See all's 44px. */
+.skelTabs {
+  display: flex;
+  gap: var(--space-8);
+  padding: var(--space-4);
+}
+.skelHead {
+  align-items: center;
+  min-height: var(--space-11);
+}
+/* Lines as tall as the heading and a tab label (their size at the body line height). */
+.skelTitle {
+  height: calc(var(--text-p-lg) * var(--lh-p));
+}
+.skelTab {
+  height: calc(var(--text-p-sm) * var(--lh-p));
+}
+
 /* Recommended: the matched cards (design mGrid). */
 .grid {
   margin: 0;

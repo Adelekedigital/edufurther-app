@@ -40,7 +40,7 @@ import type { Mentor } from '@/types/mentor';
 import type { MessageRecipient } from '@/types/messages';
 import { MENTORS_ID, MenteeMentorsSection, RECOMMENDED_ID, SHOWN } from './MenteeMentorsSection';
 import { MenteeNewView } from './MenteeNewView';
-import { MenteeReturningView, KpiSkeleton, NextSkeleton } from './MenteeReturningView';
+import { MenteeReturningView, ReturningSkeleton } from './MenteeReturningView';
 import { MenteeNextSession, startsSoon } from './MenteeNextSession';
 import { stageFor, stepsDone, targetText, type ProfileKey } from './newMentee';
 import { MenteeProfileStrength, focusAfterTip } from './MenteeProfileStrength';
@@ -400,6 +400,20 @@ export function MenteeHomeScreen() {
   // While the new view reads, nothing says which view it is: no greeting
   // that could flip, no header invite.
   const settling = candidate && fresh.loading;
+  // The full Home is drawn at once, when the reads it lays out by have settled
+  // (loaded or failed): the subline, the tiles' links, the next session and
+  // Profile strength each change the page's height as they land, and drawn one
+  // by one they pushed what was already on screen around (CLS). Until then its
+  // skeleton holds the same order; Recommended still loads in its own frame.
+  const fullLoading =
+    !settling &&
+    !newView &&
+    !(candidate && fresh.error) &&
+    (stats.isLoading ||
+      upcoming.isLoading ||
+      metMentors.isLoading ||
+      fresh.detailsStatus === 'loading');
+  const loading = settling || fullLoading;
 
   return (
     // data-help reserves bottom room so the fixed help pill never overlaps the
@@ -411,7 +425,7 @@ export function MenteeHomeScreen() {
       onClickCapture={profileLinkSource('home')}
     >
       <header className={styles.header}>
-        {settling ? (
+        {loading ? (
           <div className={styles.greeting}>
             <Skeleton width="240px" height="24px" />
             <Skeleton width="180px" height="14px" />
@@ -424,7 +438,7 @@ export function MenteeHomeScreen() {
             <p className={styles.subline}>{subline}</p>
           </div>
         )}
-        {headerInvite && !settling && (
+        {headerInvite && !loading && (
           <Button variant="secondary-outlined" size="medium" onClick={() => setInviteOpen(true)}>
             Invite a friend
           </Button>
@@ -433,6 +447,8 @@ export function MenteeHomeScreen() {
 
       {settling ? (
         <NewSkeleton />
+      ) : fullLoading ? (
+        <ReturningSkeleton />
       ) : candidate && fresh.error ? (
         <Notice tone="neutral" icon="error" title="We couldn’t load your next steps.">
           <button type="button" className={styles.inlineAction} onClick={fresh.retry}>
@@ -625,7 +641,7 @@ function NewSkeleton() {
   );
 }
 
-/** Greeting + progress + next session, all loading. */
+/** The greeting and the full Home, all loading. */
 function HomeSkeleton() {
   return (
     <>
@@ -633,12 +649,7 @@ function HomeSkeleton() {
         <Skeleton width="240px" height="24px" />
         <Skeleton width="180px" height="14px" />
       </div>
-      <div className={styles.kpis}>
-        {Array.from({ length: 4 }).map((_, i) => (
-          <KpiSkeleton key={i} />
-        ))}
-      </div>
-      <NextSkeleton />
+      <ReturningSkeleton />
     </>
   );
 }

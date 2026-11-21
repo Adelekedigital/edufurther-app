@@ -591,6 +591,29 @@ describe('MenteeHomeScreen', () => {
     expect(screen.queryByRole('region', { name: 'Your progress' })).not.toBeInTheDocument();
   });
 
+  // Drawn one by one, each read's arrival pushed the page around (CLS 0.16 at 390).
+  it.each([
+    ['progress', () => (stats = remote<MenteeStats>(null, { isLoading: true }))],
+    ['the next session', () => (upcoming = remote<Booking[]>(null, { isLoading: true }))],
+    ['mentors met', () => (metMentors = remote<MetMentor[]>(null, { isLoading: true }))],
+    ['profile details', () => (fresh = freshWith({ detailsStatus: 'loading' }))],
+  ])('the full Home holds its skeleton while %s loads, then draws at once', (_, load) => {
+    load();
+    const { rerender } = render(<MenteeHomeScreen />);
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Invite a friend' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Your progress' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Next session' })).not.toBeInTheDocument();
+    stats = remote(STATS);
+    upcoming = remote([booking()]);
+    metMentors = remote([]);
+    fresh = freshWith();
+    rerender(<MenteeHomeScreen />);
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Your progress' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Next session' })).toBeInTheDocument();
+  });
+
   it('every tile has its hint, and a missed session links to Bookings History filtered to Missed', () => {
     stats = remote<MenteeStats>({ ...STATS, missedSessions: 1 });
     render(<MenteeHomeScreen />);
