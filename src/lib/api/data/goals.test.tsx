@@ -8,13 +8,12 @@ import { keys } from './keys';
 
 const calls: { method: string; path: string; body: unknown }[] = [];
 let failPut = false;
-let failPatch = false;
 const res = (status: number) => Promise.resolve({ response: new Response(null, { status }) });
 vi.mock('./http', () => ({
   api: {
     PATCH: (path: string, init: { body: unknown }) => {
       calls.push({ method: 'PATCH', path, body: init.body });
-      return res(failPatch ? 500 : 200);
+      return res(200);
     },
     PUT: (path: string, init: { body: unknown }) => {
       calls.push({ method: 'PUT', path, body: init.body });
@@ -49,7 +48,6 @@ const read = (goal: GoalsRead['goal'] = null): GoalsRead => ({
 beforeEach(() => {
   calls.length = 0;
   failPut = false;
-  failPatch = false;
 });
 
 describe('toGoalValues', () => {
