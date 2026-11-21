@@ -1,3 +1,4 @@
+import { MESSAGES_LIVE } from '@/lib/config/messages';
 import { WHATS_NEW_LIVE } from '@/lib/config/whatsNew';
 import { viewerRole } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
@@ -131,12 +132,20 @@ export function replayHref(
 }
 
 /**
- * The words that point at the replay go once it is no longer offered: the
- * welcome's hint and the done card's body, with or without their replay line.
+ * The words that depend on the moment: the welcome's hint and the done
+ * card's body lose their replay line once it is no longer offered, and the
+ * welcome names messages only while Messages is on.
  */
-export function tourText(content: TourRoleContent, replayable: boolean) {
+export function tourText(
+  content: TourRoleContent,
+  replayable: boolean,
+  messages: boolean = MESSAGES_LIVE,
+) {
   const add = (text: string, line: string) => (replayable ? `${text} ${line}` : text);
+  const w = content.welcome;
   return {
+    /** Messages named only while Messages is on. */
+    welcomeBody: !messages && w.bodyWithoutMessages ? w.bodyWithoutMessages : w.body,
     hint: add(TOUR_COPY.hint, TOUR_COPY.welcomeReplay),
     doneBody: add(content.done.body, TOUR_COPY.doneReplay),
   };

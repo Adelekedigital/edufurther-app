@@ -55,6 +55,8 @@ export type TourStep = {
 export type TourRoleContent = {
   welcome: {
     body: string;
+    /** The body while Messages is off (MESSAGES_LIVE): it mustn't name a feature they can't open. */
+    bodyWithoutMessages?: string;
     rows: { icon: IconName; title: string; meta: string }[];
   };
   steps: TourStep[];
@@ -139,6 +141,8 @@ export const MIGRATION_2026_11: TourRelease = {
     mentee: {
       welcome: {
         body: 'Your profile, bookings and any messages you had came with you. A few things work differently now.',
+        bodyWithoutMessages:
+          'Your profile and bookings came with you. A few things work differently now.',
         rows: [
           {
             icon: 'join',
@@ -152,7 +156,7 @@ export const MIGRATION_2026_11: TourRelease = {
           },
           {
             icon: 'toll',
-            title: '3 free sessions every month',
+            title: 'Free sessions every month',
             meta: 'Your credits refill each month.',
           },
         ],
@@ -173,7 +177,7 @@ export const MIGRATION_2026_11: TourRelease = {
         {
           target: 'credits-pill',
           badge: { label: 'Changed', tone: 'orange' },
-          title: '3 free sessions every month',
+          title: 'Free sessions every month',
           body: 'Your credits refill each month. Tap here to see what’s left and how credits work.',
         },
         GET_THE_APP,

@@ -218,7 +218,9 @@ describe('tourText: the replay line goes when the replay does', () => {
   const mentee = live.roles.mentee!;
 
   it('inside the window: the hint and done card say it can be replayed', () => {
-    expect(tourText(mentee, inReplayWindow(live, Date.parse('2026-12-22T23:59:59Z')))).toEqual({
+    expect(
+      tourText(mentee, inReplayWindow(live, Date.parse('2026-12-22T23:59:59Z'))),
+    ).toMatchObject({
       hint: 'Takes about a minute. You can replay it from Settings.',
       doneBody:
         'Book your next session from Home or Explore. You can replay this tour from Settings.',
@@ -226,10 +228,48 @@ describe('tourText: the replay line goes when the replay does', () => {
   });
 
   it('after it: neither mentions a replay', () => {
-    expect(tourText(mentee, inReplayWindow(live, Date.parse('2026-12-23T00:00:00Z')))).toEqual({
+    expect(
+      tourText(mentee, inReplayWindow(live, Date.parse('2026-12-23T00:00:00Z'))),
+    ).toMatchObject({
       hint: 'Takes about a minute.',
       doneBody: 'Book your next session from Home or Explore.',
     });
+  });
+});
+
+describe('tourText: messages only while Messages is on', () => {
+  const mentee = live.roles.mentee!;
+
+  it('Messages on: the welcome says any messages came along', () => {
+    expect(tourText(mentee, true, true).welcomeBody).toBe(
+      'Your profile, bookings and any messages you had came with you. A few things work differently now.',
+    );
+  });
+
+  it('Messages off: it doesn’t name them', () => {
+    expect(tourText(mentee, true, false).welcomeBody).toBe(
+      'Your profile and bookings came with you. A few things work differently now.',
+    );
+  });
+
+  it('a body with no messages variant reads the same either way (mentor)', () => {
+    const mentor = live.roles.mentor!;
+    expect(tourText(mentor, true, false).welcomeBody).toBe(mentor.welcome.body);
+  });
+});
+
+describe('the credits copy names no number (the monthly amount follows the level)', () => {
+  it('row 3 and step 3', () => {
+    const mentee = live.roles.mentee!;
+    expect(mentee.welcome.rows[2]).toMatchObject({
+      title: 'Free sessions every month',
+      meta: 'Your credits refill each month.',
+    });
+    expect(mentee.steps[2]).toMatchObject({
+      title: 'Free sessions every month',
+      body: 'Your credits refill each month. Tap here to see what’s left and how credits work.',
+    });
+    expect(JSON.stringify(mentee)).not.toMatch(/\b3 free\b/);
   });
 });
 
