@@ -55,6 +55,9 @@ const { useViewer, patchViewer } = await import('./viewer');
 const { useMenteeGoals, useSaveGoals } = await import('./goals');
 const { useMenteeProfile, useSaveMenteeProfile } = await import('./settings');
 const { useMentorSettings } = await import('./mentorSettings');
+const { useMyLinks } = await import('./links');
+const { useOnboarding } = await import('./onboarding');
+const { useMentorApplication: useApplicationStatus } = await import('./mentorApplicationStatus');
 
 const goal = (field: string) =>
   ({
@@ -66,7 +69,7 @@ const goal = (field: string) =>
 
 function setup() {
   const qc = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    defaultOptions: { queries: { retry: false, retryDelay: 0 }, mutations: { retry: false } },
   });
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
@@ -77,12 +80,14 @@ function setup() {
       goals: useMenteeGoals('u1'),
       profile: useMenteeProfile('u1'),
       mentor: useMentorSettings('u1'),
+      links: useMyLinks('u1'),
+      onboarding: useOnboarding('u1', []),
       saveGoals: useSaveGoals('u1'),
       saveProfile: useSaveMenteeProfile('u1'),
     }),
     { wrapper },
   );
-  return { qc, result: hook.result };
+  return { qc, result: hook.result, unmount: hook.unmount };
 }
 const meReads = () => h.calls.filter((c) => c === 'GET /api/v1/me').length;
 
@@ -95,7 +100,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs());
 
 describe('the one /me', () => {
-  it('the shell, Goals, Profile and Mentor Settings: one GET /me between them', async () => {
+  it('the shell, Goals, Profile, Mentor Settings, Social links and onboarding: one GET /me between them', async () => {
     const { result } = setup();
     await waitFor(() => expect(result.current.goals.status).toBe('ready'));
     await waitFor(() => expect(result.current.profile.status).toBe('ready'));
@@ -103,7 +108,25 @@ describe('the one /me', () => {
     expect(result.current.goals.read!.goal!.field_of_study).toBe('Law');
     expect(result.current.profile.profile).toMatchObject({ name: 'Amaka Obi' });
     expect(result.current.mentor.handle).toBe('esther');
+    expect(result.current.links).toMatchObject({ status: 'ready', rows: [] });
+    expect(result.current.onboarding.saved!.goal!.field_of_study).toBe('Law');
     expect(meReads()).toBe(1);
+  });
+
+  it('the mentor application status page asks /me afresh as it opens, on the same query', async () => {
+    const { qc, result } = setup();
+    await waitFor(() => expect(result.current.goals.status).toBe('ready'));
+    expect(meReads()).toBe(1);
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const status = renderHook(() => useApplicationStatus('u1'), { wrapper });
+    // The cached /me (from earlier in the visit) isn't taken as the answer.
+    expect(status.result.current.fresh).toBe(false);
+    await waitFor(() => expect(status.result.current.fresh).toBe(true));
+    expect(status.result.current.data).toEqual({ stage: 'none' });
+    expect(meReads()).toBe(2);
+    expect(qc.getQueryCache().findAll({ queryKey: ['viewer'] })).toHaveLength(1);
   });
 
   it('loading stays loading: no reader shows empty before /me answers', () => {
@@ -113,6 +136,20 @@ describe('the one /me', () => {
     expect(result.current.goals).toMatchObject({ status: 'loading', read: null });
     expect(result.current.profile).toMatchObject({ status: 'loading', profile: null });
     expect(result.current.mentor.status).toBe('loading');
+  });
+
+  it('retryOnce: a 5xx is tried once more; a 4xx fails at once', async () => {
+    h.meStatus = 503;
+    const first = setup();
+    await waitFor(() => expect(first.result.current.viewer.kind).toBe('error'));
+    expect(meReads()).toBe(2);
+    first.unmount();
+    h.calls = [];
+    h.meStatus = 403;
+    const second = setup();
+    await waitFor(() => expect(second.result.current.viewer.kind).toBe('error'));
+    expect(second.result.current.goals.status).toBe('error');
+    expect(meReads()).toBe(1);
   });
 
   it('a failed /me is an error for every reader, never empty; retry asks once', async () => {

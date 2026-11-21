@@ -111,7 +111,7 @@ describe('toMenteeProfile', () => {
 
 describe('useMenteeProfile', () => {
   it('a catalog failure doesn’t hide a profile that loaded: the country is just empty', async () => {
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } });
     GET.mockImplementation(async (path: string) =>
       path === '/api/v1/me'
         ? {
@@ -137,7 +137,7 @@ describe('useMenteeProfile', () => {
   });
 
   it('the catalog maps the saved country to its id; until it answers, the profile is loading', async () => {
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } });
     let answerCatalog: (v: unknown) => void = () => {};
     GET.mockImplementation((path: string) =>
       path === '/api/v1/me'
@@ -167,7 +167,7 @@ describe('useMenteeProfile', () => {
   });
 
   it('a failed /me is an error, never an empty profile', async () => {
-    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false, retryDelay: 0 } } });
     GET.mockResolvedValue({ response: { ok: false, status: 500 }, error: {} });
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={qc}>{children}</QueryClientProvider>
@@ -209,7 +209,7 @@ describe('useSaveMenteeProfile', () => {
   // the readers show is what the save itself wrote over the one /me.
   function setup() {
     const qc = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: { queries: { retry: false, retryDelay: 0 }, mutations: { retry: false } },
     });
     seedMe(
       qc,

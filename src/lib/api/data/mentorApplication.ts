@@ -27,9 +27,10 @@ import type {
   SchoolDraft,
 } from '@/types/mentorOnboarding';
 import { useCountries, useDegreeLevels, type CatalogOption } from './catalog';
-import { ApiError, apiError, normaliseError, retryOnce } from './errors';
+import { ApiError, apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { cachedMe, patchMe, useMeSlice, type MeRead } from './me';
 import { useTopics } from './mentors';
 import { aboutBody } from './profileEdit';
 import type { SessionTypeWriteBody } from './sessionTypes';
@@ -156,22 +157,16 @@ export function toApplicationState(me: Me, ctx: ApplicationContext): MentorAppli
   };
 }
 
+const replyOf = ({ me }: MeRead) => me;
+
 /**
  * The applicant's answers and standing (GET /me, plus their weekly hours and
  * session types). Countries map the saved country codes back to ids.
  */
 export function useMentorApplication(userId: string | null) {
   const countries = useCountries(userId !== null);
-  const me = useQuery({
-    queryKey: keys.mentorApplication.me(userId ?? 'none'),
-    queryFn: async ({ signal }) => {
-      const { data, response } = await api.GET('/api/v1/me', { signal });
-      if (!data) throw new ApiError(response.status);
-      return data;
-    },
-    enabled: userId !== null,
-    retry: retryOnce,
-  });
+  // A slice of the one /me (me.ts): the shell's read, not a second request.
+  const me = useMeSlice(userId !== null, replyOf);
   const hours = useWeeklyHours(userId);
   const [deviceZone] = useState(readZone);
 
@@ -179,7 +174,7 @@ export function useMentorApplication(userId: string | null) {
   // and loading must never wait on them (the hours save checks for itself).
   const ready = !!me.data && countries.status === 'ready' && !!hours.data;
   const error =
-    (me.error ? normaliseError(me.error) : null) ??
+    (me.status === 'error' ? normaliseError(me.error) : null) ??
     (countries.status === 'error' ? normaliseError(new ApiError(0)) : null) ??
     hours.error;
   return {
@@ -194,7 +189,7 @@ export function useMentorApplication(userId: string | null) {
     isLoading: userId !== null && !ready && !error,
     error,
     retry: () => {
-      void me.refetch();
+      me.retry();
       countries.retry();
       hours.retry();
     },
@@ -432,7 +427,7 @@ export function useSaveMentorStep(userId: string | null) {
     mutationFn: async ({ step, answers, state, onSchoolSaved }) => {
       if (!userId) throw new ApiError(401);
       const user = { user_id: userId };
-      const me = qc.getQueryData<Me>(keys.mentorApplication.me(userId));
+      const me = cachedMe(qc);
       const patchMentor = (body: components['schemas']['MentorProfileWrite']) =>
         check(
           api.PATCH('/api/v1/users/{user_id}/mentor-profile', { params: { path: user }, body }),
@@ -512,6 +507,9 @@ export function useSaveMentorStep(userId: string | null) {
           timeZone: answers.timeZone,
         });
         await patchProfile({ timezone: answers.timeZone });
+        // The zone the server now holds, in the one /me at once: the shell's
+        // times follow it before the read after this step lands.
+        patchMe(qc, (m) => ({ ...m, timezone: answers.timeZone }));
         const help = [...answers.helpIds].sort().join(',');
         if (attempt.current?.help !== help) attempt.current = { help, id: newAttempt() };
         const key = introChatKey(userId, attempt.current.id);
@@ -566,7 +564,8 @@ export function useSaveMentorStep(userId: string | null) {
       if (step === 'education')
         void qc.invalidateQueries({ queryKey: keys.education(userId ?? '') });
       void qc.invalidateQueries({ queryKey: keys.mentors.all });
-      await qc.invalidateQueries({ queryKey: keys.mentorApplication.all });
+      // The answers are the one /me: saving lasts until it is read again.
+      await qc.invalidateQueries({ queryKey: keys.viewer.meAll });
     },
   });
   return {
@@ -617,13 +616,17 @@ export function useSubmitMentorApplication() {
       if (!response.ok) throw apiError(response.status, error, response);
       return { submittedAt: data?.submitted_at ?? null };
     },
-    onSuccess: () => {
-      // Dropped, not just marked stale: the status page opens next and must
-      // never latch a cached "unsubmitted" (it would send them back here).
-      qc.removeQueries({ queryKey: keys.viewer.mentorApplicationAll });
-      // And the form's own read: opening /onboarding/mentor again must see it submitted.
-      qc.removeQueries({ queryKey: keys.mentorApplication.all });
-      // Sign-in routing reads the application from /me too.
+    onSuccess: ({ submittedAt }) => {
+      // The status page opens next and must never latch a cached "unsubmitted"
+      // (it would send them back here), nor the form, opened again, read it:
+      // the one /me says submitted at once (it also asks /me afresh as it
+      // opens), then everyone's read refreshes.
+      const at = submittedAt ?? new Date().toISOString();
+      patchMe(qc, (me) =>
+        me.mentor_profile && !me.mentor_profile.submitted_at
+          ? { ...me, mentor_profile: { ...me.mentor_profile, submitted_at: at } }
+          : me,
+      );
       void qc.invalidateQueries({ queryKey: keys.viewer.all });
     },
   });

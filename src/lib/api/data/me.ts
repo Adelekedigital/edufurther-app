@@ -5,7 +5,7 @@ import { useQuery, type QueryClient } from '@tanstack/react-query';
 import type { components } from '@/lib/api/generated/schema';
 import type { Viewer } from '@/types/mentor';
 import type { MenteeProfileValues } from '@/types/settings';
-import { apiError } from './errors';
+import { ApiError, apiError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { useSession } from './session';
@@ -55,7 +55,8 @@ export const isMeRead = (e: unknown): e is MeRead =>
 /** A fresh entry for a reply: no overlays. */
 export const meRead = (me: UserRead): MeRead => ({ me, viewer: null, profile: null });
 
-async function fetchMe({ signal }: { signal: AbortSignal }): Promise<MeEntry> {
+/** The one place GET /me is sent. */
+async function fetchMe({ signal }: { signal?: AbortSignal }): Promise<MeEntry> {
   const { data, error, response } = await api.GET('/api/v1/me', { signal });
   if (response.status === 404) return UNLINKED;
   if (response.status === 409) return ACCOUNT_EXISTS;
@@ -64,48 +65,86 @@ async function fetchMe({ signal }: { signal: AbortSignal }): Promise<MeEntry> {
 }
 
 /**
- * The one GET /me. The shell (useViewer), Settings and Home's goal and profile
- * reads all observe this query and `select` their slice, so a screen sends one
- * request, not one per reader, and a write to it reaches every reader.
+ * The one GET /me, as query options: the hooks below observe it, and a flow
+ * outside React (sign-in) fetches it with `qc.fetchQuery`, so what it reads is
+ * cached where the page it lands on looks. Keyed by the session's user id
+ * (Supabase's), not the backend id the screens hold: every reader lands on the
+ * same entry.
  *
- * Keyed by the session's user id (Supabase's), not the backend id the screens
- * hold: every reader lands on the same entry. `enabled` is the reader's own
- * gate; the key is shared.
+ * `retryOnce`: a 4xx fails at once (a 401 is already refreshed and retried by
+ * the auth middleware; 404 and 409 are states, not errors); a 5xx or a dropped
+ * line is tried once more.
  */
-export function useMeQuery<T>(enabled: boolean, select: (entry: MeEntry) => T) {
+export const meQuery = (authId: string) => ({
+  queryKey: keys.viewer.me(authId),
+  queryFn: fetchMe,
+  staleTime: 60_000,
+  retry: retryOnce,
+});
+
+/** A screen's wish for the one /me beyond the defaults (e.g. a fresh read on mount). */
+export type MeReadOptions = {
+  refetchOnMount?: boolean | 'always';
+  refetchOnWindowFocus?: boolean;
+};
+
+/**
+ * The shell (useViewer), Settings, Home, onboarding and the mentor
+ * application all observe this one query and `select` their slice, so a
+ * screen sends one request, not one per reader, and a write to it reaches
+ * every reader. `enabled` is the reader's own gate; the key is shared.
+ */
+export function useMeQuery<T>(
+  enabled: boolean,
+  select: (entry: MeEntry) => T,
+  options: MeReadOptions = {},
+) {
   const session = useSession();
   const userId = session.status === 'present' ? session.userId : null;
-  return useQuery({
-    queryKey: keys.viewer.me(userId ?? 'none'),
-    queryFn: fetchMe,
-    enabled,
-    staleTime: 60_000,
-    select,
-  });
+  return useQuery({ ...meQuery(userId ?? 'none'), ...options, enabled, select });
 }
 
 /**
  * A slice of /me for a screen's own read: `null` data means no account, which
- * the screen shows as its error. Error before content: a failed refetch of a
- * loaded slice keeps it; unknown is loading, never empty.
+ * the screen shows as its error (a 404). Error before content: a failed
+ * refetch of a loaded slice keeps it; unknown is loading, never empty.
  */
-export function useMeSlice<T>(enabled: boolean, select: (entry: MeRead) => T) {
+export function useMeSlice<T>(
+  enabled: boolean,
+  select: (entry: MeRead) => T,
+  options?: MeReadOptions,
+) {
   // Stable while `select` is: the slice is recomputed only when /me changes.
   const pick = useCallback((e: MeEntry) => (isMeRead(e) ? select(e) : null), [select]);
-  const query = useMeQuery(enabled, pick);
+  const query = useMeQuery(enabled, pick, options);
+  const noAccount = query.data === null;
   const status: 'loading' | 'error' | 'ready' = query.data
     ? 'ready'
-    : query.error || query.data === null
+    : query.error || noAccount
       ? 'error'
       : 'loading';
   return {
     data: query.data ?? null,
     status,
-    error: query.error,
+    error: query.error ?? (noAccount ? new ApiError(404) : null),
     dataUpdatedAt: query.dataUpdatedAt,
     retry: () => void query.refetch(),
+    /** /me is being read now (a retry, or a refetch of a cached slice). */
     retrying: query.isFetching,
   };
+}
+
+/** The cached /me reply, if this tab has one (any user id it was read for). */
+export function cachedMe(qc: QueryClient): UserRead | null {
+  const hit = qc
+    .getQueriesData<MeEntry>({ queryKey: keys.viewer.meAll })
+    .find(([, e]) => isMeRead(e));
+  return hit ? (hit[1] as MeRead).me : null;
+}
+
+/** Writes into the cached reply itself, for a change the server confirmed (a link added, a time zone). */
+export function patchMe(qc: QueryClient, fn: (me: UserRead) => UserRead) {
+  updateMe(qc, (r) => ({ ...r, me: fn(r.me) }));
 }
 
 /** Writes over every cached /me (every user id this tab has read it for). */
