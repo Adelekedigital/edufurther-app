@@ -96,7 +96,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
     previewing,
   } = useAppShell();
   const online = useOnline();
-  const whatsNew = useWhatsNew({ member, nav, access, previewing, pathname });
+  const whatsNew = useWhatsNew({ member, access, previewing, pathname });
   // A phone browser that can install (lib/pwa/installPrompt): More's last item.
   const installable = useInstallAvailable();
 

@@ -7,15 +7,17 @@ import type { InstallPlatform } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/track';
 import { installPlatform, openInstallNudge } from '@/lib/pwa/installPrompt';
 import { useMarkSeen, useSeenHere } from '@/lib/api/data/seenItems';
-import type { TourRole, TourRoleContent } from '@/lib/copy/whatsNew';
+import type { TourReleaseId, TourRole, TourRoleContent } from '@/lib/copy/whatsNew';
 import { inSetup, type Access } from '@/lib/utils/access';
 import {
   activeReleases,
+  inReplayWindow,
   releaseFor,
   REPLAY_PARAM,
   REPLAY_VALUE,
   replayHref,
   tourMayStart,
+  tourViewerOf,
 } from '@/lib/utils/whatsNew';
 import type { TourEvent } from '@/components/templates/WhatsNewTour/WhatsNewTour';
 import type { Viewer } from '@/types/mentor';
@@ -58,45 +60,35 @@ function useReplayAsked(): [boolean, (on: boolean) => void] {
   return [replay, setReplay];
 }
 
-/** The role a tour is for: a known mentee or mentor, never an admin. */
-function tourRole(member: Member | null, nav: string): TourRole | null {
-  if (!member || member.isAdmin) return null;
-  return nav === 'mentee' || nav === 'mentor' ? nav : null;
-}
-
 type Active = {
-  release: string;
+  release: TourReleaseId;
   role: TourRole;
   content: TourRoleContent;
   replay: boolean;
   /** How this device installs the app, read as the tour opens (Get the app). */
   install: InstallPlatform | null;
+  /** Still in its replay window: the hint and done card say it can be replayed. */
+  replayable: boolean;
 };
 
 export function useWhatsNew({
   member,
-  nav,
   access,
   previewing,
   pathname,
 }: {
   member: Member | null;
-  nav: string;
   access: Access;
   previewing: boolean;
   pathname: string;
 }) {
-  const seenHere = useSeenHere();
+  const viewer = member ? tourViewerOf(member) : null;
+  const role = viewer?.role ?? null;
+  const seenHere = useSeenHere(viewer?.id ?? null);
   const [replay, setReplay] = useReplayAsked();
   const consentBanner = useConsentBannerShown();
-  const markSeen = useMarkSeen();
-  const role = tourRole(member, nav);
-  const release = releaseFor(
-    { role, isMigrated: member?.isMigrated, seenItems: member?.seenItems },
-    activeReleases(),
-    seenHere,
-    replay,
-  );
+  const markSeen = useMarkSeen(viewer?.id ?? null);
+  const release = viewer ? releaseFor(viewer, activeReleases(), seenHere, replay) : null;
   const may =
     !!release &&
     tourMayStart({
@@ -139,7 +131,14 @@ export function useWhatsNew({
       }
       const content = release.roles[role];
       if (!gone && content)
-        setActive({ release: release.id, role, content, replay, install: installPlatform() });
+        setActive({
+          release: release.id,
+          role,
+          content,
+          replay,
+          install: installPlatform(),
+          replayable: inReplayWindow(release, Date.now()),
+        });
     };
     timer = setTimeout(attempt, SETTLE_MS);
     return () => {
@@ -186,6 +185,7 @@ export function useWhatsNew({
       onEvent,
       onMore: setMore,
       install: active.install,
+      replayable: active.replayable,
       // The install nudge's own sheet and analytics (trigger `tour`), never a second one.
       onInstall: () => void openInstallNudge('tour'),
       onClose,
@@ -207,11 +207,6 @@ export function tourReplay(
   previewing: boolean,
   now = Date.now(),
 ): string | undefined {
-  if (previewing || !member) return undefined;
-  const role = tourRole(member, member.isMentor ? 'mentor' : 'mentee');
-  return replayHref(
-    { role, isMigrated: member.isMigrated, seenItems: member.seenItems },
-    activeReleases(),
-    now,
-  );
+  const viewer = member && !previewing ? tourViewerOf(member) : null;
+  return viewer ? replayHref(viewer, activeReleases(), now) : undefined;
 }

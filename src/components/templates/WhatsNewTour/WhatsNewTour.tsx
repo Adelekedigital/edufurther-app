@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import type { InstallPlatform } from '@/lib/analytics/events';
-import type { TourRoleContent } from '@/lib/copy/whatsNew';
+import type { TourRoleContent, TourTarget } from '@/lib/copy/whatsNew';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
-import { tourSteps, type ResolvedStep } from '@/lib/utils/whatsNew';
+import { tourSteps, tourText, type ResolvedStep } from '@/lib/utils/whatsNew';
 import { placeOf } from './anchor';
 import { TourDone } from './TourDone';
 import { TourStepCard } from './TourStepCard';
@@ -16,7 +16,7 @@ const PHONE_LAYOUT = '(max-width: 767px)';
 /** What happened, for the caller's analytics and seen list. `step` 0 is the welcome. */
 export type TourEvent =
   | { type: 'started' }
-  | { type: 'step'; step: number; target: string }
+  | { type: 'step'; step: number; target: TourTarget }
   | { type: 'skipped'; step: number }
   /** Finish on the last step (or no steps): the tour counts as seen. */
   | { type: 'finished' }
@@ -39,6 +39,7 @@ export function WhatsNewTour({
   onMore,
   install = null,
   onInstall,
+  replayable = true,
   onClose,
 }: {
   first: string;
@@ -49,10 +50,13 @@ export function WhatsNewTour({
   install?: InstallPlatform | null;
   /** Get the app's Install app: the install sheet. */
   onInstall?: () => void;
+  /** Still in the replay window: the hint and done card mention the replay. */
+  replayable?: boolean;
   /** Gone: unmount it. */
   onClose: () => void;
 }) {
   const phone = useMediaQuery(PHONE_LAYOUT);
+  const text = tourText(content, replayable);
   const [phase, setPhase] = useState<Phase>({ at: 'welcome' });
   // Where focus was before the tour, to go back to at the very end. Read on
   // the first render: the welcome's own effect moves focus in before ours run.
@@ -93,6 +97,7 @@ export function WhatsNewTour({
       <TourWelcome
         first={first}
         welcome={content.welcome}
+        hint={text.hint}
         onDismiss={skip}
         onStart={() => {
           onEvent({ type: 'started' });
@@ -106,6 +111,7 @@ export function WhatsNewTour({
     return (
       <TourDone
         done={content.done}
+        body={text.doneBody}
         action={content.doneAction}
         onClose={(how) => {
           onEvent({ type: 'completed', action: how });

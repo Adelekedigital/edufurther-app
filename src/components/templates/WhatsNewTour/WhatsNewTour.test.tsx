@@ -241,6 +241,34 @@ describe('WhatsNewTour: the steps', () => {
   });
 });
 
+describe('WhatsNewTour: the replay line', () => {
+  it('while the replay is offered, the hint and done card say so', async () => {
+    const { user } = await start(mentee, []);
+    expect(
+      screen.getByText('Takes about a minute. You can replay it from Settings.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Show me around' }));
+    expect(screen.getByRole('status')).toHaveTextContent('You can replay this tour from Settings.');
+  });
+
+  it('once it is not, neither mentions it', async () => {
+    const user = userEvent.setup();
+    render(
+      <WhatsNewTour
+        first="Ada"
+        content={mentee}
+        replayable={false}
+        onEvent={vi.fn()}
+        onMore={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Takes about a minute.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Show me around' }));
+    expect(screen.getByRole('status')).not.toHaveTextContent('replay');
+  });
+});
+
 describe('WhatsNewTour: Get the app', () => {
   it('where the app can be installed: last, at the More tab, Install app opens the sheet then done', async () => {
     h.phone = true;

@@ -15,10 +15,13 @@ import styles from './WhatsNewTour.module.css';
  */
 export function TourDone({
   done,
+  body,
   action,
   onClose,
 }: {
   done: TourRoleContent['done'];
+  /** The body as shown (tourText: with the replay line while it's offered). */
+  body: string;
   action?: TourRoleContent['doneAction'];
   /** `cta`: the action was followed; `dismiss`: Got it or Escape. */
   onClose: (how: 'cta' | 'dismiss') => void;
@@ -49,7 +52,7 @@ export function TourDone({
         <h2 id={titleId} className={styles.cardTitle}>
           {done.title}
         </h2>
-        <p className={styles.cardBody}>{done.body}</p>
+        <p className={styles.cardBody}>{body}</p>
       </div>
       <div className={styles.doneActions}>
         {action ? (

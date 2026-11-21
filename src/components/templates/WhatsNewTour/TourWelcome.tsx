@@ -16,11 +16,14 @@ import styles from './WhatsNewTour.module.css';
 export function TourWelcome({
   first,
   welcome,
+  hint,
   onStart,
   onDismiss,
 }: {
   first: string;
   welcome: TourRoleContent['welcome'];
+  /** Under the buttons (tourText: with the replay line while it's offered). */
+  hint: string;
   onStart: () => void;
   onDismiss: () => void;
 }) {
@@ -63,7 +66,7 @@ export function TourWelcome({
         <Button variant="text" size="large" fullWidth onClick={onDismiss}>
           {C.notNow}
         </Button>
-        <p className={styles.hint}>{C.hint}</p>
+        <p className={styles.hint}>{hint}</p>
       </div>
     </ModalShell>
   );

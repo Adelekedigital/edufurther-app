@@ -52,7 +52,6 @@ function host(props: Partial<Parameters<typeof useWhatsNew>[0]> = {}) {
   return renderHook((p: Parameters<typeof useWhatsNew>[0]) => useWhatsNew(p), {
     initialProps: {
       member: member(),
-      nav: 'mentee',
       access: open,
       previewing: false,
       pathname: '/home',
@@ -63,7 +62,7 @@ function host(props: Partial<Parameters<typeof useWhatsNew>[0]> = {}) {
 const settle = () => act(() => vi.advanceTimersByTimeAsync(SETTLE_MS + 50));
 
 beforeEach(() => {
-  vi.useFakeTimers();
+  vi.useFakeTimers({ now: Date.parse('2026-11-25T12:00:00Z') });
   Object.values(h).forEach((f) => typeof f === 'function' && 'mockClear' in f && f.mockClear());
   h.claim.mockReturnValue(true);
   h.banner = false;
@@ -99,7 +98,6 @@ describe('useWhatsNew: when it opens', () => {
   it('a mentor on /dashboard gets the mentor version', async () => {
     const { result } = host({
       member: member({ isMentor: true }),
-      nav: 'mentor',
       pathname: '/dashboard',
     });
     await settle();
@@ -111,7 +109,7 @@ describe('useWhatsNew: when it opens', () => {
     ['in Preview as user', { previewing: true }],
     ['in the setup lock', { access: setup }],
     ['for an admin', { member: member({ isAdmin: true }) }],
-    ['while the role is unknown', { nav: 'unknown' }],
+    ['while /me loads', { member: null }],
     ['for an account made here', { member: member({ isMigrated: false }) }],
     ['once seen', { member: member({ seenItems: [ID] }) }],
   ])('never %s', async (_, props) => {
@@ -119,6 +117,23 @@ describe('useWhatsNew: when it opens', () => {
     expect(result.current.holding).toBe(false);
     await settle();
     expect(result.current.tour).toBeNull();
+  });
+
+  it('not before the release day; after the replay window it still opens, without the replay line', async () => {
+    vi.setSystemTime(Date.parse('2026-11-22T23:00:00Z'));
+    const early = host();
+    expect(early.result.current.holding).toBe(false);
+    early.unmount();
+    vi.setSystemTime(Date.parse('2027-02-01T09:00:00Z'));
+    const late = host();
+    await settle();
+    expect(late.result.current.tour?.replayable).toBe(false);
+  });
+
+  it('inside the replay window the tour says it can be replayed', async () => {
+    const { result } = host();
+    await settle();
+    expect(result.current.tour?.replayable).toBe(true);
   });
 
   it('waits for the consent banner to be answered', async () => {
@@ -129,7 +144,6 @@ describe('useWhatsNew: when it opens', () => {
     h.banner = false;
     rerender({
       member: member(),
-      nav: 'mentee',
       access: open,
       previewing: false,
       pathname: '/home',
