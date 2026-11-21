@@ -4,12 +4,12 @@ import { useCallback, useSyncExternalStore } from 'react';
 import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { addSeenHere, seenHere, subscribeSeenHere } from '@/lib/utils/seenHere';
 import { SEEN_KEY } from '@/lib/utils/whatsNew';
-import { untyped } from './pending';
+import { api } from './http';
 import { isPreviewing } from './previewStore';
 import { patchViewer } from './viewer';
 
 /**
- * What the account has seen (`/me.seen_items`, PENDING BACKEND): a "What's
+ * What the account has seen (`/me.seen_items`): a "What's
  * new" tour's release id once it's dismissed or finished (ADR 0014).
  *
  * Optimistic: the key joins the cached /me and this tab's list for this
@@ -39,7 +39,9 @@ const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function put(key: string): Promise<boolean> {
   for (let attempt = 0; ; attempt++) {
     try {
-      const { response } = await untyped.PUT(`/api/v1/me/seen-items/${encodeURIComponent(key)}`);
+      const { response } = await api.PUT('/api/v1/me/seen-items/{key}', {
+        params: { path: { key } },
+      });
       if (response.ok) return true;
       // A refusal (422 bad key, 403 preview) won't change on a retry.
       if (response.status < 500 && response.status !== 429) return false;

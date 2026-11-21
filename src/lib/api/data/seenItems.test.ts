@@ -3,9 +3,8 @@ import { clearSeenHere, seenHere, SEEN_HERE_KEY } from '@/lib/utils/seenHere';
 import { keys } from './keys';
 
 const h = vi.hoisted(() => ({ put: vi.fn(), previewing: false }));
-vi.mock('./pending', () => ({ untyped: { PUT: h.put } }));
 vi.mock('./previewStore', () => ({ isPreviewing: () => h.previewing }));
-vi.mock('./http', () => ({ api: {} }));
+vi.mock('./http', () => ({ api: { PUT: h.put } }));
 const { markSeen } = await import('./seenItems');
 
 const KEY = 'whats-new:2026-11-migration';
@@ -36,7 +35,9 @@ describe('markSeen', () => {
     expect(cached(qc)).toEqual(['older', KEY]);
     expect(JSON.parse(sessionStorage.getItem(SEEN_HERE_KEY)!)).toEqual({ id: ME, keys: [KEY] });
     await expect(done).resolves.toBe(true);
-    expect(h.put).toHaveBeenCalledWith(`/api/v1/me/seen-items/${encodeURIComponent(KEY)}`);
+    expect(h.put).toHaveBeenCalledWith('/api/v1/me/seen-items/{key}', {
+      params: { path: { key: KEY } },
+    });
   });
 
   it('never adds a key twice', async () => {
