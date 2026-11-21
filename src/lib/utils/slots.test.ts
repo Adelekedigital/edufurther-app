@@ -1,15 +1,5 @@
 import { formatDay } from './format';
-import {
-  dayKey,
-  groupSlotsByDay,
-  hourIn,
-  isEarlyMorning,
-  slotWindow,
-  visibleDays,
-  weekIndexOf,
-  weekOfDays,
-  weeksIn,
-} from './slots';
+import { dayKey, groupSlotsByDay, hourIn, isEarlyMorning, slotWindow, visibleDays } from './slots';
 
 describe('groupSlotsByDay', () => {
   // Joshua on the dev backend: first slot 05:30Z on Sep 30.
@@ -105,13 +95,6 @@ describe('slotWindow / visibleDays (review of #20)', () => {
       '2026-09-27',
       '2026-10-03',
     ]);
-    expect(weeksIn(7)).toBe(1);
-    expect(weeksIn(14)).toBe(2);
-    expect(weeksIn(56)).toBe(8);
-    expect(weeksIn(10)).toBe(2);
-    // A 10-day window: the second page stops at its end (3 days), not 7.
-    expect(weekOfDays([], 1, 'America/Los_Angeles', la, 10)).toHaveLength(3);
-    expect(weekOfDays([], 0, 'America/Los_Angeles', la, 10)).toHaveLength(7);
   });
 
   it('keeps only today … today+27 in the viewer’s zone', () => {
@@ -123,30 +106,6 @@ describe('slotWindow / visibleDays (review of #20)', () => {
       '2026-09-27',
       '2026-10-24',
     ]);
-  });
-});
-
-describe('weekIndexOf', () => {
-  const now = new Date('2026-09-27T12:00:00Z'); // Sunday in UTC
-  it('counts 7-day pages from today in the viewer zone', () => {
-    expect(weekIndexOf('2026-09-27T20:00:00Z', 'UTC', now)).toBe(0);
-    expect(weekIndexOf('2026-10-03T23:00:00Z', 'UTC', now)).toBe(0);
-    expect(weekIndexOf('2026-10-04T00:30:00Z', 'UTC', now)).toBe(1);
-    expect(weekIndexOf('2026-10-24T09:00:00Z', 'UTC', now)).toBe(3);
-  });
-  it('is negative for a day before today', () => {
-    expect(weekIndexOf('2026-09-26T09:00:00Z', 'UTC', now)).toBe(-1);
-  });
-  it('uses the zone for both days, around midnight', () => {
-    // 03:30Z on Oct 4 is still Oct 3 in New York: same page as today.
-    expect(weekIndexOf('2026-10-04T03:30:00Z', 'America/New_York', now)).toBe(0);
-    expect(weekIndexOf('2026-10-04T03:30:00Z', 'UTC', now)).toBe(1);
-  });
-  it('counts calendar days across a DST change', () => {
-    // Europe/London leaves summer time on Oct 25 2026.
-    const lateOct = new Date('2026-10-24T12:00:00Z');
-    expect(weekIndexOf('2026-10-31T10:00:00Z', 'Europe/London', lateOct)).toBe(1);
-    expect(weekIndexOf('2026-10-30T23:30:00Z', 'Europe/London', lateOct)).toBe(0);
   });
 });
 

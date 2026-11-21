@@ -1,14 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { formatDay } from '@/lib/utils/format';
-import {
-  DEFAULT_HORIZON_DAYS,
-  dayKey,
-  groupSlotsByDay,
-  visibleDays,
-  weekIndexOf,
-  weekOfDays,
-  weeksIn,
-} from '@/lib/utils/slots';
+import { DEFAULT_HORIZON_DAYS, dayKey, groupSlotsByDay, visibleDays } from '@/lib/utils/slots';
 import type { Remote, SessionType } from '@/types/mentor';
 
 type Args = {
@@ -23,24 +14,18 @@ type Args = {
 };
 
 /**
- * The time step's state: the zone, the week page and day, the chosen time, and
- * the search for the time the flow was opened on.
+ * The time step's state: the zone, the day, the chosen time, and the search
+ * for the time the flow was opened on.
  */
 export function useTimeChoice(a: Args) {
   const { types, session } = a;
-  const [weekState, setWeek] = useState(0);
-  // The day the viewer picked (YYYY-MM-DD in their zone), or null → the week's first open day.
+  // The day the viewer picked (YYYY-MM-DD in their zone), or null → the first open day.
   const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [picked_, setTime] = useState<string | null>(null);
   const [zone, setZone] = useState(a.initialZone);
 
-  // As far ahead as this type can be booked (its window), a week at a time.
+  // As far ahead as this type can be booked (its window).
   const horizon = session?.windowDays ?? DEFAULT_HORIZON_DAYS;
-  const weeks = weeksIn(horizon);
-  // A window that shrank (types refetched) never leaves the page past its end.
-  if (weekState > weeks - 1) setWeek(weeks - 1);
-  // This render uses the clamped page too: the queued update only lands next.
-  const week = Math.min(weekState, weeks - 1);
   // Grouped in the zone the viewer picked, so changing it regroups the days.
   // "Today" moves on at midnight even if nothing else re-renders the modal.
   const [clock, setClock] = useState(() => Date.now());
@@ -56,16 +41,11 @@ export function useTimeChoice(a: Args) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [a.slots.data, zone, today, horizon],
   );
-  // Seven days at a time, always starting today (product, 2026-09-27); ‹ › move
-  // through the type's booking window. Empty days stay on show, disabled.
-  const weekDays = useMemo(
-    () => weekOfDays(days, week, zone, new Date(clock), horizon),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [days, week, zone, today, horizon],
-  );
-  const chosen = weekDays.findIndex((d) => d.date === dayChoice && d.slots.length > 0);
-  const firstOpen = weekDays.findIndex((d) => d.slots.length > 0);
-  const dayAt = chosen >= 0 ? chosen : firstOpen >= 0 ? firstOpen : null;
+  // Only the days with times, soonest first, across the whole window (owner
+  // 2026-11-21, replacing 7-day pages with empty days greyed out).
+  const openDays = useMemo(() => days.filter((d) => d.slots.length > 0), [days]);
+  const chosen = openDays.findIndex((d) => d.date === dayChoice);
+  const dayAt = chosen >= 0 ? chosen : 0;
   // Open on the requested time (the profile's "Book {time}"). That time is the
   // mentor's earliest across all offerings and can be minutes stale, so each
   // offering is tried in turn; if none still has it, the flow says so and
@@ -83,11 +63,9 @@ export function useTimeChoice(a: Args) {
       // Loaded (or loaded after a failed attempt): look for the time here.
       const at = Date.parse(a.initialTime);
       const hit = days.flatMap((d) => d.slots).find((s) => Date.parse(s.startsAt) === at);
-      const w = hit ? weekIndexOf(hit.startsAt, zone, new Date(clock)) : -1;
       const errored = seek.errored.filter((x) => x !== id);
-      if (hit && w >= 0 && w < weeks) {
+      if (hit) {
         setSeek({ done: true, tried: seek.tried, errored });
-        setWeek(w);
         setDayChoice(dayKey(hit.startsAt, zone));
         setTime(hit.startsAt);
       } else setSeek({ done: false, tried: [...new Set([...seek.tried, id])], errored });
@@ -113,38 +91,6 @@ export function useTimeChoice(a: Args) {
     else if (allTried && firstTypeId && session.id !== firstTypeId) onTypeChange(firstTypeId);
   }, [seekNext, allTried, firstTypeId, session, seek.tried, onTypeChange]);
 
-  // An empty week's way on (design reply #40): the next week with any time,
-  // "Show Oct 11 – Oct 17". Only worked out when the week on screen is empty.
-  const weekEmpty = firstOpen < 0 && days.length > 0;
-  const nextOpen = useMemo(() => {
-    if (!weekEmpty) return null;
-    for (let w = week + 1; w < weeks; w++) {
-      const ds = weekOfDays(days, w, zone, new Date(clock), horizon);
-      if (ds.some((d) => d.slots.length > 0))
-        return {
-          week: w,
-          label: `Show ${formatDay(ds[0]!.date).date} – ${formatDay(ds.at(-1)!.date).date}`,
-        };
-    }
-    return null;
-    // `today` stands in for the clock, as for weekDays.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [weekEmpty, days, week, zone, today, weeks, horizon]);
-  // Nothing later but something earlier: say so, not "Check back soon" (review of #26).
-  const earlierOpen = weekEmpty && !nextOpen && week > 0;
-
-  const weekLabel = (() => {
-    const from = formatDay(weekDays[0]!.date).date;
-    const to = formatDay(weekDays.at(-1)!.date).date;
-    // A window under a week has fewer days on its only page: say how many.
-    return week === 0 ? `Next ${weekDays.length} days · ${from} – ${to}` : `${from} – ${to}`;
-  })();
-  const moveWeek = (to: number) => {
-    setWeek(to);
-    setDayChoice(null);
-    // Like changing the day: a time from another week must not stay chosen.
-    setTime(null);
-  };
   // A chosen time only counts while the grid still offers it: slots reload after
   // a conflict, and a time someone else took must not stay selected.
   const time =
@@ -155,34 +101,19 @@ export function useTimeChoice(a: Args) {
   return {
     zone,
     setZone,
-    days,
-    weekDays,
+    days: openDays,
     dayAt,
     time,
     setTime,
     seeking,
     initialMissed,
     chooseDay: (i: number) => {
-      setDayChoice(weekDays[i]!.date);
+      setDayChoice(openDays[i]!.date);
       setTime(null);
-    },
-    week: {
-      label: weekLabel,
-      canPrev: week > 0,
-      canNext: week < weeks - 1,
-      onPrev: () => moveWeek(week - 1),
-      onNext: () => moveWeek(week + 1),
-      nextOpen: nextOpen ? { label: nextOpen.label, onClick: () => moveWeek(nextOpen.week) } : null,
-      emptyHint: nextOpen
-        ? 'Try later dates.'
-        : earlierOpen
-          ? 'Try earlier dates.'
-          : 'Check back soon.',
     },
     /** The viewer chose another type: stop looking for the requested time, start over on it. */
     reset: () => {
       setSeek((s) => ({ ...s, done: true }));
-      setWeek(0);
       setDayChoice(null);
       setTime(null);
     },

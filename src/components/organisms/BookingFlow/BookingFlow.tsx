@@ -487,7 +487,7 @@ export function BookingFlow(p: BookingFlowProps) {
           noOpenDays={timeChoice.days.length === 0}
           noTimes={noTimes}
           picker={{
-            days: timeChoice.weekDays,
+            days: timeChoice.days,
             dayIndex: timeChoice.dayAt,
             onDayChange: timeChoice.chooseDay,
             time,
@@ -499,7 +499,6 @@ export function BookingFlow(p: BookingFlowProps) {
               setStepIndex(0);
             },
             timeZone: zone,
-            week: timeChoice.week,
           }}
         />
       )}
