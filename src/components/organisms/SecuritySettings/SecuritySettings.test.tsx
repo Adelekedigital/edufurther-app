@@ -296,43 +296,9 @@ describe('SecuritySettings › analytics cookies (PRD 30)', () => {
   });
 });
 
-describe('SecuritySettings: What’s new', () => {
-  it('the replay row shows only while a tour is offered, and links to the replay', () => {
-    const { unmount } = render(<Host />);
-    expect(screen.queryByRole('heading', { name: 'What’s new' })).toBeNull();
-    unmount();
-    render(
-      <Host
-        replayTour={{
-          href: '/home?tour=replay',
-          title: 'What’s new',
-          sub: 'A quick look at what changed on EduFurther.',
-        }}
-      />,
-    );
-    const row = screen.getByRole('region', { name: 'What’s new' });
-    expect(row).toHaveTextContent('A quick look at what changed on EduFurther.');
-    expect(screen.getByRole('link', { name: 'Replay tour' })).toHaveAttribute(
-      'href',
-      '/home?tour=replay',
-    );
-  });
-
-  it('names the row as its release does (the Welcome tour)', () => {
-    render(
-      <Host
-        replayTour={{
-          href: '/dashboard?tour=replay',
-          title: 'Welcome tour',
-          sub: 'A quick look at where everything is.',
-        }}
-      />,
-    );
-    const row = screen.getByRole('region', { name: 'Welcome tour' });
-    expect(row).toHaveTextContent('A quick look at where everything is.');
-    expect(screen.getByRole('link', { name: 'Replay tour' })).toHaveAttribute(
-      'href',
-      '/dashboard?tour=replay',
-    );
+describe('SecuritySettings: no tour row', () => {
+  it('the tour replays from the menu only, never here (owner 2026-11-21)', () => {
+    render(<Host />);
+    expect(screen.queryByRole('link', { name: /replay/i })).toBeNull();
   });
 });

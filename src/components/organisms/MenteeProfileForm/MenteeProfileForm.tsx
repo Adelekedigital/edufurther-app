@@ -60,8 +60,8 @@ type MenteeProfileFormProps = {
 
 /**
  * Settings › Profile for a mentee (Mentee Settings.dc.html `isMProfile`): the
- * photo card, which saves on its own, then "About you": name, the country they
- * live in, languages and a short bio. Props only; the page saves.
+ * photo card, which saves on its own, then "About you": name, where they're
+ * from, languages and a short bio. Props only; the page saves.
  */
 export function MenteeProfileForm({
   values,
@@ -80,9 +80,9 @@ export function MenteeProfileForm({
   const has = (g: ProfileGap) => errors.includes(g);
   const ids = {
     name: `${id}-name`,
-    country: `${id}-country`,
-    countryHint: `${id}-country-hint`,
-    countryError: `${id}-country-error`,
+    origin: `${id}-origin`,
+    originHint: `${id}-origin-hint`,
+    originError: `${id}-origin-error`,
     nameError: `${id}-name-error`,
     langsHint: `${id}-langs-hint`,
   };
@@ -132,27 +132,25 @@ export function MenteeProfileForm({
         </div>
 
         <div className={styles.field}>
-          <label htmlFor={ids.country} className={styles.label}>
-            {C.country}
+          <label htmlFor={ids.origin} className={styles.label}>
+            {C.origin}
           </label>
           <CountryPicker
-            id={ids.country}
-            focusKey="country"
+            id={ids.origin}
+            focusKey="origin"
             options={countries}
-            value={values.countryId}
-            onChange={(countryId) => onChange({ countryId })}
-            placeholder={C.countryPlaceholder}
-            invalid={has('country')}
+            value={values.originId}
+            onChange={(originId) => onChange({ originId })}
+            placeholder={C.originPlaceholder}
+            invalid={has('origin')}
             aria-describedby={
-              has('country') ? `${ids.countryHint} ${ids.countryError}` : ids.countryHint
+              has('origin') ? `${ids.originHint} ${ids.originError}` : ids.originHint
             }
           />
-          <span id={ids.countryHint} className={styles.hint}>
-            {C.countryHint}
+          <span id={ids.originHint} className={styles.hint}>
+            {C.originHint}
           </span>
-          {has('country') && (
-            <FieldError id={ids.countryError}>{PROFILE_ERRORS.country}</FieldError>
-          )}
+          {has('origin') && <FieldError id={ids.originError}>{PROFILE_ERRORS.origin}</FieldError>}
         </div>
 
         <div className={styles.field}>

@@ -39,14 +39,14 @@ const DRAFT =
 
 const EMPTY: MenteeProfileValues = {
   name: '',
-  countryId: '',
+  originId: '',
   languages: [],
   bio: '',
   bioDrafted: false,
 };
 const FILLED: MenteeProfileValues = {
   name: 'Amaka Obi',
-  countryId: 'nigeria',
+  originId: 'nigeria',
   languages: [COMMON[0]!, COMMON[3]!],
   bio: DRAFT,
   bioDrafted: false,
@@ -109,7 +109,7 @@ export const Filled: Story = { render: () => <Form initial={FILLED} /> };
 export const Empty: Story = { render: () => <Form initial={EMPTY} /> };
 /** Save was tried with every required field blank. */
 export const WithErrors: Story = {
-  render: () => <Form initial={EMPTY} errors={['name', 'country']} />,
+  render: () => <Form initial={EMPTY} errors={['name', 'origin']} />,
 };
 /** The bio is still the untouched AI draft. */
 export const DraftedBio: Story = {

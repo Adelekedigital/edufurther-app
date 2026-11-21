@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { Badge } from '@/components/atoms/Badge/Badge';
-import { Button, ButtonAnchor, ButtonLink } from '@/components/atoms/Button/Button';
+import { Button, ButtonAnchor } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import { Input } from '@/components/atoms/Input/Input';
@@ -12,7 +12,6 @@ import { ConfirmActions, confirmClose } from '@/components/molecules/ConfirmActi
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
 import { CONSENT_COPY } from '@/lib/copy/consent';
-import { TOUR_COPY } from '@/lib/copy/whatsNew';
 import { SECURITY_COPY as C } from '@/lib/copy/settings';
 import { supportHref } from '@/lib/utils/mailto';
 import type { LoginProvider } from '@/types/settings';
@@ -64,12 +63,6 @@ export type SecuritySettingsProps = {
    * preview).
    */
   analytics?: { granted: boolean; busy: boolean; onChange: (granted: boolean) => void };
-  /**
-   * The tour's replay row: a link to Home, where the tour replays from its
-   * welcome, named as that release names it ("What's new", "Welcome tour").
-   * Absent outside a release's replay window for them.
-   */
-  replayTour?: { href: string; title: string; sub: string };
 };
 
 export type DeviceNotifications = {
@@ -90,7 +83,6 @@ export type DeviceNotifications = {
 export function SecuritySettings(p: SecuritySettingsProps) {
   const mentor = p.role === 'mentor';
   const dangerId = useId();
-  const tourId = useId();
   return (
     <div className={styles.root}>
       <section className={styles.card}>
@@ -156,28 +148,6 @@ export function SecuritySettings(p: SecuritySettingsProps) {
               hint: styles.meta,
             }}
           />
-        </section>
-      )}
-
-      {p.replayTour && (
-        <section className={styles.card} aria-labelledby={tourId}>
-          <div className={styles.row}>
-            <Tile icon="new_releases" />
-            <div className={styles.text}>
-              <h2 id={tourId} className={styles.rowTitle}>
-                {p.replayTour.title}
-              </h2>
-              <span className={styles.meta}>{p.replayTour.sub}</span>
-            </div>
-            <ButtonLink
-              href={p.replayTour.href}
-              prefetch={false}
-              variant="secondary-outlined"
-              size="medium"
-            >
-              {TOUR_COPY.replay}
-            </ButtonLink>
-          </div>
         </section>
       )}
 

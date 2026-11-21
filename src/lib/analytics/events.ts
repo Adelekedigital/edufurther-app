@@ -134,7 +134,7 @@ export type AnalyticsEvents = {
   push_permission_granted: Record<string, never>;
 
   // "What's new" tours (ADR 0014): who opens one, where they leave, who finishes.
-  /** "Show me around" pressed (a replay from Settings included: `replay`). */
+  /** "Show me around" pressed (a replay from the menu included: `replay`). */
   tour_started: { release: TourReleaseId; role: TourRole; replay: boolean };
   /** A step shown: `step` counts from 1 among the steps this viewer got. */
   tour_step_viewed: { release: TourReleaseId; role: TourRole; step: number; target: TourTarget };

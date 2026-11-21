@@ -194,14 +194,12 @@ describe('the one /me', () => {
     await act(async () => {
       await result.current.saveGoals.mutateAsync({
         after: {
-          originId: '',
           degree: '',
           field: 'Medicine',
           countryIds: [],
           schools: [],
           needIds: [],
         },
-        savedOriginId: '',
         goal: result.current.goals.read!.goal,
         levels: [],
       });

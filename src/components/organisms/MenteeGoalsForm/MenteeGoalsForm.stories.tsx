@@ -39,7 +39,6 @@ const SCHOOLS = [
 ];
 
 const EMPTY: MenteeGoalValues = {
-  originId: 'nigeria',
   degree: '',
   field: '',
   countryIds: [],
@@ -47,7 +46,6 @@ const EMPTY: MenteeGoalValues = {
   needIds: [],
 };
 const FILLED: MenteeGoalValues = {
-  originId: 'nigeria',
   degree: 'masters',
   field: 'Public health',
   countryIds: ['united-kingdom', 'canada'],
@@ -91,9 +89,7 @@ export const Empty: Story = { render: () => <Goals initial={EMPTY} /> };
 
 /** Save with every gap: each field's error (the form line is in the save bar). */
 export const Errors: Story = {
-  render: () => (
-    <Goals initial={{ ...EMPTY, originId: '' }} errors={['origin', 'degree', 'field', 'help']} />
-  ),
+  render: () => <Goals initial={EMPTY} errors={['degree', 'field', 'help']} />,
 };
 
 /** Three countries (the cap; "Not sure yet" stays usable) and ten schools (the cap). */

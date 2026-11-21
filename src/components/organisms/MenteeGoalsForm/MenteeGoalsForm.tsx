@@ -2,7 +2,6 @@
 
 import { useId, useState, type Ref } from 'react';
 import { Select } from '@/components/atoms/Select/Select';
-import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import {
   LanguageChips,
@@ -12,7 +11,7 @@ import { RadioChips } from '@/components/molecules/RadioChips/RadioChips';
 import { SchoolChips, type SchoolOption } from '@/components/molecules/SchoolChips/SchoolChips';
 import { HelpAreaPicker } from '@/components/organisms/HelpAreaPicker/HelpAreaPicker';
 import {
-  DEGREE_OPTIONS,
+  degreeChoices,
   FIELD_MAX,
   FIELD_SUGGESTIONS,
   HELP_LIMIT,
@@ -112,27 +111,6 @@ export function MenteeGoalsForm({
           <span className={styles.cardSub}>{C.workingTowardSub}</span>
         </div>
 
-        <div className={styles.grid}>
-          <div className={styles.field}>
-            <label htmlFor={ids('origin')} className={styles.label}>
-              {C.origin}
-            </label>
-            <CountryPicker
-              id={ids('origin')}
-              focusKey="origin"
-              options={countries}
-              value={values.originId}
-              onChange={(originId) => onChange({ originId })}
-              placeholder={C.originPlaceholder}
-              invalid={has('origin')}
-              aria-describedby={described(null, 'origin')}
-            />
-            {has('origin') && (
-              <FieldError id={ids('origin-error')}>{GOALS_ERRORS.origin}</FieldError>
-            )}
-          </div>
-        </div>
-
         <div className={styles.field}>
           <span className={styles.labelPair}>
             <span className={styles.label}>{C.applyingFor}</span>
@@ -143,7 +121,7 @@ export function MenteeGoalsForm({
           <RadioChips
             label={C.applyingFor}
             focusKey="degree"
-            options={DEGREE_OPTIONS.map((d) => ({ value: d.value, label: d.label }))}
+            options={degreeChoices(values.degree)}
             value={values.degree}
             onChange={(degree) => onChange({ degree })}
             invalid={has('degree')}

@@ -38,7 +38,9 @@ export type ViewerPatch = Partial<
 >;
 
 /** What a Settings › Profile save (or a photo change) landed, shown before /me is read again. */
-export type ProfilePatch = Partial<MenteeProfileValues & { photoUrl: string | null }>;
+export type ProfilePatch = Partial<
+  MenteeProfileValues & { photoUrl: string | null; savedOriginId: string }
+>;
 
 /**
  * GET /me as the cache holds it: the reply, plus what the viewer's own writes

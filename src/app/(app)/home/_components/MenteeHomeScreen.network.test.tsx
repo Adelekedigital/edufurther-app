@@ -248,14 +248,12 @@ function SaveGoals() {
       onClick={() =>
         save.mutate({
           after: {
-            originId: 'c-ng',
             degree: '',
             field: 'Public Health',
             countryIds: [],
             schools: [],
             needIds: ['o1'],
           },
-          savedOriginId: 'c-ng',
           goal: null,
           levels: [],
         })

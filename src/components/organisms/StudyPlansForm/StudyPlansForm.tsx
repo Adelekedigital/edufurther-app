@@ -5,7 +5,7 @@ import { Select } from '@/components/atoms/Select/Select';
 import { CountryPicker } from '@/components/molecules/CountryPicker/CountryPicker';
 import { FieldError } from '@/components/molecules/FieldError/FieldError';
 import {
-  DEGREE_OPTIONS,
+  degreeChoices,
   FIELD_MAX,
   FIELD_SUGGESTIONS,
   NOT_SURE,
@@ -132,7 +132,7 @@ export function StudyPlansForm({
             onChange={(e) => set({ degree: e.target.value })}
             options={[
               { value: '', label: PLAN_PLACEHOLDERS.degree },
-              ...DEGREE_OPTIONS.map((d) => ({ value: d.value, label: d.label })),
+              ...degreeChoices(value.degree),
             ]}
           />
         )}

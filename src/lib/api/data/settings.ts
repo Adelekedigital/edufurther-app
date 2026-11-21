@@ -10,11 +10,13 @@ import { countriesQuery, type CatalogOption } from './catalog';
 import { apiError, normaliseError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
-import { patchProfile, useMeSlice, type MeRead } from './me';
+import { patchProfile, useMeSlice, type MeRead, type ProfilePatch } from './me';
 import { aboutBody } from './profileEdit';
 
 /** What Settings opens with (GET /me): Profile's values, and Login and security's account facts. */
 export type MenteeProfile = MenteeProfileValues & {
+  /** Where they're from as saved; '' while `originId` is only the prefill. */
+  savedOriginId: string;
   photoUrl: string | null;
   /** Two letters, first and last name; the email's first letter with neither. */
   initials: string;
@@ -46,10 +48,15 @@ export function toMenteeProfile(
   countries: CatalogOption[] = [],
 ): MenteeProfile {
   const name = [me.first_name, me.last_name].filter(Boolean).join(' ').trim();
-  const code = me.profile?.current_country?.code;
+  const idOf = (code: string | undefined) =>
+    (code && countries.find((c) => c.code === code)?.id) || '';
+  const savedOriginId = idOf(me.profile?.origin_country?.code);
   return {
     name,
-    countryId: (code && countries.find((c) => c.code === code)?.id) || '',
+    // Unset: where they live fills it in (PRD S7, many migrated accounts
+    // have only that), saved with the next Save.
+    originId: savedOriginId || idOf(me.profile?.current_country?.code),
+    savedOriginId,
     languages: (me.languages ?? []).map((l) => ({ id: l.id, label: l.display_name })),
     bio: me.profile?.about_me ?? '',
     bioDrafted: !!me.profile?.about_me_drafted_at && !!me.profile?.about_me,
@@ -78,7 +85,8 @@ export function useMenteeProfile(userId: string | null) {
   // the picker). A catalog failure mustn't hide a profile that loaded: the
   // country shows empty instead (no retry, as before: it fills in if the
   // catalog answers later).
-  const needsCountries = !!me.data?.me.profile?.current_country;
+  const needsCountries =
+    !!me.data?.me.profile?.origin_country || !!me.data?.me.profile?.current_country;
   const countries = useQuery({ ...countriesQuery, enabled: needsCountries, retry: false });
   const countriesSettled = !needsCountries || countries.isSuccess || countries.isError;
   const profile = useMemo(
@@ -97,7 +105,7 @@ export function useMenteeProfile(userId: string | null) {
   return { profile, status, retry: me.retry, retrying: me.retrying };
 }
 
-/** A failed save, in our words. `profileSaved`: the name, country and bio landed; the languages didn't. */
+/** A failed save, in our words. `profileSaved`: the name, origin and bio landed; the languages didn't. */
 export class ProfileSaveError extends Error {
   constructor(
     readonly copy: string,
@@ -121,14 +129,23 @@ export type ProfileSave = {
   after: MenteeProfileValues;
   /** The AI draft's prompt version, while the bio is still that draft. */
   promptVersion: string | null;
+  /**
+   * Where they're from as saved, when `before` holds the prefill: the origin
+   * is written whenever the form's differs from it. Unset: from `before`.
+   */
+  savedOriginId?: string;
 };
 
+const originChanged = ({ before, after, savedOriginId }: ProfileSave) =>
+  after.originId !== (savedOriginId ?? before.originId);
+
 /** The body for PATCH /users/{id}/profile: only what changed. */
-export function profileBody({ before, after, promptVersion }: ProfileSave) {
+export function profileBody(save: ProfileSave) {
+  const { before, after, promptVersion } = save;
   const name = after.name.trim();
   const body: components['schemas']['UserProfileWrite'] = {};
   if (name !== before.name.trim()) body.full_name = name;
-  if (after.countryId !== before.countryId) body.current_country_id = after.countryId || null;
+  if (originChanged(save)) body.origin_country_id = after.originId || null;
   if (after.bio !== before.bio || after.bioDrafted !== before.bioDrafted)
     Object.assign(body, aboutBody(after.bio, { drafted: after.bioDrafted, promptVersion }));
   return body;
@@ -143,13 +160,16 @@ export function profileBody({ before, after, promptVersion }: ProfileSave) {
  */
 export function useSaveMenteeProfile(userId: string | null) {
   const qc = useQueryClient();
-  const remember = (v: MenteeProfileValues) => patchProfile(qc, v);
+  const remember = (v: ProfilePatch) => patchProfile(qc, v);
   return useMutation<void, ProfileSaveError, ProfileSave>({
     networkMode: 'always',
     mutationFn: async (save) => {
       if (!userId) throw new ProfileSaveError(SAVE_COPY.profileFailed);
       const path = { params: { path: { user_id: userId } } };
       const body = profileBody(save);
+      // Only an origin that was written becomes the saved one (Home's bio
+      // save carries the prefill without writing it).
+      const origin = 'origin_country_id' in body ? { savedOriginId: save.after.originId } : {};
       let profileSaved = false;
       try {
         if (Object.keys(body).length) {
@@ -168,7 +188,12 @@ export function useSaveMenteeProfile(userId: string | null) {
           if (!response.ok) throw apiError(response.status, error);
         }
       } catch (e) {
-        if (profileSaved) remember({ ...save.after, languages: save.before.languages });
+        if (profileSaved)
+          remember({
+            ...save.after,
+            languages: save.before.languages,
+            ...origin,
+          });
         throw new ProfileSaveError(
           offline(e)
             ? SAVE_COPY.profileOffline
@@ -178,14 +203,22 @@ export function useSaveMenteeProfile(userId: string | null) {
           profileSaved,
         );
       }
-      remember(save.after);
+      remember({ ...save.after, ...origin });
     },
-    // The shell's name and photo, Settings' own read, and the mentors
-    // suggested by where they live.
-    onSettled: () =>
+    // The shell's name and photo and Settings' own read; a new origin is a
+    // new ranking, so the matches, Explore's lists and Home's suggestions
+    // refresh too, as after a Goals save.
+    onSettled: (_d, _e, save) =>
       Promise.all([
         qc.invalidateQueries({ queryKey: keys.viewer.all }),
         qc.invalidateQueries({ queryKey: keys.onboarding.matchesAll }),
+        ...(save && originChanged(save)
+          ? [
+              qc.invalidateQueries({ queryKey: keys.onboarding.all }),
+              qc.invalidateQueries({ queryKey: keys.mentors.listAll }),
+              qc.invalidateQueries({ queryKey: keys.menteeHome.all }),
+            ]
+          : []),
       ]),
   });
 }

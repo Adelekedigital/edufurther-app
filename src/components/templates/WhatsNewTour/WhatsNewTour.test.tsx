@@ -312,7 +312,7 @@ describe('WhatsNewTour: the steps', () => {
     const done = screen.getByRole('status');
     // Mounted already filled: the focused button carries the words.
     expect(within(done).getByRole('link', { name: 'Check my hours' })).toHaveAccessibleDescription(
-      'You’re all set Check your hours in Calendar so mentees can book you. You can replay this tour from Settings.',
+      'You’re all set Check your hours in Calendar so mentees can book you. You can replay this tour from the menu.',
     );
     const cta = within(done).getByRole('link', { name: 'Check my hours' });
     expect(cta).toHaveAttribute('href', '/calendar');
@@ -335,10 +335,10 @@ describe('WhatsNewTour: the replay line', () => {
   it('while the replay is offered, the hint and done card say so', async () => {
     const { user } = await start(mentee, [], '', 'android');
     expect(
-      screen.getByText('Takes about a minute. You can replay it from Settings.'),
+      screen.getByText('Takes about a minute. You can replay it from the menu.'),
     ).toBeInTheDocument();
     await toDoneCard(user);
-    expect(screen.getByRole('status')).toHaveTextContent('You can replay this tour from Settings.');
+    expect(screen.getByRole('status')).toHaveTextContent('You can replay this tour from the menu.');
   });
 
   it('once it is not, neither mentions it', async () => {
@@ -495,7 +495,7 @@ describe('WhatsNewTour: the Welcome tour (accounts made here)', () => {
     expect(cta).toHaveAttribute('href', '/explore');
     expect(cta).toHaveFocus();
     expect(cta).toHaveAccessibleDescription(
-      'You’re all set Find a mentor on Home or Explore and book your first session. You can replay this tour from Settings.',
+      'You’re all set Find a mentor on Home or Explore and book your first session. You can replay this tour from the menu.',
     );
     await user.click(cta);
     expect(onEvent).toHaveBeenLastCalledWith({ type: 'completed', action: 'cta' });

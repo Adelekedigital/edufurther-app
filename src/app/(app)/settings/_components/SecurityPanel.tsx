@@ -5,7 +5,6 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { SecuritySettings } from '@/components/organisms/SecuritySettings/SecuritySettings';
-import { replayLinks, tourReplay } from '@/app/_shell/useWhatsNew';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { useDeleteAccount, useLoginProvider } from '@/lib/api/data/account';
 import { markAccountDeleted, useSignOut } from '@/lib/api/data/auth';
@@ -49,9 +48,6 @@ export function SecurityPanel({
     member: viewer.kind === 'member',
   }).answer;
   const previewing = usePreview().sessionId !== null;
-  const replayTour = replayLinks(
-    tourReplay(viewer.kind === 'member' ? viewer : null, previewing),
-  )?.row;
   const signOut = useSignOut('/login?deleted=1', markAccountDeleted);
   const [open, setOpen] = useState(false);
   // One request, however fast the second press: state lands a render later.
@@ -114,7 +110,6 @@ export function SecurityPanel({
             }
           : undefined
       }
-      replayTour={replayTour}
       notifications={
         push.state === 'hidden'
           ? undefined

@@ -80,11 +80,8 @@ export type TourLabels = {
   badge: string;
   /** The welcome's title; `first` is '' when there is no first name. */
   welcomeTitle: (first: string) => string;
-  /** The account menu and More sheet item that replays it. */
+  /** The account menu and More sheet item that replays it (its one place, owner 2026-11-21). */
   menuItem: string;
-  /** Settings › Login and security's replay row. */
-  replayTitle: string;
-  replaySub: string;
 };
 
 export type TourRelease = {
@@ -110,8 +107,8 @@ export type TourRelease = {
 };
 
 /**
- * The words every tour shares. badge, welcomeTitle, menuItem, replayTitle and
- * replaySub are the defaults a release may replace (`labels`, tourLabels).
+ * The words every tour shares. badge, welcomeTitle and menuItem are the
+ * defaults a release may replace (`labels`, tourLabels).
  */
 export const TOUR_COPY = {
   badge: 'New platform',
@@ -121,8 +118,9 @@ export const TOUR_COPY = {
   notNow: 'Not now',
   hint: 'Takes about a minute.',
   /** After the hint and the done card's body, only while the replay is offered (replayDays). */
-  welcomeReplay: 'You can replay it from Settings.',
-  doneReplay: 'You can replay this tour from Settings.',
+  // The menu: the account menu on a computer, More on a phone.
+  welcomeReplay: 'You can replay it from the menu.',
+  doneReplay: 'You can replay this tour from the menu.',
   stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
   skip: 'Skip',
   back: 'Back',
@@ -131,9 +129,6 @@ export const TOUR_COPY = {
   gotIt: 'Got it',
   /** Read with the step, so a screen reader hears what is highlighted. */
   pointsAt: (label: string) => `Highlighted: ${label}.`,
-  replayTitle: 'What’s new',
-  replaySub: 'A quick look at what changed on EduFurther.',
-  replay: 'Replay tour',
   /** The account menu and More sheet item. */
   menuItem: 'What’s new',
   installApp: 'Install app',
@@ -269,7 +264,7 @@ const SESSIONS_BODY =
 
 /**
  * Accounts that signed up here (`/me.is_migrated` false), from launch: where
- * everything is. Replayable from Settings for as long as it is on.
+ * everything is. Replayable from the menu for as long as it is on.
  */
 export const WELCOME_2026_11: TourRelease = {
   id: 'welcome:2026-11',
@@ -281,8 +276,6 @@ export const WELCOME_2026_11: TourRelease = {
     badge: 'Welcome',
     welcomeTitle: (first) => (first ? `Welcome to EduFurther, ${first}` : 'Welcome to EduFurther'),
     menuItem: 'Welcome tour',
-    replayTitle: 'Welcome tour',
-    replaySub: 'A quick look at where everything is.',
   },
   roles: {
     mentee: {

@@ -92,7 +92,7 @@ const goal = (over: Partial<NonNullable<GoalsRead['goal']>> = {}): GoalsRead['go
 
 const ready = (r: Partial<GoalsRead> = {}) => {
   read = {
-    read: { goal: goal(), originCode: 'NG', currentCode: 'NG', ...r },
+    read: { goal: goal(), ...r },
     status: 'ready',
     retry: vi.fn(),
     retrying: false,
@@ -153,10 +153,10 @@ describe('GoalsPanel', () => {
     expect(bar()).not.toBeNull();
   });
 
-  it('no goal: "Where you’re from" prefilled from where they live', () => {
-    ready({ goal: null, originCode: null, currentCode: 'NG' });
+  it('no "Where you’re from": it lives on Profile (owner 2026-11-21)', () => {
+    ready({ goal: null });
     render(<GoalsPanel userId="u1" />);
-    expect(screen.getByLabelText(GOALS_COPY.origin)).toHaveValue('Nigeria');
+    expect(screen.queryByText('Where you’re from')).toBeNull();
     expect(bar()).toBeNull();
   });
 
@@ -352,7 +352,7 @@ describe('GoalsPanel', () => {
   });
 
   it('Save with gaps: the form line in the bar, each error, focus on the first, nothing sent', async () => {
-    ready({ goal: null, originCode: null, currentCode: null });
+    ready({ goal: null });
     render(<GoalsPanel userId="u1" />);
     await userEvent.type(screen.getByRole('combobox', { name: GOALS_COPY.field }), 'L');
     await userEvent.click(await saveButton());
@@ -360,20 +360,18 @@ describe('GoalsPanel', () => {
     const { helpMax, ...missing } = GOALS_ERRORS;
     for (const e of Object.values(missing)) expect(screen.getByText(e)).toBeInTheDocument();
     expect(screen.queryByText(helpMax)).toBeNull();
-    await waitFor(() => expect(screen.getByLabelText(GOALS_COPY.origin)).toHaveFocus());
+    await waitFor(() => expect(screen.getAllByRole('radio')[0]).toHaveFocus());
     expect(mutateAsync).not.toHaveBeenCalled();
   });
 
-  it('Save sends origin, MBA as Master’s + "MBA", the lists; then the toast, and the bar goes', async () => {
-    ready({ originCode: null, currentCode: 'NG' });
+  it('Save sends MBA as Master’s + "MBA", the lists; then the toast, and the bar goes', async () => {
+    ready();
     render(<GoalsPanel userId="u1" />);
     await userEvent.click(screen.getByRole('radio', { name: 'MBA' }));
     await userEvent.click(await saveButton());
     expect(mutateAsync).toHaveBeenCalledWith(
       expect.objectContaining({
-        savedOriginId: '',
         after: expect.objectContaining({
-          originId: 'c-ng',
           degree: 'mba',
           countryIds: ['c-gb', 'c-ca'],
           needIds: ['o-docs'],
@@ -402,21 +400,6 @@ describe('GoalsPanel', () => {
     expect(screen.getAllByText(GOALS_COPY.saveFailed).length).toBeGreaterThan(0);
     expect(bar()).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'PhD' })).toHaveAttribute('aria-checked', 'true');
-  });
-
-  it('where they’re from saved but the goal didn’t: the bar and its error stay', async () => {
-    ready();
-    mutateAsync.mockRejectedValueOnce(new GoalsSaveError(GOALS_COPY.saveFailed, true));
-    const { rerender } = render(<GoalsPanel userId="u1" />);
-    const origin = screen.getByLabelText(GOALS_COPY.origin);
-    await userEvent.clear(origin);
-    await userEvent.type(origin, 'Canada{Enter}');
-    expect(origin).toHaveValue('Canada');
-    await userEvent.click(await saveButton());
-    saveError = new GoalsSaveError(GOALS_COPY.saveFailed, true);
-    rerender(<GoalsPanel userId="u1" />);
-    expect(await saveButton()).toBeInTheDocument();
-    expect(screen.getAllByText(GOALS_COPY.saveFailed).length).toBeGreaterThan(0);
   });
 
   it('an unsaved edit registers its own save with the leave guard', async () => {
@@ -506,7 +489,7 @@ describe('GoalsPanel', () => {
     render(<GoalsPanel userId="u1" />);
     await userEvent.type(screen.getByRole('combobox', { name: GOALS_COPY.field }), 's');
     await userEvent.click(await saveButton());
-    await waitFor(() => expect(screen.getByRole('radio', { name: 'Bachelor’s' })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'Master’s' })).toHaveFocus());
     expect(screen.getByRole('radiogroup', { name: GOALS_COPY.applyingFor })).toHaveAttribute(
       'aria-required',
       'true',

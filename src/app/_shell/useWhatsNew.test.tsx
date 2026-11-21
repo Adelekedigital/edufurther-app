@@ -282,16 +282,12 @@ describe('tourReplay', () => {
   it('a migrated account’s is named What’s new; an account made here gets the Welcome tour’s, with no end', () => {
     expect(tourReplay(member(), false, DAY2)?.labels).toMatchObject({
       menuItem: 'What’s new',
-      replayTitle: 'What’s new',
-      replaySub: 'A quick look at what changed on EduFurther.',
     });
     const later = Date.parse('2028-06-01T00:00:00Z');
     const made = tourReplay(member({ isMigrated: false }), false, later);
     expect(made?.href).toBe('/home?tour=replay');
     expect(made?.labels).toMatchObject({
       menuItem: 'Welcome tour',
-      replayTitle: 'Welcome tour',
-      replaySub: 'A quick look at where everything is.',
     });
   });
 
