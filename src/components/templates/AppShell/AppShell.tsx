@@ -105,7 +105,8 @@ const ANALYTICS_ITEM: NavItem = {
 const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, admin: ADMIN_NAV, unknown: [] as NavItem[] };
 /**
  * Messages (AppShell.dc.html defs): after Bookings in both member navs, in the
- * rail's daily group. Not a phone tab: it sits in the More sheet, its count with it.
+ * rail's daily group. On phones it is the tab after Bookings, its count on the
+ * tab, so not in the More sheet (owner 2026-11-20: five phone tabs while it's on).
  */
 const MESSAGES_ITEM: NavItem = {
   label: 'Messages',
@@ -120,9 +121,10 @@ function withMessages(items: NavItem[]): NavItem[] {
   return at < 0 ? items : [...items.slice(0, at + 1), MESSAGES_ITEM, ...items.slice(at + 1)];
 }
 /**
- * Bottom tabs: max 4 — the first three, then "More" (design PWA pass). Admin
- * keeps More too, for its account items: the design's phone header has no
- * account control, so without it an admin couldn't log out (design-divergence, Admin).
+ * Bottom tabs: these three, then Messages while it's on, then "More" (design
+ * PWA pass; owner 2026-11-20 for Messages). Admin keeps More too, for its
+ * account items: the design's phone header has no account control, so without
+ * it an admin couldn't log out (design-divergence, Admin).
  */
 const PRIMARY_TABS = {
   mentee: ['Home', 'Explore', 'Bookings'],
@@ -293,8 +295,13 @@ export function AppShell({
         ]
       : NAV[nav];
   const items = (messages ? withMessages(base) : base).map((n) => shownItem(n, access, counts));
+  // Messages is a tab only when the nav has it (a member, flag on), so the bar
+  // never names a fifth tab with nothing behind it.
+  const hasMessages = items.some((n) => n.label === MESSAGES_ITEM.label);
   const primary =
-    nav === 'admin' ? items.slice(0, ADMIN_TABS).map((n) => n.label) : PRIMARY_TABS[nav];
+    nav === 'admin'
+      ? items.slice(0, ADMIN_TABS).map((n) => n.label)
+      : [...PRIMARY_TABS[nav], ...(hasMessages ? [MESSAGES_ITEM.label] : [])];
   // In the design's pick order: mentor tabs read Home, Calendar, Bookings.
   const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));
   const extra = items.filter((n) => !primary.includes(n.label));

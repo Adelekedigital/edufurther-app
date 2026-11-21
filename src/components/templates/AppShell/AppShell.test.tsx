@@ -39,20 +39,25 @@ describe('AppShell navigation', () => {
     expect(hrefs(1)).toEqual(['/home', '/explore', '/bookings']);
   });
 
-  it('Messages is hidden with the flag off (MESSAGES_LIVE)', async () => {
+  it('Messages is hidden with the flag off (MESSAGES_LIVE): four phone tabs', async () => {
+    const tabs = {
+      mentee: ['/home', '/explore', '/bookings'],
+      mentor: ['/dashboard', '/calendar', '/bookings'],
+    };
     for (const role of ['mentee', 'mentor'] as const) {
       const { unmount } = render(
         <AppShell active="Home" nav={role} chrome="member" offline={false}>
           <p>Page</p>
         </AppShell>,
       );
+      expect(hrefs(1)).toEqual(tabs[role]);
       await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
       expect(screen.queryByRole('link', { name: /^Messages/ })).toBeNull();
       unmount();
     }
   });
 
-  it('with the flag on, Messages sits after Bookings on the rail and in the More sheet, with its count', async () => {
+  it('with the flag on, Messages sits after Bookings on the rail and as a phone tab, with its count', async () => {
     const counts = { Messages: { count: 3, label: '3 unread messages' } };
     const rails = {
       mentee: [['/home', '/explore', '/bookings', '/messages'], ['/settings']],
@@ -60,6 +65,10 @@ describe('AppShell navigation', () => {
         ['/dashboard', '/bookings', '/messages', '/calendar'],
         ['/session-types', '/integrations', '/settings'],
       ],
+    };
+    const phoneTabs = {
+      mentee: ['/home', '/explore', '/bookings', '/messages'],
+      mentor: ['/dashboard', '/calendar', '/bookings', '/messages'],
     };
     for (const role of ['mentee', 'mentor'] as const) {
       const { unmount } = render(
@@ -79,14 +88,18 @@ describe('AppShell navigation', () => {
         'href',
         '/messages',
       );
-      // Not a phone tab (AppShell.dc.html `pick`): the tabs stay as they were.
-      expect(hrefs(1)).not.toContain('/messages');
+      // A phone tab after Bookings (owner 2026-11-20), then More: five in all.
+      expect(hrefs(1)).toEqual(phoneTabs[role]);
+      const tab = nav(1).getByRole('link', { name: 'Messages, 3 unread messages' });
+      expect(tab).toHaveAttribute('href', '/messages');
+      // The unread count moves onto the tab.
+      expect(tab).toHaveTextContent('3');
+      expect(nav(1).getByRole('button', { name: 'More' })).toBeInTheDocument();
+      // Not also in the More sheet: one Messages on a phone.
       await userEvent.click(nav(1).getByRole('button', { name: 'More' }));
       expect(
-        within(document.getElementById('more-sheet')!).getByRole('link', {
-          name: 'Messages, 3 unread messages',
-        }),
-      ).toHaveAttribute('href', '/messages');
+        within(document.getElementById('more-sheet')!).queryByRole('link', { name: /^Messages/ }),
+      ).toBeNull();
       unmount();
     }
   });
@@ -98,6 +111,17 @@ describe('AppShell navigation', () => {
       </AppShell>,
     );
     expect(hrefs(0)).not.toContain('/messages');
+    expect(hrefs(1)).not.toContain('/messages');
+  });
+
+  it('on Messages, its phone tab is current and More is not lit', () => {
+    render(
+      <AppShell active="Messages" nav="mentee" messages chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(nav(1).getByRole('link', { name: 'Messages' })).toHaveAttribute('aria-current', 'page');
+    expect(nav(1).getByRole('button', { name: 'More' })).not.toHaveAttribute('data-current');
   });
 
   it('members get the brand mark at the top of the rail; guests keep the header logo', () => {

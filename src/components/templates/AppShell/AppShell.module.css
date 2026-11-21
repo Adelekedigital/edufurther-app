@@ -302,7 +302,7 @@
     bottom: 0;
     z-index: 30;
     display: grid;
-    /* One equal column per tab: four for members, three for admins, More always last. */
+    /* One equal column per tab: four or five for members (Messages), three for admins, More always last. */
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     background: var(--surface-page);
