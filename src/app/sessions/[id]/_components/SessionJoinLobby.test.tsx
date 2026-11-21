@@ -7,6 +7,8 @@ import {
   at,
   cancel,
   h,
+  MEMBER,
+  MENTEE,
   remote,
   replace,
   sessionRoom,
@@ -672,5 +674,94 @@ describe('on a phone, EduFurther video says to keep the call on screen', () => {
     renderAt('16:56:00');
     expect(screen.queryByText(tip)).not.toBeInTheDocument();
     expect(screen.getByText('Opens Google Meet in a new tab.')).toBeVisible();
+  });
+});
+
+describe('Google Meet names the Google account to join with (owner, 21 Nov 2026)', () => {
+  const IPHONE_17 =
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+  const realUa = navigator.userAgent;
+  afterEach(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: realUa, configurable: true });
+    Object.defineProperty(navigator, 'standalone', { value: false, configurable: true });
+  });
+  const EMAIL = 'gbenga.ogundipe@example.com';
+  const hint = `Join with the Google account ${EMAIL} to get straight in.`;
+  const meet = (side: 'mentor' | 'mentee' = 'mentor') => {
+    h.room = remote(sessionRoom({ side }, {}, 'google_meet'));
+  };
+
+  it('a mentor sees the email under Join, in place of the new-tab hint', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    meet();
+    renderAt('16:56:00');
+    expect(screen.getByText(hint)).toBeVisible();
+    expect(screen.queryByText('Opens Google Meet in a new tab.')).not.toBeInTheDocument();
+    // The link still says it opens a new tab.
+    expect(
+      screen.getByRole('link', { name: 'Join on Google Meet (opens in a new tab)' }),
+    ).toBeVisible();
+  });
+
+  it('a mentee sees their own email', () => {
+    h.viewer = { ...MENTEE, email: 'amara@example.com' };
+    meet('mentee');
+    renderAt('16:56:00');
+    expect(
+      screen.getByText('Join with the Google account amara@example.com to get straight in.'),
+    ).toBeVisible();
+  });
+
+  it('under Rejoin too', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    h.room = remote(sessionRoom({}, { joinedAt: '2026-10-04T17:00:10Z' }, 'google_meet'));
+    renderAt('17:05:00');
+    expect(screen.getByRole('link', { name: /Rejoin call/ })).toBeVisible();
+    expect(screen.getByText(hint)).toBeVisible();
+  });
+
+  it('the installed iPhone app says Safari and the email in one sentence', () => {
+    Object.defineProperty(navigator, 'userAgent', { value: IPHONE_17, configurable: true });
+    Object.defineProperty(navigator, 'standalone', { value: true, configurable: true });
+    h.phone = true;
+    h.viewer = { ...MENTEE, email: EMAIL };
+    meet('mentee');
+    renderAt('16:56:00');
+    expect(
+      screen.getByText(
+        `Opens in Safari. Join with the Google account ${EMAIL} to get straight in.`,
+      ),
+    ).toBeVisible();
+    expect(
+      screen.queryByText('Opens Google Meet in Safari, where you’re signed in.'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('no email known: the old hint', () => {
+    h.viewer = { ...MEMBER, email: '' };
+    meet();
+    renderAt('16:56:00');
+    expect(screen.getByText('Opens Google Meet in a new tab.')).toBeVisible();
+    expect(screen.queryByText(/Google account/)).not.toBeInTheDocument();
+  });
+
+  it('EduFurther video keeps its hints, with or without an email', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    const { unmount } = renderAt('16:56:00');
+    expect(screen.getByText('Opens in your browser. No download needed.')).toBeVisible();
+    expect(screen.queryByText(/Google account/)).not.toBeInTheDocument();
+    unmount();
+    h.phone = true;
+    renderAt('16:56:00');
+    expect(
+      screen.getByText('Keep the call on screen, or your phone pauses your camera and mic.'),
+    ).toBeVisible();
+  });
+
+  it('no email before Join opens: the locked hint stays', () => {
+    h.viewer = { ...MEMBER, email: EMAIL };
+    meet();
+    renderAt('16:00:00');
+    expect(screen.queryByText(/Google account/)).not.toBeInTheDocument();
   });
 });

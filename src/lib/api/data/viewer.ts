@@ -34,6 +34,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     id: me.id,
     slug: me.slug,
     firstName: name,
+    email: me.email,
     initials: personInitials(me.first_name, me.last_name, me.email),
     isMentee: me.goal != null,
     isApprovedMentor: me.mentor_profile?.approval_status === 'approved',
