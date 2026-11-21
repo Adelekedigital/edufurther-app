@@ -3,6 +3,7 @@ import {
   TARGET_LABELS,
   TOUR_COPY,
   TOUR_RELEASES,
+  WELCOME_2026_11,
   type TourRelease,
   type TourTarget,
 } from '@/lib/copy/whatsNew';
@@ -12,14 +13,17 @@ import {
   isReleased,
   releaseFor,
   REPLAY_DAYS,
+  replayFor,
   replayHref,
   SEEN_KEY,
   TOUR_HOME,
   tourMayStart,
   tourSteps,
+  tourLabels,
   tourText,
   tourViewerOf,
 } from './whatsNew';
+import { accessFor, inSetup } from './access';
 import type { Viewer } from '@/types/mentor';
 
 // After the release day, inside its replay window, unless a test says otherwise.
@@ -301,14 +305,102 @@ describe('tourViewerOf', () => {
       isMigrated: true,
       seenItems: [],
     });
-    expect(tourViewerOf({ ...base, isMentor: true })?.role).toBe('mentor');
+    expect(tourViewerOf({ ...base, isMentor: true, isApprovedMentor: true })?.role).toBe('mentor');
   });
 
-  it('a mentor sign-up counts as a mentor only while mentor onboarding is on (viewerRole)', () => {
+  it('a mentor sign-up gets no tour while mentor onboarding is on (not approved), else the mentee’s', () => {
     const signup = { ...base, isMentee: false, signedUpAsMentor: true };
     expect(tourViewerOf(signup)?.role).toBe(
-      process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED === 'true' ? 'mentor' : 'mentee',
+      process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED === 'true' ? null : 'mentee',
     );
+  });
+});
+
+describe('gating: only once the account is set up', () => {
+  const base = {
+    kind: 'member',
+    id: 'u-1',
+    firstName: 'Ada',
+    initials: 'AO',
+    isMentee: true,
+    isApprovedMentor: false,
+    isMentor: false,
+    completedSessions: 0,
+    credits: null,
+    isMigrated: false,
+    seenItems: [],
+  } as Extract<Viewer, { kind: 'member' }>;
+  const mentor = { ...base, isMentee: false, isMentor: true };
+  const cases = {
+    'a mentee mid-onboarding': { ...base, isMentee: false, onboardingComplete: false },
+    'a mentor applicant who never submitted': { ...mentor, mentorStage: 'unsubmitted' as const },
+    'a mentor applicant in review': { ...mentor, mentorStage: 'pending' as const },
+    'a declined mentor applicant': { ...mentor, mentorStage: 'declined' as const },
+  };
+
+  it.each(Object.entries(cases))('%s gets no tour and no replay', (_, v) => {
+    const tv = tourViewerOf(v)!;
+    expect(tv.role).toBeNull();
+    expect(releaseFor(tv, TOUR_RELEASES)).toBeNull();
+    expect(replayFor(tv, TOUR_RELEASES, Date.parse('2026-11-25T00:00:00Z'))).toBeUndefined();
+  });
+
+  it('in review and declined are not the setup lock: the role guard is what holds them', () => {
+    expect(inSetup('mentorReview')).toBe(false);
+    expect(inSetup('mentorNotApproved')).toBe(false);
+  });
+
+  it('the setup lock holds the tour for anyone it applies to', () => {
+    const at = { pathname: '/home', role: 'mentee' as const, previewing: false };
+    expect(
+      tourMayStart({
+        ...at,
+        inSetup: inSetup('menteeSetup'),
+        consentBanner: false,
+        otherAsk: false,
+      }),
+    ).toBe(false);
+    expect(
+      tourMayStart({
+        ...at,
+        pathname: '/dashboard',
+        role: 'mentor',
+        inSetup: inSetup('mentorSetup'),
+        consentBanner: false,
+        otherAsk: false,
+      }),
+    ).toBe(false);
+  });
+
+  it('a mentee mid-onboarding: the role guard holds them, and the setup lock too while onboarding is on', () => {
+    const mid = cases['a mentee mid-onboarding'];
+    expect(tourViewerOf(mid)?.role).toBeNull();
+    expect(inSetup(accessFor(mid))).toBe(process.env.NEXT_PUBLIC_ONBOARDING_ENABLED === 'true');
+  });
+
+  it('a finished mentee and an approved mentor made here get the Welcome tour', () => {
+    expect(releaseFor(tourViewerOf(base)!, TOUR_RELEASES)?.id).toBe('welcome:2026-11');
+    const approved = { ...mentor, isApprovedMentor: true, mentorStage: 'approved' as const };
+    expect(releaseFor(tourViewerOf(approved)!, TOUR_RELEASES)?.id).toBe('welcome:2026-11');
+  });
+});
+
+describe('audiences: one tour or the other, never both', () => {
+  const who = (isMigrated: boolean | undefined) => ({
+    role: 'mentee' as const,
+    isMigrated,
+    seenItems: [],
+  });
+
+  it('migrated gets only What’s new; made here only the Welcome tour; unknown neither', () => {
+    expect(releaseFor(who(true), TOUR_RELEASES)?.id).toBe('whats-new:2026-11-migration');
+    expect(
+      releaseFor(who(true), TOUR_RELEASES, new Set(['whats-new:2026-11-migration'])),
+    ).toBeNull();
+    expect(releaseFor(who(false), TOUR_RELEASES)?.id).toBe('welcome:2026-11');
+    expect(releaseFor(who(false), TOUR_RELEASES, new Set(['welcome:2026-11']))).toBeNull();
+    expect(releaseFor(who(undefined), TOUR_RELEASES)).toBeNull();
+    expect(releaseFor(who(undefined), TOUR_RELEASES, new Set(), true)).toBeNull();
   });
 });
 
@@ -358,6 +450,26 @@ describe('the replay window', () => {
     expect(inReplayWindow(live, at('2026-12-23T00:00:00Z'))).toBe(false);
   });
 
+  it('replayDays always: from the release day with no end', () => {
+    const always = { ...live, replayDays: 'always' as const };
+    expect(inReplayWindow(always, at('2026-11-22T23:59:59.999Z'))).toBe(false);
+    expect(inReplayWindow(always, at('2026-11-23T00:00:00Z'))).toBe(true);
+    expect(inReplayWindow(always, at('2036-01-01T00:00:00Z'))).toBe(true);
+    expect(inReplayWindow({ ...always, liveFrom: 'soon' }, at('2026-11-24T00:00:00Z'))).toBe(false);
+  });
+
+  it('the Welcome tour: live from 21 Nov, replayable for good, so the replay lines always show', () => {
+    expect(WELCOME_2026_11.liveFrom).toBe('2026-11-21');
+    expect(WELCOME_2026_11.replayDays).toBe('always');
+    const t = at('2030-01-01T00:00:00Z');
+    expect(inReplayWindow(WELCOME_2026_11, t)).toBe(true);
+    const text = tourText(WELCOME_2026_11.roles.mentee!, inReplayWindow(WELCOME_2026_11, t));
+    expect(text.hint).toBe('Takes about a minute. You can replay it from Settings.');
+    expect(text.doneBody).toBe(
+      'Find a mentor on Home or Explore and book your first session. You can replay this tour from Settings.',
+    );
+  });
+
   it('30 days unless the release says otherwise; an unreadable date is never', () => {
     const plain = { ...live, replayDays: undefined };
     expect(REPLAY_DAYS).toBe(30);
@@ -401,5 +513,69 @@ describe('the release content', () => {
 
   it('the welcome names the viewer', () => {
     expect(TOUR_COPY.welcomeTitle('Ada')).toBe('Welcome to the new EduFurther, Ada');
+  });
+
+  it('labels: the migration keeps today’s words; the Welcome tour has its own', () => {
+    const m = tourLabels(MIGRATION_2026_11);
+    expect(m.badge).toBe('New platform');
+    expect(m.welcomeTitle('Ada')).toBe('Welcome to the new EduFurther, Ada');
+    expect(m.welcomeTitle('')).toBe('Welcome to the new EduFurther');
+    expect([m.menuItem, m.replayTitle, m.replaySub]).toEqual([
+      'What’s new',
+      'What’s new',
+      'A quick look at what changed on EduFurther.',
+    ]);
+    const w = tourLabels(WELCOME_2026_11);
+    expect(w.badge).toBe('Welcome');
+    expect(w.welcomeTitle('Ada')).toBe('Welcome to EduFurther, Ada');
+    expect(w.welcomeTitle('')).toBe('Welcome to EduFurther');
+    expect([w.menuItem, w.replayTitle, w.replaySub]).toEqual([
+      'Welcome tour',
+      'Welcome tour',
+      'A quick look at where everything is.',
+    ]);
+  });
+
+  it('labels: a key set to undefined keeps the default', () => {
+    const l = tourLabels({
+      ...WELCOME_2026_11,
+      labels: { welcomeTitle: undefined, menuItem: 'Welcome tour' },
+    });
+    expect(l.welcomeTitle('Ada')).toBe('Welcome to the new EduFurther, Ada');
+    expect(l.badge).toBe('New platform');
+    expect(l.menuItem).toBe('Welcome tour');
+  });
+
+  it('the Welcome tour: no step badges; mentee ends on Find a mentor, mentor on Open Calendar', () => {
+    for (const c of Object.values(WELCOME_2026_11.roles))
+      c.steps.forEach((s) => expect(s.badge).toBeUndefined());
+    expect(WELCOME_2026_11.roles.mentee!.doneAction).toEqual({
+      label: 'Find a mentor',
+      href: '/explore',
+    });
+    expect(WELCOME_2026_11.roles.mentor!.doneAction).toEqual({
+      label: 'Open Calendar',
+      href: '/calendar',
+    });
+    expect(WELCOME_2026_11.roles.mentee!.steps.map((s) => s.target)).toEqual([
+      'nav-home',
+      'nav-explore',
+      'nav-bookings',
+      'nav-messages',
+      'credits-pill',
+      'nav-more',
+    ]);
+    // Messages off: its nav item is absent, so the step drops (the count reads one fewer).
+    const steps = tourSteps(
+      WELCOME_2026_11.roles.mentee!,
+      (t) => (t === 'nav-messages' ? null : 'shown'),
+      false,
+    );
+    expect(steps?.map((s) => s.target)).toEqual([
+      'nav-home',
+      'nav-explore',
+      'nav-bookings',
+      'credits-pill',
+    ]);
   });
 });

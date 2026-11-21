@@ -2,8 +2,7 @@
 
 import { useEffect } from 'react';
 import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
-import { TOUR_COPY } from '@/lib/copy/whatsNew';
-import { tourReplay, useWhatsNew } from './useWhatsNew';
+import { replayLinks, tourReplay, useWhatsNew } from './useWhatsNew';
 import type { Access } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
 
@@ -42,14 +41,17 @@ export function WhatsNewHost({
   onState: (s: WhatsNewShellState) => void;
 }) {
   const w = useWhatsNew({ member, access, previewing, pathname });
-  const href = tourReplay(member, previewing);
+  // The release's own name for it: "What's new", or "Welcome tour".
+  const item = replayLinks(tourReplay(member, previewing))?.menuItem;
+  const href = item?.href;
+  const label = item?.label;
   useEffect(() => {
     onState({
       more: w.more,
       holding: w.holding,
-      menuItem: href ? { label: TOUR_COPY.menuItem, href } : undefined,
+      menuItem: href && label ? { label, href } : undefined,
     });
-  }, [w.more, w.holding, href, onState]);
+  }, [w.more, w.holding, href, label, onState]);
   // Gone (a failed load, a flag change): the shell goes back to no tour.
   useEffect(() => () => onState(WHATS_NEW_OFF), [onState]);
   return w.tour ? <WhatsNewTour {...w.tour} /> : null;

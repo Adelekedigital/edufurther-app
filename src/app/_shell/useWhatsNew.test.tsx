@@ -106,7 +106,7 @@ describe('useWhatsNew: when it opens', () => {
 
   it('a mentor on /dashboard gets the mentor version', async () => {
     const { result } = host({
-      member: member({ isMentor: true }),
+      member: member({ isMentor: true, isApprovedMentor: true }),
       pathname: '/dashboard',
     });
     await settle();
@@ -119,7 +119,15 @@ describe('useWhatsNew: when it opens', () => {
     ['in the setup lock', { access: setup }],
     ['for an admin', { member: member({ isAdmin: true }) }],
     ['while /me loads', { member: null }],
-    ['for an account made here', { member: member({ isMigrated: false }) }],
+    [
+      'when it is not known where the account was made',
+      { member: member({ isMigrated: undefined }) },
+    ],
+    [
+      'for a mentor applicant not yet approved',
+      { member: member({ isMentor: true }), pathname: '/dashboard' },
+    ],
+    ['for a mentee mid-onboarding', { member: member({ onboardingComplete: false }) }],
     ['once seen', { member: member({ seenItems: [ID] }) }],
   ])('never %s', async (_, props) => {
     const { result } = host(props);
@@ -170,6 +178,52 @@ describe('useWhatsNew: when it opens', () => {
   });
 });
 
+describe('useWhatsNew: the Welcome tour (an account made here)', () => {
+  const WELCOME = 'welcome:2026-11';
+
+  it.each([
+    ['a mentee on /home', member({ isMigrated: false }), '/home', 'mentee', 'nav-home'],
+    [
+      'an approved mentor on /dashboard',
+      member({ isMigrated: false, isMentor: true, isApprovedMentor: true }),
+      '/dashboard',
+      'mentor',
+      'nav-calendar',
+    ],
+  ] as const)(
+    '%s: its own words, its own seen key and analytics',
+    async (_, m, pathname, role, first) => {
+      const { result } = host({ member: m, pathname });
+      await settle();
+      const tour = result.current.tour!;
+      expect(tour.labels.badge).toBe('Welcome');
+      expect(tour.labels.welcomeTitle(tour.first)).toBe('Welcome to EduFurther, Ada');
+      expect(tour.content.steps[0]?.target).toBe(first);
+      expect(tour.replayable).toBe(true);
+      act(() => tour.onEvent({ type: 'started' }));
+      expect(h.track).toHaveBeenCalledWith('tour_started', {
+        release: WELCOME,
+        role,
+        replay: false,
+      });
+      act(() => tour.onEvent({ type: 'skipped', step: 1 }));
+      expect(h.markSeen).toHaveBeenLastCalledWith(WELCOME);
+      act(() => tour.onEvent({ type: 'finished' }));
+      expect(h.markSeen).toHaveBeenCalledTimes(2);
+      expect(h.markSeen).toHaveBeenLastCalledWith(WELCOME);
+    },
+  );
+
+  it('a migrated mentee still gets What’s new, in its own words', async () => {
+    const { result } = host();
+    await settle();
+    expect(result.current.tour?.labels.badge).toBe('New platform');
+    expect(result.current.tour?.labels.welcomeTitle('Ada')).toBe(
+      'Welcome to the new EduFurther, Ada',
+    );
+  });
+});
+
 describe('useWhatsNew: what each answer does', () => {
   it('tracks each event with the release and role, and marks seen on skip or finish', async () => {
     const { result } = host();
@@ -214,8 +268,10 @@ describe('tourReplay', () => {
   const DAY2 = Date.parse('2026-11-24T10:00:00Z');
 
   it('in the window, even once seen: their Home with the replay query', () => {
-    expect(tourReplay(member({ seenItems: [ID] }), false, DAY2)).toBe('/home?tour=replay');
-    expect(tourReplay(member({ isMentor: true }), false, DAY2)).toBe('/dashboard?tour=replay');
+    expect(tourReplay(member({ seenItems: [ID] }), false, DAY2)?.href).toBe('/home?tour=replay');
+    expect(tourReplay(member({ isMentor: true, isApprovedMentor: true }), false, DAY2)?.href).toBe(
+      '/dashboard?tour=replay',
+    );
   });
 
   it('not before the release day or after its replay window (to 23 Dec)', () => {
@@ -223,8 +279,24 @@ describe('tourReplay', () => {
     expect(tourReplay(member(), false, Date.parse('2026-12-23T00:00:00Z'))).toBeUndefined();
   });
 
-  it('not offered to a new account, an admin, or in Preview as user', () => {
-    expect(tourReplay(member({ isMigrated: false }), false, DAY2)).toBeUndefined();
+  it('a migrated account’s is named What’s new; an account made here gets the Welcome tour’s, with no end', () => {
+    expect(tourReplay(member(), false, DAY2)?.labels).toMatchObject({
+      menuItem: 'What’s new',
+      replayTitle: 'What’s new',
+      replaySub: 'A quick look at what changed on EduFurther.',
+    });
+    const later = Date.parse('2028-06-01T00:00:00Z');
+    const made = tourReplay(member({ isMigrated: false }), false, later);
+    expect(made?.href).toBe('/home?tour=replay');
+    expect(made?.labels).toMatchObject({
+      menuItem: 'Welcome tour',
+      replayTitle: 'Welcome tour',
+      replaySub: 'A quick look at where everything is.',
+    });
+  });
+
+  it('not offered when it is unknown where the account was made, to an admin, or in Preview as user', () => {
+    expect(tourReplay(member({ isMigrated: undefined }), false, DAY2)).toBeUndefined();
     expect(tourReplay(member({ isAdmin: true }), false, DAY2)).toBeUndefined();
     expect(tourReplay(member(), true, DAY2)).toBeUndefined();
     expect(tourReplay(null, false, DAY2)).toBeUndefined();

@@ -42,8 +42,22 @@ Option 3, with the content in one typed file.
   `activeReleases()`, so with either off there is no tour, no "What's new" menu item and no
   Settings row. The nav's `data-tour` ids are inert markup either way.
 - **Content**: `lib/copy/whatsNew.ts`, `TOUR_RELEASES`: each release has an id (its seen
-  key), an audience (`migrated` today), `enabled`, and per role a welcome, steps (target id,
-  badge, title, body, optional phone body, optional `required`) and a done card.
+  key), an audience, `enabled`, optional `labels`, and per role a welcome, steps (target id,
+  optional badge, title, body, optional phone body, optional `required`) and a done card.
+- **Audiences** (amended 2026-11-21): `migrated` (`/me.is_migrated` true) and `new`
+  (`is_migrated` false). Unknown (`undefined`) is neither, so a person gets one tour or the
+  other, never both. The Welcome tour (`welcome:2026-11`) is the `new` release: where
+  everything is, for accounts made here.
+- **Per-release labels** (amended 2026-11-21): a release may set its own welcome badge,
+  welcome title (with and without a first name), menu item label and Settings row title and
+  line (`labels`, read through `tourLabels`, TOUR_COPY's where unset). `tourReplay` returns
+  the link with its release's labels, so the account menu, More sheet and Settings name the
+  right tour ("What's new" or "Welcome tour"). Settings' row is an organism and takes them as
+  props. A step's badge is optional; the Welcome tour's steps have none.
+- **Only once set up** (amended 2026-11-21): `tourViewerOf` gives no role (no tour, no
+  replay) to a mentee mid-onboarding or a mentor not yet approved (a sign-up, an application
+  in review or declined), whatever the flags lock: `inSetup` covers only the setup lock, not
+  review or declined.
 - **Selection** (pure, `lib/utils/whatsNew.ts`): `tourViewerOf` (null while /me loads and for
   admins; the routing role, `viewerRole`), `releaseFor` (enabled, released from `liveFrom` with
   no end so a late first visit still gets it, audience, role, not seen), `tourMayStart` (the role's Home, not previewing, not in setup, no consent banner),
@@ -61,7 +75,8 @@ Option 3, with the content in one typed file.
   Settings' "Replay tour", link to the role's Home with `?tour=replay`, which opens the
   welcome whether seen or not (replay never un-sees; its Skip or Finish counts as seen too,
   which is idempotent: the server's record only grows). Offered per release from `liveFrom` for
-  `replayDays` (default 30), same audience rules. Per-user windows (30 days from when each
+  `replayDays` (default 30), or with no end for `replayDays: 'always'` (the Welcome tour, so
+  its hint and done card always carry the replay line), same audience rules. Per-user windows (30 days from when each
   person saw it) would need `seen_at` from the backend; deliberately not done.
 - **Get the app**: a step marked `install` shows only where the device can install the app
   (`installPlatform`, so never in the installed app or on desktop today), points at the phone's
@@ -89,5 +104,5 @@ Option 3, with the content in one typed file.
 
 ## Future options (not built)
 
-- Audiences `admin` and `new_signup` (an `audience` value and its rule in `releaseFor`).
+- Audience `admin` (an `audience` value and its rule in `inAudience`).
 - Quiet "New" badges on a nav item, keyed the same way, instead of a full tour.

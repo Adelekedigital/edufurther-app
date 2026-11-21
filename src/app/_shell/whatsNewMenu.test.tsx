@@ -15,8 +15,7 @@ vi.mock('@/lib/config/whatsNew', () => ({
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => ({ kind: 'guest' }) }));
 const { accountItems } = await import('./useAppShell');
-const { tourReplay } = await import('./useWhatsNew');
-const { TOUR_COPY } = await import('@/lib/copy/whatsNew');
+const { replayLinks, tourReplay } = await import('./useWhatsNew');
 
 type Member = Extract<Viewer, { kind: 'member' }>;
 const mentee = {
@@ -45,13 +44,12 @@ const setup = {
 function shell(now: number, opts: { previewing?: boolean; access?: Access; m?: Member } = {}) {
   const m = opts.m ?? mentee;
   // As WhatsNewHost hands it to the shell.
-  const href = tourReplay(m, opts.previewing ?? false, now);
   const items = accountItems(
     m,
     vi.fn(),
     opts.access,
     false,
-    href ? { label: TOUR_COPY.menuItem, href } : undefined,
+    replayLinks(tourReplay(m, opts.previewing ?? false, now))?.menuItem,
   );
   return render(
     <AppShell
@@ -111,5 +109,34 @@ describe('the What’s new menu item', () => {
       expect(screen.queryByRole('link', { name: 'What’s new' })).toBeNull();
       unmount();
     }
+  });
+
+  it('replayLinks: one mapping for the menu item and the Settings row, in each release’s words', () => {
+    expect(replayLinks(tourReplay(mentee, false, IN_WINDOW))).toEqual({
+      menuItem: { label: 'What’s new', href: '/home?tour=replay' },
+      row: {
+        href: '/home?tour=replay',
+        title: 'What’s new',
+        sub: 'A quick look at what changed on EduFurther.',
+      },
+    });
+    const made = { ...mentee, isMigrated: false, seenItems: [] };
+    expect(replayLinks(tourReplay(made, false, AFTER))).toEqual({
+      menuItem: { label: 'Welcome tour', href: '/home?tour=replay' },
+      row: {
+        href: '/home?tour=replay',
+        title: 'Welcome tour',
+        sub: 'A quick look at where everything is.',
+      },
+    });
+    expect(replayLinks(undefined)).toBeUndefined();
+  });
+
+  it('an account made here gets "Welcome tour" instead, with no end date', async () => {
+    shell(Date.parse('2027-06-01T00:00:00Z'), { m: { ...mentee, isMigrated: false } });
+    await userEvent.click(tabs().getByRole('button', { name: 'More' }));
+    expect(
+      within(document.getElementById('more-sheet')!).getByRole('link', { name: 'Welcome tour' }),
+    ).toHaveAttribute('href', '/home?tour=replay');
   });
 });

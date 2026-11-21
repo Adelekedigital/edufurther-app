@@ -301,12 +301,38 @@ describe('SecuritySettings: What’s new', () => {
     const { unmount } = render(<Host />);
     expect(screen.queryByRole('heading', { name: 'What’s new' })).toBeNull();
     unmount();
-    render(<Host replayTourHref="/home?tour=replay" />);
+    render(
+      <Host
+        replayTour={{
+          href: '/home?tour=replay',
+          title: 'What’s new',
+          sub: 'A quick look at what changed on EduFurther.',
+        }}
+      />,
+    );
     const row = screen.getByRole('region', { name: 'What’s new' });
     expect(row).toHaveTextContent('A quick look at what changed on EduFurther.');
     expect(screen.getByRole('link', { name: 'Replay tour' })).toHaveAttribute(
       'href',
       '/home?tour=replay',
+    );
+  });
+
+  it('names the row as its release does (the Welcome tour)', () => {
+    render(
+      <Host
+        replayTour={{
+          href: '/dashboard?tour=replay',
+          title: 'Welcome tour',
+          sub: 'A quick look at where everything is.',
+        }}
+      />,
+    );
+    const row = screen.getByRole('region', { name: 'Welcome tour' });
+    expect(row).toHaveTextContent('A quick look at where everything is.');
+    expect(screen.getByRole('link', { name: 'Replay tour' })).toHaveAttribute(
+      'href',
+      '/dashboard?tour=replay',
     );
   });
 });

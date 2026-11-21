@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MIGRATION_2026_11, type TourRoleContent } from '@/lib/copy/whatsNew';
+import {
+  MIGRATION_2026_11,
+  WELCOME_2026_11,
+  type TourLabels,
+  type TourRoleContent,
+} from '@/lib/copy/whatsNew';
 import type { TourEvent } from './WhatsNewTour';
 
 const h = vi.hoisted(() => ({ phone: false, listeners: new Set<() => void>() }));
@@ -57,6 +62,7 @@ beforeEach(() => {
 /** A stand-in shell: the targets by id, and a More sheet the tour can hold open. */
 function Harness({
   content,
+  labels,
   targets,
   holds = '',
   install = null,
@@ -65,6 +71,7 @@ function Harness({
   onClose,
 }: {
   content: TourRoleContent;
+  labels?: Pick<TourLabels, 'badge' | 'welcomeTitle'>;
   targets: string[];
   holds?: string;
   install?: 'android' | 'ios' | null;
@@ -96,6 +103,7 @@ function Harness({
         <WhatsNewTour
           first="Ada"
           content={content}
+          labels={labels}
           onEvent={onEvent}
           onMore={setMore}
           install={install}
@@ -115,6 +123,7 @@ async function start(
   targets: string[],
   holds?: string,
   install: 'android' | 'ios' | null = null,
+  labels?: Pick<TourLabels, 'badge' | 'welcomeTitle'>,
 ) {
   const user = userEvent.setup();
   const onEvent = vi.fn<(e: TourEvent) => void>();
@@ -123,6 +132,7 @@ async function start(
   render(
     <Harness
       content={content}
+      labels={labels}
       targets={targets}
       holds={holds}
       install={install}
@@ -456,5 +466,38 @@ describe('WhatsNewTour: a mentor on a phone', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('dialog')).toHaveTextContent('Find it under Sessions.');
     expect(screen.getByRole('button', { name: 'More' })).toHaveAttribute('aria-expanded', 'false');
+  });
+});
+
+describe('WhatsNewTour: the Welcome tour (accounts made here)', () => {
+  const w = WELCOME_2026_11;
+  const labels = w.labels as TourLabels;
+
+  it('the welcome wears the release’s own badge and title', async () => {
+    await start(w.roles.mentee!, ['nav-home'], undefined, null, labels);
+    const dlg = screen.getByRole('dialog', { name: 'Welcome to EduFurther, Ada' });
+    expect(within(dlg).getByText('Welcome')).toBeInTheDocument();
+    expect(within(dlg).queryByText('New platform')).toBeNull();
+  });
+
+  it('a step with no badge shows only its count', async () => {
+    const { user } = await start(w.roles.mentee!, ['nav-home'], undefined, null, labels);
+    await user.click(screen.getByRole('button', { name: 'Show me around' }));
+    const step = screen.getByRole('dialog', { name: 'Your matches and your progress' });
+    expect(step.textContent).toMatch(/^Step 1 of 1Your matches and your progress/);
+  });
+
+  it('the mentee’s done card leads to Explore: Find a mentor, with the replay line', async () => {
+    const { user, onEvent } = await start(w.roles.mentee!, ['nav-home'], undefined, null, labels);
+    await toDoneCard(user);
+    const done = screen.getByRole('status');
+    const cta = within(done).getByRole('link', { name: 'Find a mentor' });
+    expect(cta).toHaveAttribute('href', '/explore');
+    expect(cta).toHaveFocus();
+    expect(cta).toHaveAccessibleDescription(
+      'You’re all set Find a mentor on Home or Explore and book your first session. You can replay this tour from Settings.',
+    );
+    await user.click(cta);
+    expect(onEvent).toHaveBeenLastCalledWith({ type: 'completed', action: 'cta' });
   });
 });

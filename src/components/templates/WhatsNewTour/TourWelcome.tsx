@@ -5,7 +5,7 @@ import { Badge } from '@/components/atoms/Badge/Badge';
 import { Button } from '@/components/atoms/Button/Button';
 import { IconListItem } from '@/components/molecules/IconListItem/IconListItem';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
-import { TOUR_COPY as C, type TourRoleContent } from '@/lib/copy/whatsNew';
+import { TOUR_COPY as C, type TourLabels, type TourRoleContent } from '@/lib/copy/whatsNew';
 import styles from './WhatsNewTour.module.css';
 
 /**
@@ -15,6 +15,7 @@ import styles from './WhatsNewTour.module.css';
  */
 export function TourWelcome({
   first,
+  labels = C,
   welcome,
   body,
   hint,
@@ -22,6 +23,8 @@ export function TourWelcome({
   onDismiss,
 }: {
   first: string;
+  /** The release's badge and title (tourLabels); TOUR_COPY's by default. */
+  labels?: Pick<TourLabels, 'badge' | 'welcomeTitle'>;
   welcome: TourRoleContent['welcome'];
   /** The body as shown (tourText: messages named only while Messages is on). */
   body: string;
@@ -33,11 +36,11 @@ export function TourWelcome({
   const bodyId = useId();
   return (
     <ModalShell
-      title={C.welcomeTitle(first)}
+      title={labels.welcomeTitle(first)}
       eyebrow={
         <span className={styles.eyebrow}>
           <Badge type="accent" color="primary" size="md">
-            {C.badge}
+            {labels.badge}
           </Badge>
         </span>
       }

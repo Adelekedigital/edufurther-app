@@ -38,8 +38,8 @@ export type InstallTrigger = 'booking' | 'message' | 'onboarding' | 'menu' | 'to
 export type InstallPlatform = 'android' | 'ios';
 /** Whose version of a "What's new" tour. */
 export type TourRole = 'mentee' | 'mentor';
-/** A What's new release's id, which is also its seen key (lib/copy/whatsNew). */
-export type TourReleaseId = `whats-new:${string}`;
+/** A tour release's id, which is also its seen key (lib/copy/whatsNew): What's new or the Welcome tour. */
+export type TourReleaseId = `whats-new:${string}` | `welcome:${string}`;
 
 export type AnalyticsEvents = {
   /** One per navigation, from the router (track.ts), never from a screen. */
