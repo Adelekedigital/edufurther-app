@@ -249,11 +249,14 @@ export function showPending(): boolean {
 }
 
 /** The More menu's "Install the app": the sheet now, whatever the rules. */
-export function openFromMenu(): void {
+export function openFromMenu(trigger: AskedTrigger = 'menu'): void {
   const platform = installPlatform();
   if (!platform || currentNudge()) return;
-  show({ trigger: 'menu', platform, name: null, mentor: false });
+  show({ trigger, platform, name: null, mentor: false });
 }
+
+/** Opened because the person asked: the More menu, or the What's new tour's Install app. */
+type AskedTrigger = 'menu' | 'tour';
 
 /**
  * One ask per visit (owner, 2026-11-18): the nudge is up, waiting, or has
@@ -263,6 +266,18 @@ export function installNudgeBusy(): boolean {
   return currentNudge() !== null || pending !== null || shownInVisit() || keptMoment() !== null;
 }
 
+/**
+ * The What's new tour asks for this visit (owner, 2026-11-20): it wins on
+ * Home, so a waiting nudge waits for another visit. False, and nothing
+ * changed, when the nudge is up or an ask has already shown this visit: then
+ * the tour waits instead, never two asks in one visit.
+ */
+export function claimVisitForTour(): boolean {
+  if (currentNudge() !== null || shownInVisit()) return false;
+  notePushAskShown();
+  return true;
+}
+
 /** The push ask showed this visit: the nudge then waits for another visit. */
 export function notePushAskShown(): void {
   markShown();
@@ -270,7 +285,7 @@ export function notePushAskShown(): void {
   stopWaiting?.();
 }
 
-const auto = (n: InstallNudge) => n.trigger !== 'menu';
+const auto = (n: InstallNudge) => n.trigger !== 'menu' && n.trigger !== 'tour';
 
 /**
  * Android's "Add to home screen": the browser's prompt, its answer counted.

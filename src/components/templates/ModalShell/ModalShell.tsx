@@ -53,6 +53,8 @@ type ModalShellProps = {
    * with a subtitle, both are read, subtitle first.
    */
   describedBy?: string;
+  /** Above the title, e.g. a badge ("New platform"). Centred modal only. */
+  eyebrow?: ReactNode;
 };
 
 /**
@@ -77,6 +79,7 @@ export function ModalShell({
   closeDisabled = false,
   mobile = 'full',
   describedBy,
+  eyebrow,
 }: ModalShellProps) {
   const titleId = useId();
   const subId = useId();
@@ -189,6 +192,7 @@ export function ModalShell({
             </span>
           )}
           <div className={styles.titles}>
+            {eyebrow}
             <h2 id={titleId} className={styles.title}>
               {title}
             </h2>

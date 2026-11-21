@@ -21,6 +21,8 @@ import { setAppBadge } from '@/lib/utils/push';
 import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import { canBookFor } from './bookBlocked';
+import { tourReplay } from './useWhatsNew';
+import { TOUR_COPY } from '@/lib/copy/whatsNew';
 import type { Viewer } from '@/types/mentor';
 
 /**
@@ -73,6 +75,8 @@ export function accountItems(
   access?: Access,
   /** Inside /admin: the way back to the app instead of the way in. */
   inAdmin = false,
+  /** The What's new tour's replay link, while its release is in its replay window. */
+  whatsNew?: string,
 ): AccountMenuItem[] {
   return [
     ...(member?.isMentor && !(access && inSetup(access))
@@ -108,6 +112,17 @@ export function accountItems(
                 icon: 'admin_panel_settings' as const,
                 href: '/admin/mentors',
               },
+        ]
+      : []),
+    // The tour's replay, for 30 days from its release (owner, 2026-11-20).
+    ...(whatsNew && !inAdmin && !(access && inSetup(access))
+      ? [
+          {
+            key: 'whats-new',
+            label: TOUR_COPY.menuItem,
+            icon: 'new_releases' as const,
+            href: whatsNew,
+          },
         ]
       : []),
     {
@@ -161,6 +176,7 @@ export function useAppShell() {
     },
     access,
     inAdmin,
+    tourReplay(member, previewing),
   );
   return {
     viewer,

@@ -26,6 +26,11 @@ vi.mock('@/lib/api/data/viewer', () => ({
 }));
 vi.mock('@/lib/utils/useOnline', () => ({ useOnline: () => h.online }));
 vi.mock('@/app/_shell/useAppShell', () => ({ useAppShell: () => h.shell }));
+// The What's new tour's host has its own tests (useWhatsNew.test).
+vi.mock('@/app/_shell/useWhatsNew', () => ({
+  useWhatsNew: () => ({ tour: null, more: false, holding: false }),
+  tourReplay: () => undefined,
+}));
 // The notifications ask has its own tests; here only what the layout passes it.
 const pushPrompt = vi.hoisted(() => vi.fn());
 vi.mock('@/app/_shell/PushPrompt', () => ({

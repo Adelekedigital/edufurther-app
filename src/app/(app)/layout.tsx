@@ -6,6 +6,8 @@ import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { PushPrompt } from '@/app/_shell/PushPrompt';
 import { RoleRedirect } from '@/app/_shell/RoleRedirect';
 import { useAppShell } from '@/app/_shell/useAppShell';
+import { useWhatsNew } from '@/app/_shell/useWhatsNew';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useOnline } from '@/lib/utils/useOnline';
 import { openInstallNudge, useInstallAvailable } from '@/lib/pwa/installPrompt';
 
@@ -33,6 +35,13 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
   'session-types': 'Sessions',
   settings: 'Settings',
 };
+
+// The tour loads when it opens, never with every page (350kB first-load budget).
+// A failed load closes it, unmarked, so it can come back.
+const WhatsNewTour = lazyPart(
+  () => import('@/components/templates/WhatsNewTour/WhatsNewTour').then((m) => m.WhatsNewTour),
+  { close: (p) => p.onClose() },
+);
 
 /** The admin app's pages, by their segment under `/admin`. */
 const ADMIN_ACTIVE: Record<string, string> = {
@@ -74,9 +83,20 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { chrome, account, nav, access, messages, adminEmails, adminAnalytics, onPreview, member } =
-    useAppShell();
+  const {
+    chrome,
+    account,
+    nav,
+    access,
+    messages,
+    adminEmails,
+    adminAnalytics,
+    onPreview,
+    member,
+    previewing,
+  } = useAppShell();
   const online = useOnline();
+  const whatsNew = useWhatsNew({ member, nav, access, previewing, pathname });
   // A phone browser that can install (lib/pwa/installPrompt): More's last item.
   const installable = useInstallAvailable();
 
@@ -92,12 +112,20 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       access={access}
       onPreview={onPreview}
       onInstall={chrome === 'member' && installable ? openInstallNudge : undefined}
+      tourMore={whatsNew.more}
       offline={!online}
     >
       <RoleRedirect>{children}</RoleRedirect>
+      {whatsNew.tour && <WhatsNewTour {...whatsNew.tour} />}
       <PushPrompt
         userId={member?.id ?? null}
-        mentorWithBookings={!!member?.isMentor && onHomeOrBookings(pathname) && hasBookings(member)}
+        // The What's new tour has Home first; the ask waits for another moment.
+        mentorWithBookings={
+          !!member?.isMentor &&
+          onHomeOrBookings(pathname) &&
+          hasBookings(member) &&
+          !whatsNew.holding
+        }
       />
     </AppShell>
   );

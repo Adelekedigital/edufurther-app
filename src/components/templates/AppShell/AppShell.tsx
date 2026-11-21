@@ -193,6 +193,11 @@ type AppShellProps = {
    * install); the caller opens it.
    */
   onInstall?: () => void;
+  /**
+   * The What's new tour holds the More sheet open (phones) for a step whose
+   * item lives there; it closes again when the step moves on.
+   */
+  tourMore?: boolean;
   offline: boolean;
   children: ReactNode;
 };
@@ -212,12 +217,14 @@ export function AppShell({
   access,
   onPreview,
   onInstall,
+  tourMore = false,
   offline,
   children,
 }: AppShellProps) {
   const guest = chrome === 'guest';
   const member = chrome === 'member';
   const [moreOpen, setMoreOpen] = useState(false);
+  const sheetOpen = moreOpen || tourMore;
   const moreRef = useRef<HTMLButtonElement>(null);
   // "Your credits": opened from the pill or "How credits work"; focus goes back
   // to whatever opened it.
@@ -455,6 +462,7 @@ export function AppShell({
                 aria-current={n.label === active ? 'page' : undefined}
                 aria-label={n.name}
                 aria-haspopup="dialog"
+                data-tour={tourId(n.label)}
                 onClick={(e) => openLock(n.label, e.currentTarget)}
               >
                 {body}
@@ -467,6 +475,7 @@ export function AppShell({
                 className={styles.tab}
                 aria-current={n.label === active ? 'page' : undefined}
                 aria-label={n.name}
+                data-tour={tourId(n.label)}
               >
                 {body}
               </Link>
@@ -477,10 +486,13 @@ export function AppShell({
               ref={moreRef}
               type="button"
               className={styles.tab}
-              aria-expanded={moreOpen}
+              aria-expanded={sheetOpen}
               aria-controls="more-sheet"
               // Lit while its sheet is open, as well as on one of its pages (design).
-              data-current={moreActive || moreOpen || undefined}
+              data-current={moreActive || sheetOpen || undefined}
+              // The tour finds a nav item in the sheet by its id.
+              data-tour="nav-more"
+              data-tour-holds={extra.map((n) => tourId(n.label)).join(' ')}
               onClick={() => setMoreOpen((o) => !o)}
             >
               <span className={styles.tabIcon}>
@@ -509,7 +521,7 @@ export function AppShell({
       )}
       <LinkGuard />
 
-      {moreOpen && (
+      {sheetOpen && (
         <>
           <div className={styles.sheetScrim} aria-hidden onClick={() => setMoreOpen(false)} />
           {/* Account items (name, credits) are never in a session replay (PRD 30). */}
@@ -528,6 +540,7 @@ export function AppShell({
                       aria-current={n.label === active ? 'page' : undefined}
                       aria-label={n.name}
                       aria-haspopup="dialog"
+                      data-tour={tourId(n.label)}
                       onClick={(e) => openLock(n.label, e.currentTarget)}
                     >
                       <Icon name={n.icon} size={20} />
@@ -543,6 +556,7 @@ export function AppShell({
                       className={styles.sheetItem}
                       aria-current={n.label === active ? 'page' : undefined}
                       aria-label={n.name}
+                      data-tour={tourId(n.label)}
                       onClick={() => setMoreOpen(false)}
                     >
                       {/* Messages lives here on phones, so its count does too. */}
@@ -656,6 +670,7 @@ function RailList({
                 aria-label={n.name}
                 title={n.label}
                 aria-haspopup="dialog"
+                data-tour={tourId(n.label)}
                 onClick={(e) => onLock(n.label, e.currentTarget)}
               >
                 {body}
@@ -668,6 +683,7 @@ function RailList({
                 aria-current={n.label === active ? 'page' : undefined}
                 aria-label={n.name}
                 title={n.label}
+                data-tour={tourId(n.label)}
               >
                 {body}
               </Link>
@@ -694,6 +710,11 @@ function shownItem(n: NavItem, access: Access | undefined, counts: Counts): Show
     return { ...n, href, locked: false, pill: true, name: 'Home, finish setting up' };
   const count = counts[n.label];
   return { ...n, href, locked: false, pill: false, count, name: nameWithCount(n.label, count) };
+}
+
+/** A nav item's `data-tour` id ("nav-sessions"): the What's new tour finds it by this. */
+function tourId(label: string): string {
+  return `nav-${label.toLowerCase()}`;
 }
 
 /** The lock on a locked item's icon (AppShell.dc.html `locked`). */
