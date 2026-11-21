@@ -7,6 +7,7 @@ import {
   type TourTarget,
 } from '@/lib/copy/whatsNew';
 import {
+  activeReleases,
   inReplayWindow,
   releaseFor,
   REPLAY_DAYS,
@@ -17,7 +18,7 @@ import {
   tourSteps,
 } from './whatsNew';
 
-const live: TourRelease = { ...MIGRATION_2026_11, live: true };
+const live: TourRelease = { ...MIGRATION_2026_11, enabled: true };
 const ID = live.id;
 const migrated = (role: 'mentee' | 'mentor' | null, seenItems: string[] | undefined = []) => ({
   role,
@@ -32,7 +33,7 @@ describe('releaseFor', () => {
   });
 
   it('nobody gets it while its flag is off', () => {
-    expect(releaseFor(migrated('mentee'), [{ ...live, live: false }])).toBeNull();
+    expect(releaseFor(migrated('mentee'), [{ ...live, enabled: false }])).toBeNull();
   });
 
   it('not for a new account, an unknown role, or one that has seen it', () => {
@@ -55,7 +56,9 @@ describe('releaseFor', () => {
     expect(
       releaseFor({ ...migrated('mentee'), seenItems: undefined }, [live], new Set(), true)?.id,
     ).toBe(ID);
-    expect(releaseFor(migrated('mentee'), [{ ...live, live: false }], new Set(), true)).toBeNull();
+    expect(
+      releaseFor(migrated('mentee'), [{ ...live, enabled: false }], new Set(), true),
+    ).toBeNull();
     expect(
       releaseFor({ ...migrated('mentee'), isMigrated: false }, [live], new Set(), true),
     ).toBeNull();
@@ -142,6 +145,33 @@ describe('tourSteps', () => {
   });
 });
 
+describe('the off switches', () => {
+  const now = Date.parse('2026-11-25T00:00:00Z');
+
+  it('global flag off: no release at all, so no tour and no replay link', () => {
+    expect(activeReleases(false, [live])).toEqual([]);
+    expect(releaseFor(migrated('mentee'), activeReleases(false, [live]))).toBeNull();
+    expect(replayHref(migrated('mentee'), activeReleases(false, [live]), now)).toBeUndefined();
+  });
+
+  it('a release switched off goes alone; the others still show', () => {
+    const next = { ...live, id: 'whats-new:2027-01' };
+    const active = activeReleases(true, [{ ...live, enabled: false }, next]);
+    expect(active.map((r) => r.id)).toEqual(['whats-new:2027-01']);
+    expect(releaseFor(migrated('mentee'), active)?.id).toBe('whats-new:2027-01');
+  });
+
+  it('the env flag is off unless set to "true" (default off)', async () => {
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_WHATS_NEW_ENABLED', '');
+    expect((await import('@/lib/config/whatsNew')).WHATS_NEW_LIVE).toBe(false);
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_WHATS_NEW_ENABLED', 'true');
+    expect((await import('@/lib/config/whatsNew')).WHATS_NEW_LIVE).toBe(true);
+    vi.unstubAllEnvs();
+  });
+});
+
 describe('the replay window', () => {
   const at = (iso: string) => Date.parse(iso);
 
@@ -166,7 +196,7 @@ describe('the replay window', () => {
     expect(replayHref(migrated('mentee', [ID]), [live], now)).toBe('/home?tour=replay');
     expect(replayHref(migrated('mentor'), [live], now)).toBe('/dashboard?tour=replay');
     expect(replayHref({ ...migrated('mentee'), isMigrated: false }, [live], now)).toBeUndefined();
-    expect(replayHref(migrated('mentee'), [{ ...live, live: false }], now)).toBeUndefined();
+    expect(replayHref(migrated('mentee'), [{ ...live, enabled: false }], now)).toBeUndefined();
     expect(replayHref(migrated('mentee'), [live], at('2027-01-01T00:00:00Z'))).toBeUndefined();
   });
 });

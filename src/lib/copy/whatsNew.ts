@@ -1,6 +1,5 @@
 import type { IconName } from '@/components/atoms/Icon/iconNames';
 import type { TourRole } from '@/lib/analytics/events';
-import { WHATS_NEW_LIVE } from '@/lib/config/whatsNew';
 
 export type { TourRole };
 
@@ -61,8 +60,12 @@ export type TourRelease = {
   /** The seen key: ^[a-z0-9][a-z0-9:._-]{0,79}$ (the backend refuses anything else). */
   id: string;
   audience: TourAudience;
-  /** Its feature flag (lib/config/whatsNew), read at build time. */
-  live: boolean;
+  /**
+   * This release's own switch: false turns it off (no tour, no replay) and
+   * leaves the others alone. Every release also needs the global
+   * NEXT_PUBLIC_WHATS_NEW_ENABLED (lib/config/whatsNew, `activeReleases`).
+   */
+  enabled: boolean;
   /**
    * The release day (ISO date, UTC). "Replay tour" (Settings, the account menu
    * and More sheet) is offered from then for `replayDays` (default 30).
@@ -101,7 +104,7 @@ const DONE_TITLE = 'You’re all set';
 export const MIGRATION_2026_11: TourRelease = {
   id: 'whats-new:2026-11-migration',
   audience: 'migrated',
-  live: WHATS_NEW_LIVE,
+  enabled: true,
   liveFrom: '2026-11-23',
   replayDays: 30,
   roles: {

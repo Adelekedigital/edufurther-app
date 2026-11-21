@@ -1,10 +1,25 @@
-import type {
-  TourRelease,
-  TourRole,
-  TourRoleContent,
-  TourStep,
-  TourTarget,
+import { WHATS_NEW_LIVE } from '@/lib/config/whatsNew';
+import {
+  TOUR_RELEASES,
+  type TourRelease,
+  type TourRole,
+  type TourRoleContent,
+  type TourStep,
+  type TourTarget,
 } from '@/lib/copy/whatsNew';
+
+/**
+ * The releases that may show at all: none while the global switch
+ * (NEXT_PUBLIC_WHATS_NEW_ENABLED, read at build time, so a change needs a
+ * redeploy) is off, else each release that is itself `enabled`. Every caller
+ * selects from this, so off means no tour, no menu item and no Settings row.
+ */
+export function activeReleases(
+  on: boolean = WHATS_NEW_LIVE,
+  all: readonly TourRelease[] = TOUR_RELEASES,
+): readonly TourRelease[] {
+  return on ? all.filter((r) => r.enabled) : [];
+}
 
 /**
  * "What's new" tours, the pure half (ADR 0014): which release a viewer gets,
@@ -28,7 +43,7 @@ export type TourViewer = {
 };
 
 /**
- * The release this viewer should see: live, for their audience and role, with
+ * The release this viewer should see: enabled, for their audience and role, with
  * a valid id, and not seen (on the account, or here this visit). The first
  * such release in `releases` wins. Replays ignore the seen list (`replay`).
  */
@@ -46,7 +61,7 @@ export function releaseFor(
   return (
     releases.find(
       (r) =>
-        r.live &&
+        r.enabled &&
         SEEN_KEY.test(r.id) &&
         !!r.roles[role] &&
         inAudience(r, viewer) &&

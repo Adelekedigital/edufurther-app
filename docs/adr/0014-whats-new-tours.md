@@ -36,8 +36,13 @@ Option 3, with the content in one typed file.
   `^[a-z0-9][a-z0-9:._-]{0,79}$` else 422, refused in Preview as user). Until the spec
   publishes them they are PENDING BACKEND (`lib/api/data/pending.ts` `PendingMeRead`,
   `seenItems.ts`); a `/me` without the list shows no tour, since the answer couldn't be kept.
+- **Two off switches**: the global `NEXT_PUBLIC_WHATS_NEW_ENABLED` (default off; read at
+  build time, so on Vercel a change needs a redeploy) and each release's own `enabled`
+  (turns one release off without touching the others). Every caller selects from
+  `activeReleases()`, so with either off there is no tour, no "What's new" menu item and no
+  Settings row. The nav's `data-tour` ids are inert markup either way.
 - **Content**: `lib/copy/whatsNew.ts`, `TOUR_RELEASES`: each release has an id (its seen
-  key), an audience (`migrated` today), its flag, and per role a welcome, steps (target id,
+  key), an audience (`migrated` today), `enabled`, and per role a welcome, steps (target id,
   badge, title, body, optional phone body, optional `required`) and a done card.
 - **Selection** (pure, `lib/utils/whatsNew.ts`): `releaseFor` (live, audience, role, not
   seen), `tourMayStart` (the role's Home, not previewing, not in setup, no consent banner),
