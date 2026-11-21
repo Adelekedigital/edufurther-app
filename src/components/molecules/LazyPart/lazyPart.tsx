@@ -41,6 +41,12 @@ type Options<P> = {
    * its place, with Try again. Never inferred from an `onClose` prop.
    */
   close?: (props: P) => void;
+  /**
+   * A background part nobody asked for (the What's new tour's host): a final
+   * failure draws nothing, raises no toast and never reloads the page. The
+   * person never pressed anything, so there is nothing to tell them.
+   */
+  quiet?: boolean;
 };
 
 /** A retry after this long: a blip passes, a missing file fails fast. */
@@ -183,6 +189,8 @@ type BoundaryProps = {
   onFailed: (reloading: boolean) => void;
   /** Closes the part through its parent; absent for an always-on part. */
   close: (() => void) | null;
+  /** A background part: fails silently (no reload, no Notice). */
+  quiet: boolean;
 };
 type BoundaryState = { error: unknown; reloading: boolean | null; attempt: number };
 
@@ -195,7 +203,7 @@ class PartBoundary extends Component<BoundaryProps, BoundaryState> {
   componentDidCatch(error: unknown) {
     // A missing file while online is usually a new deploy: one reload fixes it.
     // Decided here, once, not during render.
-    const reloading = isChunkFailure(error) && reloadOnce();
+    const reloading = !this.props.quiet && isChunkFailure(error) && reloadOnce();
     this.props.onFailed(reloading);
     this.setState({ reloading });
     if (reloading) return;
@@ -211,7 +219,7 @@ class PartBoundary extends Component<BoundaryProps, BoundaryState> {
     if (!error) return this.props.children(attempt);
     // Nothing until the reload is decided, nothing while it happens, and
     // nothing once a closable part has been closed.
-    if (reloading !== false || this.props.close) return null;
+    if (reloading !== false || this.props.close || this.props.quiet) return null;
     return (
       <Notice tone="danger" title={C.inline}>
         <Button variant="secondary-outlined" size="small" onClick={this.retry}>
@@ -254,7 +262,7 @@ export function lazyPart<P extends object>(load: Loader<P>, options: Options<P> 
   // Only a failure someone met (a render) is said; a preload's is silent.
   const failedForGood = (reloading: boolean) => {
     Part = make();
-    if (reloading) return;
+    if (reloading || options.quiet) return;
     failedStamp += 1;
     markFailed(id);
   };
@@ -275,7 +283,7 @@ export function lazyPart<P extends object>(load: Loader<P>, options: Options<P> 
     options.close ? () => options.close?.(props) : null;
   function LazyPart(props: P) {
     return (
-      <PartBoundary onFailed={failedForGood} close={closer(props)}>
+      <PartBoundary onFailed={failedForGood} close={closer(props)} quiet={!!options.quiet}>
         {(attempt) => <Part key={attempt} {...props} />}
       </PartBoundary>
     );

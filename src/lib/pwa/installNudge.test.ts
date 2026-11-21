@@ -186,6 +186,15 @@ describe('the More menu’s "Install the app"', () => {
     expect(JSON.parse(localStorage.getItem(NUDGE_KEY)!).dismissed).toBe(MAX_DISMISSALS);
   });
 
+  it('the What’s new tour’s Install app: trigger tour, and closing it is not a dismissal', () => {
+    offerPrompt();
+    openFromMenu('tour');
+    expect(events()).toEqual([['install_nudge_shown', { trigger: 'tour', platform: 'android' }]]);
+    closeInstall();
+    // No strike recorded: the device's dismiss count is untouched.
+    expect(localStorage.getItem(NUDGE_KEY)).toBeNull();
+  });
+
   it('opens nothing where the sheet can’t help', async () => {
     openFromMenu();
     expect(track).not.toHaveBeenCalled();

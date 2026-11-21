@@ -295,3 +295,18 @@ describe('SecuritySettings › analytics cookies (PRD 30)', () => {
     expect(screen.getByRole('switch', { name: CONSENT_COPY.settingsTitle })).toBeDisabled();
   });
 });
+
+describe('SecuritySettings: What’s new', () => {
+  it('the replay row shows only while a tour is offered, and links to the replay', () => {
+    const { unmount } = render(<Host />);
+    expect(screen.queryByRole('heading', { name: 'What’s new' })).toBeNull();
+    unmount();
+    render(<Host replayTourHref="/home?tour=replay" />);
+    const row = screen.getByRole('region', { name: 'What’s new' });
+    expect(row).toHaveTextContent('A quick look at what changed on EduFurther.');
+    expect(screen.getByRole('link', { name: 'Replay tour' })).toHaveAttribute(
+      'href',
+      '/home?tour=replay',
+    );
+  });
+});

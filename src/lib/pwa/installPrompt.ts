@@ -178,10 +178,13 @@ if (typeof window !== 'undefined') {
   resumeInstallMoment();
 }
 
-/** The More menu's "Install the app": the sheet now, whatever the rules. */
-export async function openInstallNudge(): Promise<void> {
+/**
+ * The More menu's "Install the app" (or the What's new tour's Install app,
+ * `tour`): the sheet now, whatever the rules.
+ */
+export async function openInstallNudge(trigger: 'menu' | 'tour' = 'menu'): Promise<void> {
   if (!installPlatform() || open) return;
-  (await nudge()).openFromMenu();
+  (await nudge()).openFromMenu(trigger);
 }
 
 /** The sheet open now, if any. */

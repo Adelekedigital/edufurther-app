@@ -47,6 +47,7 @@ import {
   POSTHOG_KEY,
 } from '@/lib/config/analytics';
 import { useHydrated } from '@/lib/utils/useHydrated';
+import { setConsentBannerShown } from '@/lib/analytics/bannerState';
 import { loadAnalytics, setAnalyticsHalted, type VendorAnalytics } from '@/lib/vendor/analytics';
 import { addErrorReporter, setErrorUser } from '@/lib/vendor/errors';
 
@@ -270,6 +271,8 @@ export function AnalyticsRoot() {
       previewing,
       answer,
     });
+  // Other asks (the What's new tour) wait while it's up.
+  useEffect(() => setConsentBannerShown(show), [show]);
   useEffect(() => {
     const el = bannerRef.current;
     if (!show || !el) return;

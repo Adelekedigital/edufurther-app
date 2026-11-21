@@ -359,3 +359,48 @@ describe('AppShell navigation', () => {
     expect(onLogout).toHaveBeenCalled();
   });
 });
+
+describe('AppShell: the What’s new tour’s hooks', () => {
+  it('every nav item carries its tour id; More names the ids it holds', () => {
+    render(
+      <AppShell active="Home" nav="mentor" chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(nav(0).getByRole('link', { name: 'Calendar' })).toHaveAttribute(
+      'data-tour',
+      'nav-calendar',
+    );
+    expect(nav(0).getByRole('link', { name: 'Sessions' })).toHaveAttribute(
+      'data-tour',
+      'nav-sessions',
+    );
+    expect(nav(1).getByRole('link', { name: 'Bookings' })).toHaveAttribute(
+      'data-tour',
+      'nav-bookings',
+    );
+    expect(nav(1).getByRole('button', { name: 'More' })).toHaveAttribute(
+      'data-tour-holds',
+      'nav-sessions nav-integration nav-settings',
+    );
+  });
+
+  it('tourMore holds the More sheet open, with More lit, until it is let go', () => {
+    const { rerender } = render(
+      <AppShell active="Home" nav="mentor" chrome="member" offline={false} tourMore>
+        <p>Page</p>
+      </AppShell>,
+    );
+    const more = nav(1).getByRole('button', { name: 'More' });
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+    expect(more).toHaveAttribute('data-current', 'true');
+    expect(document.querySelector('#more-sheet [data-tour="nav-sessions"]')).not.toBeNull();
+    rerender(
+      <AppShell active="Home" nav="mentor" chrome="member" offline={false}>
+        <p>Page</p>
+      </AppShell>,
+    );
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    expect(document.querySelector('#more-sheet')).toBeNull();
+  });
+});

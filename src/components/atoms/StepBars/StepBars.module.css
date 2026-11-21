@@ -46,3 +46,17 @@
 .onCard .off {
   background: var(--white);
 }
+/* A short tour's progress: 8px dots, the current one a pill (What's new tour). */
+.dots {
+  display: flex;
+  gap: var(--space-1);
+}
+.dots .on,
+.dots .off {
+  width: 8px;
+  height: 8px;
+  transition-property: background-color, width;
+}
+.dots .current {
+  width: 20px;
+}
