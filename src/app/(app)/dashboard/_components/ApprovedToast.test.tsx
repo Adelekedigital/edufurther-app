@@ -2,18 +2,18 @@ import { act, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 let search = '';
-const replace = vi.fn();
+const { replaceQuery } = vi.hoisted(() => ({ replaceQuery: vi.fn() }));
+vi.mock('@/lib/utils/replaceQuery', () => ({ replaceQuery }));
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(search),
   usePathname: () => '/dashboard',
-  useRouter: () => ({ replace }),
 }));
 
 const { ApprovedToast, APPROVED_TOAST_MS } = await import('./ApprovedToast');
 
 afterEach(() => {
   vi.useRealTimers();
-  replace.mockReset();
+  replaceQuery.mockReset();
 });
 
 describe('ApprovedToast (Mentor Dashboard v2.dc.html ?toast=approved)', () => {
@@ -22,7 +22,7 @@ describe('ApprovedToast (Mentor Dashboard v2.dc.html ?toast=approved)', () => {
     search = 'toast=approved&tab=week';
     render(<ApprovedToast />);
     expect(screen.getByRole('status')).toHaveTextContent('You’re already approved');
-    expect(replace).toHaveBeenCalledWith('/dashboard?tab=week', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/dashboard?tab=week');
     act(() => void vi.advanceTimersByTime(APPROVED_TOAST_MS));
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
@@ -31,6 +31,6 @@ describe('ApprovedToast (Mentor Dashboard v2.dc.html ?toast=approved)', () => {
     search = '';
     render(<ApprovedToast />);
     expect(screen.getByRole('status')).toBeEmptyDOMElement();
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 });

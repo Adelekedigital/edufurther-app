@@ -29,11 +29,11 @@ vi.mock('next/navigation', async () => {
   };
   return {
     useSearchParams: () => useSyncExternalStore(subscribe, () => h.params),
-    useRouter: () => ({ replace }),
     usePathname: () => '/admin/analytics',
   };
 });
-const replace = vi.fn((url: string) => {
+vi.mock('@/lib/utils/replaceQuery', () => ({ replaceQuery: (url: string) => replaceQuery(url) }));
+const replaceQuery = vi.fn((url: string) => {
   h.params = new URLSearchParams(url.split('?')[1] ?? '');
   h.listeners.forEach((fn) => fn());
 });
@@ -64,7 +64,7 @@ function serve() {
 
 beforeEach(() => {
   h.GET.mockReset();
-  replace.mockClear();
+  replaceQuery.mockClear();
 });
 
 describe('Admin Analytics: Behaviour', () => {
@@ -103,11 +103,8 @@ describe('Admin Analytics: Behaviour', () => {
     renderScreen(<AdminAnalyticsScreen />);
     const chips = await screen.findByRole('radiogroup', { name: 'Funnel' });
     await userEvent.click(within(chips).getByRole('radio', { name: 'Mentee activation' }));
-    expect(replace).toHaveBeenLastCalledWith(
+    expect(replaceQuery).toHaveBeenLastCalledWith(
       '/admin/analytics?tab=funnels&funnel=mentee_activation',
-      {
-        scroll: false,
-      },
     );
     await waitFor(() =>
       expect(h.GET).toHaveBeenCalledWith(

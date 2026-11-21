@@ -1,6 +1,7 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 export type ProfileTab = 'overview' | 'sessions' | 'reviews';
 
@@ -9,7 +10,6 @@ export type ProfileTab = 'overview' | 'sessions' | 'reviews';
  * it. A tab with nothing in it (no sessions, no reviews) falls back to Overview.
  */
 export function useProfileTab(hasSessions: boolean, hasReviews: boolean) {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const asked = params.get('tab');
@@ -25,7 +25,7 @@ export function useProfileTab(hasSessions: boolean, hasReviews: boolean) {
     if (t === 'sessions' || t === 'reviews') next.set('tab', t);
     else next.delete('tab');
     const qs = next.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    replaceQuery(qs ? `${pathname}?${qs}` : pathname);
   };
   return { tab, setTab };
 }

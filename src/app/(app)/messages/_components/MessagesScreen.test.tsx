@@ -16,7 +16,7 @@ import {
   person,
   push,
   remote,
-  replace,
+  replaceQuery,
   resetHarness,
   saveSettings,
   setPhone,
@@ -24,6 +24,9 @@ import {
 
 vi.mock('next/navigation', async () =>
   (await import('./messagesScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./messagesScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./messagesScreen.harness')).mocks.appShell(),
@@ -165,9 +168,7 @@ describe('Messages: which chat is open', () => {
     render(<MessagesScreen />);
     expect(screen.getByRole('region', { name: 'Chat with Hugh Momah' })).toBeInTheDocument();
     await user.click(list().getByRole('button', { name: 'Gbenga Elufisan' }));
-    expect(replace).toHaveBeenCalledWith('/messages?with=u-gbenga&mockViewer=mentee', {
-      scroll: false,
-    });
+    expect(replaceQuery).toHaveBeenCalledWith('/messages?with=u-gbenga&mockViewer=mentee');
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -226,13 +227,13 @@ describe('Messages: which chat is open', () => {
     rerender(<MessagesScreen />);
     await user.click(screen.getByRole('button', { name: 'Back to messages' }));
     expect(historyBack).toHaveBeenCalledTimes(1);
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     unmount();
     // Opened from a link (an email, a Message button): nothing to step back to here.
     render(<MessagesScreen />);
     await user.click(screen.getByRole('button', { name: 'Back to messages' }));
     expect(historyBack).toHaveBeenCalledTimes(1);
-    expect(replace).toHaveBeenCalledWith('/messages', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/messages');
     historyBack.mockRestore();
   });
 
@@ -363,7 +364,7 @@ describe('Messages: New message', () => {
     expect(dialog.getByRole('link', { name: 'Find a mentor' })).toHaveAttribute('href', '/explore');
     await user.click(dialog.getByRole('button', { name: /Gbenga Elufisan/ }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(replace).toHaveBeenCalledWith('/messages?with=u-gbenga', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/messages?with=u-gbenga');
   });
 
   it('searches by name, and says so when no one matches; mentors get no Find a mentor line', async () => {
@@ -469,9 +470,9 @@ describe('Messages: Message emails', () => {
     h.search = 'settings=1&mockViewer=mentee';
     render(<MessagesScreen />);
     const dialog = within(screen.getByRole('dialog', { name: 'Message emails' }));
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     await user.click(dialog.getByRole('button', { name: 'Done' }));
-    expect(replace).toHaveBeenCalledWith('/messages?mockViewer=mentee', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/messages?mockViewer=mentee');
   });
 
   it('a save that failed says so', async () => {

@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 /**
  * `/messages?with={personId}` is the open chat and `?settings=1` opens Message
@@ -23,7 +24,10 @@ export function useMessagesUrl() {
         else next.set(k, v);
       }
       const qs = next.toString();
-      router[how](qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      const url = qs ? `${pathname}?${qs}` : pathname;
+      // A push is a step Back returns to, so it stays on the router.
+      if (how === 'push') router.push(url, { scroll: false });
+      else replaceQuery(url);
     },
     [params, pathname, router],
   );

@@ -41,6 +41,7 @@ import { useNewMentee } from './useNewMentee';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import styles from './MenteeHomeScreen.module.css';
 import { scrollBehavior } from '@/lib/utils/scrollBehavior';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 
 // Each opens from a button (or ?invite=open), never at first paint: they load
 // on open (performance budget, 350kB first-load JS) and mount whole, so their
@@ -142,8 +143,8 @@ export function MenteeHomeScreen() {
     const rest = new URLSearchParams(params.toString());
     rest.delete('invite');
     const q = rest.toString();
-    router.replace(q ? `/home?${q}` : '/home', { scroll: false });
-  }, [inviteAsked, params, router]);
+    replaceQuery(q ? `/home?${q}` : '/home');
+  }, [inviteAsked, params]);
   const [profileOpen, setProfileOpen] = useState(false);
   // Education opens over nothing; closing it brings the profile sheet back.
   const [eduOpen, setEduOpen] = useState(false);

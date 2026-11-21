@@ -10,7 +10,7 @@ import {
   freeSoonArgs,
   h,
   idle,
-  replace,
+  replaceQuery,
   sessionTypesArgs,
   similarArgs,
   state,
@@ -20,6 +20,9 @@ import { MentorProfileScreen, suggestionsLine } from './MentorProfileScreen';
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
   (await import('./profileScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./profileScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./profileScreen.harness')).mocks.appShell(),
@@ -280,7 +283,7 @@ describe('MentorProfileScreen — the four states', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'Gbenga Elufisan' })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Book a session' }).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('tab', { name: 'Sessions (3)' }));
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga?tab=sessions');
   });
 
   it('keeps a shared link’s other parameters when the tab changes (review of #21)', async () => {
@@ -290,9 +293,7 @@ describe('MentorProfileScreen — the four states', () => {
     h.profile = state({ data: { ...fullProfile, sessionTypes } });
     render(<MentorProfileScreen handle="gbenga" />);
     await user.click(screen.getByRole('tab', { name: 'Sessions (3)' }));
-    expect(replace).toHaveBeenCalledWith('/mentors/gbenga?utm_source=linkedin&tab=sessions', {
-      scroll: false,
-    });
+    expect(replaceQuery).toHaveBeenCalledWith('/mentors/gbenga?utm_source=linkedin&tab=sessions');
   });
 
   it('opens on the Sessions tab from ?tab=sessions', () => {

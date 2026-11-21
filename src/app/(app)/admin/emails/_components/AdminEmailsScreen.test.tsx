@@ -4,7 +4,7 @@ import { mockEmailList, mockEmailValues } from '@/lib/api/mock/adminEmails';
 import { admin, renderScreen, res } from '../../_test/adminHarness';
 
 // The router mock moves the query string, and listeners re-render the screen,
-// as a real `router.replace` does.
+// as Next does for an in-place `replaceQuery`.
 const h = vi.hoisted(() => ({
   GET: vi.fn(),
   params: new URLSearchParams(),
@@ -20,11 +20,11 @@ vi.mock('next/navigation', async () => {
   };
   return {
     useSearchParams: () => useSyncExternalStore(subscribe, () => h.params),
-    useRouter: () => ({ replace }),
     usePathname: () => '/admin/emails',
   };
 });
-const replace = vi.fn((url: string) => {
+vi.mock('@/lib/utils/replaceQuery', () => ({ replaceQuery: (url: string) => replaceQuery(url) }));
+const replaceQuery = vi.fn((url: string) => {
   h.params = new URLSearchParams(url.split('?')[1] ?? '');
   h.listeners.forEach((fn) => fn());
 });
@@ -46,7 +46,7 @@ const TOTAL = mockEmailList().length;
 
 beforeEach(() => {
   h.GET.mockReset();
-  replace.mockClear();
+  replaceQuery.mockClear();
   h.params = new URLSearchParams();
 });
 
@@ -200,7 +200,7 @@ describe('Admin Emails: tabs and ?view=', () => {
     await screen.findByRole('region', { name: 'Credits' });
     await userEvent.type(screen.getByRole('searchbox', { name: 'Search' }), 'credits');
     await userEvent.click(screen.getByRole('tab', { name: 'Values' }));
-    expect(replace).toHaveBeenCalledWith('/admin/emails?foo=1&view=variables', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/admin/emails?foo=1&view=variables');
     await waitFor(() =>
       expect(screen.getByRole('tab', { name: 'Values', selected: true })).toBeInTheDocument(),
     );
@@ -214,6 +214,6 @@ describe('Admin Emails: tabs and ?view=', () => {
     serve();
     renderScreen(<AdminEmailsScreen />);
     await userEvent.click(screen.getByRole('tab', { name: 'Emails' }));
-    expect(replace).toHaveBeenCalledWith('/admin/emails?foo=1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/admin/emails?foo=1');
   });
 });

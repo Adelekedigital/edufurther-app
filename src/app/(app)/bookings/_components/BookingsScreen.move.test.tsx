@@ -12,7 +12,7 @@ import {
   MEMBER,
   push,
   remote,
-  replace,
+  replaceQuery,
   resetHarness,
 } from './bookingsScreen.harness';
 
@@ -21,6 +21,9 @@ import {
 
 vi.mock('next/navigation', async () =>
   (await import('./bookingsScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./bookingsScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./bookingsScreen.harness')).mocks.appShell(),
@@ -196,9 +199,7 @@ describe('where a move from Bookings lands', () => {
     render(<BookingsScreen />);
     const { onMoved } = await openAndMove('Send request');
     act(() => onMoved('b-new', false));
-    expect(replace).toHaveBeenCalledWith('/bookings?tab=pending&booking=b-new', {
-      scroll: false,
-    });
+    expect(replaceQuery).toHaveBeenCalledWith('/bookings?tab=pending&booking=b-new');
     expect(push).not.toHaveBeenCalled();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('Request sent to Amara. It’s on Pending now.')).toBeInTheDocument();
@@ -294,6 +295,6 @@ describe('where a move from Bookings lands', () => {
       'That time was just taken. Nothing has changed. Pick another time.',
     );
     expect(push).not.toHaveBeenCalled();
-    expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 });

@@ -9,6 +9,7 @@ import {
   h,
   remote,
   replace,
+  replaceQuery,
   sessionRoom,
   setSearch,
   slotZones,
@@ -28,6 +29,9 @@ vi.mock('@/lib/config/auth', async (orig) =>
   (await import('@/app/_shell/lockedPage.harness')).authFlags(await orig()),
 );
 vi.mock('next/navigation', async () => (await import('./sessionJoin.harness')).mocks.navigation());
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./sessionJoin.harness')).mocks.replaceQuery(),
+);
 vi.mock('@/lib/api/data/viewer', async () =>
   (await import('./sessionJoin.harness')).mocks.viewer(),
 );
@@ -316,6 +320,7 @@ describe('the window is open', () => {
     await userEvent.click(join);
     expect(open).not.toHaveBeenCalled();
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     // PRD 30: once per press, minutes before the start (4 early is +4).
     expect(track.mock.calls).toEqual([
       ['session_join_clicked', { session_id: 'b1', minutes_from_start: 4 }],
@@ -350,7 +355,7 @@ describe('back from the entry route (?enter=)', () => {
     expect(
       screen.getAllByRole('status').filter((el) => el.textContent?.includes(text)),
     ).toHaveLength(1);
-    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
     expect(track.mock.calls).toEqual([['session_join_failed', { session_id: 'b1' }]]);
   });
 
@@ -363,7 +368,7 @@ describe('back from the entry route (?enter=)', () => {
     expect(
       screen.queryByText('This session isn’t open to join right now.'),
     ).not.toBeInTheDocument();
-    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
   });
 
   it('closed, on an older row with no window: the plain refusal', () => {
@@ -390,16 +395,17 @@ describe('back from the entry route (?enter=)', () => {
     h.search = new URLSearchParams('enter=failed');
     const view = renderAt('16:56:00');
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     h.room = remote(sessionRoom());
     view.rerender(<SessionJoinScreen id="b1" />);
     expect(visible('We couldn’t join you. Try again in a moment.')).toBeVisible();
-    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
   });
 
   it('keeps other parameters, and drops an unknown value without a word', () => {
     h.search = new URLSearchParams('enter=whatever&x=1');
     renderAt('16:56:00');
-    expect(replace).toHaveBeenCalledWith('/sessions/b1?x=1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1?x=1');
     expect(screen.queryByText(/Try again in a moment/)).not.toBeInTheDocument();
     expect(track).not.toHaveBeenCalled();
   });
@@ -407,6 +413,7 @@ describe('back from the entry route (?enter=)', () => {
   it('nothing to say, and nothing replaced, without the parameter', () => {
     renderAt('16:56:00');
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 
   it('the line stays after the parameter goes, and is said only once', () => {
@@ -416,7 +423,7 @@ describe('back from the entry route (?enter=)', () => {
     expect(said).toHaveTextContent('We couldn’t join you. Try again in a moment.');
     // The strip re-rendered the page without the parameter.
     expect(h.search.get('enter')).toBeNull();
-    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replaceQuery).toHaveBeenCalledTimes(1);
     expect(visible('We couldn’t join you. Try again in a moment.')).toBeVisible();
     // The same node: the region was not handed the words a second time.
     expect(srStatus().firstElementChild).toBe(said);
@@ -469,7 +476,7 @@ describe('back from the entry route (?enter=)', () => {
     h.room = remote<SessionRoom>(null, { error: { status: 500 } as AppError });
     h.search = new URLSearchParams('enter=failed');
     renderAt('16:56:00');
-    expect(replace).toHaveBeenCalledWith('/sessions/b1', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
     expect(screen.getByText('We couldn’t load this session')).toBeVisible();
     expect(screen.queryByText(/couldn’t join you/)).not.toBeInTheDocument();
   });
@@ -480,6 +487,7 @@ describe('back from the entry route (?enter=)', () => {
     renderAt('15:15:00');
     expect(replace).toHaveBeenCalledTimes(1);
     expect(replace).toHaveBeenCalledWith('/bookings?booking=b1');
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 });
 
@@ -536,6 +544,7 @@ describe('during the call', () => {
     h.room = remote(sessionRoom({ status: 'completed' }, { joinedAt: '2026-10-04T17:01:00Z' }));
     renderAt('17:20:00');
     expect(replace).not.toHaveBeenCalled();
+    expect(replaceQuery).not.toHaveBeenCalled();
     expect(screen.getByRole('link', { name: 'Rejoin call (opens in a new tab)' })).toBeVisible();
   });
 

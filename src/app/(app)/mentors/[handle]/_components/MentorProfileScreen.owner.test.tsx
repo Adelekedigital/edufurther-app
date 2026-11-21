@@ -2,13 +2,16 @@ import type { ReactNode } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { fullProfile } from '@/components/organisms/ProfileHeader/profile.fixture';
-import { h, replace, saveAbout, saveIntro, state } from './profileScreen.harness';
+import { h, replaceQuery, saveAbout, saveIntro, state } from './profileScreen.harness';
 import AppGroupLayout from '../../../layout';
 import { MentorProfileScreen } from './MentorProfileScreen';
 
 // The data hooks, mocked (hoisted above the imports; state lives in the harness).
 vi.mock('next/navigation', async () =>
   (await import('./profileScreen.harness')).mocks.navigation(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./profileScreen.harness')).mocks.replaceQuery(),
 );
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./profileScreen.harness')).mocks.appShell(),
@@ -135,10 +138,7 @@ describe('MentorProfileScreen — the owner edits their profile', () => {
       await user.type(screen.getByRole('textbox', { name: 'About' }), ' More.');
       await user.click(screen.getByRole('tab', { name: /Reviews/ }));
       expect(screen.queryByRole('alertdialog')).toBeNull();
-      expect(replace).toHaveBeenCalledWith(
-        expect.stringContaining('tab=reviews'),
-        expect.anything(),
-      );
+      expect(replaceQuery).toHaveBeenCalledWith(expect.stringContaining('tab=reviews'));
       // As the router leaves it: on Reviews, the draft out of view, still guarded.
       h.search = new URLSearchParams('tab=reviews');
       rerender(<MentorProfileScreen handle="gbenga" />);

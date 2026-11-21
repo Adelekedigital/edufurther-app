@@ -7,6 +7,9 @@ import type { MetMentor } from '@/lib/api/data/metMentors';
 import { MenteeHomeScreen } from './MenteeHomeScreen';
 
 const replace = vi.fn();
+// Dropping ?invite edits the query in place, not through the router.
+const { replaceQuery } = vi.hoisted(() => ({ replaceQuery: vi.fn() }));
+vi.mock('@/lib/utils/replaceQuery', () => ({ replaceQuery }));
 let search = '';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace }),
@@ -298,6 +301,7 @@ const err = {} as unknown as AppError;
 
 beforeEach(() => {
   replace.mockClear();
+  replaceQuery.mockClear();
   search = '';
   viewer = MEMBER;
   stats = remote(STATS);
@@ -798,14 +802,14 @@ describe('MenteeHomeScreen', () => {
     search = 'invite=open&tab=x';
     render(<MenteeHomeScreen />);
     expect(screen.getByRole('dialog', { name: 'Invite a friend' })).toBeInTheDocument();
-    expect(replace).toHaveBeenCalledWith('/home?tab=x', { scroll: false });
+    expect(replaceQuery).toHaveBeenCalledWith('/home?tab=x');
   });
 
   it('opens no InviteModal without the parameter', () => {
     viewer = { ...MEMBER, completedSessions: 3 };
     render(<MenteeHomeScreen />);
     expect(screen.queryByRole('dialog', { name: 'Invite a friend' })).not.toBeInTheDocument();
-    expect(replace).not.toHaveBeenCalledWith(expect.stringMatching(/^\/home/), expect.anything());
+    expect(replaceQuery).not.toHaveBeenCalled();
   });
 
   it('the returning view always says "Welcome back"', () => {
