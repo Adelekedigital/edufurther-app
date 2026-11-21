@@ -1,0 +1,203 @@
+/* What's new tour (ADR 0014). Above the shell's More sheet (30 to 32) and its
+   dialogs' layer (50), so the spotlight can sit on an item inside the sheet. */
+
+/* ---- welcome (inside ModalShell) ---- */
+.eyebrow {
+  display: flex;
+  margin-bottom: var(--space-1);
+}
+.welcomeBody {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.welcomeActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-p-xs);
+  line-height: var(--lh-p);
+  color: var(--text-tertiary);
+}
+
+/* ---- the spotlight ---- */
+.layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+}
+.catcher {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--overlay-scrim);
+}
+/* The ring around the lit target, in the focus colour (the dim around it is
+   .scrim with the target cut out). */
+.hole {
+  position: fixed;
+  box-sizing: border-box;
+  border: 2px solid var(--border-focus);
+  border-radius: var(--radius-lg);
+}
+/* The lit target itself: the brand-subtle ground (set by TourStepCard). */
+:global([data-tour-active]) {
+  background: var(--surface-brand-subtle) !important;
+  border-radius: var(--radius-lg);
+}
+
+/* ---- the step card ---- */
+.card {
+  position: fixed;
+  pointer-events: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-menu);
+  color: var(--text-primary);
+  animation: rise var(--duration-slow) var(--ease-standard);
+}
+.card:focus {
+  outline: none;
+}
+.cardPhone {
+  padding: var(--space-4);
+}
+/* The pointer: a small square turned 45deg, on the side facing the target. */
+.pointLeft::before,
+.pointTop::before {
+  content: '';
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--surface-card);
+  transform: rotate(45deg);
+}
+.pointLeft::before {
+  left: -6px;
+  top: calc(var(--tour-pointer-at) - 6px);
+}
+.pointTop::before {
+  top: -6px;
+  left: calc(var(--tour-pointer-at) - 6px);
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.eyebrowText {
+  font-size: var(--text-p-xs);
+  font-weight: var(--weight-semibold);
+  color: var(--text-tertiary);
+}
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-p-md);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-p);
+}
+.cardBody {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  color: var(--text-secondary);
+}
+.cardFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+/* ---- done ---- */
+/* Under the app's dialogs (50): the install sheet opened from Get the app sits
+   over it, and it is there once the sheet closes. */
+.done {
+  position: fixed;
+  z-index: 45;
+  right: var(--space-6);
+  bottom: var(--space-6);
+  width: min(360px, calc(100vw - var(--space-8)));
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--surface-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-menu);
+  animation: rise var(--duration-slow) var(--ease-standard);
+}
+.doneIcon {
+  display: inline-flex;
+  color: var(--text-success);
+}
+/* Wide enough to read: "Got it" drops to its own line, at the right. */
+.doneText {
+  flex: 1 1 200px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.doneActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+@media (max-width: 767px) {
+  .done {
+    left: var(--space-4);
+    right: var(--space-4);
+    width: auto;
+    bottom: calc(var(--bottom-chrome-h, 0px) + var(--space-3));
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .done {
+    animation: none;
+  }
+}

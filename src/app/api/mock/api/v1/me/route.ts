@@ -84,6 +84,8 @@ export async function GET(req: Request) {
     is_admin: false,
     // Made in this app, not carried over from the old one (backend #635).
     is_migrated: false,
+    // PENDING BACKEND (lib/api/data/pending PendingMeRead): nothing seen yet.
+    seen_items: [] as string[],
     can_preview_as_user: false,
     education: [],
     awards: [],

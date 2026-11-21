@@ -34,4 +34,14 @@ it('a session that has ended resets analytics identity before signing out', asyn
   expect(h.resetIdentity).toHaveBeenCalledTimes(1);
 });
 
+it('a session that has ended forgets what the account saw in this tab (What’s new)', async () => {
+  const { addSeenHere, seenHere } = await import('@/lib/utils/seenHere');
+  addSeenHere('u-1', 'whats-new:2026-11-migration');
+  h.signOut.mockClear();
+  h.fetch.mockResolvedValue(new Response('{}', { status: 401 }));
+  await api.GET('/api/v1/me');
+  await vi.waitFor(() => expect(h.signOut).toHaveBeenCalled());
+  expect(seenHere('u-1').size).toBe(0);
+});
+
 export {};

@@ -19,6 +19,7 @@ import { beginSignOut } from './session';
 import { endPreviewForSignOut } from './preview';
 import { forgetPushForSignOut } from './push';
 import { clearAllBookingDrafts } from '@/lib/utils/bookingDraft';
+import { clearSeenHere } from '@/lib/utils/seenHere';
 import { resetIdentity } from '@/lib/analytics/identity';
 
 export { authConfigured, signedInUser };
@@ -94,6 +95,8 @@ export function useSignOut(to: `/login${string}` = '/login', beforeLeave?: () =>
     }
     // A booking draft's answers can be personal: none stays in the tab.
     clearAllBookingDrafts();
+    // What this account saw in this tab (What's new) isn't the next person's.
+    clearSeenHere();
     // Analytics: the next person on this device starts with a fresh id (PRD 30).
     resetIdentity();
     beforeLeave?.();
@@ -139,6 +142,7 @@ export function useSignOutHere() {
     if (ended) {
       qc.clear();
       clearAllBookingDrafts();
+      clearSeenHere();
     }
     return ended;
   }, [qc]);

@@ -82,6 +82,7 @@ export const ICON_NAMES = [
   'inbox',
   'info',
   'ios_share',
+  'join',
   'join_inner',
   'key',
   'label',

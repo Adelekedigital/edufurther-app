@@ -105,7 +105,8 @@ const ANALYTICS_ITEM: NavItem = {
 const NAV = { mentee: MENTEE_NAV, mentor: MENTOR_NAV, admin: ADMIN_NAV, unknown: [] as NavItem[] };
 /**
  * Messages (AppShell.dc.html defs): after Bookings in both member navs, in the
- * rail's daily group. Not a phone tab: it sits in the More sheet, its count with it.
+ * rail's daily group. On phones it is the tab after Bookings, its count on the
+ * tab, so not in the More sheet (owner 2026-11-20: five phone tabs while it's on).
  */
 const MESSAGES_ITEM: NavItem = {
   label: 'Messages',
@@ -120,9 +121,10 @@ function withMessages(items: NavItem[]): NavItem[] {
   return at < 0 ? items : [...items.slice(0, at + 1), MESSAGES_ITEM, ...items.slice(at + 1)];
 }
 /**
- * Bottom tabs: max 4 — the first three, then "More" (design PWA pass). Admin
- * keeps More too, for its account items: the design's phone header has no
- * account control, so without it an admin couldn't log out (design-divergence, Admin).
+ * Bottom tabs: these three, then Messages while it's on, then "More" (design
+ * PWA pass; owner 2026-11-20 for Messages). Admin keeps More too, for its
+ * account items: the design's phone header has no account control, so without
+ * it an admin couldn't log out (design-divergence, Admin).
  */
 const PRIMARY_TABS = {
   mentee: ['Home', 'Explore', 'Bookings'],
@@ -191,6 +193,11 @@ type AppShellProps = {
    * install); the caller opens it.
    */
   onInstall?: () => void;
+  /**
+   * The What's new tour holds the More sheet open (phones) for a step whose
+   * item lives there; it closes again when the step moves on.
+   */
+  tourMore?: boolean;
   offline: boolean;
   children: ReactNode;
 };
@@ -210,12 +217,14 @@ export function AppShell({
   access,
   onPreview,
   onInstall,
+  tourMore = false,
   offline,
   children,
 }: AppShellProps) {
   const guest = chrome === 'guest';
   const member = chrome === 'member';
   const [moreOpen, setMoreOpen] = useState(false);
+  const sheetOpen = moreOpen || tourMore;
   const moreRef = useRef<HTMLButtonElement>(null);
   // "Your credits": opened from the pill or "How credits work"; focus goes back
   // to whatever opened it.
@@ -293,8 +302,13 @@ export function AppShell({
         ]
       : NAV[nav];
   const items = (messages ? withMessages(base) : base).map((n) => shownItem(n, access, counts));
+  // Messages is a tab only when the nav has it (a member, flag on), so the bar
+  // never names a fifth tab with nothing behind it.
+  const hasMessages = items.some((n) => n.label === MESSAGES_ITEM.label);
   const primary =
-    nav === 'admin' ? items.slice(0, ADMIN_TABS).map((n) => n.label) : PRIMARY_TABS[nav];
+    nav === 'admin'
+      ? items.slice(0, ADMIN_TABS).map((n) => n.label)
+      : [...PRIMARY_TABS[nav], ...(hasMessages ? [MESSAGES_ITEM.label] : [])];
   // In the design's pick order: mentor tabs read Home, Calendar, Bookings.
   const tabs = primary.flatMap((l) => items.filter((n) => n.label === l));
   const extra = items.filter((n) => !primary.includes(n.label));
@@ -448,6 +462,7 @@ export function AppShell({
                 aria-current={n.label === active ? 'page' : undefined}
                 aria-label={n.name}
                 aria-haspopup="dialog"
+                data-tour={tourId(n.label)}
                 onClick={(e) => openLock(n.label, e.currentTarget)}
               >
                 {body}
@@ -460,6 +475,7 @@ export function AppShell({
                 className={styles.tab}
                 aria-current={n.label === active ? 'page' : undefined}
                 aria-label={n.name}
+                data-tour={tourId(n.label)}
               >
                 {body}
               </Link>
@@ -470,10 +486,13 @@ export function AppShell({
               ref={moreRef}
               type="button"
               className={styles.tab}
-              aria-expanded={moreOpen}
+              aria-expanded={sheetOpen}
               aria-controls="more-sheet"
               // Lit while its sheet is open, as well as on one of its pages (design).
-              data-current={moreActive || moreOpen || undefined}
+              data-current={moreActive || sheetOpen || undefined}
+              // The tour finds a nav item in the sheet by its id.
+              data-tour="nav-more"
+              data-tour-holds={extra.map((n) => tourId(n.label)).join(' ')}
               onClick={() => setMoreOpen((o) => !o)}
             >
               <span className={styles.tabIcon}>
@@ -502,7 +521,7 @@ export function AppShell({
       )}
       <LinkGuard />
 
-      {moreOpen && (
+      {sheetOpen && (
         <>
           <div className={styles.sheetScrim} aria-hidden onClick={() => setMoreOpen(false)} />
           {/* Account items (name, credits) are never in a session replay (PRD 30). */}
@@ -521,6 +540,7 @@ export function AppShell({
                       aria-current={n.label === active ? 'page' : undefined}
                       aria-label={n.name}
                       aria-haspopup="dialog"
+                      data-tour={tourId(n.label)}
                       onClick={(e) => openLock(n.label, e.currentTarget)}
                     >
                       <Icon name={n.icon} size={20} />
@@ -536,6 +556,7 @@ export function AppShell({
                       className={styles.sheetItem}
                       aria-current={n.label === active ? 'page' : undefined}
                       aria-label={n.name}
+                      data-tour={tourId(n.label)}
                       onClick={() => setMoreOpen(false)}
                     >
                       {/* Messages lives here on phones, so its count does too. */}
@@ -649,6 +670,7 @@ function RailList({
                 aria-label={n.name}
                 title={n.label}
                 aria-haspopup="dialog"
+                data-tour={tourId(n.label)}
                 onClick={(e) => onLock(n.label, e.currentTarget)}
               >
                 {body}
@@ -661,6 +683,7 @@ function RailList({
                 aria-current={n.label === active ? 'page' : undefined}
                 aria-label={n.name}
                 title={n.label}
+                data-tour={tourId(n.label)}
               >
                 {body}
               </Link>
@@ -687,6 +710,11 @@ function shownItem(n: NavItem, access: Access | undefined, counts: Counts): Show
     return { ...n, href, locked: false, pill: true, name: 'Home, finish setting up' };
   const count = counts[n.label];
   return { ...n, href, locked: false, pill: false, count, name: nameWithCount(n.label, count) };
+}
+
+/** A nav item's `data-tour` id ("nav-sessions"): the What's new tour finds it by this. */
+function tourId(label: string): string {
+  return `nav-${label.toLowerCase()}`;
 }
 
 /** The lock on a locked item's icon (AppShell.dc.html `locked`). */

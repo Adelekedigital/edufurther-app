@@ -19,6 +19,8 @@ type StepBarsProps = {
    */
   meter?: boolean;
   onCard?: boolean;
+  /** Dots, the current one a short pill (a guided tour's step card). */
+  dots?: boolean;
 };
 
 /** Segmented progress across the top of a multi-step flow. */
@@ -31,6 +33,7 @@ export function StepBars({
   spaced,
   meter,
   onCard,
+  dots,
 }: StepBarsProps) {
   return (
     <div
@@ -41,6 +44,7 @@ export function StepBars({
         spaced && styles.spaced,
         meter && styles.meter,
         onCard && styles.onCard,
+        dots && styles.dots,
       )}
       role="progressbar"
       aria-label={label}
@@ -50,7 +54,10 @@ export function StepBars({
       style={{ gridTemplateColumns: `repeat(${total}, minmax(0, 1fr))` }}
     >
       {Array.from({ length: total }, (_, i) => (
-        <span key={i} className={i <= current ? styles.on : styles.off} />
+        <span
+          key={i}
+          className={cx(i <= current ? styles.on : styles.off, i === current && styles.current)}
+        />
       ))}
     </div>
   );

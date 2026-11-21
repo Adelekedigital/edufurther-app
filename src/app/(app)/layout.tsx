@@ -1,11 +1,14 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { PushPrompt } from '@/app/_shell/PushPrompt';
 import { RoleRedirect } from '@/app/_shell/RoleRedirect';
 import { useAppShell } from '@/app/_shell/useAppShell';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
+import type { WhatsNewShellState } from '@/app/_shell/WhatsNewHost';
+import { WHATS_NEW_LIVE } from '@/lib/config/whatsNew';
 import { useOnline } from '@/lib/utils/useOnline';
 import { openInstallNudge, useInstallAvailable } from '@/lib/pwa/installPrompt';
 
@@ -33,6 +36,15 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
   'session-types': 'Sessions',
   settings: 'Settings',
 };
+
+// The What's new tour's host loads after the page, never in its first-load JS
+// (350kB budget): its selection, copy and seen list come with it. Quiet: a
+// failed load just means no tour this time, with no toast and no Notice.
+const WhatsNewHost = lazyPart(
+  () => import('@/app/_shell/WhatsNewHost').then((m) => m.WhatsNewHost),
+  { quiet: true },
+);
+const WHATS_NEW_OFF: WhatsNewShellState = { more: false, holding: false };
 
 /** The admin app's pages, by their segment under `/admin`. */
 const ADMIN_ACTIVE: Record<string, string> = {
@@ -74,8 +86,20 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { chrome, account, nav, access, messages, adminEmails, adminAnalytics, onPreview, member } =
-    useAppShell();
+  // What the tour's host (loaded later) tells the shell; nothing until then.
+  const [whatsNew, setWhatsNew] = useState<WhatsNewShellState>(WHATS_NEW_OFF);
+  const {
+    chrome,
+    account,
+    nav,
+    access,
+    messages,
+    adminEmails,
+    adminAnalytics,
+    onPreview,
+    member,
+    previewing,
+  } = useAppShell(whatsNew.menuItem);
   const online = useOnline();
   // A phone browser that can install (lib/pwa/installPrompt): More's last item.
   const installable = useInstallAvailable();
@@ -92,12 +116,28 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       access={access}
       onPreview={onPreview}
       onInstall={chrome === 'member' && installable ? openInstallNudge : undefined}
+      tourMore={whatsNew.more}
       offline={!online}
     >
       <RoleRedirect>{children}</RoleRedirect>
+      {WHATS_NEW_LIVE && chrome === 'member' && (
+        <WhatsNewHost
+          member={member}
+          access={access}
+          previewing={previewing}
+          pathname={pathname}
+          onState={setWhatsNew}
+        />
+      )}
       <PushPrompt
         userId={member?.id ?? null}
-        mentorWithBookings={!!member?.isMentor && onHomeOrBookings(pathname) && hasBookings(member)}
+        // The What's new tour has Home first; the ask waits for another moment.
+        mentorWithBookings={
+          !!member?.isMentor &&
+          onHomeOrBookings(pathname) &&
+          hasBookings(member) &&
+          !whatsNew.holding
+        }
       />
     </AppShell>
   );

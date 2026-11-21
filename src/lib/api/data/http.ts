@@ -6,6 +6,7 @@ import { dropDeviceSubscription } from '@/lib/utils/push';
 import { createAuthMiddleware } from './authMiddleware';
 import { createPreviewMiddleware, isPreviewEnded } from './previewMiddleware';
 import { createRequestFailedMiddleware } from './requestFailedMiddleware';
+import { clearSeenHere } from '@/lib/utils/seenHere';
 
 /**
  * The browser's generated client. The server-side calls build their own:
@@ -46,6 +47,7 @@ api.use(
     onExpired: async () => {
       void dropDeviceSubscription();
       resetIdentity();
+      clearSeenHere();
       await signOut();
     },
     isFinal: isPreviewEnded,

@@ -28,6 +28,8 @@ export const CreditsPill = forwardRef<
       type="button"
       className={styles.hit}
       data-credits-pill=""
+      // The What's new tour points at it by this id (lib/copy/whatsNew).
+      data-tour="credits-pill"
       aria-label={creditsAria(credits)}
       aria-expanded={expanded}
       aria-controls={expanded ? controls : undefined}
