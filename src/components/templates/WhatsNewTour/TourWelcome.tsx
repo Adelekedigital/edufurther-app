@@ -16,12 +16,15 @@ import styles from './WhatsNewTour.module.css';
 export function TourWelcome({
   first,
   welcome,
+  body,
   hint,
   onStart,
   onDismiss,
 }: {
   first: string;
   welcome: TourRoleContent['welcome'];
+  /** The body as shown (tourText: messages named only while Messages is on). */
+  body: string;
   /** Under the buttons (tourText: with the replay line while it's offered). */
   hint: string;
   onStart: () => void;
@@ -44,7 +47,7 @@ export function TourWelcome({
       onClose={onDismiss}
     >
       <p id={bodyId} className={styles.welcomeBody}>
-        {welcome.body}
+        {body}
       </p>
       <ul className={styles.rows}>
         {welcome.rows.map((r) => (

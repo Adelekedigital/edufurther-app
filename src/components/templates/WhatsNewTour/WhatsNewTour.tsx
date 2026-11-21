@@ -97,6 +97,7 @@ export function WhatsNewTour({
       <TourWelcome
         first={first}
         welcome={content.welcome}
+        body={text.welcomeBody}
         hint={text.hint}
         onDismiss={skip}
         onStart={() => {

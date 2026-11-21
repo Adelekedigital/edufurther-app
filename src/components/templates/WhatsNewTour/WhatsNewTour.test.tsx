@@ -6,6 +6,12 @@ import type { TourEvent } from './WhatsNewTour';
 
 const h = vi.hoisted(() => ({ phone: false }));
 vi.mock('@/lib/utils/useMediaQuery', () => ({ useMediaQuery: () => h.phone }));
+const msg = vi.hoisted(() => ({ live: false }));
+vi.mock('@/lib/config/messages', () => ({
+  get MESSAGES_LIVE() {
+    return msg.live;
+  },
+}));
 const { WhatsNewTour } = await import('./WhatsNewTour');
 
 const mentee = MIGRATION_2026_11.roles.mentee!;
@@ -122,6 +128,33 @@ describe('WhatsNewTour: the welcome', () => {
     expect(dlg).toHaveAttribute('aria-modal', 'true');
     expect(within(dlg).getByText('New platform')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Show me around' })).toHaveFocus();
+  });
+
+  it('names messages only while Messages is on', () => {
+    const welcome = () =>
+      render(
+        <WhatsNewTour
+          first="Ada"
+          content={mentee}
+          onEvent={vi.fn()}
+          onMore={vi.fn()}
+          onClose={vi.fn()}
+        />,
+      );
+    const { unmount } = welcome();
+    expect(screen.getByRole('dialog')).toHaveAccessibleDescription(
+      'Your profile and bookings came with you. A few things work differently now.',
+    );
+    unmount();
+    msg.live = true;
+    try {
+      welcome();
+      expect(screen.getByRole('dialog')).toHaveAccessibleDescription(
+        'Your profile, bookings and any messages you had came with you. A few things work differently now.',
+      );
+    } finally {
+      msg.live = false;
+    }
   });
 
   it('Not now skips at step 0 and closes, focus back where it was', async () => {
