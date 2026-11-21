@@ -1,8 +1,8 @@
 /** Settings › Profile's editable values for a mentee (Mentee Settings.dc.html `mp`). */
 export type MenteeProfileValues = {
   name: string;
-  /** The catalog id of the country they live in; '' for none. */
-  countryId: string;
+  /** Catalogue id of where they're from (`origin_country`); '' for none. */
+  originId: string;
   languages: { id: string; label: string }[];
   bio: string;
   /** The bio is still an untouched AI draft. */
@@ -24,8 +24,6 @@ export type GoalSchool = {
 
 /** Settings › Goals' editable values (Mentee Settings.dc.html `mg`). */
 export type MenteeGoalValues = {
-  /** Catalogue id of where they're from; '' for none. */
-  originId: string;
   /** A DEGREE_OPTIONS value ("mba", not the stored "masters"); '' for none. */
   degree: string;
   field: string;

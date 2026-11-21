@@ -4,7 +4,7 @@
  * Ours, where the design draws nothing: the load and save failures.
  */
 
-import { NOT_SURE_LABEL } from './onboarding';
+import { NOT_SURE_LABEL, PLAN_HINTS } from './onboarding';
 
 export const SETTINGS_COPY = {
   title: 'Settings',
@@ -42,9 +42,11 @@ export const PROFILE_COPY = {
   photoLabel: 'Your profile photo',
   section: 'About you',
   name: 'Full name',
-  country: 'Country you live in',
-  countryHint: 'Helps us suggest mentors who made the same move.',
-  countryPlaceholder: 'Select a country',
+  // Where they're from, with onboarding's reason (owner 2026-11-21: moved
+  // here from Goals; where they live is no longer asked).
+  origin: 'Where you’re from',
+  originHint: PLAN_HINTS.origin,
+  originPlaceholder: 'Select a country',
   // Optional (founder, 21 Oct): onboarding never asks, most accounts have none.
   languages: 'Languages you speak (optional)',
   languagesHint: 'So you can have sessions in the language you’re most comfortable in.',
@@ -67,7 +69,7 @@ export const PROFILE_COPY = {
 /** Inline errors on Save with gaps (handoff: required fields, 19 Oct). */
 export const PROFILE_ERRORS = {
   name: 'Add your full name.',
-  country: 'Select the country you live in.',
+  origin: 'Select where you’re from.',
 } as const;
 export type ProfileGap = keyof typeof PROFILE_ERRORS;
 
@@ -197,8 +199,6 @@ export const SECURITY_COPY = {
 export const GOALS_COPY = {
   workingToward: 'What you’re working toward',
   workingTowardSub: 'We use this to recommend mentors who fit your plans.',
-  origin: 'Where you’re from',
-  originPlaceholder: 'Select a country',
   applyingFor: 'Applying for',
   applyingForHint: 'Pick one.',
   field: 'Field of study',
@@ -235,7 +235,6 @@ export const GOALS_COPY = {
  * Goals). No countries is "Not sure yet", never a gap.
  */
 export const GOALS_ERRORS = {
-  origin: 'Select where you’re from.',
   degree: 'Pick what you’re applying for.',
   field: 'Add what you want to study.',
   help: 'Pick at least one area.',

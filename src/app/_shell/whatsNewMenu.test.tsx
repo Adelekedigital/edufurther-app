@@ -111,23 +111,13 @@ describe('the What’s new menu item', () => {
     }
   });
 
-  it('replayLinks: one mapping for the menu item and the Settings row, in each release’s words', () => {
+  it('replayLinks: the menu item, in each release’s words (its one place)', () => {
     expect(replayLinks(tourReplay(mentee, false, IN_WINDOW))).toEqual({
       menuItem: { label: 'What’s new', href: '/home?tour=replay' },
-      row: {
-        href: '/home?tour=replay',
-        title: 'What’s new',
-        sub: 'A quick look at what changed on EduFurther.',
-      },
     });
     const made = { ...mentee, isMigrated: false, seenItems: [] };
     expect(replayLinks(tourReplay(made, false, AFTER))).toEqual({
       menuItem: { label: 'Welcome tour', href: '/home?tour=replay' },
-      row: {
-        href: '/home?tour=replay',
-        title: 'Welcome tour',
-        sub: 'A quick look at where everything is.',
-      },
     });
     expect(replayLinks(undefined)).toBeUndefined();
   });

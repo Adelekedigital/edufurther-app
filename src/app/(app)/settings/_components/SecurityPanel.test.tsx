@@ -48,7 +48,8 @@ vi.mock('@/lib/api/data/http', () => ({
 
 const profile: MenteeProfile = {
   name: 'Amara Okafor',
-  countryId: 'ng',
+  originId: 'ng',
+  savedOriginId: 'ng',
   languages: [],
   bio: '',
   bioDrafted: false,

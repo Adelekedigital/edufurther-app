@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { SAVE_COPY } from '@/lib/copy/settings';
 import { meEntry, seedMe, userRead } from './_test/meEntry';
+import { keys } from './keys';
 import type { UserRead } from './me';
 import {
   ProfileSaveError,
@@ -31,7 +32,7 @@ vi.mock('./http', () => ({
 
 const values = {
   name: 'Amaka Obi',
-  countryId: 'ng',
+  originId: 'ng',
   languages: [{ id: 'en', label: 'English' }],
   bio: '',
   bioDrafted: false,
@@ -45,7 +46,7 @@ beforeEach(() => {
 });
 
 describe('toMenteeProfile', () => {
-  it('reads the names, the country (by code, to the catalog id), languages and the drafted bio', () => {
+  it('reads the names, where they’re from (by code, to the catalog id), languages and the drafted bio', () => {
     const p = toMenteeProfile(
       {
         email: 'amaka@example.com',
@@ -57,14 +58,19 @@ describe('toMenteeProfile', () => {
           about_me: 'Hi',
           about_me_drafted_at: '2026-10-19T00:00:00Z',
           avatar_url: null,
-          current_country: { code: 'NG', display_name: 'Nigeria' },
+          origin_country: { code: 'NG', display_name: 'Nigeria' },
+          current_country: { code: 'GB', display_name: 'United Kingdom' },
         },
       },
-      [{ id: 'ng-id', label: 'Nigeria', code: 'NG' }],
+      [
+        { id: 'ng-id', label: 'Nigeria', code: 'NG' },
+        { id: 'gb-id', label: 'United Kingdom', code: 'GB' },
+      ],
     );
     expect(p).toMatchObject({
       name: 'Amaka Obi',
-      countryId: 'ng-id',
+      originId: 'ng-id',
+      savedOriginId: 'ng-id',
       languages: [{ id: 'en', label: 'English' }],
       bio: 'Hi',
       bioDrafted: true,
@@ -74,7 +80,22 @@ describe('toMenteeProfile', () => {
 
   it('nothing saved yet: blanks, and the email’s initial', () => {
     const p = toMenteeProfile({ email: 'zed@example.com', profile: null, languages: [] });
-    expect(p).toMatchObject({ name: '', countryId: '', languages: [], bio: '', initials: 'Z' });
+    expect(p).toMatchObject({ name: '', originId: '', languages: [], bio: '', initials: 'Z' });
+  });
+
+  it('no origin saved: prefilled from where they live, and not counted as saved (PRD S7)', () => {
+    const p = toMenteeProfile(
+      {
+        email: 'a@example.com',
+        languages: [],
+        profile: {
+          cover_art: 'none',
+          current_country: { code: 'NG', display_name: 'Nigeria' },
+        } as UserRead['profile'],
+      },
+      [{ id: 'ng-id', label: 'Nigeria', code: 'NG' }],
+    );
+    expect(p).toMatchObject({ originId: 'ng-id', savedOriginId: '' });
   });
 
   it('Login and security: the email, whether it is verified, and upcoming sessions on both sides', () => {
@@ -133,7 +154,7 @@ describe('useMenteeProfile', () => {
     );
     const { result } = renderHook(() => useMenteeProfile('u1'), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('ready'));
-    expect(result.current.profile).toMatchObject({ name: 'Amaka Obi', countryId: '' });
+    expect(result.current.profile).toMatchObject({ name: 'Amaka Obi', originId: '' });
   });
 
   it('the catalog maps the saved country to its id; until it answers, the profile is loading', async () => {
@@ -163,7 +184,7 @@ describe('useMenteeProfile', () => {
       response: { ok: true, status: 200 },
     });
     await waitFor(() => expect(result.current.status).toBe('ready'));
-    expect(result.current.profile!.countryId).toBe('ng-id');
+    expect(result.current.profile!.originId).toBe('ng-id');
   });
 
   it('a failed /me is an error, never an empty profile', async () => {
@@ -180,14 +201,21 @@ describe('useMenteeProfile', () => {
 });
 
 describe('profileBody', () => {
-  it('only what changed: a new name and country', () => {
+  it('only what changed: a new name and origin', () => {
     expect(
       profileBody({
         before: values,
-        after: { ...values, name: 'Amaka N. Obi', countryId: 'gh' },
+        after: { ...values, name: 'Amaka N. Obi', originId: 'gh' },
         promptVersion: null,
       }),
-    ).toEqual({ full_name: 'Amaka N. Obi', current_country_id: 'gh' });
+    ).toEqual({ full_name: 'Amaka N. Obi', origin_country_id: 'gh' });
+  });
+
+  it('a prefilled origin is written with the next save; without savedOriginId it is not', () => {
+    expect(
+      profileBody({ before: values, after: values, promptVersion: null, savedOriginId: '' }),
+    ).toEqual({ origin_country_id: 'ng' });
+    expect(profileBody({ before: values, after: values, promptVersion: null })).toEqual({});
   });
 
   it('a kept AI draft carries its prompt version; a blank bio clears it', () => {
@@ -229,6 +257,7 @@ describe('useSaveMenteeProfile', () => {
       { wrapper },
     );
     return {
+      qc,
       result: {
         get current() {
           return hook.result.current.save;
@@ -266,6 +295,26 @@ describe('useSaveMenteeProfile', () => {
       body: { languages: [{ language_id: 'en' }, { language_id: 'ig' }] },
     });
     await waitFor(() => expect(read()).toMatchObject(after));
+  });
+
+  it('a new origin is written, becomes the saved one, and refreshes the matches and lists', async () => {
+    PATCH.mockResolvedValue(ok);
+    const { qc, read, result } = setup();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+    expect(await run(result, { ...values, originId: 'gh' })).toBeNull();
+    expect(PATCH.mock.calls[0]![1]).toMatchObject({ body: { origin_country_id: 'gh' } });
+    await waitFor(() => expect(read()).toMatchObject({ originId: 'gh', savedOriginId: 'gh' }));
+    const invalidated = spy.mock.calls.map((c) => c[0]?.queryKey);
+    expect(invalidated).toContainEqual(keys.mentors.listAll);
+    expect(invalidated).toContainEqual(keys.menteeHome.all);
+  });
+
+  it('a name-only save leaves the matches alone', async () => {
+    PATCH.mockResolvedValue(ok);
+    const { qc, result } = setup();
+    const spy = vi.spyOn(qc, 'invalidateQueries');
+    expect(await run(result, { ...values, name: 'Amaka N. Obi' })).toBeNull();
+    expect(spy.mock.calls.map((c) => c[0]?.queryKey)).not.toContainEqual(keys.mentors.listAll);
   });
 
   it('the same languages in another order: no languages write', async () => {

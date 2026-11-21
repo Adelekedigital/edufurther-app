@@ -5,8 +5,6 @@ import { GOALS_COPY } from '@/lib/copy/settings';
 import type { components } from '@/lib/api/generated/schema';
 import type { GoalSchool, MenteeGoalValues } from '@/types/settings';
 import type { CatalogOption } from './catalog';
-import { apiError } from './errors';
-import { api } from './http';
 import { keys } from './keys';
 import { useMeSlice, type MeRead } from './me';
 import { degreeValue, degreeWrite, putGoal } from './onboarding';
@@ -17,9 +15,6 @@ type GoalWrite = components['schemas']['GoalWrite'];
 /** What Settings › Goals reads from GET /me. Countries come as ISO codes, not ids. */
 export type GoalsRead = {
   goal: GoalRead | null;
-  originCode: string | null;
-  /** Where they live now: the prefill for an empty "Where you’re from" (PRD S7). */
-  currentCode: string | null;
 };
 
 const idByCode = (countries: CatalogOption[], code: string | null | undefined) =>
@@ -40,7 +35,6 @@ export function toGoalValues(read: GoalsRead, countries: CatalogOption[]): Mente
       label: s.institution_name || s.school_name_raw,
     }));
   return {
-    originId: idByCode(countries, read.originCode) || idByCode(countries, read.currentCode),
     degree: degreeValue(g),
     field: g?.field_of_study ?? '',
     countryIds: [...(g?.countries ?? [])]
@@ -51,18 +45,12 @@ export function toGoalValues(read: GoalsRead, countries: CatalogOption[]): Mente
   };
 }
 
-/** The origin as saved (no prefill), so Save only writes it when it changes. */
-export const savedOriginId = (read: GoalsRead, countries: CatalogOption[]) =>
-  idByCode(countries, read.originCode);
-
 const goalsOf = ({ me }: MeRead): GoalsRead => ({
   goal: me.goal ?? null,
-  originCode: me.profile?.origin_country?.code ?? null,
-  currentCode: me.profile?.current_country?.code ?? null,
 });
 
 /**
- * The signed-in mentee's goal, where they're from and where they live: a
+ * The signed-in mentee's goal: a
  * slice of the one /me (me.ts), never a request of its own. Error before
  * content: a failed refetch of a loaded goal keeps it.
  */
@@ -73,19 +61,13 @@ export function useMenteeGoals(userId: string | null) {
 
 /** A failed save, in our words. */
 export class GoalsSaveError extends Error {
-  /** `originSaved`: where they're from landed before the goal failed. */
-  constructor(
-    readonly copy: string,
-    readonly originSaved = false,
-  ) {
+  constructor(readonly copy: string) {
     super('goals save failed');
   }
 }
 
 export type GoalsSave = {
   after: MenteeGoalValues;
-  /** The origin as saved; the profile is written only when it differs. */
-  savedOriginId: string;
   /** The saved goal, for what Settings doesn't ask (start term, notes). */
   goal: GoalRead | null;
   levels: { id: string; code: string }[];
@@ -109,8 +91,8 @@ export function goalsBody({ after, goal, levels }: GoalsSave): GoalWrite {
 }
 
 /**
- * Settings › Goals' Save (PRD): where they're from on the profile, then the
- * goal (PUT, the whole of it). Not optimistic: the form settles on what the
+ * Settings › Goals' Save (PRD): the goal (PUT, the whole of it); where
+ * they're from is Profile's (owner 2026-11-21). Not optimistic: the form settles on what the
  * server holds once /me refetches. New answers, new ranking: the matches,
  * Explore's lists and Home's suggestions refresh.
  */
@@ -120,21 +102,11 @@ export function useSaveGoals(userId: string | null) {
     networkMode: 'always',
     mutationFn: async (save) => {
       if (!userId) throw new GoalsSaveError(GOALS_COPY.saveFailed);
-      let originSaved = false;
       try {
         // Built first: a degree the catalogue can't place writes nothing at all.
-        const body = goalsBody(save);
-        if (save.after.originId !== save.savedOriginId) {
-          const { error, response } = await api.PATCH('/api/v1/users/{user_id}/profile', {
-            params: { path: { user_id: userId } },
-            body: { origin_country_id: save.after.originId },
-          });
-          if (!response.ok) throw apiError(response.status, error, response);
-          originSaved = true;
-        }
-        await putGoal(userId, body);
+        await putGoal(userId, goalsBody(save));
       } catch {
-        throw new GoalsSaveError(GOALS_COPY.saveFailed, originSaved);
+        throw new GoalsSaveError(GOALS_COPY.saveFailed);
       }
     },
     // Saving lasts until /me (the goal's one source) is read again; the rest

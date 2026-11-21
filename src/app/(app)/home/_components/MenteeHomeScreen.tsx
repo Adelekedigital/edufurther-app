@@ -357,7 +357,7 @@ export function MenteeHomeScreen() {
   const saveBio = async (bio: string, drafted: boolean): Promise<string | null> => {
     const p = fresh.menteeProfile;
     if (!p) return PROFILE_SHEET.saveFailed;
-    const values = { name: p.name, countryId: p.countryId, languages: p.languages };
+    const values = { name: p.name, originId: p.originId, languages: p.languages };
     try {
       await saveProfile.mutateAsync({
         before: { ...values, bio: p.bio, bioDrafted: p.bioDrafted },

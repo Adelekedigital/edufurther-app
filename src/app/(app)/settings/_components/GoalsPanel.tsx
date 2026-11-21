@@ -9,7 +9,7 @@ import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
 import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { MenteeGoalsForm } from '@/components/organisms/MenteeGoalsForm/MenteeGoalsForm';
 import { useCountries, useDegreeLevels, useFieldsOfStudy } from '@/lib/api/data/catalog';
-import { savedOriginId, toGoalValues, useMenteeGoals, useSaveGoals } from '@/lib/api/data/goals';
+import { toGoalValues, useMenteeGoals, useSaveGoals } from '@/lib/api/data/goals';
 import { useInstitutionSearch } from '@/lib/api/data/mentorApplication';
 import { useTopics } from '@/lib/api/data/mentors';
 import { HELP_LIMIT } from '@/lib/copy/onboarding';
@@ -33,7 +33,6 @@ import styles from './GoalsPanel.module.css';
 const sameList = (a: string[], b: string[]) =>
   a.length === b.length && a.every((x, i) => x === b[i]);
 const same = (a: MenteeGoalValues, b: MenteeGoalValues) =>
-  a.originId === b.originId &&
   a.degree === b.degree &&
   a.field === b.field &&
   sameList(a.countryIds, b.countryIds) &&
@@ -53,7 +52,6 @@ const gapsOf = (v: MenteeGoalValues, liveIds: ReadonlySet<string>): GoalsGap[] =
   // one can't be seen or unpicked, so it can't be what puts someone over the cap.
   const help = v.needIds.filter((id) => liveIds.has(id)).length;
   return [
-    ...(v.originId ? [] : ['origin' as const]),
     ...(v.degree ? [] : ['degree' as const]),
     ...(fieldOk(v.field) ? [] : ['field' as const]),
     ...(help ? [] : ['help' as const]),
@@ -152,15 +150,12 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
     try {
       await saving.mutateAsync({
         after,
-        savedOriginId: savedOriginId(read, countries.countries),
         goal: read.goal,
         levels: levels.levels,
       });
     } catch {
       if (!alive.current) return false;
-      // Even when where they're from landed and only the goal failed, `base`
-      // stays: the form is still unsaved, so the bar and its error stay too.
-      // The refetch brings the new origin in once the goal saves.
+      // `base` stays: the form is still unsaved, so the bar and its error stay too.
       setTries((n) => n + 1);
       return false;
     }

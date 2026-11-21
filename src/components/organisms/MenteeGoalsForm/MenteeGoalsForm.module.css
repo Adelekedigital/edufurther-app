@@ -40,13 +40,6 @@
   font-weight: var(--weight-semibold);
 }
 
-/* Where you’re from sits in the design's two-up grid; with "When" hidden it spans the row. */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
-  gap: var(--space-4);
-}
-
 .field {
   display: flex;
   flex-direction: column;

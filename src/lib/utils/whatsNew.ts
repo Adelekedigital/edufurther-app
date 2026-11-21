@@ -126,8 +126,6 @@ export function tourLabels(r: TourRelease): TourLabels {
     badge: TOUR_COPY.badge,
     welcomeTitle: TOUR_COPY.welcomeTitle,
     menuItem: TOUR_COPY.menuItem,
-    replayTitle: TOUR_COPY.replayTitle,
-    replaySub: TOUR_COPY.replaySub,
     ...own,
   };
 }
