@@ -27,13 +27,19 @@ type MenteeReturningViewProps = {
   phone: boolean;
   /** The next session's "Send a message"; absent while Messages is off. */
   onMessageNext?: () => void;
+  /**
+   * Profile strength while the profile is short: after the next-session card
+   * at every width (the design's default wide layout has no side column).
+   */
+  profileStrength?: ReactNode;
   /** Book again / Recommended. */
   children: ReactNode;
 };
 
 /**
  * The returning mentee's Home (Mentee Dashboard v2.dc.html): progress, the next
- * session (or the idle card), then Mentors. Props only; the screen reads.
+ * session (or the idle card), Profile strength while the profile is short,
+ * then Mentors. Props only; the screen reads.
  */
 export function MenteeReturningView(p: MenteeReturningViewProps) {
   const { stats, upcoming } = p;
@@ -127,6 +133,7 @@ export function MenteeReturningView(p: MenteeReturningViewProps) {
         />
       )}
 
+      {p.profileStrength}
       {p.children}
     </>
   );

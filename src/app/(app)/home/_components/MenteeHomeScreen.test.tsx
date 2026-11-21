@@ -55,7 +55,7 @@ const freshWith = (over: Partial<Fresh> = {}): Fresh => ({
   education: [],
   profileDone: false,
   booked: null,
-  firstDone: null,
+  detailsStatus: 'ready',
   loading: false,
   error: false,
   retry: vi.fn(),
@@ -469,24 +469,112 @@ describe('MenteeHomeScreen', () => {
 
   it('an account with everything already done never sees the new view', () => {
     window.localStorage.setItem('ef-home-invite-shared-me', '1');
-    viewer = { ...NEW_MEMBER, completedSessions: 1, bookingCounts: { pending: 0, upcoming: 0 } };
+    viewer = { ...NEW_MEMBER, bookingCounts: { pending: 0, upcoming: 1 } };
     fresh = freshWith({
       profileDone: true,
       fields: FIELDS(4),
-      firstDone: { mentorFirst: 'Mariam', startsAt: inHours(-48) },
+      booked: { mentorFirst: 'Mariam', startsAt: inHours(48), confirmed: true },
     });
     render(<MenteeHomeScreen />);
     expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
   });
 
-  it('after the first session, the new view offers Invite a friend in the header, opening InviteModal', async () => {
+  it('after the first completed session: the full Home, "Welcome back", Invite a friend in the header', async () => {
+    // Owner, 21 Nov 2026: one completed session is enough for the full Home.
     viewer = { ...NEW_MEMBER, completedSessions: 1 };
-    fresh = freshWith({ firstDone: { mentorFirst: 'Mariam', startsAt: inHours(-48) } });
     render(<MenteeHomeScreen />);
     expect(screen.getByRole('heading', { name: 'Welcome back, Damilola' })).toBeInTheDocument();
-    expect(screen.getByText('First session done')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Getting started' })).not.toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Your progress' })).toBeInTheDocument();
+    expect(screen.getByText('Sessions held')).toBeInTheDocument();
+    // The free-call pill is for before the first session only.
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Invite a friend' }));
     expect(screen.getByRole('dialog', { name: 'Invite a friend' })).toBeInTheDocument();
+  });
+
+  describe('Profile strength on the full Home', () => {
+    const card = () => screen.queryByRole('region', { name: 'Profile strength' });
+
+    it('shows while the profile is short: the percent and one tip per missing detail', () => {
+      fresh = freshWith({ fields: FIELDS(2) });
+      render(<MenteeHomeScreen />);
+      expect(screen.getByRole('meter', { name: 'Profile strength' })).toHaveAttribute(
+        'aria-valuenow',
+        '50',
+      );
+      const tips = within(card()!);
+      expect(tips.queryByText('Add what you’re applying for')).not.toBeInTheDocument();
+      expect(tips.getByRole('button', { name: 'Add your education' })).toBeInTheDocument();
+      expect(tips.getByRole('button', { name: 'Add a short bio' })).toBeInTheDocument();
+    });
+
+    it('sits after the next-session card, before Mentors', () => {
+      metMentors = remote([metMentor()]);
+      fresh = freshWith({ fields: FIELDS(3) });
+      render(<MenteeHomeScreen />);
+      const next = screen.getByRole('region', { name: 'Next session' });
+      const mentors = screen.getByRole('button', { name: 'Book again with Mariam Alamata' });
+      expect(next.compareDocumentPosition(card()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(
+        card()!.compareDocumentPosition(mentors) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('the goal tips go to Settings › Goals, as the profile sheet’s rows do', () => {
+      fresh = freshWith({ fields: FIELDS(0) });
+      render(<MenteeHomeScreen />);
+      expect(screen.getByRole('link', { name: 'Add what you’re applying for' })).toHaveAttribute(
+        'href',
+        '/settings/goals',
+      );
+      expect(screen.getByRole('link', { name: 'Add what you need help with' })).toHaveAttribute(
+        'href',
+        '/settings/goals',
+      );
+    });
+
+    it('the education tip opens the Education editor, and closing it doesn’t open the sheet', async () => {
+      fresh = freshWith({ fields: FIELDS(2) });
+      render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Add your education' }));
+      expect(await screen.findByRole('dialog', { name: 'Education editor' })).toBeInTheDocument();
+      expect(screen.queryByRole('dialog', { name: 'Your profile' })).not.toBeInTheDocument();
+    });
+
+    it('the bio tip opens the profile sheet with the bio editor open', async () => {
+      fresh = freshWith({ fields: FIELDS(3) });
+      render(<MenteeHomeScreen />);
+      await userEvent.click(screen.getByRole('button', { name: 'Add a short bio' }));
+      const sheet = await screen.findByRole('dialog', { name: 'Your profile' });
+      expect(within(sheet).getByRole('textbox', { name: /Short bio/ })).toBeInTheDocument();
+    });
+
+    it('hides once the profile is complete', () => {
+      fresh = freshWith({ fields: FIELDS(4), profileDone: true });
+      render(<MenteeHomeScreen />);
+      expect(card()).not.toBeInTheDocument();
+    });
+
+    it('hides while the details load or after they fail: never a wrong percent', () => {
+      fresh = freshWith({ fields: FIELDS(0), detailsStatus: 'loading' });
+      const { unmount } = render(<MenteeHomeScreen />);
+      expect(card()).not.toBeInTheDocument();
+      unmount();
+      fresh = freshWith({ fields: FIELDS(0), detailsStatus: 'error' });
+      render(<MenteeHomeScreen />);
+      expect(card()).not.toBeInTheDocument();
+      // The rest of the full Home is unaffected.
+      expect(screen.getByRole('region', { name: 'Your progress' })).toBeInTheDocument();
+    });
+
+    it('is not part of the new view (its own profile step covers it)', () => {
+      viewer = NEW_MEMBER;
+      fresh = freshWith({ fields: FIELDS(1) });
+      render(<MenteeHomeScreen />);
+      expect(screen.getByRole('heading', { name: 'Getting started' })).toBeInTheDocument();
+      expect(card()).not.toBeInTheDocument();
+    });
   });
 
   it('while the new view reads, it shows its loading frames, not a stage or a greeting', () => {
@@ -739,25 +827,23 @@ describe('MenteeHomeScreen', () => {
     expect(screen.getByTestId('booking-open')).toHaveAttribute('data-rating-unknown', 'true');
   });
 
-  it('shows the help pill to new mentees and early ones (≤ 2 sessions), not experienced', () => {
-    // Experienced (12 sessions): no "which mentor?" help pill.
+  it('shows the help pill only before the first completed session', () => {
+    // Experienced (12 sessions): no "Not sure where to start?" pill.
     viewer = { ...MEMBER, completedSessions: 12 };
     const { unmount } = render(<MenteeHomeScreen />);
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
     unmount();
-    // A brand-new mentee gets it too (design: the new view shows the float).
+    // A brand-new mentee gets it (design: the new view shows the float).
     viewer = NEW_MEMBER;
     const next = render(<MenteeHomeScreen />);
     expect(
       screen.getByRole('complementary', { name: 'Not sure where to start?' }),
     ).toBeInTheDocument();
     next.unmount();
-    // Early (2 sessions, has a booking so not new): the pill shows.
+    // After one or two sessions it reads wrong (owner, 21 Nov 2026): none.
     viewer = { ...MEMBER, completedSessions: 2 };
     render(<MenteeHomeScreen />);
-    expect(
-      screen.getByRole('complementary', { name: 'Not sure where to start?' }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 
   it('keeps a signed-in member with no goal on the home — mentee-side, not redirected', () => {
@@ -834,10 +920,10 @@ describe('MenteeHomeScreen', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/explore'));
   });
 
-  it('shows the help pill to an early mentee, with nothing stepping in front of it (round 4, #14)', () => {
+  it('shows the help pill to a mentee before their first session, with nothing stepping in front of it (round 4, #14)', () => {
     // An unfinished mentee never reaches Home (the setup lock sends them to
     // /onboarding); the nudge that used to sit under the greeting is retired.
-    viewer = { ...MEMBER, completedSessions: 2, onboardingComplete: false };
+    viewer = { ...MEMBER, completedSessions: 0, onboardingComplete: false };
     render(<MenteeHomeScreen />);
     expect(screen.queryByRole('region', { name: /setting up|study plans|help with/i })).toBeNull();
     expect(

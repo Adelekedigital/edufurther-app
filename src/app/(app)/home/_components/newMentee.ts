@@ -6,6 +6,9 @@ import type { EducationEntry } from '@/types/mentor';
  * the Getting started rows. Pure, so the rules are tested apart from the page.
  */
 
+/** Where the goal rows are edited for now (founder, 25 Oct: the form in the sheet is later). */
+export const GOALS_HREF = '/settings/goals';
+
 export type ProfileKey = 'target' | 'help' | 'education' | 'bio';
 
 export type ProfileField = {
@@ -72,17 +75,14 @@ export const nextMissing = (fields: ProfileField[]) =>
 /** The first request or booking, for "Requested with {First} · {time}". */
 export type FirstBooking = { mentorFirst: string; startsAt: string; confirmed: boolean };
 /**
- * The first completed session, for "Done with {First} on {date}". Known from
- * /me's count; the name and date come from history, null until it answers.
+ * The new view ends at the first completed session (owner, 21 Nov 2026): from
+ * then on it's the full Home, so there is no "first session done" stage.
  */
-export type FirstSession = { mentorFirst: string | null; startsAt: string | null };
-
-export type Stage = 'incomplete' | 'ready' | 'booked' | 'firstDone';
+export type Stage = 'incomplete' | 'ready' | 'booked';
 
 export type NewMenteeState = {
   profileDone: boolean;
   booked: FirstBooking | null;
-  firstDone: FirstSession | null;
   /** The invite link was copied or shared (remembered on this device). */
   invited: boolean;
   friendJoined: boolean;
@@ -92,7 +92,6 @@ export type NewMenteeState = {
 
 /** Which next-step card shows (design NX), and whether it says "One step left". */
 export function stageFor(s: NewMenteeState): { stage: Stage; oneStepLeft: boolean } {
-  if (s.firstDone) return { stage: 'firstDone', oneStepLeft: false };
   if (s.booked) {
     // Booked and the link shared, with the profile still short: the profile is what's left.
     if (s.invited && !s.profileDone) return { stage: 'incomplete', oneStepLeft: true };
@@ -103,7 +102,7 @@ export function stageFor(s: NewMenteeState): { stage: Stage; oneStepLeft: boolea
 
 /** The three steps Getting started tracks (account creation is always done). */
 export function stepsDone(s: NewMenteeState) {
-  const booked = !!s.firstDone || !!s.booked;
+  const booked = !!s.booked;
   const invite = s.invited || s.friendJoined || !!s.unlocked;
   return { profile: s.profileDone, booked, invite, all: s.profileDone && booked && invite };
 }

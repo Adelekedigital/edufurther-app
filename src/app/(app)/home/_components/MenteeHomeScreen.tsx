@@ -22,7 +22,13 @@ import { useTopics } from '@/lib/api/data/mentors';
 import { toBookingMentor, useMetMentors, type MetMentor } from '@/lib/api/data/metMentors';
 import { ProfileSaveError, useSaveMenteeProfile } from '@/lib/api/data/settings';
 import { MESSAGES_LIVE } from '@/lib/config/messages';
-import { GETTING_STARTED, MENTORS_FOR_GOAL, NEW_SUBLINE, PROFILE_SHEET } from '@/lib/copy/home';
+import {
+  GETTING_STARTED,
+  MENTORS_FOR_GOAL,
+  NEW_SUBLINE,
+  PROFILE_SHEET,
+  PROFILE_TIPS,
+} from '@/lib/copy/home';
 import { bookingRecipient, recipientFromMetMentor } from '@/lib/utils/messageRecipient';
 import { useDeviceFlag } from '@/lib/utils/deviceFlag';
 import { viewerZone } from '@/lib/utils/format';
@@ -35,7 +41,8 @@ import { MENTORS_ID, MenteeMentorsSection, RECOMMENDED_ID, SHOWN } from './Mente
 import { MenteeNewView } from './MenteeNewView';
 import { MenteeReturningView, KpiSkeleton, NextSkeleton } from './MenteeReturningView';
 import { MenteeNextSession, startsSoon } from './MenteeNextSession';
-import { stageFor, stepsDone, targetText } from './newMentee';
+import { stageFor, stepsDone, targetText, type ProfileKey } from './newMentee';
+import { MenteeProfileStrength, focusAfterTip } from './MenteeProfileStrength';
 import { goalLineFrom, recommendedFrom } from './recommended';
 import { useNewMentee } from './useNewMentee';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
@@ -66,11 +73,12 @@ const FINISH_MS = 1500;
 const UNDO_MS = 5000;
 
 /**
- * The mentee's Home (Mentee Dashboard v2.dc.html). A new mentee, up to their
+ * The mentee's Home (Mentee Dashboard v2.dc.html). A new mentee, before their
  * first completed session, gets the next step, Getting started and Mentors
  * for their goal until Getting started is done or hidden; everyone else gets
- * progress, the next session and Mentors. The app shell is mounted once by the
- * (app) route-group layout (ADR 0007), so this renders only its own content.
+ * the full Home: progress, the next session, Profile strength while the
+ * profile is short, and Mentors. The app shell is mounted once by the (app)
+ * route-group layout (ADR 0007), so this renders only its own content.
  */
 export function MenteeHomeScreen() {
   const { viewer, member } = useAppShell();
@@ -92,10 +100,12 @@ export function MenteeHomeScreen() {
   const userId = member?.id ?? null;
   const completed = member?.completedSessions ?? 0;
   const counts = member?.bookingCounts;
-  // The new view is for a mentee up to their first completed session, and only
-  // when /me's counts are known: an unknown count reads as returning, so a real
+  // The new view is for a mentee before their first completed session (owner,
+  // 21 Nov 2026: after one, the full Home, as a mentor gets), and only when
+  // /me's counts are known: an unknown count reads as returning, so a real
   // session is never hidden behind it.
-  const early = menteeSide && completed <= 1 && counts?.upcoming != null && counts?.pending != null;
+  const early =
+    menteeSide && completed === 0 && counts?.upcoming != null && counts?.pending != null;
   const [hidden, setHidden] = useDeviceFlag('home-getting-started-hidden', userId);
   // Done sticks: once the view has given way, a step going back (a cancelled
   // first booking, another device) doesn't bring it back.
@@ -119,7 +129,8 @@ export function MenteeHomeScreen() {
   const fresh = useNewMentee({
     userId,
     active: candidate,
-    hasCompleted: completed >= 1,
+    // The full Home's Profile strength card reads the same four details.
+    readProfile: menteeSide,
     goals,
     topics: topics.topics,
     upcoming,
@@ -147,6 +158,14 @@ export function MenteeHomeScreen() {
   const [profileOpen, setProfileOpen] = useState(false);
   // Education opens over nothing; closing it brings the profile sheet back.
   const [eduOpen, setEduOpen] = useState(false);
+  // Opened from a Profile strength tip: closing it doesn't bring the sheet back.
+  const [eduFromTip, setEduFromTip] = useState(false);
+  // The sheet opened from the "Add a short bio" tip starts in the bio editor.
+  const [bioFromTip, setBioFromTip] = useState(false);
+  // A tip whose step is now done goes, and with it the focus its dialog hands
+  // back: the next tip, else the title, takes it (as Mentor Profile does).
+  const [tipUsed, setTipUsed] = useState<ProfileKey | null>(null);
+  const [refocus, setRefocus] = useState(0);
   const [metOpen, setMetOpen] = useState(false);
   const [toast, setToast] = useState(0);
   const [booking, setBooking] = useState<{ mentor: Mentor; ratingUnknown: boolean } | null>(null);
@@ -158,14 +177,13 @@ export function MenteeHomeScreen() {
   const state = {
     profileDone: fresh.profileDone,
     booked: fresh.booked,
-    firstDone: fresh.firstDone,
     invited,
     friendJoined: friendJoinedRead.friendJoined,
     unlocked: !!member?.credits?.monthly?.unlocked,
   };
   const steps = stepsDone(state);
   const { stage } = stageFor(state);
-  const inviteStage = stage === 'booked' || stage === 'firstDone';
+  const inviteStage = stage === 'booked';
   const link = useInviteLink(userId, inviteOpen || (candidate && !fresh.loading && inviteStage));
 
   // All three steps done: the view stays 1.5s, then gives way to the returning
@@ -191,6 +209,23 @@ export function MenteeHomeScreen() {
     return () => clearTimeout(t);
   }, [steps.all, shownOpen, dialogOpen, setDoneFlag]);
   const newView = candidate && !fresh.error && !(steps.all && (!shownOpen || finished));
+
+  // Adjusted during render (React's pattern for state that follows data): once
+  // the refetched details no longer miss the tip's field, it's done.
+  if (tipUsed && fresh.fields.find((f) => f.key === tipUsed)?.value) {
+    setTipUsed(null);
+    setRefocus((n) => n + 1);
+  }
+  useEffect(() => {
+    if (refocus && !profileOpen && !eduOpen) focusAfterTip(titleRef.current);
+  }, [refocus, profileOpen, eduOpen]);
+  // Closed with the step not done: back to its tip. The editor took focus as it
+  // opened, so the dialog's own return lands on <body> (after its rAF retry).
+  useEffect(() => {
+    if (!tipUsed || profileOpen || eduOpen) return;
+    const raf = requestAnimationFrame(() => focusAfterTip(titleRef.current, PROFILE_TIPS[tipUsed]));
+    return () => cancelAnimationFrame(raf);
+  }, [tipUsed, profileOpen, eduOpen]);
 
   // Hide: the list goes, and Undo is offered for 5 seconds; never timed out
   // from under focus (it waits while Undo has it). Undo brings focus back to Hide.
@@ -269,12 +304,12 @@ export function MenteeHomeScreen() {
   const freeLeft = monthly?.unlocked ? monthly.balance : null;
   const metShown = metOpen && (metMentors.data?.length ?? 0) > 0;
   const goalNeeds = goals.read?.goal?.needs.map((n) => n.id) ?? [];
-  const firstDone = !!fresh.firstDone;
 
-  // The team call: new mentees, and returning ones with 2 or fewer sessions
-  // (design matchCall float, menteeSessions ≤ 2). Hidden when the URL isn't
+  // The team call ("Not sure where to start?"): only before the first completed
+  // session (owner, 21 Nov 2026: it reads wrong after one; the design showed it
+  // up to 2 sessions, matchCall menteeSessions <= 2). Hidden when the URL isn't
   // set, and while Mentors you've met is open (design helpOn: !mentorsOpen).
-  const showHelp = !!MATCH_CALL_URL && (newView || completed <= 2) && !metShown;
+  const showHelp = !!MATCH_CALL_URL && completed === 0 && !metShown;
   const openCall = () => {
     if (MATCH_CALL_URL) window.open(MATCH_CALL_URL, '_blank', 'noopener,noreferrer');
   };
@@ -290,20 +325,18 @@ export function MenteeHomeScreen() {
       ? NEW_SUBLINE.incomplete
       : stage === 'ready'
         ? NEW_SUBLINE.ready
-        : stage === 'booked'
-          ? fresh.booked?.confirmed
-            ? NEW_SUBLINE.booked
-            : NEW_SUBLINE.requested
-          : NEW_SUBLINE.firstDone
+        : fresh.booked?.confirmed
+          ? NEW_SUBLINE.booked
+          : NEW_SUBLINE.requested
     : noConfirmed && !hasPending
       ? 'No session booked right now. Pick up where you left off.'
       : soon
         ? 'Your session starts soon.'
         : 'Here’s what’s next on your journey.';
-  // "Welcome" in the new view until the first completed session, then "Welcome back".
-  const hello = `${newView && !firstDone ? 'Welcome' : 'Welcome back'}, ${member.firstName}`;
-  // Invite a friend: the returning view, and the new view once the first session is done.
-  const headerInvite = !newView || firstDone;
+  // "Welcome" in the new view (before the first completed session), then "Welcome back".
+  const hello = `${newView ? 'Welcome' : 'Welcome back'}, ${member.firstName}`;
+  // Invite a friend in the header: the full Home (the new view has its own invite step).
+  const headerInvite = !newView;
 
   const chooseMentor = () => {
     setProfileOpen(false);
@@ -415,7 +448,7 @@ export function MenteeHomeScreen() {
             onOpenProfile={() => setProfileOpen(true)}
             onOpenInvite={() => setInviteOpen(true)}
             onChooseMentor={chooseMentor}
-            onHide={fresh.booked || firstDone ? hide : null}
+            onHide={fresh.booked ? hide : null}
             hideRef={hideRef}
           >
             {/* A confirmed first session is joined from here too, below Getting
@@ -445,6 +478,22 @@ export function MenteeHomeScreen() {
           now={now}
           phone={phone}
           onMessageNext={messageNext}
+          profileStrength={
+            <MenteeProfileStrength
+              status={fresh.detailsStatus}
+              fields={fresh.fields}
+              onEducation={() => {
+                setTipUsed('education');
+                setEduFromTip(true);
+                setEduOpen(true);
+              }}
+              onBio={() => {
+                setTipUsed('bio');
+                setBioFromTip(true);
+                setProfileOpen(true);
+              }}
+            />
+          }
         >
           {mentors}
         </MenteeReturningView>
@@ -497,7 +546,12 @@ export function MenteeHomeScreen() {
           onSaveBio={saveBio}
           bioSaving={saveProfile.isPending}
           onChoose={chooseMentor}
-          onClose={() => setProfileOpen(false)}
+          onClose={() => {
+            setProfileOpen(false);
+            setBioFromTip(false);
+          }}
+          editBio={bioFromTip}
+          returning={!newView}
         />
       )}
       {eduOpen && userId && (
@@ -507,11 +561,13 @@ export function MenteeHomeScreen() {
           audience="mentee"
           onClose={() => {
             setEduOpen(false);
-            setProfileOpen(true);
+            setEduFromTip(false);
+            if (!eduFromTip) setProfileOpen(true);
           }}
           onSaved={() => {
             setEduOpen(false);
-            setProfileOpen(true);
+            setEduFromTip(false);
+            if (!eduFromTip) setProfileOpen(true);
           }}
         />
       )}

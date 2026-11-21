@@ -23,11 +23,12 @@ type FloatingHelpProps = {
   mobile?: boolean;
 };
 
-// Resting distance from the bottom: above a mobile bottom-nav, or a desktop gutter.
+// Resting distance from the bottom: 16px above the bottom chrome on phones
+// (--bottom-chrome-h, as the profile's Book pill), a 24px gutter on desktop.
 // A consumer that puts content behind the pill reserves matching bottom clearance
 // (see MenteeHomeScreen.module.css `.page[data-help]`); keep the two in sync.
-const MOBILE_BASE = 72;
-const DESKTOP_BASE = 24; // var(--space-6)
+const MOBILE_BASE = 'calc(var(--bottom-chrome-h) + var(--space-4))';
+const DESKTOP_BASE = 'calc(var(--space-6) + env(safe-area-inset-bottom))';
 const PHONE = '(max-width: 767px)';
 
 /**
@@ -86,13 +87,11 @@ export function FloatingHelp({
 
   if (!show) return null;
 
+  // --bottom-chrome-h carries the safe area on phones; env() is 0 on desktop.
   const base = mob ? MOBILE_BASE : DESKTOP_BASE;
-  // + the safe-area so the pill clears a phone's bottom nav (tab bar is 56px +
-  // env(safe-area-inset-bottom)); env() resolves to 0 on desktop, so the desktop
-  // offset is unchanged.
   const pos = {
     right: 'calc(var(--space-6) + var(--fixed-edge-gap))',
-    bottom: `calc(${base}px + env(safe-area-inset-bottom))`,
+    bottom: base,
   };
   const trail: IconName = external ? 'open_in_new' : 'arrow_forward';
 
@@ -133,7 +132,7 @@ export function FloatingHelp({
               className={styles.sheet}
               style={{
                 right: 'calc(var(--space-6) + var(--fixed-edge-gap))',
-                bottom: `calc(${base}px + var(--space-14) + env(safe-area-inset-bottom))`,
+                bottom: `calc(${base} + var(--space-14))`,
               }}
             >
               <span className={styles.sheetHead}>

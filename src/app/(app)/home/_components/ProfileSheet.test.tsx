@@ -81,4 +81,36 @@ describe('ProfileSheet', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Choose your mentor' }));
     expect(p.onChoose).toHaveBeenCalled();
   });
+
+  it('after a first session, all four done reads "Your profile is complete"', () => {
+    const done = FIELDS.map((f) => ({ ...f, value: f.value ?? 'BSc · Lagos · 2024' }));
+    render(
+      <ProfileSheet
+        fields={done}
+        onEducation={vi.fn()}
+        onSaveBio={vi.fn()}
+        bioSaving={false}
+        onChoose={vi.fn()}
+        onClose={vi.fn()}
+        returning
+      />,
+    );
+    expect(screen.getByText('Your profile is complete')).toBeInTheDocument();
+    expect(screen.queryByText('Ready for your first session')).not.toBeInTheDocument();
+  });
+
+  it('editBio opens with the bio editor open', () => {
+    render(
+      <ProfileSheet
+        fields={FIELDS}
+        onEducation={vi.fn()}
+        onSaveBio={vi.fn()}
+        bioSaving={false}
+        onChoose={vi.fn()}
+        onClose={vi.fn()}
+        editBio
+      />,
+    );
+    expect(screen.getByRole('textbox', { name: /Short bio/ })).toBeInTheDocument();
+  });
 });

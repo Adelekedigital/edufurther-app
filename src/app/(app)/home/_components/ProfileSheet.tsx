@@ -8,11 +8,10 @@ import { AboutEditor } from '@/components/molecules/AboutEditor/AboutEditor';
 import { ModalShell } from '@/components/templates/ModalShell/ModalShell';
 import { PROFILE_SHEET as C } from '@/lib/copy/home';
 import { cx } from '@/lib/utils/cx';
-import { doneCount, nextMissing, type ProfileField } from './newMentee';
+import { GOALS_HREF, doneCount, nextMissing, type ProfileField } from './newMentee';
 import styles from './ProfileSheet.module.css';
 
-/** Where the goal rows are edited for now (founder, 25 Oct: the form in the sheet is later). */
-export const GOALS_HREF = '/settings/goals';
+export { GOALS_HREF };
 
 type ProfileSheetProps = {
   fields: ProfileField[];
@@ -24,6 +23,10 @@ type ProfileSheetProps = {
   /** "Choose your mentor", once all four are done. */
   onChoose: () => void;
   onClose: () => void;
+  /** Opens with the bio editor open (the full Home's "Add a short bio" tip). */
+  editBio?: boolean;
+  /** Has had a session: "Ready for your first session" would be wrong. */
+  returning?: boolean;
 };
 
 /**
@@ -39,10 +42,12 @@ export function ProfileSheet({
   bioSaving,
   onChoose,
   onClose,
+  editBio = false,
+  returning = false,
 }: ProfileSheetProps) {
   const n = doneCount(fields);
   const next = nextMissing(fields);
-  const [editingBio, setEditingBio] = useState(false);
+  const [editingBio, setEditingBio] = useState(editBio);
   const [error, setError] = useState<string | null>(null);
   // Leaving the editor (saved or cancelled) puts focus back on the bio's action.
   const bioAction = useRef<HTMLButtonElement>(null);
@@ -72,7 +77,9 @@ export function ProfileSheet({
         <div className={styles.summary}>
           <div className={styles.summaryRow}>
             <span className={styles.count}>{C.count(n)}</span>
-            <span className={styles.hint}>{next ? C.next(next) : C.ready}</span>
+            <span className={styles.hint}>
+              {next ? C.next(next) : returning ? C.complete : C.ready}
+            </span>
           </div>
           <StepBars total={4} current={n - 1} label={C.count(n)} meter />
         </div>
