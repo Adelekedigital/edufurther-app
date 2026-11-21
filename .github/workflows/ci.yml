@@ -334,11 +334,12 @@ jobs:
           # /invite/…?mockViewer=guest: the invite landing, a valid and a broken link;
           # /invite/tunde-9q4z: the mock mentee on someone else's link (existing-account card).
           # Page speed budget (roadmap): the three pages a slow load costs most on.
-          # /home is the mentee's home, /dashboard?mockViewer=mentor the mentor's;
+          # /home is the mentee's home (the new view; ?mockViewer=mentee-returning the
+          # full view, whose CLS went unmeasured), /dashboard?mockViewer=mentor the mentor's;
           # /sessions/j-1 is the join page minutes before a call (sessions mock).
           # /bookings and /messages: unmeasured until /bookings went over the JS
           # budget unseen (the move view, PR 661, in its eager cancel dialog).
-          for route in /explore /home "/dashboard?mockViewer=mentor" /sessions/j-1 /bookings /messages /mentors/olajuwon-samuel /session-types "/session-types/new?template=sop-review" "/invite/damilola-7k2x?mockViewer=guest" "/invite/gone-0000?mockViewer=guest" /invite/tunde-9q4z ; do
+          for route in /explore /home "/home?mockViewer=mentee-returning" "/dashboard?mockViewer=mentor" /sessions/j-1 /bookings /messages /mentors/olajuwon-samuel /session-types "/session-types/new?template=sop-review" "/invite/damilola-7k2x?mockViewer=guest" "/invite/gone-0000?mockViewer=guest" /invite/tunde-9q4z ; do
             # Every route runs, so one push shows every page over budget.
             node scripts/review-page.mjs "$route" || failed="$failed $route"
           done

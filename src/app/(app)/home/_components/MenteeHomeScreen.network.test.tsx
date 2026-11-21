@@ -99,8 +99,10 @@ vi.mock('@/lib/api/data/bookings', () => ({
   useUpcomingBookings: () => remote(h.upcoming as Booking[]),
   usePendingBookings: () => remote<Booking[]>(null, { isLoading: h.pendingLoading }),
 }));
-vi.mock('@/lib/api/data/menteeHome', () => ({
-  useMenteeStats: () => remote(null, { isLoading: true }),
+// Settled (empty): the full Home is drawn once its reads have settled.
+vi.mock('@/lib/api/data/menteeHome', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/data/menteeHome')>()),
+  useMenteeStats: () => remote(null),
 }));
 vi.mock('@/lib/api/data/metMentors', () => ({
   useMetMentors: () => remote([]),

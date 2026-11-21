@@ -8,6 +8,7 @@ import { Tabs } from '@/components/atoms/Tabs/Tabs';
 import { Notice } from '@/components/molecules/Notice/Notice';
 import { MentorCard } from '@/components/organisms/MentorCard/MentorCard';
 import type { MetMentor } from '@/lib/api/data/metMentors';
+import { cx } from '@/lib/utils/cx';
 import type { Mentor, Remote } from '@/types/mentor';
 import { canBookAgain, MentorRow } from './MentorRow';
 import type { Recommended } from './recommended';
@@ -286,6 +287,35 @@ function Panel({
   ) : (
     <div aria-busy={busy || undefined} className={styles.section}>
       {children}
+    </div>
+  );
+}
+
+/**
+ * The Mentors block while the full Home loads: the heading, the tab line, the
+ * panel head and Book again's rows, in the block's own frames and gaps.
+ */
+export function MentorsSkeleton() {
+  return (
+    <div className={styles.block} aria-hidden="true">
+      <div className={styles.tabsHead}>
+        <Skeleton width="96px" className={styles.skelTitle} />
+        <div className={cx(styles.tabsLine, styles.skelTabs)}>
+          <Skeleton width="96px" className={styles.skelTab} />
+          <Skeleton width="112px" className={styles.skelTab} />
+        </div>
+      </div>
+      <div className={styles.section}>
+        <div className={cx(styles.head, styles.skelHead)}>
+          <Skeleton width="60%" height="12px" />
+          <Skeleton width="96px" height="12px" />
+        </div>
+        <div className={styles.list}>
+          {Array.from({ length: SHOWN }).map((_, i) => (
+            <RowSkeleton key={i} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
