@@ -29,6 +29,7 @@ const COUNTRIES = [
 ];
 let levelsStatus: 'loading' | 'error' | 'ready' = 'ready';
 vi.mock('@/lib/api/data/catalog', () => ({
+  useFieldsOfStudy: () => ['Public Health', 'Computer Science', 'Data Science'],
   useCountries: () => ({ countries: COUNTRIES, status: 'ready', retry: vi.fn() }),
   useDegreeLevels: () => ({
     levels:
@@ -133,9 +134,23 @@ describe('GoalsPanel', () => {
       screen.getByRole('heading', { level: 2, name: GOALS_COPY.workingToward }),
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: GOALS_COPY.help })).toBeInTheDocument();
-    expect(screen.getByLabelText(GOALS_COPY.field)).toHaveValue('Public health');
+    expect(screen.getByRole('combobox', { name: GOALS_COPY.field })).toHaveValue('Public health');
     expect(screen.queryByRole('button', { name: /edit goals|collapse goals/i })).toBeNull();
     expect(bar()).toBeNull();
+  });
+
+  it('field of study: the same suggestions as onboarding, and a typed answer kept', async () => {
+    ready();
+    render(<GoalsPanel userId="u1" />);
+    const field = screen.getByRole('combobox', { name: GOALS_COPY.field });
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Data');
+    await userEvent.click(await screen.findByRole('option', { name: 'Data Science' }));
+    expect(field).toHaveValue('Data Science');
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Marine biology');
+    expect(field).toHaveValue('Marine biology');
+    expect(bar()).not.toBeNull();
   });
 
   it('no goal: "Where you’re from" prefilled from where they live', () => {
@@ -323,12 +338,12 @@ describe('GoalsPanel', () => {
   it('a change raises the save bar; Discard restores the saved goal and the bar goes', async () => {
     ready();
     render(<GoalsPanel userId="u1" />);
-    await userEvent.clear(screen.getByLabelText(GOALS_COPY.field));
-    await userEvent.type(screen.getByLabelText(GOALS_COPY.field), 'Law');
+    await userEvent.clear(screen.getByRole('combobox', { name: GOALS_COPY.field }));
+    await userEvent.type(screen.getByRole('combobox', { name: GOALS_COPY.field }), 'Law');
     await saveButton();
     expect(bar()).toHaveTextContent(GOALS_COPY.bar);
     await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.discard }));
-    expect(screen.getByLabelText(GOALS_COPY.field)).toHaveValue('Public health');
+    expect(screen.getByRole('combobox', { name: GOALS_COPY.field })).toHaveValue('Public health');
     expect(bar()).toBeNull();
     // Focus held by the bar moves to the first card's heading.
     await waitFor(() =>
@@ -339,7 +354,7 @@ describe('GoalsPanel', () => {
   it('Save with gaps: the form line in the bar, each error, focus on the first, nothing sent', async () => {
     ready({ goal: null, originCode: null, currentCode: null });
     render(<GoalsPanel userId="u1" />);
-    await userEvent.type(screen.getByLabelText(GOALS_COPY.field), 'L');
+    await userEvent.type(screen.getByRole('combobox', { name: GOALS_COPY.field }), 'L');
     await userEvent.click(await saveButton());
     expect(screen.getAllByText(SAVE_COPY.formError).length).toBeGreaterThan(0);
     const { helpMax, ...missing } = GOALS_ERRORS;
@@ -483,13 +498,13 @@ describe('GoalsPanel', () => {
     expect(await screen.findByText(GOALS_COPY.saved)).toBeInTheDocument();
     ready({ goal: goal({ field_of_study: 'Epidemiology' }) });
     rerender(<GoalsPanel userId="u1" />);
-    expect(screen.getByLabelText(GOALS_COPY.field)).toHaveValue('Epidemiology');
+    expect(screen.getByRole('combobox', { name: GOALS_COPY.field })).toHaveValue('Epidemiology');
   });
 
   it('only the degree missing: Save focuses the first choice', async () => {
     ready({ goal: goal({ degree_goal: null }) });
     render(<GoalsPanel userId="u1" />);
-    await userEvent.type(screen.getByLabelText(GOALS_COPY.field), 's');
+    await userEvent.type(screen.getByRole('combobox', { name: GOALS_COPY.field }), 's');
     await userEvent.click(await saveButton());
     await waitFor(() => expect(screen.getByRole('radio', { name: 'Bachelor’s' })).toHaveFocus());
     expect(screen.getByRole('radiogroup', { name: GOALS_COPY.applyingFor })).toHaveAttribute(

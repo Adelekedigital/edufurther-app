@@ -8,7 +8,7 @@ import { SaveBar } from '@/components/molecules/SaveBar/SaveBar';
 import { Snackbar } from '@/components/molecules/Snackbar/Snackbar';
 import { useTimedToast } from '@/components/molecules/Snackbar/useTimedToast';
 import { MenteeGoalsForm } from '@/components/organisms/MenteeGoalsForm/MenteeGoalsForm';
-import { useCountries, useDegreeLevels } from '@/lib/api/data/catalog';
+import { useCountries, useDegreeLevels, useFieldsOfStudy } from '@/lib/api/data/catalog';
 import { savedOriginId, toGoalValues, useMenteeGoals, useSaveGoals } from '@/lib/api/data/goals';
 import { useInstitutionSearch } from '@/lib/api/data/mentorApplication';
 import { useTopics } from '@/lib/api/data/mentors';
@@ -73,6 +73,8 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
 ) {
   const { read, status, retry, retrying } = useMenteeGoals(userId);
   const countries = useCountries(true);
+  // The same suggestions onboarding offers, so the answer looks the same here.
+  const fields = useFieldsOfStudy(true);
   const levels = useDegreeLevels(true);
   const topics = useTopics();
   const saving = useSaveGoals(userId);
@@ -224,6 +226,7 @@ export const GoalsPanel = forwardRef<PanelHandle, { userId: string }>(function G
           topics={topics.topics.flatMap((t) =>
             t.id ? [{ id: t.id, slug: t.slug, label: t.label }] : [],
           )}
+          fields={fields}
           schools={{
             query: schoolQuery,
             onQueryChange: setSchoolQuery,
