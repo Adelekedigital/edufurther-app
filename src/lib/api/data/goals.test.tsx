@@ -33,7 +33,6 @@ const levels = [
   { id: 'l-d', code: 'doctorate' },
 ];
 const values: MenteeGoalValues = {
-  originId: 'c-ng',
   degree: 'mba',
   field: ' Business ',
   countryIds: ['c-gb', 'c-ca'],
@@ -45,8 +44,6 @@ const values: MenteeGoalValues = {
 };
 const read = (goal: GoalsRead['goal'] = null): GoalsRead => ({
   goal,
-  originCode: null,
-  currentCode: 'NG',
 });
 
 beforeEach(() => {
@@ -80,13 +77,10 @@ describe('toGoalValues', () => {
             },
           ],
         },
-        originCode: 'GB',
-        currentCode: 'NG',
       },
       countries,
     );
     expect(v).toEqual({
-      originId: 'c-gb',
       degree: 'mba',
       field: 'Business',
       countryIds: ['c-gb', 'c-ca'],
@@ -98,8 +92,8 @@ describe('toGoalValues', () => {
     });
   });
 
-  it('no origin saved: prefilled from where they live (PRD S7)', () => {
-    expect(toGoalValues(read(), countries).originId).toBe('c-ng');
+  it('where they’re from is not a goal value (it lives on Profile)', () => {
+    expect(toGoalValues(read(), countries)).not.toHaveProperty('originId');
   });
 });
 
@@ -108,7 +102,6 @@ describe('goalsBody', () => {
     expect(
       goalsBody({
         after: values,
-        savedOriginId: '',
         goal: { target_start_term: '2027', notes: 'n' } as GoalsRead['goal'],
         levels,
       }),
@@ -130,7 +123,6 @@ describe('goalsBody', () => {
   it('"Not sure yet": no countries goes out as country_ids: [], not left out', () => {
     const body = goalsBody({
       after: { ...values, countryIds: [] },
-      savedOriginId: '',
       goal: null,
       levels,
     });
@@ -150,15 +142,11 @@ describe('useSaveGoals', () => {
     return { result, spy };
   };
 
-  it('writes the origin, then the goal; refreshes the viewer and the matches', async () => {
+  it('writes only the goal (never the profile); refreshes the viewer and the matches', async () => {
     const { result, spy } = setup();
-    await result.current.mutateAsync({ after: values, savedOriginId: '', goal: null, levels });
-    expect(calls.map((c) => c.method)).toEqual(['PATCH', 'PUT']);
-    expect(calls[0]).toMatchObject({
-      path: '/api/v1/users/{user_id}/profile',
-      body: { origin_country_id: 'c-ng' },
-    });
-    expect(calls[1]!.path).toBe('/api/v1/users/{user_id}/goal');
+    await result.current.mutateAsync({ after: values, goal: null, levels });
+    expect(calls.map((c) => c.method)).toEqual(['PUT']);
+    expect(calls[0]!.path).toBe('/api/v1/users/{user_id}/goal');
     const invalidated = spy.mock.calls.map((c) => c[0]?.queryKey);
     expect(invalidated).toContainEqual(keys.viewer.all);
     expect(invalidated).toContainEqual(keys.onboarding.all);
@@ -166,49 +154,19 @@ describe('useSaveGoals', () => {
     expect(keys.onboarding.matchesAll.slice(0, 1)).toEqual(keys.onboarding.all);
   });
 
-  it('an unchanged origin is not written again', async () => {
-    const { result } = setup();
-    await result.current.mutateAsync({
-      after: values,
-      savedOriginId: 'c-ng',
-      goal: null,
-      levels,
-    });
-    expect(calls.map((c) => c.method)).toEqual(['PUT']);
-  });
-
   it('a failure says so in our words', async () => {
     failPut = true;
     const { result } = setup();
     await expect(
-      result.current.mutateAsync({ after: values, savedOriginId: 'c-ng', goal: null, levels }),
+      result.current.mutateAsync({ after: values, goal: null, levels }),
     ).rejects.toMatchObject({ copy: GOALS_COPY.saveFailed });
   });
 
-  it('origin saved, goal failed: both were sent, and the error says the origin landed', async () => {
-    failPut = true;
-    const { result } = setup();
-    await expect(
-      result.current.mutateAsync({ after: values, savedOriginId: '', goal: null, levels }),
-    ).rejects.toMatchObject({ copy: GOALS_COPY.saveFailed, originSaved: true });
-    expect(calls.map((c) => c.method)).toEqual(['PATCH', 'PUT']);
-  });
-
-  it('the origin fails: the goal is not sent', async () => {
-    failPatch = true;
-    const { result } = setup();
-    await expect(
-      result.current.mutateAsync({ after: values, savedOriginId: '', goal: null, levels }),
-    ).rejects.toMatchObject({ originSaved: false });
-    expect(calls.map((c) => c.method)).toEqual(['PATCH']);
-  });
-
-  it('a degree the catalogue can’t place writes nothing, not even the origin', async () => {
+  it('a degree the catalogue can’t place writes nothing', async () => {
     const { result } = setup();
     await expect(
       result.current.mutateAsync({
         after: values,
-        savedOriginId: '',
         goal: null,
         levels: [{ id: 'l-d', code: 'doctorate' }],
       }),

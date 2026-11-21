@@ -74,7 +74,8 @@ vi.mock('@/lib/api/data/writingAssist', () => ({
 
 const profile = (over: Partial<MenteeProfile> = {}): MenteeProfile => ({
   name: 'Amaka Obi',
-  countryId: 'ng',
+  originId: 'ng',
+  savedOriginId: 'ng',
   languages: [{ id: 'en', label: 'English' }],
   bio: '',
   bioDrafted: false,
@@ -132,16 +133,37 @@ describe('ProfilePanel', () => {
   });
 
   it('Save with gaps: the form line, an error on each field, focus on the first, nothing sent', async () => {
-    ready(profile({ countryId: '', languages: [] }));
+    ready(profile({ originId: '', savedOriginId: '', languages: [] }));
     render(<ProfilePanel userId="u1" />);
     await userEvent.clear(screen.getByLabelText('Full name'));
     await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
     expect(screen.getAllByText(SAVE_COPY.formError).length).toBeGreaterThan(0);
     expect(screen.getByText('Add your full name.')).toBeInTheDocument();
-    expect(screen.getByText('Select the country you live in.')).toBeInTheDocument();
+    expect(screen.getByText('Select where you’re from.')).toBeInTheDocument();
     expect(screen.getByLabelText('Full name')).toHaveAttribute('aria-invalid', 'true');
     await waitFor(() => expect(screen.getByLabelText('Full name')).toHaveFocus());
     expect(mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('Profile asks where they’re from, with why; no longer where they live', () => {
+    ready();
+    render(<ProfilePanel userId="u1" />);
+    expect(screen.getByLabelText('Where you’re from')).toBeInTheDocument();
+    expect(screen.getByText('We look for mentors who made the same move.')).toBeInTheDocument();
+    expect(screen.queryByText('Country you live in')).toBeNull();
+  });
+
+  it('a prefilled origin goes with Save, against the saved one', async () => {
+    ready(profile({ savedOriginId: '' }));
+    render(<ProfilePanel userId="u1" />);
+    await userEvent.type(screen.getByLabelText('Full name'), 'x');
+    await userEvent.click(screen.getByRole('button', { name: SAVE_COPY.save }));
+    expect(mutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        savedOriginId: '',
+        after: expect.objectContaining({ originId: 'ng' }),
+      }),
+    );
   });
 
   it('languages are optional: none saves, with no language error (founder, 21 Oct)', async () => {

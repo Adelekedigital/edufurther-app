@@ -33,7 +33,7 @@ const ids = (v: MenteeProfileValues) =>
     .join(',');
 const same = (a: MenteeProfileValues, b: MenteeProfileValues) =>
   a.name === b.name &&
-  a.countryId === b.countryId &&
+  a.originId === b.originId &&
   a.bio === b.bio &&
   a.bioDrafted === b.bioDrafted &&
   ids(a) === ids(b);
@@ -42,7 +42,7 @@ const same = (a: MenteeProfileValues, b: MenteeProfileValues) =>
 // refuses a single word as `full_name`, so it's caught here, by the field.
 const gapsOf = (v: MenteeProfileValues): ProfileGap[] => [
   ...(checkFullName(v.name) ? ['name' as const] : []),
-  ...(v.countryId ? [] : ['country' as const]),
+  ...(v.originId ? [] : ['origin' as const]),
 ];
 
 /** What the screen needs to guard a tab switch. */
@@ -87,7 +87,7 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
   if (profile) {
     const server: MenteeProfileValues = {
       name: profile.name,
-      countryId: profile.countryId,
+      originId: profile.originId,
       languages: profile.languages,
       bio: profile.bio,
       bioDrafted: profile.bioDrafted,
@@ -142,9 +142,14 @@ export const ProfilePanel = forwardRef<PanelHandle, ProfilePanelProps>(function 
     }
     const after = { ...draft, name: tidyName(draft.name) };
     try {
-      await saving.mutateAsync({ before: base, after, promptVersion });
+      await saving.mutateAsync({
+        before: base,
+        after,
+        promptVersion,
+        savedOriginId: profile?.savedOriginId ?? base.originId,
+      });
     } catch (e) {
-      // The name, country and bio landed, the languages didn't: only the
+      // The name, origin and bio landed, the languages didn't: only the
       // languages are still unsaved.
       if (e instanceof ProfileSaveError && e.profileSaved) {
         setBase({ ...after, languages: base.languages });

@@ -225,9 +225,9 @@ describe('tourText: the replay line goes when the replay does', () => {
     expect(
       tourText(mentee, inReplayWindow(live, Date.parse('2026-12-22T23:59:59Z'))),
     ).toMatchObject({
-      hint: 'Takes about a minute. You can replay it from Settings.',
+      hint: 'Takes about a minute. You can replay it from the menu.',
       doneBody:
-        'Book your next session from Home or Explore. You can replay this tour from Settings.',
+        'Book your next session from Home or Explore. You can replay this tour from the menu.',
     });
   });
 
@@ -464,9 +464,9 @@ describe('the replay window', () => {
     const t = at('2030-01-01T00:00:00Z');
     expect(inReplayWindow(WELCOME_2026_11, t)).toBe(true);
     const text = tourText(WELCOME_2026_11.roles.mentee!, inReplayWindow(WELCOME_2026_11, t));
-    expect(text.hint).toBe('Takes about a minute. You can replay it from Settings.');
+    expect(text.hint).toBe('Takes about a minute. You can replay it from the menu.');
     expect(text.doneBody).toBe(
-      'Find a mentor on Home or Explore and book your first session. You can replay this tour from Settings.',
+      'Find a mentor on Home or Explore and book your first session. You can replay this tour from the menu.',
     );
   });
 
@@ -520,20 +520,12 @@ describe('the release content', () => {
     expect(m.badge).toBe('New platform');
     expect(m.welcomeTitle('Ada')).toBe('Welcome to the new EduFurther, Ada');
     expect(m.welcomeTitle('')).toBe('Welcome to the new EduFurther');
-    expect([m.menuItem, m.replayTitle, m.replaySub]).toEqual([
-      'What’s new',
-      'What’s new',
-      'A quick look at what changed on EduFurther.',
-    ]);
+    expect(m.menuItem).toBe('What’s new');
     const w = tourLabels(WELCOME_2026_11);
     expect(w.badge).toBe('Welcome');
     expect(w.welcomeTitle('Ada')).toBe('Welcome to EduFurther, Ada');
     expect(w.welcomeTitle('')).toBe('Welcome to EduFurther');
-    expect([w.menuItem, w.replayTitle, w.replaySub]).toEqual([
-      'Welcome tour',
-      'Welcome tour',
-      'A quick look at where everything is.',
-    ]);
+    expect(w.menuItem).toBe('Welcome tour');
   });
 
   it('labels: a key set to undefined keeps the default', () => {

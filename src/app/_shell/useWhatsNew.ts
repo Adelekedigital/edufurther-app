@@ -217,19 +217,16 @@ export function useWhatsNew({
 }
 
 /**
- * A replay as its two places show it: the account menu / More sheet item and
- * Settings' row, each named as the release names it. One mapping for both.
+ * A replay as the account menu / More sheet item shows it, named as the
+ * release names it (Settings' row went, owner 2026-11-21).
  */
 export function replayLinks(r: TourReplay | undefined) {
   if (!r) return undefined;
-  return {
-    menuItem: { label: r.labels.menuItem, href: r.href },
-    row: { href: r.href, title: r.labels.replayTitle, sub: r.labels.replaySub },
-  };
+  return { menuItem: { label: r.labels.menuItem, href: r.href } };
 }
 
 /**
- * Where Settings' "Replay tour" and the account menu's item go, with the words
+ * Where the account menu's replay item goes, with the words
  * that release uses for them ("What's new", "Welcome tour"): the role's Home,
  * replaying from the welcome (seen stays seen). Undefined outside the
  * release's replay window, in Preview as user, or for anyone it isn't for.

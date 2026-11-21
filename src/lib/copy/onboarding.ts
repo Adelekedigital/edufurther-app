@@ -73,7 +73,7 @@ export const HELP_AREAS: { slug: string; copy: HelpAreaCopy }[] = [
 export const HELP_LIMIT = 3;
 
 /**
- * The four options shown, and what each is stored as. The catalog follows
+ * Every degree a goal can hold, and what each is stored as. The catalog follows
  * ISCED 2011, where an MBA is a Master's-level degree, so MBA keeps the
  * mentee's word in `raw` (PRD H8).
  */
@@ -84,6 +84,19 @@ export const DEGREE_OPTIONS: { value: string; label: string; code: string; raw: 
     { value: 'mba', label: 'MBA', code: 'masters', raw: 'MBA' },
     { value: 'doctorate', label: 'PhD', code: 'doctorate', raw: null },
   ];
+
+/**
+ * What "Applying for" offers: Master's and beyond (owner 2026-11-21).
+ * Bachelor's stays in DEGREE_OPTIONS so a saved one still reads, and is
+ * offered only to a mentee who already has it (10 legacy goals), so their
+ * saved answer shows and they can move off it.
+ */
+export function degreeChoices(current: string): { value: string; label: string }[] {
+  return DEGREE_OPTIONS.filter((d) => d.value !== 'bachelors' || d.value === current).map((d) => ({
+    value: d.value,
+    label: d.label,
+  }));
+}
 
 export const FIELD_SUGGESTIONS = [
   'Business Administration',
