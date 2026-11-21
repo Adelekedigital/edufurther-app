@@ -6,10 +6,20 @@
  *
  * Now: the onboarding completion's `409` body (the spec types it empty; the
  * codes are `components['schemas']['OnboardingRequirement']`), and Admin
- * Analytics (`pendingAnalytics.ts`).
+ * Analytics (`pendingAnalytics.ts`), and `/me.seen_items` with
+ * PUT /me/seen-items/{key} (seenItems.ts).
  */
+import type { components } from '@/lib/api/generated/schema';
 import { api } from './http';
 import type { PendingAnalyticsResponses } from './pendingAnalytics';
+
+/**
+ * GET /me `seen_items` (required, never null, oldest first; agreed with the
+ * backend, not in the published spec yet). Once it is, delete this and type
+ * toViewer's argument as `UserRead` again (one line). Optional here so an
+ * older /me still type-checks; absent, no tour shows.
+ */
+export type PendingMeRead = components['schemas']['UserRead'] & { seen_items?: string[] };
 
 /** #3: the completion refusal names what is missing. */
 export type PendingIncomplete = { missing?: unknown };

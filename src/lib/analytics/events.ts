@@ -35,6 +35,8 @@ export type ShareMethod = 'copy' | 'native';
 export type InstallTrigger = 'booking' | 'message' | 'onboarding' | 'menu';
 /** How this device installs: the browser's prompt, or Safari's Share steps. */
 export type InstallPlatform = 'android' | 'ios';
+/** Whose version of a "What's new" tour. */
+export type TourRole = 'mentee' | 'mentor';
 
 export type AnalyticsEvents = {
   /** One per navigation, from the router (track.ts), never from a screen. */
@@ -127,6 +129,16 @@ export type AnalyticsEvents = {
     how: 'closed' | 'prompt_dismissed';
   };
   push_permission_granted: Record<string, never>;
+
+  // "What's new" tours (ADR 0014): who opens one, where they leave, who finishes.
+  /** "Show me around" pressed (a replay from Settings included: `replay`). */
+  tour_started: { release: string; role: TourRole; replay: boolean };
+  /** A step shown: `step` counts from 1 among the steps this viewer got. */
+  tour_step_viewed: { release: string; role: TourRole; step: number; target: string };
+  /** Not now, Skip, Escape or the close: `step` 0 is the welcome. */
+  tour_skipped: { release: string; role: TourRole; step: number };
+  /** The done card closed: its button that leads on (`cta`), or Got it / Escape (`dismiss`). */
+  tour_completed: { release: string; role: TourRole; action: 'cta' | 'dismiss' };
 
   /** Error rate by screen: the rate, never the message. */
   request_failed: { route: string; status_bucket: '4xx' | '5xx' | 'network'; kind: string };

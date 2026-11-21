@@ -76,6 +76,7 @@
     "inbox",
     "info",
     "ios_share",
+    "join",
     "join_inner",
     "key",
     "label",
@@ -167,5 +168,5 @@
     "work",
     "workspace_premium"
   ],
-  "sha256": "9a39ae3850f0240046506fe554d43f24e89fc236ec28ffae5f72ad433054610b"
+  "sha256": "51433b2b105731e23333932c53549e92af2f553caabb981b358e2e5823fabe33"
 }

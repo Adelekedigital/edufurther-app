@@ -14,6 +14,7 @@ import { clampFocus, personInitials } from '@/lib/utils/person';
 import { toCredits } from './credits';
 import { ApiError } from './errors';
 import { api } from './http';
+import type { PendingMeRead } from './pending';
 import { menteeByChoice } from './roles';
 import { keys } from './keys';
 import { useSession } from './session';
@@ -25,7 +26,7 @@ type UserRead = components['schemas']['UserRead'];
  * GET /api/v1/me → Viewer (backend auth reply #3). Roles come from rows, never
  * `primary_role`: goal → mentee, approved mentor_profile → mentor.
  */
-export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
+export function toViewer(me: PendingMeRead): Extract<Viewer, { kind: 'member' }> {
   const name = me.first_name?.trim() || me.email.split('@')[0] || '';
   // A declined applicant who chose mentee is mentee-side: no mentor nav, badge or home.
   const mentor = me.mentor_profile && !menteeByChoice(me) ? me.mentor_profile : null;
@@ -54,6 +55,8 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     completedSessions: me.mentee_completed_sessions,
     primaryRole: me.primary_role ?? undefined,
     isMigrated: me.is_migrated,
+    // A list we can't read is no list: no tour, rather than one that keeps coming back.
+    seenItems: Array.isArray(me.seen_items) ? me.seen_items : undefined,
     analyticsConsent: me.analytics_consent
       ? {
           granted: me.analytics_consent.granted,
@@ -137,6 +140,10 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     onboardingComplete: true,
     completedSessions: 0,
     primaryRole: 'mentee',
+    // Carried over from the old app, nothing seen yet: the What's new tour
+    // shows in dev and CI review (behind NEXT_PUBLIC_WHATS_NEW_ENABLED).
+    isMigrated: true,
+    seenItems: [],
     credits: {
       balance: 4,
       state: 'on_track',
@@ -172,6 +179,8 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     onboardingComplete: true,
     completedSessions: 0,
     primaryRole: 'mentor',
+    isMigrated: true,
+    seenItems: [],
     credits: null,
     // No photo, like the mock profile it owns: the initials on its cover tone.
     avatarUrl: null,
@@ -369,25 +378,26 @@ type Member = Extract<Viewer, { kind: 'member' }>;
  * A write the viewer just made (photo, cover colour), copied into the cached
  * /me at once, so the sidebar matches the profile even if the refetch fails.
  */
-export function patchViewer(
-  qc: QueryClient,
-  patch: Partial<
-    Pick<
-      Member,
-      | 'avatarUrl'
-      | 'avatarFocus'
-      | 'coverKey'
-      | 'onboardingComplete'
-      | 'mentorApprovedSeen'
-      | 'signedUpAsMentor'
-      | 'isMentor'
-      | 'mentorStage'
-    >
-  >,
-) {
+type ViewerPatch = Partial<
+  Pick<
+    Member,
+    | 'avatarUrl'
+    | 'avatarFocus'
+    | 'coverKey'
+    | 'onboardingComplete'
+    | 'mentorApprovedSeen'
+    | 'signedUpAsMentor'
+    | 'isMentor'
+    | 'mentorStage'
+    | 'seenItems'
+  >
+>;
+
+/** A function patch reads the cached member, for a change that builds on it (a seen key appended). */
+export function patchViewer(qc: QueryClient, patch: ViewerPatch | ((m: Member) => ViewerPatch)) {
   qc.setQueriesData<unknown>({ queryKey: keys.viewer.all }, (v: unknown) =>
     typeof v === 'object' && v !== null && (v as Viewer).kind === 'member'
-      ? { ...(v as Member), ...patch }
+      ? { ...(v as Member), ...(typeof patch === 'function' ? patch(v as Member) : patch) }
       : v,
   );
 }

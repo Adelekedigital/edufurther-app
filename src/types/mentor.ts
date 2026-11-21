@@ -259,6 +259,12 @@ export type Viewer =
       /** Carried over from the old app (`/me` is_migrated). Analytics only; absent when not known. */
       isMigrated?: boolean;
       /**
+       * What the account has already seen, oldest first (`/me` seen_items): a
+       * "What's new" tour's release id once it's dismissed or finished.
+       * Absent from a /me that predates it.
+       */
+      seenItems?: string[];
+      /**
        * The account's answer to analytics cookies (`/me` analytics_consent):
        * null until answered, absent when not known (the mock viewers).
        */
