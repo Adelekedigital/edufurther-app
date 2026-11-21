@@ -686,7 +686,7 @@ describe('Google Meet names the Google account to join with (owner, 21 Nov 2026)
     Object.defineProperty(navigator, 'standalone', { value: false, configurable: true });
   });
   const EMAIL = 'gbenga.ogundipe@example.com';
-  const hint = `Join with the Google account ${EMAIL} to get straight in.`;
+  const hint = `Join with the Google account ${EMAIL}.`;
   const meet = (side: 'mentor' | 'mentee' = 'mentor') => {
     h.room = remote(sessionRoom({ side }, {}, 'google_meet'));
   };
@@ -708,7 +708,7 @@ describe('Google Meet names the Google account to join with (owner, 21 Nov 2026)
     meet('mentee');
     renderAt('16:56:00');
     expect(
-      screen.getByText('Join with the Google account amara@example.com to get straight in.'),
+      screen.getByText('Join with the Google account amara@example.com.'),
     ).toBeVisible();
   });
 
@@ -729,7 +729,7 @@ describe('Google Meet names the Google account to join with (owner, 21 Nov 2026)
     renderAt('16:56:00');
     expect(
       screen.getByText(
-        `Opens in Safari. Join with the Google account ${EMAIL} to get straight in.`,
+        `Opens in Safari. Join with the Google account ${EMAIL}.`,
       ),
     ).toBeVisible();
     expect(
