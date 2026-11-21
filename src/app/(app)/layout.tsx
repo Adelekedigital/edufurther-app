@@ -38,10 +38,11 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
 };
 
 // The What's new tour's host loads after the page, never in its first-load JS
-// (350kB budget): its selection, copy and seen list come with it. A failed
-// load just means no tour this time.
-const WhatsNewHost = lazyPart(() =>
-  import('@/app/_shell/WhatsNewHost').then((m) => m.WhatsNewHost),
+// (350kB budget): its selection, copy and seen list come with it. Quiet: a
+// failed load just means no tour this time, with no toast and no Notice.
+const WhatsNewHost = lazyPart(
+  () => import('@/app/_shell/WhatsNewHost').then((m) => m.WhatsNewHost),
+  { quiet: true },
 );
 const WHATS_NEW_OFF: WhatsNewShellState = { more: false, holding: false };
 

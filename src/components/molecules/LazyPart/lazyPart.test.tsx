@@ -176,6 +176,30 @@ describe('lazyPart', () => {
     await waitFor(() => expect(screen.queryByText(LOAD_FAILED_COPY.online)).toBeNull());
   });
 
+  it('a quiet background part (the tour host) fails silently: no Notice, no toast, no reload (review of PR 668)', async () => {
+    const reload = vi.spyOn(page, 'reload').mockImplementation(() => {});
+    const load = vi.fn(() => Promise.reject(chunkError()));
+    const Part = lazyPart(load, { quiet: true });
+    render(
+      <main>
+        <h1>Home</h1>
+        <Part />
+        <LazyPartFailures />
+      </main>,
+    );
+    // Both attempts (the load and its one retry) have failed.
+    await waitFor(() => expect(load).toHaveBeenCalledTimes(2), { timeout: 3000 });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(screen.getByRole('heading', { name: 'Home' })).toBeVisible();
+    expect(screen.queryByText(LOAD_FAILED_COPY.inline)).toBeNull();
+    expect(screen.queryByText(LOAD_FAILED_COPY.online)).toBeNull();
+    expect(screen.queryByRole('button', { name: LOAD_FAILED_COPY.tryAgain })).toBeNull();
+    expect(reload).not.toHaveBeenCalled();
+    expect(sessionStorage.getItem(RELOAD_KEY)).toBeNull();
+  });
+
   it('an always-on part says so in its place, and Try again loads it', async () => {
     const user = userEvent.setup();
     const load = vi
