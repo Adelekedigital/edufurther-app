@@ -295,6 +295,11 @@
     --bottom-chrome-h: calc(56px + env(safe-area-inset-bottom));
     scroll-padding-bottom: var(--bottom-chrome-h);
   }
+  /* What the sticky header covers: a focused control, or a field scrolled up
+     to make room for its list over the phone keyboard (Select), stops under it. */
+  :global(html):has(.header) {
+    scroll-padding-top: calc(var(--ef-va-h) + var(--navbar-h-mobile));
+  }
   .tabs {
     position: fixed;
     left: 0;
