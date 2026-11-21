@@ -2,11 +2,18 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/atoms/Button/Button';
-import { ReminderDialog } from '@/app/_sessions/ReminderDialog';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useSendReminder } from '@/lib/api/data/reminders';
 import { reminderCopy } from '@/lib/copy/reminder';
 import { canWithdraw, waitingPill } from '@/lib/utils/bookings';
 import type { Booking } from '@/types/booking';
+
+// The dialog loads when Send a reminder opens it, not with the page
+// (performance budget, 350kB first-load JS); it mounts whole, focus and all.
+const ReminderDialog = lazyPart(
+  () => import('@/app/_sessions/ReminderDialog').then((m) => m.ReminderDialog),
+  { close: (p) => p.onClose() },
+);
 
 type Options = {
   timeZone: string;

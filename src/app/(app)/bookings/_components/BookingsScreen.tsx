@@ -34,8 +34,6 @@ import { cx } from '@/lib/utils/cx';
 import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { Button } from '@/components/atoms/Button/Button';
-import { ConfirmActionDialog } from '@/app/_sessions/ConfirmActionDialog';
-import { FileViewerLauncher } from '@/app/_shell/FileViewerLauncher';
 import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
 import { MESSAGES_LIVE } from '@/lib/config/messages';
 import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
@@ -62,6 +60,20 @@ import { useReminders } from './useReminders';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
 import { replaceQuery } from '@/lib/utils/replaceQuery';
+import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
+
+// The cancel, decline and withdraw dialog (with its move view) and the file
+// viewer load when they open, not with the page (performance budget, 350kB
+// first-load JS), as on Session Join. Each mounts whole, so its focus trap and
+// its focus return to the opener are unchanged.
+const ConfirmActionDialog = lazyPart(
+  () => import('@/app/_sessions/ConfirmActionDialog').then((m) => m.ConfirmActionDialog),
+  { close: (p) => p.onClose() },
+);
+const FileViewerLauncher = lazyPart(
+  () => import('@/app/_shell/FileViewerLauncher').then((m) => m.FileViewerLauncher),
+  { close: (p) => p.onClose() },
+);
 
 /** The details panel's element id, as BookingDetailsPanel renders it. */
 const PANEL_ID = 'booking-details';
