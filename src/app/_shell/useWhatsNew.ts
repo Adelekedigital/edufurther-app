@@ -9,6 +9,7 @@ import { installPlatform, openInstallNudge } from '@/lib/pwa/installPrompt';
 import { useMarkSeen, useSeenHere } from '@/lib/api/data/seenItems';
 import type { TourLabels, TourReleaseId, TourRole, TourRoleContent } from '@/lib/copy/whatsNew';
 import { inSetup, type Access } from '@/lib/utils/access';
+import { replaceQuery } from '@/lib/utils/replaceQuery';
 import {
   activeReleases,
   inReplayWindow,
@@ -58,7 +59,7 @@ function useReplayAsked(): [boolean, (on: boolean) => void] {
     if (!asked) return;
     const url = new URL(window.location.href);
     url.searchParams.delete(REPLAY_PARAM);
-    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    replaceQuery(url.pathname + url.search + url.hash);
   }, [asked]);
   return [replay, setReplay];
 }
