@@ -141,9 +141,11 @@
 }
 
 /* ---- done ---- */
+/* Under the app's dialogs (50): the install sheet opened from Get the app sits
+   over it, and it is there once the sheet closes. */
 .done {
   position: fixed;
-  z-index: 60;
+  z-index: 45;
   right: var(--space-6);
   bottom: var(--space-6);
   width: min(360px, calc(100vw - var(--space-8)));
