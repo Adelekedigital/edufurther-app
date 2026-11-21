@@ -14,7 +14,7 @@ export const INSTALL_COPY = {
   },
   /** Android: the one reason, under the line (owner, 2026-11-18). */
   reason: 'Free, takes a few seconds, no app store.',
-  add: 'Add to home screen',
+  add: 'Install the app',
   /** iPhone Safari: no prompt to call, so the steps (and no button: the close is the X). */
   steps: {
     shareBefore: 'Tap',

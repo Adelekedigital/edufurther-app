@@ -293,7 +293,7 @@ export function notePushAskShown(): void {
 const auto = (n: InstallNudge) => n.trigger !== 'menu' && n.trigger !== 'tour';
 
 /**
- * Android's "Add to home screen": the browser's prompt, its answer counted.
+ * Android's "Install the app": the browser's prompt, its answer counted.
  * The sheet closes first, so focus is back on the page under the prompt.
  * iPhone has no button: a tap can't prove an install, and `pwa_installed`
  * counts the real one on the first home-screen launch.
