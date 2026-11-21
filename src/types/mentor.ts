@@ -13,6 +13,9 @@ export type Topic = {
 };
 
 /** Max one per card, highest priority first. Rules: lib/api/data/labels.ts. */
+/** A mentee onboarding answer still owed (`/me` onboarding.missing), in step order. */
+export type OnboardingAnswer = 'help' | 'origin' | 'degree' | 'field';
+
 export type MentorLabel = 'top-rated' | 'experienced' | 'new';
 
 /**
@@ -249,6 +252,11 @@ export type Viewer =
        * as finished (no setup lock).
        */
       onboardingComplete?: boolean;
+      /**
+       * The mentee answers onboarding still owes, in step order (`/me`
+       * onboarding.missing): always empty for a mentor. Absent: not known.
+       */
+      onboardingMissing?: OnboardingAnswer[];
       /** The mentor profile appears in search (`listing_status` listed). Absent: not known. */
       isListedMentor?: boolean;
       /** The account's IANA zone (`/me` timezone): the backend judges "today" in it (return dates). */

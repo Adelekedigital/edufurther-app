@@ -91,6 +91,13 @@ describe('stageFor', () => {
     expect(stageFor({ ...base, booked }).stage).toBe('booked');
   });
 
+  it('for a credit (completeForCredit): the profile card, whatever else is under way', () => {
+    const forCredit = { ...base, forCredit: true };
+    expect(stageFor(forCredit)).toEqual({ stage: 'incomplete', oneStepLeft: false });
+    expect(stageFor({ ...forCredit, profileDone: true }).stage).toBe('incomplete');
+    expect(stageFor({ ...forCredit, booked }).stage).toBe('incomplete');
+  });
+
   it('booked with the link shared and the profile short: the profile card, "One step left"', () => {
     expect(stageFor({ ...base, booked, invited: true })).toEqual({
       stage: 'incomplete',

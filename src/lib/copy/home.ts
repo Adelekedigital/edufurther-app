@@ -98,6 +98,9 @@ export const PROFILE_TIPS = {
   bio: 'Add a short bio',
 } as const;
 
+/** Onboarded with no goal and no credits: finishing the answers pays one (owner, 21 Nov 2026). */
+export const COMPLETE_FOR_CREDIT = 'Complete your profile and get credit to book a session.';
+
 export const MENTORS_FOR_GOAL = 'Mentors for your goal';
 
 /**
