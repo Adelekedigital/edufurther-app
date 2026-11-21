@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { replaceQuery } from '@/lib/utils/replaceQuery';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { pushQuery, replaceQuery } from '@/lib/utils/replaceQuery';
 
 /**
  * `/messages?with={personId}` is the open chat and `?settings=1` opens Message
@@ -10,7 +10,6 @@ import { replaceQuery } from '@/lib/utils/replaceQuery';
  * `mockViewer`, for one) is kept as it is.
  */
 export function useMessagesUrl() {
-  const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const withId = params.get('with') || null;
@@ -25,11 +24,10 @@ export function useMessagesUrl() {
       }
       const qs = next.toString();
       const url = qs ? `${pathname}?${qs}` : pathname;
-      // A push is a step Back returns to, so it stays on the router.
-      if (how === 'push') router.push(url, { scroll: false });
+      if (how === 'push') pushQuery(url);
       else replaceQuery(url);
     },
-    [params, pathname, router],
+    [params, pathname],
   );
 
   return {

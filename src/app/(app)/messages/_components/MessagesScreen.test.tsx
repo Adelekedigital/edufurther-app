@@ -15,6 +15,7 @@ import {
   NOW,
   person,
   push,
+  pushQuery,
   remote,
   replaceQuery,
   resetHarness,
@@ -169,6 +170,7 @@ describe('Messages: which chat is open', () => {
     expect(screen.getByRole('region', { name: 'Chat with Hugh Momah' })).toBeInTheDocument();
     await user.click(list().getByRole('button', { name: 'Gbenga Elufisan' }));
     expect(replaceQuery).toHaveBeenCalledWith('/messages?with=u-gbenga&mockViewer=mentee');
+    expect(pushQuery).not.toHaveBeenCalled();
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -182,7 +184,9 @@ describe('Messages: which chat is open', () => {
       'aria-current',
     );
     await user.click(list().getByRole('button', { name: 'Hugh Momah' }));
-    expect(push).toHaveBeenCalledWith('/messages?with=u-hugh', { scroll: false });
+    // A step forward (Back returns to the list), in place: no server round trip.
+    expect(pushQuery).toHaveBeenCalledWith('/messages?with=u-hugh');
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('desktop with no ?with=: the top of the list as shown opens, and Unread keeps it once read', () => {
