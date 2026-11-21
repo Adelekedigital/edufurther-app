@@ -16,7 +16,6 @@ vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => ({ kind: 'guest' }) }));
 const { accountItems } = await import('./useAppShell');
 const { tourReplay } = await import('./useWhatsNew');
-const { TOUR_COPY } = await import('@/lib/copy/whatsNew');
 
 type Member = Extract<Viewer, { kind: 'member' }>;
 const mentee = {
@@ -45,13 +44,13 @@ const setup = {
 function shell(now: number, opts: { previewing?: boolean; access?: Access; m?: Member } = {}) {
   const m = opts.m ?? mentee;
   // As WhatsNewHost hands it to the shell.
-  const href = tourReplay(m, opts.previewing ?? false, now);
+  const r = tourReplay(m, opts.previewing ?? false, now);
   const items = accountItems(
     m,
     vi.fn(),
     opts.access,
     false,
-    href ? { label: TOUR_COPY.menuItem, href } : undefined,
+    r ? { label: r.labels.menuItem, href: r.href } : undefined,
   );
   return render(
     <AppShell
@@ -111,5 +110,13 @@ describe('the What’s new menu item', () => {
       expect(screen.queryByRole('link', { name: 'What’s new' })).toBeNull();
       unmount();
     }
+  });
+
+  it('an account made here gets "Welcome tour" instead, with no end date', async () => {
+    shell(Date.parse('2027-06-01T00:00:00Z'), { m: { ...mentee, isMigrated: false } });
+    await userEvent.click(tabs().getByRole('button', { name: 'More' }));
+    expect(
+      within(document.getElementById('more-sheet')!).getByRole('link', { name: 'Welcome tour' }),
+    ).toHaveAttribute('href', '/home?tour=replay');
   });
 });

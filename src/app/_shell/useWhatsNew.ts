@@ -7,7 +7,7 @@ import type { InstallPlatform } from '@/lib/analytics/events';
 import { track } from '@/lib/analytics/track';
 import { installPlatform, openInstallNudge } from '@/lib/pwa/installPrompt';
 import { useMarkSeen, useSeenHere } from '@/lib/api/data/seenItems';
-import type { TourReleaseId, TourRole, TourRoleContent } from '@/lib/copy/whatsNew';
+import type { TourLabels, TourReleaseId, TourRole, TourRoleContent } from '@/lib/copy/whatsNew';
 import { inSetup, type Access } from '@/lib/utils/access';
 import {
   activeReleases,
@@ -15,10 +15,12 @@ import {
   releaseFor,
   REPLAY_PARAM,
   REPLAY_VALUE,
-  replayHref,
+  replayFor,
   TOUR_HOME,
+  tourLabels,
   tourMayStart,
   tourViewerOf,
+  type TourReplay,
 } from '@/lib/utils/whatsNew';
 import type { TourEvent } from '@/components/templates/WhatsNewTour/WhatsNewTour';
 import type { Viewer } from '@/types/mentor';
@@ -65,6 +67,8 @@ type Active = {
   release: TourReleaseId;
   role: TourRole;
   content: TourRoleContent;
+  /** The release's own badge and title (the welcome). */
+  labels: TourLabels;
   replay: boolean;
   /** How this device installs the app, read as the tour opens (Get the app). */
   install: InstallPlatform | null;
@@ -140,6 +144,7 @@ export function useWhatsNew({
           release: release.id,
           role,
           content,
+          labels: tourLabels(release),
           replay,
           install: installPlatform(),
           replayable: inReplayWindow(release, Date.now()),
@@ -194,6 +199,7 @@ export function useWhatsNew({
     tour: active && {
       first: member?.firstName ?? '',
       content: active.content,
+      labels: active.labels,
       onEvent,
       onMore: setMore,
       install: active.install,
@@ -210,15 +216,16 @@ export function useWhatsNew({
 }
 
 /**
- * Where Settings' "Replay tour" and the account menu's "What's new" go: the
- * role's Home, replaying from the welcome (seen stays seen). Undefined outside
- * the release's replay window, in Preview as user, or for anyone it isn't for.
+ * Where Settings' "Replay tour" and the account menu's item go, with the words
+ * that release uses for them ("What's new", "Welcome tour"): the role's Home,
+ * replaying from the welcome (seen stays seen). Undefined outside the
+ * release's replay window, in Preview as user, or for anyone it isn't for.
  */
 export function tourReplay(
   member: Member | null,
   previewing: boolean,
   now = Date.now(),
-): string | undefined {
+): TourReplay | undefined {
   const viewer = member && !previewing ? tourViewerOf(member) : null;
-  return viewer ? replayHref(viewer, activeReleases(), now) : undefined;
+  return viewer ? replayFor(viewer, activeReleases(), now) : undefined;
 }

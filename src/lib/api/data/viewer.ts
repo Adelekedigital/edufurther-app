@@ -106,13 +106,15 @@ function sumSides(a: number | null | undefined, b: number | null | undefined): n
 }
 
 /**
- * Opt-in (NEXT_PUBLIC_MOCK_TOUR=1, default off): the mock mentee and mentor
- * come from the old app with nothing seen, so the What's new tour opens on
- * /home and /dashboard. Off, page review, e2e and screenshots of those pages
+ * Opt-in (default off): the mock mentee and mentor have seen nothing, so a
+ * tour opens on /home and /dashboard. NEXT_PUBLIC_MOCK_TOUR=1 makes them
+ * migrated from the old app (What's new); `new` makes them accounts made here
+ * (the Welcome tour). Off, page review, e2e and screenshots of those pages
  * aren't covered by its welcome.
  */
+const MOCK_TOUR = process.env.NEXT_PUBLIC_MOCK_TOUR;
 const MOCK_TOUR_STATE: { isMigrated?: boolean; seenItems?: string[] } =
-  process.env.NEXT_PUBLIC_MOCK_TOUR === '1' ? { isMigrated: true, seenItems: [] } : {};
+  MOCK_TOUR === '1' || MOCK_TOUR === 'new' ? { isMigrated: MOCK_TOUR === '1', seenItems: [] } : {};
 
 /**
  * Local dev / CI page review without auth (NEXT_PUBLIC_MOCK_VIEWER).

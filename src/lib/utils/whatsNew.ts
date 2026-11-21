@@ -6,6 +6,7 @@ import type { InstallPlatform } from '@/lib/analytics/events';
 import {
   TOUR_COPY,
   TOUR_RELEASES,
+  type TourLabels,
   type TourRelease,
   type TourRole,
   type TourRoleContent,
@@ -52,12 +53,17 @@ export type TourViewer = {
  * them yet: /me still loading (or a guest), or a platform admin. The role is
  * the routing one (`viewerRole`, as accessFor and memberHome read it): a
  * mentor, a mentor sign-up while mentor onboarding is on, else a mentee.
+ * The role is null (no tour, no replay) until the account is set up: a
+ * mentee mid-onboarding, and a mentor until approved (a sign-up, an
+ * application in review or declined), whether or not their flags lock pages.
  */
 export function tourViewerOf(viewer: Viewer): (TourViewer & { id: string }) | null {
   if (viewer.kind !== 'member' || viewer.isAdmin) return null;
+  const role = viewerRole(viewer);
+  const ready = role === 'mentor' ? viewer.isApprovedMentor : viewer.onboardingComplete !== false;
   return {
     id: viewer.id,
-    role: viewerRole(viewer),
+    role: ready ? role : null,
     isMigrated: viewer.isMigrated,
     seenItems: viewer.seenItems,
   };
@@ -104,11 +110,23 @@ export function releaseFor(
 export const REPLAY_DAYS = 30;
 const DAY_MS = 86_400_000;
 
-/** From its release day (UTC midnight) for `replayDays`; an unreadable date is never. */
+/** From its release day (UTC midnight) for `replayDays`, or on with no end for 'always'; an unreadable date is never. */
 export function inReplayWindow(r: TourRelease, now: number): boolean {
   const from = Date.parse(r.liveFrom);
-  if (Number.isNaN(from)) return false;
-  return now >= from && now < from + (r.replayDays ?? REPLAY_DAYS) * DAY_MS;
+  if (Number.isNaN(from) || now < from) return false;
+  return r.replayDays === 'always' || now < from + (r.replayDays ?? REPLAY_DAYS) * DAY_MS;
+}
+
+/** A release's own words (`labels`), TOUR_COPY's where it sets none. */
+export function tourLabels(r: TourRelease): TourLabels {
+  return {
+    badge: TOUR_COPY.badge,
+    welcomeTitle: TOUR_COPY.welcomeTitle,
+    menuItem: TOUR_COPY.menuItem,
+    replayTitle: TOUR_COPY.replayTitle,
+    replaySub: TOUR_COPY.replaySub,
+    ...r.labels,
+  };
 }
 
 /** The query that asks Home to replay the tour from its welcome (seen stays seen). */
@@ -126,9 +144,24 @@ export function replayHref(
   releases: readonly TourRelease[],
   now: number,
 ): string | undefined {
+  return replayFor(viewer, releases, now)?.href;
+}
+
+/** The replay link with the words its release uses for it (menu item, Settings row). */
+export type TourReplay = { href: string; labels: TourLabels };
+
+/** replayHref plus that release's labels, so the menu and Settings name the right tour. */
+export function replayFor(
+  viewer: TourViewer,
+  releases: readonly TourRelease[],
+  now: number,
+): TourReplay | undefined {
   const r = releaseFor(viewer, releases, undefined, true, now);
   if (!r || !viewer.role || !inReplayWindow(r, now)) return undefined;
-  return `${TOUR_HOME[viewer.role]}?${REPLAY_PARAM}=${REPLAY_VALUE}`;
+  return {
+    href: `${TOUR_HOME[viewer.role]}?${REPLAY_PARAM}=${REPLAY_VALUE}`,
+    labels: tourLabels(r),
+  };
 }
 
 /**
@@ -155,6 +188,9 @@ function inAudience(r: TourRelease, v: TourViewer): boolean {
   switch (r.audience) {
     case 'migrated':
       return v.isMigrated === true;
+    case 'new':
+      // Unknown (undefined) is neither: nobody gets both tours.
+      return v.isMigrated === false;
   }
 }
 

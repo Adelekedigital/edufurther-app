@@ -112,7 +112,13 @@ export function SecurityPanel({
             }
           : undefined
       }
-      replayTourHref={replayTour}
+      replayTour={
+        replayTour && {
+          href: replayTour.href,
+          title: replayTour.labels.replayTitle,
+          sub: replayTour.labels.replaySub,
+        }
+      }
       notifications={
         push.state === 'hidden'
           ? undefined

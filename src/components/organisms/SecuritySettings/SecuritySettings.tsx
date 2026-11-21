@@ -65,10 +65,11 @@ export type SecuritySettingsProps = {
    */
   analytics?: { granted: boolean; busy: boolean; onChange: (granted: boolean) => void };
   /**
-   * "What's new": a link to Home, where the tour replays from its welcome.
+   * The tour's replay row: a link to Home, where the tour replays from its
+   * welcome, named as that release names it ("What's new", "Welcome tour").
    * Absent outside a release's replay window for them.
    */
-  replayTourHref?: string;
+  replayTour?: { href: string; title: string; sub: string };
 };
 
 export type DeviceNotifications = {
@@ -158,18 +159,18 @@ export function SecuritySettings(p: SecuritySettingsProps) {
         </section>
       )}
 
-      {p.replayTourHref && (
+      {p.replayTour && (
         <section className={styles.card} aria-labelledby={tourId}>
           <div className={styles.row}>
             <Tile icon="new_releases" />
             <div className={styles.text}>
               <h2 id={tourId} className={styles.rowTitle}>
-                {TOUR_COPY.replayTitle}
+                {p.replayTour.title}
               </h2>
-              <span className={styles.meta}>{TOUR_COPY.replaySub}</span>
+              <span className={styles.meta}>{p.replayTour.sub}</span>
             </div>
             <ButtonLink
-              href={p.replayTourHref}
+              href={p.replayTour.href}
               prefetch={false}
               variant="secondary-outlined"
               size="medium"

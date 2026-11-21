@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import type { InstallPlatform } from '@/lib/analytics/events';
-import type { TourRoleContent, TourTarget } from '@/lib/copy/whatsNew';
+import type { TourLabels, TourRoleContent, TourTarget } from '@/lib/copy/whatsNew';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import { tourSteps, tourText, type ResolvedStep } from '@/lib/utils/whatsNew';
 import { placeOf } from './anchor';
@@ -37,6 +37,7 @@ type Phase = { at: 'welcome' } | { at: 'step'; i: number } | { at: 'done' };
 export function WhatsNewTour({
   first,
   content,
+  labels,
   onEvent,
   onMore,
   install = null,
@@ -46,6 +47,8 @@ export function WhatsNewTour({
 }: {
   first: string;
   content: TourRoleContent;
+  /** The release's welcome badge and title (tourLabels); TOUR_COPY's when absent. */
+  labels?: Pick<TourLabels, 'badge' | 'welcomeTitle'>;
   onEvent: (e: TourEvent) => void;
   onMore: (open: boolean) => void;
   /** How this device installs the app, or null: Get the app shows only with one. */
@@ -126,6 +129,7 @@ export function WhatsNewTour({
     return (
       <TourWelcome
         first={first}
+        labels={labels}
         welcome={content.welcome}
         body={text.welcomeBody}
         hint={text.hint}
