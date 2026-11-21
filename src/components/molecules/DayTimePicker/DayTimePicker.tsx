@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { cx } from '@/lib/utils/cx';
 import { formatDay, formatTime } from '@/lib/utils/format';
@@ -6,38 +6,25 @@ import type { BookingDay } from '@/types/mentor';
 import styles from './DayTimePicker.module.css';
 
 type DayTimePickerProps = {
-  /** The seven days of the week on show; days with no slots render disabled. */
+  /** The days that have times, soonest first, across the booking window (none is the caller's state). */
   days: BookingDay[];
-  /** Index of the chosen day in `days`, or null when the week has nothing open. */
-  dayIndex: number | null;
+  /** Index of the chosen day in `days`. */
+  dayIndex: number;
   onDayChange: (index: number) => void;
   /** Selected slot's UTC instant, or null. */
   time: string | null;
   onTimeChange: (startsAt: string) => void;
   timeZone: string;
-  /** The week switcher: "Next 7 days · Sep 27 – Oct 3" with ‹ ›. */
-  week: {
-    label: string;
-    canPrev: boolean;
-    canNext: boolean;
-    onPrev: () => void;
-    onNext: () => void;
-    /**
-     * An empty week's way on (BookingModal.dc.html, design reply #40): the
-     * next week that has times, e.g. "Show Oct 4 – Oct 10". Null when no later
-     * week has any ("Check back soon.").
-     */
-    nextOpen?: { label: string; onClick: () => void } | null;
-    /** The empty week's second line: "Try later dates.", "Try earlier dates." or "Check back soon." */
-    emptyHint?: string;
-  };
 };
 
+/** "2 available": what the day offers, said once for the tile and its name. */
+const available = (n: number) => `${n} available`;
+
 /**
- * A week of day tiles, then the chosen day's times (Mentor Profile.dc.html
- * booking card: 7 tiles, a dot on open days, empty days disabled, a week
- * switcher, a 3-column time grid). Both groups are native radio groups
- * styled as tiles, so arrow keys, focus and announcement come from the platform.
+ * The open days in one scrolling row, then the chosen day's times (owner
+ * 2026-11-21, from the legacy booking card: only days with times, each with its
+ * date and how many are free; ‹ › scroll the row). Both groups are native radio
+ * groups styled as tiles, so arrow keys, focus and announcement come from the platform.
  */
 export function DayTimePicker({
   days,
@@ -46,38 +33,59 @@ export function DayTimePicker({
   time,
   onTimeChange,
   timeZone,
-  week,
 }: DayTimePickerProps) {
   const name = useId();
-  const dayGroupRef = useRef<HTMLFieldSetElement>(null);
-  const focusDayAfterJump = useRef(false);
+  const labelId = `${name}-days`;
+  const row = useRef<HTMLDivElement>(null);
+  const [ends, setEnds] = useState({ start: true, end: true });
+  // Which way the row can still scroll, for the arrows.
+  const measure = useCallback(() => {
+    const r = row.current;
+    if (!r) return;
+    setEnds({
+      start: r.scrollLeft <= 1,
+      end: r.scrollLeft + r.clientWidth >= r.scrollWidth - 1,
+    });
+  }, []);
   useEffect(() => {
-    if (!focusDayAfterJump.current) return;
-    focusDayAfterJump.current = false;
-    dayGroupRef.current?.querySelector<HTMLInputElement>('input:checked')?.focus();
-  }, [week.label]);
-  const labelId = `${name}-week`;
-  const day = dayIndex === null ? null : days[dayIndex];
-  const heading = day
-    ? (() => {
-        const f = formatDay(day.date);
-        const n = day.slots.length;
-        return `${f.weekday}, ${f.date} · ${n} ${n === 1 ? 'time' : 'times'}`;
-      })()
-    : 'Time';
+    measure();
+    const r = row.current;
+    if (!r || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(r);
+    return () => ro.disconnect();
+  }, [measure, days.length]);
+  // The chosen day stays in view (a zone change regroups the days, an opened time picks one).
+  useEffect(() => {
+    const r = row.current;
+    const tile = r?.querySelectorAll<HTMLElement>('label')[dayIndex];
+    if (!r || !tile) return;
+    const left = tile.offsetLeft - r.offsetLeft;
+    if (left < r.scrollLeft || left + tile.offsetWidth > r.scrollLeft + r.clientWidth)
+      r.scrollTo?.({ left: left - (r.clientWidth - tile.offsetWidth) / 2 });
+  }, [dayIndex, days]);
+  const page = (dir: 1 | -1) => {
+    const r = row.current;
+    r?.scrollBy?.({ left: dir * r.clientWidth * 0.8, behavior: 'smooth' });
+  };
+  const day = days[dayIndex] ?? days[0]!;
+  const heading = (() => {
+    const f = formatDay(day.date);
+    return `${f.weekday}, ${f.date} · ${available(day.slots.length)}`;
+  })();
   return (
     <div className={styles.picker}>
-      <div className={styles.weekHead}>
-        <span id={labelId} className={styles.weekLabel}>
-          {week.label}
+      <div className={styles.head}>
+        <span id={labelId} className={styles.label}>
+          Pick a day
         </span>
         <span className={styles.arrows}>
           <button
             type="button"
             className={styles.arrow}
             aria-label="Earlier dates"
-            disabled={!week.canPrev}
-            onClick={week.onPrev}
+            disabled={ends.start}
+            onClick={() => page(-1)}
           >
             <Icon name="chevron_left" size={18} />
           </button>
@@ -85,84 +93,57 @@ export function DayTimePicker({
             type="button"
             className={styles.arrow}
             aria-label="Later dates"
-            disabled={!week.canNext}
-            onClick={week.onNext}
+            disabled={ends.end}
+            onClick={() => page(1)}
           >
             <Icon name="chevron_right" size={18} />
           </button>
         </span>
       </div>
-      <fieldset ref={dayGroupRef} className={styles.fieldset} aria-labelledby={labelId}>
+      <fieldset className={styles.fieldset} aria-labelledby={labelId}>
         <legend className="sr-only">Date</legend>
-        <div className={styles.days}>
+        <div ref={row} className={styles.days} onScroll={measure}>
           {days.map((d, i) => {
             const f = formatDay(d.date);
-            const none = d.slots.length === 0;
-            const n = d.slots.length;
             return (
-              <label key={d.date} className={cx(styles.option, none && styles.none)}>
+              <label key={d.date} className={styles.option}>
                 <input
                   type="radio"
                   className="sr-only"
                   name={`${name}-day`}
                   checked={i === dayIndex}
-                  disabled={none}
                   onChange={() => onDayChange(i)}
-                  aria-label={`${f.weekday}, ${f.date}, ${none ? 'no open times' : `${n} ${n === 1 ? 'time' : 'times'}`}`}
+                  aria-label={`${f.weekday}, ${f.date}, ${available(d.slots.length)}`}
                 />
                 <span className={cx(styles.tile, styles.dayTile)} aria-hidden>
                   <span className={styles.weekday}>{f.weekday}</span>
-                  <span className={styles.date}>{Number(d.date.slice(8))}</span>
-                  <span className={styles.dot} />
+                  <span className={styles.date}>{f.date}</span>
+                  <span className={styles.count}>{available(d.slots.length)}</span>
                 </span>
               </label>
             );
           })}
         </div>
       </fieldset>
-      {day ? (
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.heading}>{heading}</legend>
-          <div className={styles.times}>
-            {day.slots.map((s) => (
-              <label key={s.startsAt} className={styles.option}>
-                <input
-                  type="radio"
-                  className="sr-only"
-                  name={`${name}-time`}
-                  checked={time === s.startsAt}
-                  onChange={() => onTimeChange(s.startsAt)}
-                />
-                <span className={cx(styles.tile, styles.timeTile)}>
-                  {formatTime(s.startsAt, timeZone)}
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      ) : (
-        // BookingModal.dc.html weekEmpty (design reply #40).
-        <div className={styles.emptyWeek} role="status">
-          <span className={styles.emptyTitle}>No open times this week</span>
-          <span className={styles.emptyBody}>
-            {week.emptyHint ?? (week.nextOpen ? 'Try later dates.' : 'Check back soon.')}
-          </span>
-          {week.nextOpen && (
-            <button
-              type="button"
-              className={styles.emptyJump}
-              onClick={() => {
-                // The link unmounts once the new week shows times: hand focus
-                // to that week's chosen day so it isn't dropped (review of #26).
-                focusDayAfterJump.current = true;
-                week.nextOpen!.onClick();
-              }}
-            >
-              {week.nextOpen.label}
-            </button>
-          )}
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.heading}>{heading}</legend>
+        <div className={styles.times}>
+          {day.slots.map((s) => (
+            <label key={s.startsAt} className={styles.option}>
+              <input
+                type="radio"
+                className="sr-only"
+                name={`${name}-time`}
+                checked={time === s.startsAt}
+                onChange={() => onTimeChange(s.startsAt)}
+              />
+              <span className={cx(styles.tile, styles.timeTile)}>
+                {formatTime(s.startsAt, timeZone)}
+              </span>
+            </label>
+          ))}
         </div>
-      )}
+      </fieldset>
     </div>
   );
 }

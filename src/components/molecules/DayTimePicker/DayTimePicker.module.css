@@ -1,5 +1,5 @@
-/* Mentor Profile.dc.html booking card: week switcher, 7 day tiles, time grid.
-   Used by BookingModal on every screen (product 2026-09-27: 7 days at a time). */
+/* The booking card's day picker: a scrolling row of the open days, then the
+   chosen day's time grid (owner 2026-11-21, from the legacy booking card). */
 .picker {
   display: flex;
   flex-direction: column;
@@ -11,12 +11,12 @@
   padding: 0;
   min-width: 0;
 }
-.weekHead {
+.head {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.weekLabel {
+.label {
   font-size: var(--text-p-xs);
   font-weight: var(--weight-semibold);
 }
@@ -48,9 +48,20 @@
   outline-offset: var(--focus-ring-offset);
 }
 .days {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: var(--space-1);
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  /* Room for the chosen tile's focus ring inside the scroll box. */
+  padding: var(--space-1) 2px;
+}
+.days::-webkit-scrollbar {
+  display: none;
+}
+.days > .option {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
 }
 .times {
   display: grid;
@@ -60,9 +71,6 @@
 .option {
   display: block;
   cursor: pointer;
-}
-.none {
-  cursor: not-allowed;
 }
 .tile {
   display: flex;
@@ -75,18 +83,15 @@
     background-color var(--duration-fast) var(--ease-standard),
     border-color var(--duration-fast) var(--ease-standard);
 }
-.option:not(.none):hover .tile {
+.option:hover .tile {
   border-color: var(--border-default);
 }
 .dayTile {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  padding: var(--space-2) 0;
-}
-.none .dayTile {
-  background: var(--surface-subtle);
-  color: var(--ink-300);
+  min-width: 76px;
+  padding: var(--space-2) var(--space-3);
 }
 .timeTile {
   height: var(--menu-item-h);
@@ -106,15 +111,13 @@
 .date {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);
+  white-space: nowrap;
 }
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background: var(--green-600);
-}
-.none .dot {
-  background: transparent;
+/* How many times the day offers: muted, never red (red means an error here). */
+.count {
+  font-size: var(--text-p-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 input:checked + .tile {
   border-color: var(--blue-500);
@@ -136,44 +139,6 @@ input:focus-visible + .tile {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
-}
-/* BookingModal.dc.html weekEmpty. */
-.emptyWeek {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--surface-subtle);
-  text-align: center;
-}
-.emptyTitle {
-  font-size: var(--text-p-sm);
-  font-weight: var(--weight-semibold);
-}
-.emptyBody {
-  font-size: var(--text-p-xs);
-  color: var(--ink-600);
-}
-.emptyJump {
-  min-height: var(--button-h-small);
-  padding: 0 var(--space-2);
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: var(--font-ui);
-  font-size: var(--text-p-xs);
-  font-weight: var(--weight-semibold);
-  color: var(--blue-500);
-}
-.emptyJump:hover {
-  color: var(--blue-700);
-}
-.emptyJump:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-  border-radius: var(--radius-md);
 }
 
 @media (max-width: 767px) {
