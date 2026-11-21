@@ -14,6 +14,14 @@
   font-size: var(--text-p-md);
   font-weight: var(--weight-semibold);
 }
+.lead {
+  margin: 0;
+  font-size: var(--text-p-sm);
+  line-height: var(--lh-p);
+  font-weight: var(--weight-medium);
+  color: var(--ink-900);
+  text-wrap: pretty;
+}
 .percent {
   font-size: var(--text-p-sm);
   font-weight: var(--weight-semibold);

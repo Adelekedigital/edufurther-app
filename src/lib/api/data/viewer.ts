@@ -53,6 +53,8 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     mentorStage: mentorStageOf(mentor),
     // Unknown (an older /me) is finished: nobody is locked on a guess.
     onboardingComplete: me.onboarding?.complete ?? true,
+    // Unlike `complete`, unknown stays unknown: nothing is offered on a guess.
+    onboardingMissing: Array.isArray(me.onboarding?.missing) ? me.onboarding.missing : undefined,
     isListedMentor: me.mentor_profile?.listing_status === 'listed',
     timeZone: me.timezone || undefined,
     completedSessions: me.mentee_completed_sessions,
@@ -251,6 +253,27 @@ MOCK_VIEWERS['mentee-new'] = {
 MOCK_VIEWERS['mentee-returning'] = {
   ...(MOCK_VIEWERS.mentee as Extract<Viewer, { kind: 'member' }>),
   completedSessions: 12,
+};
+
+// A migrated mentee onboarded without a goal and holding no credits: Home asks
+// them to complete their profile for one (completeForCredit, decision 358).
+// `mentee-for-credit-returning` has had a session, so it shows on Profile strength.
+MOCK_VIEWERS['mentee-for-credit'] = {
+  ...(MOCK_VIEWERS['mentee-new'] as Extract<Viewer, { kind: 'member' }>),
+  isMentee: false,
+  isMigrated: true,
+  onboardingMissing: ['help', 'degree', 'field'],
+  credits: {
+    balance: 0,
+    state: 'exhausted',
+    nextResetAt: '2026-12-01T00:00:00Z',
+    monthly: { balance: 0, ceiling: 1, level: 1, expiresAt: null, unlocked: false },
+    bonus: { balance: 0, groups: [] },
+  },
+};
+MOCK_VIEWERS['mentee-for-credit-returning'] = {
+  ...(MOCK_VIEWERS['mentee-for-credit'] as Extract<Viewer, { kind: 'member' }>),
+  completedSessions: 3,
 };
 
 // The same mentee, onboarding unfinished: the setup lock (Home → /onboarding).

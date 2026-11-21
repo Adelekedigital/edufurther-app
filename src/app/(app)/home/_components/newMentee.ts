@@ -88,10 +88,16 @@ export type NewMenteeState = {
   friendJoined: boolean;
   /** 3 free sessions a month are on: the invite step is done, whatever this device remembers. */
   unlocked?: boolean;
+  /**
+   * Onboarded with no goal and no credits (completeForCredit): finishing the
+   * profile pays a credit, so it is the step whatever else is under way.
+   */
+  forCredit?: boolean;
 };
 
 /** Which next-step card shows (design NX), and whether it says "One step left". */
 export function stageFor(s: NewMenteeState): { stage: Stage; oneStepLeft: boolean } {
+  if (s.forCredit) return { stage: 'incomplete', oneStepLeft: false };
   if (s.booked) {
     // Booked and the link shared, with the profile still short: the profile is what's left.
     if (s.invited && !s.profileDone) return { stage: 'incomplete', oneStepLeft: true };

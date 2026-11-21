@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { userRead } from '@/lib/api/data/_test/meEntry';
+import { useSaveGoals } from '@/lib/api/data/goals';
+import { COMPLETE_FOR_CREDIT } from '@/lib/copy/home';
 import type { Booking } from '@/types/booking';
 import type { Remote } from '@/types/mentor';
 
@@ -16,6 +19,10 @@ import type { Remote } from '@/types/mentor';
 // The real /me readers, behind a real QueryClient; only the requests are fake.
 const h = vi.hoisted(() => ({
   calls: [] as string[],
+  /** The /me reply; null: it never answers. Unset: ME. */
+  me: undefined as unknown,
+  /** What /me says once a goal PUT lands. */
+  meAfterSave: undefined as unknown,
   pendingLoading: true,
   upcoming: [] as unknown[],
 }));
@@ -23,9 +30,21 @@ vi.mock('@/lib/api/data/http', () => ({
   api: {
     GET: async (path: string) => {
       h.calls.push(`GET ${path}`);
-      if (path === '/api/v1/me') return { data: ME, response: new Response(null) };
+      if (path === '/api/v1/me') {
+        if (h.me === null) return new Promise(() => {});
+        return { data: h.me ?? ME, response: new Response(null) };
+      }
       if (path === '/api/v1/me/referrals') return { data: [], response: new Response(null) };
       return { data: undefined, error: {}, response: new Response(null, { status: 404 }) };
+    },
+    PATCH: async (path: string) => {
+      h.calls.push(`PATCH ${path}`);
+      return { data: {}, response: new Response(null, { status: 200 }) };
+    },
+    PUT: async (path: string) => {
+      h.calls.push(`PUT ${path}`);
+      if (h.meAfterSave) h.me = h.meAfterSave;
+      return { data: {}, response: new Response(null, { status: 200 }) };
     },
     POST: async (path: string) => {
       h.calls.push(`POST ${path}`);
@@ -149,6 +168,8 @@ const meReads = () => h.calls.filter((c) => c === 'GET /api/v1/me').length;
 beforeEach(() => {
   vi.stubEnv('NEXT_PUBLIC_MOCK_VIEWER', '');
   h.calls = [];
+  h.me = undefined;
+  h.meAfterSave = undefined;
   h.pendingLoading = true;
   h.upcoming = [];
   localStorage.clear();
@@ -182,5 +203,156 @@ describe('Home on load: one /me, and the invite link without waiting', () => {
     await screen.findByRole('heading', { level: 1 });
     await new Promise((r) => setTimeout(r, 50));
     expect(h.calls).not.toContain('POST /api/v1/me/invite-link');
+  });
+});
+
+type Me = ReturnType<typeof userRead>;
+const credits = (balance: number) =>
+  ({
+    balance,
+    allowance: 1,
+    state: balance ? 'on_track' : 'exhausted',
+    next_reset_at: '2026-12-01T00:00:00Z',
+    monthly: { balance, ceiling: 1, level: 1, expires_at: null, unlocked: false },
+    bonus: { balance: 0, groups: [] },
+  }) as unknown as Me['credits'];
+
+/** One of the migrated mentees (decision 358): onboarded, no goal, no credits, answers owed. */
+const forCredit = (over: Partial<Me> = {}) =>
+  userRead({
+    is_migrated: true,
+    onboarding: { complete: true, missing: ['help', 'degree', 'field'] } as Me['onboarding'],
+    credits: credits(0),
+    booking_counts: {
+      as_mentee: { upcoming: 0, awaiting_mentor: 0 },
+    } as Me['booking_counts'],
+    ...over,
+  });
+
+/** After the goal PUT that completes the answers: the credit is paid and nothing is owed. */
+const completed = () =>
+  forCredit({
+    goal: ME.goal,
+    credits: credits(1),
+    onboarding: { complete: true, missing: [] } as Me['onboarding'],
+  });
+
+/** Settings › Goals' save (the real mutation), so the test drives the real invalidation. */
+function SaveGoals() {
+  const save = useSaveGoals('u1');
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        save.mutate({
+          after: {
+            originId: 'c-ng',
+            degree: '',
+            field: 'Public Health',
+            countryIds: [],
+            schools: [],
+            needIds: ['o1'],
+          },
+          savedOriginId: 'c-ng',
+          goal: null,
+          levels: [],
+        })
+      }
+    >
+      Save goals
+    </button>
+  );
+}
+
+function renderWithSave() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MenteeHomeScreen />
+      <SaveGoals />
+    </QueryClientProvider>,
+  );
+}
+
+describe('Complete your profile for a credit (decision 358)', () => {
+  beforeEach(() => {
+    h.pendingLoading = false;
+  });
+
+  it('the new view: the next step leads with the owner’s line', async () => {
+    h.me = forCredit();
+    renderHome();
+    expect(
+      await screen.findByRole('heading', { level: 2, name: COMPLETE_FOR_CREDIT }),
+    ).toBeInTheDocument();
+  });
+
+  it('the full view (a session done): one lead line in Profile strength', async () => {
+    h.me = forCredit({ mentee_completed_sessions: 2 });
+    renderHome();
+    const card = (await screen.findByRole('heading', { name: 'Profile strength' })).closest(
+      'section',
+    )!;
+    expect(card).toHaveTextContent(COMPLETE_FOR_CREDIT);
+    expect(screen.getAllByText(COMPLETE_FOR_CREDIT)).toHaveLength(1);
+  });
+
+  it.each([
+    ['a credit held', { credits: credits(1) }],
+    ['nothing owed', { onboarding: { complete: true, missing: [] } }],
+    ['onboarding not complete', { onboarding: { complete: false, missing: ['help'] } }],
+    ['a goal on /me (spent down to 0)', { goal: ME.goal }],
+  ] as [string, Partial<Me>][])('hidden with %s', async (_, over) => {
+    h.me = forCredit(over);
+    renderHome();
+    await screen.findByRole('heading', { level: 1 });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText(COMPLETE_FOR_CREDIT)).not.toBeInTheDocument();
+  });
+
+  it('hidden for a mentor', async () => {
+    h.me = forCredit({
+      mentor_profile: { approval_status: 'approved' } as Me['mentor_profile'],
+      onboarding: { complete: true, missing: [] } as Me['onboarding'],
+    });
+    renderHome();
+    await waitFor(() => expect(meReads()).toBe(1));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(screen.queryByText(COMPLETE_FOR_CREDIT)).not.toBeInTheDocument();
+  });
+
+  it('hidden while /me loads', async () => {
+    h.me = null;
+    renderHome();
+    await waitFor(() => expect(meReads()).toBe(1));
+    expect(screen.queryByText(COMPLETE_FOR_CREDIT)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+  });
+
+  it('its action opens the profile sheet on the first answer owed', async () => {
+    const user = userEvent.setup();
+    h.me = forCredit();
+    renderHome();
+    await screen.findByRole('heading', { level: 2, name: COMPLETE_FOR_CREDIT });
+    await user.click(screen.getByRole('button', { name: 'Complete profile' }));
+    const sheet = await screen.findByRole('dialog', { name: 'Your profile' });
+    // `help` is owed first: its row's Add takes focus.
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        within(sheet).getByRole('link', { name: 'Add what you need help with' }),
+      ),
+    );
+  });
+
+  it('gone without a reload after the save that completes the answers', async () => {
+    const user = userEvent.setup();
+    h.me = forCredit();
+    h.meAfterSave = completed();
+    renderWithSave();
+    await screen.findByText(COMPLETE_FOR_CREDIT);
+    await act(() => user.click(screen.getByRole('button', { name: 'Save goals' })));
+    await waitFor(() => expect(screen.queryByText(COMPLETE_FOR_CREDIT)).not.toBeInTheDocument());
+    expect(h.calls).toContain('PUT /api/v1/users/{user_id}/goal');
+    expect(meReads()).toBe(2);
   });
 });
