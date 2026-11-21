@@ -1,12 +1,5 @@
 import { formatDay } from './format';
-import {
-  dayKey,
-  groupSlotsByDay,
-  hourIn,
-  isEarlyMorning,
-  slotWindow,
-  visibleDays,
-} from './slots';
+import { dayKey, groupSlotsByDay, hourIn, isEarlyMorning, slotWindow, visibleDays } from './slots';
 
 describe('groupSlotsByDay', () => {
   // Joshua on the dev backend: first slot 05:30Z on Sep 30.

@@ -113,12 +113,6 @@
   font-weight: var(--weight-semibold);
   white-space: nowrap;
 }
-/* How many times the day offers: muted, never red (red means an error here). */
-.count {
-  font-size: var(--text-p-xs);
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
 input:checked + .tile {
   border-color: var(--blue-500);
   background: var(--blue-50);

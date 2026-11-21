@@ -17,13 +17,10 @@ type DayTimePickerProps = {
   timeZone: string;
 };
 
-/** "2 available": what the day offers, said once for the tile and its name. */
-const available = (n: number) => `${n} available`;
-
 /**
  * The open days in one scrolling row, then the chosen day's times (owner
  * 2026-11-21, from the legacy booking card: only days with times, each with its
- * date and how many are free; ‹ › scroll the row). Both groups are native radio
+ * weekday and date, no count; ‹ › scroll the row). Both groups are native radio
  * groups styled as tiles, so arrow keys, focus and announcement come from the platform.
  */
 export function DayTimePicker({
@@ -71,7 +68,7 @@ export function DayTimePicker({
   const day = days[dayIndex] ?? days[0]!;
   const heading = (() => {
     const f = formatDay(day.date);
-    return `${f.weekday}, ${f.date} · ${available(day.slots.length)}`;
+    return `${f.weekday}, ${f.date}`;
   })();
   return (
     <div className={styles.picker}>
@@ -113,12 +110,11 @@ export function DayTimePicker({
                   name={`${name}-day`}
                   checked={i === dayIndex}
                   onChange={() => onDayChange(i)}
-                  aria-label={`${f.weekday}, ${f.date}, ${available(d.slots.length)}`}
+                  aria-label={`${f.weekday}, ${f.date}`}
                 />
                 <span className={cx(styles.tile, styles.dayTile)} aria-hidden>
                   <span className={styles.weekday}>{f.weekday}</span>
                   <span className={styles.date}>{f.date}</span>
-                  <span className={styles.count}>{available(d.slots.length)}</span>
                 </span>
               </label>
             );

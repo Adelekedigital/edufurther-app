@@ -10,7 +10,7 @@ const meta: Meta<typeof DayTimePicker> = {
 export default meta;
 type Story = StoryObj;
 
-/** The open days only, each with how many times it has; ‹ › scroll the row. */
+/** The open days only, weekday and date; ‹ › scroll the row. */
 export const PickingATime: Story = {
   render: function Render() {
     const [day, setDay] = useState(0);
