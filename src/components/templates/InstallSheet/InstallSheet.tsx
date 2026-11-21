@@ -7,11 +7,11 @@ import { INSTALL_COPY } from '@/lib/copy/install';
 import styles from './InstallSheet.module.css';
 
 type InstallSheetProps = {
-  /** android: the browser's prompt behind "Add to home screen". ios: Safari's Share steps. */
+  /** android: the browser's prompt behind "Install the app". ios: Safari's Share steps. */
   platform: 'android' | 'ios';
   /** The line under the title, worded for what just happened. */
   lead: string;
-  /** Android's "Add to home screen". */
+  /** Android's "Install the app". */
   onAccept: () => void;
   /** The close button, Escape or the backdrop: the dismiss. */
   onClose: () => void;
@@ -22,7 +22,7 @@ const C = INSTALL_COPY;
 /**
  * The install nudge (design boards Main / IphoneSheet, copy from the owner's
  * brief): the shared phone BottomSheet, the app's own icon beside the title,
- * then why and "Add to home screen" (Android) or the Share steps (iPhone).
+ * then why and "Install the app" (Android) or the Share steps (iPhone).
  * The sheet's own close is the only way to say no (owner, 2026-11-18).
  * Presentational: when it shows and what it does are InstallNudgeRoot's.
  */
