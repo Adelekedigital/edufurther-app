@@ -4,7 +4,7 @@ import { safeDecode } from '@/lib/utils/text';
 import { SEEN_KEY } from '@/lib/utils/whatsNew';
 
 /**
- * MOCK of PUT /api/v1/me/seen-items/{key} (PENDING BACKEND, lib/api/data/seenItems):
+ * MOCK of PUT /api/v1/me/seen-items/{key} (lib/api/data/seenItems):
  * 204 for a valid key, 422 for anything else, as the backend. The client
  * encodes the key (its colon arrives as %3A), so it is decoded first. Keeps
  * nothing: the mock viewers never call /me, and the tab's own seen list

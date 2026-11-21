@@ -14,7 +14,6 @@ import { clampFocus, personInitials } from '@/lib/utils/person';
 import { toCredits } from './credits';
 import { ApiError } from './errors';
 import { api } from './http';
-import type { PendingMeRead } from './pending';
 import { menteeByChoice } from './roles';
 import { keys } from './keys';
 import { useSession } from './session';
@@ -26,7 +25,7 @@ type UserRead = components['schemas']['UserRead'];
  * GET /api/v1/me → Viewer (backend auth reply #3). Roles come from rows, never
  * `primary_role`: goal → mentee, approved mentor_profile → mentor.
  */
-export function toViewer(me: PendingMeRead): Extract<Viewer, { kind: 'member' }> {
+export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
   const name = me.first_name?.trim() || me.email.split('@')[0] || '';
   // A declined applicant who chose mentee is mentee-side: no mentor nav, badge or home.
   const mentor = me.mentor_profile && !menteeByChoice(me) ? me.mentor_profile : null;
