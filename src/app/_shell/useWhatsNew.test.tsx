@@ -178,6 +178,52 @@ describe('useWhatsNew: when it opens', () => {
   });
 });
 
+describe('useWhatsNew: the Welcome tour (an account made here)', () => {
+  const WELCOME = 'welcome:2026-11';
+
+  it.each([
+    ['a mentee on /home', member({ isMigrated: false }), '/home', 'mentee', 'nav-home'],
+    [
+      'an approved mentor on /dashboard',
+      member({ isMigrated: false, isMentor: true, isApprovedMentor: true }),
+      '/dashboard',
+      'mentor',
+      'nav-calendar',
+    ],
+  ] as const)(
+    '%s: its own words, its own seen key and analytics',
+    async (_, m, pathname, role, first) => {
+      const { result } = host({ member: m, pathname });
+      await settle();
+      const tour = result.current.tour!;
+      expect(tour.labels.badge).toBe('Welcome');
+      expect(tour.labels.welcomeTitle(tour.first)).toBe('Welcome to EduFurther, Ada');
+      expect(tour.content.steps[0]?.target).toBe(first);
+      expect(tour.replayable).toBe(true);
+      act(() => tour.onEvent({ type: 'started' }));
+      expect(h.track).toHaveBeenCalledWith('tour_started', {
+        release: WELCOME,
+        role,
+        replay: false,
+      });
+      act(() => tour.onEvent({ type: 'skipped', step: 1 }));
+      expect(h.markSeen).toHaveBeenLastCalledWith(WELCOME);
+      act(() => tour.onEvent({ type: 'finished' }));
+      expect(h.markSeen).toHaveBeenCalledTimes(2);
+      expect(h.markSeen).toHaveBeenLastCalledWith(WELCOME);
+    },
+  );
+
+  it('a migrated mentee still gets What’s new, in its own words', async () => {
+    const { result } = host();
+    await settle();
+    expect(result.current.tour?.labels.badge).toBe('New platform');
+    expect(result.current.tour?.labels.welcomeTitle('Ada')).toBe(
+      'Welcome to the new EduFurther, Ada',
+    );
+  });
+});
+
 describe('useWhatsNew: what each answer does', () => {
   it('tracks each event with the release and role, and marks seen on skip or finish', async () => {
     const { result } = host();

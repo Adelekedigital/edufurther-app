@@ -370,9 +370,12 @@ describe('gating: only once the account is set up', () => {
         otherAsk: false,
       }),
     ).toBe(false);
-    // The lock follows the mentee's onboarding flag; the role guard holds them either way.
+  });
+
+  it('a mentee mid-onboarding: the role guard holds them, and the setup lock too while onboarding is on', () => {
     const mid = cases['a mentee mid-onboarding'];
-    expect(inSetup(accessFor(mid)) || tourViewerOf(mid)?.role === null).toBe(true);
+    expect(tourViewerOf(mid)?.role).toBeNull();
+    expect(inSetup(accessFor(mid))).toBe(process.env.NEXT_PUBLIC_ONBOARDING_ENABLED === 'true');
   });
 
   it('a finished mentee and an approved mentor made here get the Welcome tour', () => {
@@ -531,6 +534,16 @@ describe('the release content', () => {
       'Welcome tour',
       'A quick look at where everything is.',
     ]);
+  });
+
+  it('labels: a key set to undefined keeps the default', () => {
+    const l = tourLabels({
+      ...WELCOME_2026_11,
+      labels: { welcomeTitle: undefined, menuItem: 'Welcome tour' },
+    });
+    expect(l.welcomeTitle('Ada')).toBe('Welcome to the new EduFurther, Ada');
+    expect(l.badge).toBe('New platform');
+    expect(l.menuItem).toBe('Welcome tour');
   });
 
   it('the Welcome tour: no step badges; mentee ends on Find a mentor, mentor on Open Calendar', () => {

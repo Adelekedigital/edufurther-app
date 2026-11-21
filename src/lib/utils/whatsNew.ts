@@ -117,15 +117,18 @@ export function inReplayWindow(r: TourRelease, now: number): boolean {
   return r.replayDays === 'always' || now < from + (r.replayDays ?? REPLAY_DAYS) * DAY_MS;
 }
 
-/** A release's own words (`labels`), TOUR_COPY's where it sets none. */
+/** A release's own words (`labels`), TOUR_COPY's where it sets none (an undefined key included). */
 export function tourLabels(r: TourRelease): TourLabels {
+  const own = Object.fromEntries(
+    Object.entries(r.labels ?? {}).filter(([, v]) => v !== undefined),
+  ) as Partial<TourLabels>;
   return {
     badge: TOUR_COPY.badge,
     welcomeTitle: TOUR_COPY.welcomeTitle,
     menuItem: TOUR_COPY.menuItem,
     replayTitle: TOUR_COPY.replayTitle,
     replaySub: TOUR_COPY.replaySub,
-    ...r.labels,
+    ...own,
   };
 }
 

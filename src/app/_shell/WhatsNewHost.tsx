@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
-import { tourReplay, useWhatsNew } from './useWhatsNew';
+import { replayLinks, tourReplay, useWhatsNew } from './useWhatsNew';
 import type { Access } from '@/lib/utils/access';
 import type { Viewer } from '@/types/mentor';
 
@@ -41,10 +41,10 @@ export function WhatsNewHost({
   onState: (s: WhatsNewShellState) => void;
 }) {
   const w = useWhatsNew({ member, access, previewing, pathname });
-  const replay = tourReplay(member, previewing);
-  const href = replay?.href;
   // The release's own name for it: "What's new", or "Welcome tour".
-  const label = replay?.labels.menuItem;
+  const item = replayLinks(tourReplay(member, previewing))?.menuItem;
+  const href = item?.href;
+  const label = item?.label;
   useEffect(() => {
     onState({
       more: w.more,
