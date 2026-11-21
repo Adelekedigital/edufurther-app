@@ -16,6 +16,7 @@ vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => ({ kind: 'guest' }) }));
 const { accountItems } = await import('./useAppShell');
 const { tourReplay } = await import('./useWhatsNew');
+const { TOUR_COPY } = await import('@/lib/copy/whatsNew');
 
 type Member = Extract<Viewer, { kind: 'member' }>;
 const mentee = {
@@ -43,12 +44,14 @@ const setup = {
 
 function shell(now: number, opts: { previewing?: boolean; access?: Access; m?: Member } = {}) {
   const m = opts.m ?? mentee;
+  // As WhatsNewHost hands it to the shell.
+  const href = tourReplay(m, opts.previewing ?? false, now);
   const items = accountItems(
     m,
     vi.fn(),
     opts.access,
     false,
-    tourReplay(m, opts.previewing ?? false, now),
+    href ? { label: TOUR_COPY.menuItem, href } : undefined,
   );
   return render(
     <AppShell

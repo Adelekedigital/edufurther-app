@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { InstallPlatform } from '@/lib/analytics/events';
 import type { TourRoleContent, TourTarget } from '@/lib/copy/whatsNew';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
@@ -15,6 +15,8 @@ const PHONE_LAYOUT = '(max-width: 767px)';
 
 /** What happened, for the caller's analytics and seen list. `step` 0 is the welcome. */
 export type TourEvent =
+  /** On screen, with steps to show: the caller claims the visit's ask then. */
+  | { type: 'opened' }
   | { type: 'started' }
   | { type: 'step'; step: number; target: TourTarget }
   | { type: 'skipped'; step: number }
@@ -23,7 +25,7 @@ export type TourEvent =
   /** The done card closed: its action followed (`cta`), or Got it / Escape. */
   | { type: 'completed'; action: 'cta' | 'dismiss' };
 
-type Phase = { at: 'welcome' } | { at: 'step'; steps: ResolvedStep[]; i: number } | { at: 'done' };
+type Phase = { at: 'welcome' } | { at: 'step'; i: number } | { at: 'done' };
 
 /**
  * A "What's new" tour (ADR 0014): the welcome, then the guided steps whose
@@ -64,8 +66,25 @@ export function WhatsNewTour({
     typeof document === 'undefined' ? null : (document.activeElement as HTMLElement | null),
   );
 
-  const step = phase.at === 'step' ? phase.steps[phase.i]! : null;
-  const stepNo = phase.at === 'step' ? phase.i + 1 : 0;
+  // Resolved as it opens, and again when the layout crosses 768px (a phone
+  // turned): a step's place (on screen, or in the phone's More sheet) follows.
+  // Null holds the tour back: a required target is missing, or none is there.
+  const steps: ResolvedStep[] | null = useMemo(
+    () => tourSteps(content, placeOf, phone, install),
+    [content, phone, install],
+  );
+  const [held] = useState(() => steps === null);
+  useEffect(() => {
+    // Nothing to guide through: gone, and not marked seen, so it can come back.
+    if (held) onClose();
+    else onEvent({ type: 'opened' });
+    // Once, as it opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const step =
+    phase.at === 'step' && steps ? (steps[Math.min(phase.i, steps.length - 1)] ?? null) : null;
+
+  const stepNo = step && steps ? steps.indexOf(step) + 1 : 0;
   const viaMore = step?.place === 'more';
   useEffect(() => {
     onMore(viaMore);
@@ -92,6 +111,17 @@ export function WhatsNewTour({
     finish();
   };
 
+  // Mid-tour, a turned phone that leaves nothing to point at ends the guided
+  // part: they were shown some of it, so it counts as finished, and it closes.
+  const lost = phase.at === 'step' && !steps;
+  useEffect(() => {
+    if (!lost) return;
+    onEvent({ type: 'finished' });
+    finish();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lost]);
+
+  if (held) return null;
   if (phase.at === 'welcome')
     return (
       <TourWelcome
@@ -102,9 +132,8 @@ export function WhatsNewTour({
         onDismiss={skip}
         onStart={() => {
           onEvent({ type: 'started' });
-          const steps = tourSteps(content, placeOf, phone, install) ?? [];
-          if (steps.length === 0) toDone();
-          else setPhase({ at: 'step', steps, i: 0 });
+          if (steps?.length) setPhase({ at: 'step', i: 0 });
+          else toDone();
         }}
       />
     );
@@ -121,17 +150,19 @@ export function WhatsNewTour({
         }}
       />
     );
+  if (!step || !steps) return null;
+  const i = steps.indexOf(step);
   return (
     <TourStepCard
-      step={step!}
-      index={phase.i}
-      total={phase.steps.length}
+      step={step}
+      index={i}
+      total={steps.length}
       phone={phone}
       onSkip={skip}
-      onBack={() => setPhase({ ...phase, i: Math.max(0, phase.i - 1) })}
+      onBack={() => setPhase({ at: 'step', i: Math.max(0, i - 1) })}
       onInstall={onInstall}
       onNext={() => {
-        if (phase.i < phase.steps.length - 1) return setPhase({ ...phase, i: phase.i + 1 });
+        if (i < steps.length - 1) return setPhase({ at: 'step', i: i + 1 });
         toDone();
       }}
     />

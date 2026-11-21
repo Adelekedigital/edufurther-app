@@ -46,6 +46,8 @@ function useAnchor(target: string, card: React.RefObject<HTMLElement | null>, ph
       if (el !== lit) {
         lit?.removeAttribute(ACTIVE_ATTR);
         el?.setAttribute(ACTIVE_ATTR, '');
+        // A target scrolled out of view (a long rail, a short screen) comes in first.
+        el?.scrollIntoView?.({ block: 'nearest' });
         lit = el;
       }
       const next = anchorFor(boxOf(el), frameNow(card.current, phone));

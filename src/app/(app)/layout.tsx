@@ -1,13 +1,14 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/templates/AppShell/AppShell';
 import { PushPrompt } from '@/app/_shell/PushPrompt';
 import { RoleRedirect } from '@/app/_shell/RoleRedirect';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import { useWhatsNew } from '@/app/_shell/useWhatsNew';
 import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
+import type { WhatsNewShellState } from '@/app/_shell/WhatsNewHost';
+import { WHATS_NEW_LIVE } from '@/lib/config/whatsNew';
 import { useOnline } from '@/lib/utils/useOnline';
 import { openInstallNudge, useInstallAvailable } from '@/lib/pwa/installPrompt';
 
@@ -36,12 +37,13 @@ const ACTIVE_BY_SEGMENT: Record<string, string> = {
   settings: 'Settings',
 };
 
-// The tour loads when it opens, never with every page (350kB first-load budget).
-// A failed load closes it, unmarked, so it can come back.
-const WhatsNewTour = lazyPart(
-  () => import('@/components/templates/WhatsNewTour/WhatsNewTour').then((m) => m.WhatsNewTour),
-  { close: (p) => p.onClose() },
+// The What's new tour's host loads after the page, never in its first-load JS
+// (350kB budget): its selection, copy and seen list come with it. A failed
+// load just means no tour this time.
+const WhatsNewHost = lazyPart(() =>
+  import('@/app/_shell/WhatsNewHost').then((m) => m.WhatsNewHost),
 );
+const WHATS_NEW_OFF: WhatsNewShellState = { more: false, holding: false };
 
 /** The admin app's pages, by their segment under `/admin`. */
 const ADMIN_ACTIVE: Record<string, string> = {
@@ -83,6 +85,8 @@ export function activeFor(pathname: string): string {
  */
 export default function AppGroupLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  // What the tour's host (loaded later) tells the shell; nothing until then.
+  const [whatsNew, setWhatsNew] = useState<WhatsNewShellState>(WHATS_NEW_OFF);
   const {
     chrome,
     account,
@@ -94,9 +98,8 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
     onPreview,
     member,
     previewing,
-  } = useAppShell();
+  } = useAppShell(whatsNew.menuItem);
   const online = useOnline();
-  const whatsNew = useWhatsNew({ member, access, previewing, pathname });
   // A phone browser that can install (lib/pwa/installPrompt): More's last item.
   const installable = useInstallAvailable();
 
@@ -116,7 +119,15 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       offline={!online}
     >
       <RoleRedirect>{children}</RoleRedirect>
-      {whatsNew.tour && <WhatsNewTour {...whatsNew.tour} />}
+      {WHATS_NEW_LIVE && chrome === 'member' && (
+        <WhatsNewHost
+          member={member}
+          access={access}
+          previewing={previewing}
+          pathname={pathname}
+          onState={setWhatsNew}
+        />
+      )}
       <PushPrompt
         userId={member?.id ?? null}
         // The What's new tour has Home first; the ask waits for another moment.

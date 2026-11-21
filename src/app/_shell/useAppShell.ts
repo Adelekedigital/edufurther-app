@@ -21,8 +21,6 @@ import { setAppBadge } from '@/lib/utils/push';
 import { creditsView } from '@/lib/utils/credits';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import { canBookFor } from './bookBlocked';
-import { tourReplay } from './useWhatsNew';
-import { TOUR_COPY } from '@/lib/copy/whatsNew';
 import type { Viewer } from '@/types/mentor';
 
 /**
@@ -75,8 +73,8 @@ export function accountItems(
   access?: Access,
   /** Inside /admin: the way back to the app instead of the way in. */
   inAdmin = false,
-  /** The What's new tour's replay link, while its release is in its replay window. */
-  whatsNew?: string,
+  /** The What's new tour's replay item, while its release is in its replay window (WhatsNewHost). */
+  whatsNew?: { label: string; href: string },
 ): AccountMenuItem[] {
   return [
     ...(member?.isMentor && !(access && inSetup(access))
@@ -119,9 +117,9 @@ export function accountItems(
       ? [
           {
             key: 'whats-new',
-            label: TOUR_COPY.menuItem,
+            label: whatsNew.label,
             icon: 'new_releases' as const,
-            href: whatsNew,
+            href: whatsNew.href,
           },
         ]
       : []),
@@ -139,7 +137,10 @@ export function accountItems(
  * Everything a screen passes to AppShell about the viewer, shared so Explore
  * and Mentor Profile can't drift. Notifications wait (no backend).
  */
-export function useAppShell() {
+export function useAppShell(
+  /** The What's new replay item, from the tour's host (loaded after the page). */
+  whatsNew?: { label: string; href: string },
+) {
   const viewer = useViewer();
   const signOut = useSignOut();
   // Logout with unsaved changes asks first: the browser's own prompt would
@@ -176,7 +177,7 @@ export function useAppShell() {
     },
     access,
     inAdmin,
-    tourReplay(member, previewing),
+    whatsNew,
   );
   return {
     viewer,

@@ -6,6 +6,7 @@ const h = vi.hoisted(() => ({
   track: vi.fn(),
   markSeen: vi.fn(),
   claim: vi.fn(() => true),
+  free: vi.fn(() => true),
   banner: false,
   search: '',
   on: true,
@@ -24,7 +25,10 @@ vi.mock('@/lib/api/data/seenItems', () => ({
   useMarkSeen: () => h.markSeen,
   useSeenHere: () => new Set<string>(),
 }));
-vi.mock('@/lib/pwa/installNudge', () => ({ claimVisitForTour: h.claim }));
+vi.mock('@/lib/pwa/installNudge', () => ({
+  claimVisitForTour: h.claim,
+  visitFreeForTour: h.free,
+}));
 const { useWhatsNew, tourReplay, SETTLE_MS } = await import('./useWhatsNew');
 
 type Member = Extract<Viewer, { kind: 'member' }>;
@@ -65,6 +69,7 @@ beforeEach(() => {
   vi.useFakeTimers({ now: Date.parse('2026-11-25T12:00:00Z') });
   Object.values(h).forEach((f) => typeof f === 'function' && 'mockClear' in f && f.mockClear());
   h.claim.mockReturnValue(true);
+  h.free.mockReturnValue(true);
   h.banner = false;
 });
 afterEach(() => vi.useRealTimers());
@@ -92,7 +97,11 @@ describe('useWhatsNew: when it opens', () => {
     await settle();
     expect(result.current.tour?.first).toBe('Ada');
     expect(result.current.tour?.content.steps[0]?.target).toBe('nav-home');
-    expect(h.claim).toHaveBeenCalled();
+    // Checked before the tour loads, claimed only once it is on screen.
+    expect(h.free).toHaveBeenCalled();
+    expect(h.claim).not.toHaveBeenCalled();
+    await act(async () => result.current.tour!.onEvent({ type: 'opened' }));
+    await vi.waitFor(() => expect(h.claim).toHaveBeenCalledTimes(1));
   });
 
   it('a mentor on /dashboard gets the mentor version', async () => {
@@ -153,7 +162,7 @@ describe('useWhatsNew: when it opens', () => {
   });
 
   it('an install nudge or ask already had this visit: the tour waits for the next', async () => {
-    h.claim.mockReturnValue(false);
+    h.free.mockReturnValue(false);
     const { result } = host();
     await settle();
     expect(result.current.tour).toBeNull();
@@ -228,6 +237,8 @@ describe('tourReplay', () => {
     await settle();
     expect(window.location.search).toBe('?mockViewer=mentee');
     expect(result.current.tour).not.toBeNull();
+    await act(async () => result.current.tour!.onEvent({ type: 'opened' }));
+    expect(h.free).not.toHaveBeenCalled();
     expect(h.claim).not.toHaveBeenCalled();
     act(() => result.current.tour!.onEvent({ type: 'started' }));
     expect(h.track).toHaveBeenCalledWith('tour_started', {
@@ -235,8 +246,24 @@ describe('tourReplay', () => {
       role: 'mentee',
       replay: true,
     });
+    // A replay's Skip counts as seen too (the record only grows; idempotent).
+    act(() => result.current.tour!.onEvent({ type: 'skipped', step: 1 }));
+    expect(h.markSeen).toHaveBeenCalledWith(ID);
     h.search = '';
     act(() => result.current.tour!.onClose());
+    expect(result.current.tour).toBeNull();
+  });
+
+  it('a replay asked for but left unopened ends when they leave Home', async () => {
+    h.search = 'tour=replay';
+    const seen = member({ seenItems: [ID] });
+    const props = { member: seen, access: open, previewing: false };
+    const { result, rerender } = host({ ...props, pathname: '/home' });
+    h.search = '';
+    // Gone before it opened (the settle beat).
+    rerender({ ...props, pathname: '/bookings' });
+    rerender({ ...props, pathname: '/home' });
+    await settle();
     expect(result.current.tour).toBeNull();
   });
 });

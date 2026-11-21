@@ -1,11 +1,29 @@
 import { useState } from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MIGRATION_2026_11, type TourRoleContent } from '@/lib/copy/whatsNew';
 import type { TourEvent } from './WhatsNewTour';
 
-const h = vi.hoisted(() => ({ phone: false }));
-vi.mock('@/lib/utils/useMediaQuery', () => ({ useMediaQuery: () => h.phone }));
+const h = vi.hoisted(() => ({ phone: false, listeners: new Set<() => void>() }));
+vi.mock('@/lib/utils/useMediaQuery', async () => {
+  const { useSyncExternalStore } = await import('react');
+  return {
+    useMediaQuery: () =>
+      useSyncExternalStore(
+        (cb: () => void) => {
+          h.listeners.add(cb);
+          return () => h.listeners.delete(cb);
+        },
+        () => h.phone,
+      ),
+  };
+});
+/** Turns the phone: the layout crosses 768px. */
+const turn = (phone: boolean) =>
+  act(() => {
+    h.phone = phone;
+    h.listeners.forEach((l) => l());
+  });
 const msg = vi.hoisted(() => ({ live: false }));
 vi.mock('@/lib/config/messages', () => ({
   get MESSAGES_LIVE() {
@@ -121,6 +139,12 @@ async function start(
 
 const MENTEE_TARGETS = ['nav-home', 'nav-bookings', 'credits-pill'];
 
+/** Show me around, then Finish on the only step there is. */
+async function toDoneCard(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Show me around' }));
+  await user.click(screen.getByRole('button', { name: 'Finish' }));
+}
+
 describe('WhatsNewTour: the welcome', () => {
   it('is a dialog named for the viewer, with Show me around focused', async () => {
     await start(mentee, MENTEE_TARGETS);
@@ -141,6 +165,12 @@ describe('WhatsNewTour: the welcome', () => {
           onClose={vi.fn()}
         />,
       );
+    // On the page before the tour opens, as the shell is.
+    render(
+      <button type="button" data-tour="nav-home">
+        Home
+      </button>,
+    );
     const { unmount } = welcome();
     expect(screen.getByRole('dialog')).toHaveAccessibleDescription(
       'Your profile and bookings came with you. A few things work differently now.',
@@ -246,17 +276,34 @@ describe('WhatsNewTour: the steps', () => {
     expect(opener).toHaveFocus();
   });
 
-  it('with no step on the page, Show me around goes straight to done', async () => {
-    const { user, onEvent } = await start(mentee, []);
-    await user.click(screen.getByRole('button', { name: 'Show me around' }));
-    expect(onEvent).toHaveBeenCalledWith({ type: 'finished' });
-    expect(screen.getByRole('status')).toHaveTextContent('You’re all set');
+  it('with no step on the page, it closes at once and is not marked seen', async () => {
+    const { onEvent, onClose } = await start(mentee, []);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(onEvent).not.toHaveBeenCalledWith({ type: 'finished' });
+    expect(onEvent).not.toHaveBeenCalledWith({ type: 'opened' });
+  });
+
+  it('a required target missing holds it back the same way', async () => {
+    const req = { ...mentee, steps: mentee.steps.map((s) => ({ ...s, required: true })) };
+    const { onEvent, onClose } = await start(req, ['nav-home', 'nav-bookings']);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onEvent).not.toHaveBeenCalledWith({ type: 'finished' });
+  });
+
+  it('with steps to show, it says it opened (the caller claims the visit then)', async () => {
+    const { onEvent } = await start(mentee, MENTEE_TARGETS);
+    expect(onEvent).toHaveBeenCalledWith({ type: 'opened' });
   });
 
   it('a mentor’s done card leads to Calendar: Check my hours (focused) closes it as cta', async () => {
-    const { user, onEvent, onClose } = await start(mentor, []);
-    await user.click(screen.getByRole('button', { name: 'Show me around' }));
+    const { user, onEvent, onClose } = await start(mentor, [], '', 'android');
+    await toDoneCard(user);
     const done = screen.getByRole('status');
+    // Mounted already filled: the focused button carries the words.
+    expect(within(done).getByRole('link', { name: 'Check my hours' })).toHaveAccessibleDescription(
+      'You’re all set Check your hours in Calendar so mentees can book you. You can replay this tour from Settings.',
+    );
     const cta = within(done).getByRole('link', { name: 'Check my hours' });
     expect(cta).toHaveAttribute('href', '/calendar');
     expect(cta).toHaveFocus();
@@ -267,8 +314,8 @@ describe('WhatsNewTour: the steps', () => {
   });
 
   it('a mentor’s Got it and Escape close it as dismiss', async () => {
-    const { user, onEvent } = await start(mentor, []);
-    await user.click(screen.getByRole('button', { name: 'Show me around' }));
+    const { user, onEvent } = await start(mentor, [], '', 'android');
+    await toDoneCard(user);
     await user.keyboard('{Escape}');
     expect(onEvent).toHaveBeenLastCalledWith({ type: 'completed', action: 'dismiss' });
   });
@@ -276,28 +323,35 @@ describe('WhatsNewTour: the steps', () => {
 
 describe('WhatsNewTour: the replay line', () => {
   it('while the replay is offered, the hint and done card say so', async () => {
-    const { user } = await start(mentee, []);
+    const { user } = await start(mentee, [], '', 'android');
     expect(
       screen.getByText('Takes about a minute. You can replay it from Settings.'),
     ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Show me around' }));
+    await toDoneCard(user);
     expect(screen.getByRole('status')).toHaveTextContent('You can replay this tour from Settings.');
   });
 
   it('once it is not, neither mentions it', async () => {
     const user = userEvent.setup();
     render(
-      <WhatsNewTour
-        first="Ada"
-        content={mentee}
-        replayable={false}
-        onEvent={vi.fn()}
-        onMore={vi.fn()}
-        onClose={vi.fn()}
-      />,
+      <button type="button" data-tour="nav-home">
+        Home
+      </button>,
+    );
+    render(
+      <>
+        <WhatsNewTour
+          first="Ada"
+          content={{ ...mentee, steps: mentee.steps.slice(0, 1) }}
+          replayable={false}
+          onEvent={vi.fn()}
+          onMore={vi.fn()}
+          onClose={vi.fn()}
+        />
+      </>,
     );
     expect(screen.getByText('Takes about a minute.')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Show me around' }));
+    await toDoneCard(user);
     expect(screen.getByRole('status')).not.toHaveTextContent('replay');
   });
 });
@@ -366,6 +420,34 @@ describe('WhatsNewTour: a mentor on a phone', () => {
 
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(more).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('turning the phone across 768px on the Sessions step moves it between More and the rail', async () => {
+    h.phone = true;
+    const { user } = await start(
+      mentor,
+      ['nav-calendar', 'nav-bookings'],
+      'nav-messages nav-sessions nav-integration nav-settings',
+    );
+    const more = screen.getByRole('button', { name: 'More' });
+    await user.click(screen.getByRole('button', { name: 'Show me around' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+    // Wider: the rail's Sessions is on screen, the sheet lets go.
+    const rail = document.createElement('a');
+    rail.setAttribute('data-tour', 'nav-sessions');
+    document.body.appendChild(rail);
+    try {
+      turn(false);
+      expect(more).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getByRole('dialog')).toHaveTextContent('Find it under Sessions.');
+      rail.remove();
+      turn(true);
+      expect(more).toHaveAttribute('aria-expanded', 'true');
+      expect(screen.getByRole('dialog')).toHaveTextContent('Find it under More, then Sessions.');
+    } finally {
+      rail.remove();
+    }
   });
 
   it('on desktop the same step says Sessions only, and never opens More', async () => {

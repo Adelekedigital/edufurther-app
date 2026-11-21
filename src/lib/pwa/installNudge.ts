@@ -273,9 +273,14 @@ export function installNudgeBusy(): boolean {
  * the tour waits instead, never two asks in one visit.
  */
 export function claimVisitForTour(): boolean {
-  if (currentNudge() !== null || shownInVisit()) return false;
+  if (!visitFreeForTour()) return false;
   notePushAskShown();
   return true;
+}
+
+/** Whether the tour could have this visit, claiming nothing (checked before it loads). */
+export function visitFreeForTour(): boolean {
+  return currentNudge() === null && !shownInVisit();
 }
 
 /** The push ask showed this visit: the nudge then waits for another visit. */

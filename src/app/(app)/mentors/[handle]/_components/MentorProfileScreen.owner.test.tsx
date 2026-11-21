@@ -16,11 +16,6 @@ vi.mock('@/app/_shell/useAppShell', async () =>
 // A profile is shared (no role redirect); the redirect has its own tests.
 // The notifications ask is the shell's, tested on its own.
 vi.mock('@/app/_shell/PushPrompt', () => ({ PushPrompt: () => null }));
-// The What's new tour's host has its own tests (useWhatsNew.test).
-vi.mock('@/app/_shell/useWhatsNew', () => ({
-  useWhatsNew: () => ({ tour: null, more: false, holding: false }),
-  tourReplay: () => undefined,
-}));
 vi.mock('@/app/_shell/RoleRedirect', () => ({
   RoleRedirect: ({ children }: { children: ReactNode }) => children,
 }));

@@ -27,6 +27,10 @@ export function TourDone({
   onClose: (how: 'cta' | 'dismiss') => void;
 }) {
   const titleId = useId();
+  const bodyId = useId();
+  // The status is in the page before it's read, so the button that takes
+  // focus carries the words too.
+  const described = `${titleId} ${bodyId}`;
   const first = useRef<HTMLAnchorElement & HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -52,7 +56,9 @@ export function TourDone({
         <h2 id={titleId} className={styles.cardTitle}>
           {done.title}
         </h2>
-        <p className={styles.cardBody}>{body}</p>
+        <p id={bodyId} className={styles.cardBody}>
+          {body}
+        </p>
       </div>
       <div className={styles.doneActions}>
         {action ? (
@@ -62,6 +68,7 @@ export function TourDone({
             </Button>
             <ButtonLink
               ref={first}
+              aria-describedby={described}
               href={action.href}
               prefetch={false}
               variant="primary"
@@ -72,7 +79,13 @@ export function TourDone({
             </ButtonLink>
           </>
         ) : (
-          <Button ref={first} variant="primary" size="medium" onClick={() => onClose('dismiss')}>
+          <Button
+            ref={first}
+            aria-describedby={described}
+            variant="primary"
+            size="medium"
+            onClick={() => onClose('dismiss')}
+          >
             {C.gotIt}
           </Button>
         )}

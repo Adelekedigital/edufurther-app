@@ -16,6 +16,7 @@ import {
   REPLAY_PARAM,
   REPLAY_VALUE,
   replayHref,
+  TOUR_HOME,
   tourMayStart,
   tourViewerOf,
 } from '@/lib/utils/whatsNew';
@@ -101,6 +102,8 @@ export function useWhatsNew({
     });
 
   const [active, setActive] = useState<Active | null>(null);
+  // A replay asked for on Home ends when they leave it unopened (seen stays seen).
+  if (replay && !active && role && pathname !== TOUR_HOME[role]) setReplay(false);
   // Another ask (the install nudge, the push ask) had this visit already.
   const [heldOff, setHeldOff] = useState(false);
   const [more, setMore] = useState(false);
@@ -121,7 +124,9 @@ export function useWhatsNew({
         try {
           const nudge = await import('@/lib/pwa/installNudge');
           if (gone) return;
-          if (!nudge.claimVisitForTour()) {
+          // Checked now, claimed once the tour is on screen ('opened'): a load
+          // that fails never costs the install or push ask its visit.
+          if (!nudge.visitFreeForTour()) {
             setHeldOff(true);
             return;
           }
@@ -152,6 +157,13 @@ export function useWhatsNew({
       if (!active) return;
       const base = { release: active.release, role: active.role };
       switch (e.type) {
+        case 'opened':
+          if (!active.replay)
+            void import('@/lib/pwa/installNudge').then(
+              (n) => n.claimVisitForTour(),
+              () => {},
+            );
+          return;
         case 'started':
           track('tour_started', { ...base, replay: active.replay });
           return;
