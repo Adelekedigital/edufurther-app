@@ -70,7 +70,10 @@ export function OpenBooking({
       requestError={request.error}
       onUpload={uploadIntakeFile}
       onClose={close}
-      deviceZone={zone}
+      // Times open in the saved zone; the picker's shortcut offers the device's
+      // own, never the saved one again (owner, 21 Nov 2026).
+      deviceZone={deviceZone}
+      initialZone={zone}
       hideProfileLink={hideProfileLink}
       ratingUnknown={ratingUnknown}
       renderShell={(shell, body) => (

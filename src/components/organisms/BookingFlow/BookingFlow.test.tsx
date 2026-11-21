@@ -407,6 +407,27 @@ describe('BookingFlow on real slots', () => {
     expect(screen.getByRole('radio', { name: '10:00 pm' })).toBeInTheDocument();
   });
 
+  it('opens in the saved zone, and offers the device’s own zone, never the saved one', async () => {
+    // A migrated account saved in Lagos, on a device in New York (owner, 21 Nov 2026).
+    const user = userEvent.setup();
+    render(
+      <BookingFlow
+        {...props({
+          slots: remote(['2026-09-29T02:00:00Z']),
+          initialZone: 'Africa/Lagos',
+          deviceZone: 'America/New_York',
+        })}
+      />,
+    );
+    // 02:00Z is 3:00 am on Sep 29 in Lagos.
+    expect(screen.getByRole('radio', { name: '3:00 am' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Change time zone/ }));
+    expect(
+      await screen.findByRole('button', { name: /Use my device’s zone \(New York/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Use my device’s zone \(Lagos/ })).toBeNull();
+  });
+
   it('says so when the offering has no open times', () => {
     render(<BookingFlow {...props({ slots: remote([]) })} />);
     expect(screen.getByText('No open times at the moment')).toBeInTheDocument();

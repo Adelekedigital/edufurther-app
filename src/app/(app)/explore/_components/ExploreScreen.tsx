@@ -23,6 +23,7 @@ import { useInviteLookup } from '@/lib/api/data/invite';
 import { profileLinkSource } from '@/lib/analytics/profileSource';
 import { useFeaturedMentor, useMentors, useTopics } from '@/lib/api/data/mentors';
 import { INVITE_LANDING_COPY } from '@/lib/copy/invite';
+import { viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { storedInviteCode } from '@/lib/utils/inviteCode';
 import { personCover } from '@/lib/utils/person';
@@ -93,7 +94,9 @@ export function ExploreScreen() {
   const sessionTypes = useSessionTypes(booking?.id ?? null);
   // The offering being booked: the one picked in the modal, else the first.
   const typeId = bookingTypeId ?? sessionTypes.data?.[0]?.id ?? null;
-  const slots = useSlots(booking?.id ?? null, typeId, timeZone);
+  // Booking opens in the account's saved zone, as from every other entry point.
+  const bookingZone = viewerZone(member?.timeZone, timeZone);
+  const slots = useSlots(booking?.id ?? null, typeId, bookingZone);
   const request = useRequestBooking();
   const uploadIntakeFile = useUploadIntakeFile();
 
@@ -296,6 +299,7 @@ export function ExploreScreen() {
           onUpload={uploadIntakeFile}
           onClose={closeBooking}
           deviceZone={timeZone}
+          initialZone={bookingZone}
           firstReasons={firstReasonsFor(booking)}
           renderShell={(shell, body) => (
             <ModalShell

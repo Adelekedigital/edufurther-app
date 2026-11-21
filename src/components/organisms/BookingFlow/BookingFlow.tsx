@@ -91,7 +91,16 @@ export type BookingFlowProps = {
    */
   onUpload?: (file: File) => Promise<IntakeFile>;
   onClose: () => void;
+  /**
+   * The device's own zone (the browser's), for the picker's "Use my device's
+   * zone" shortcut. Never the account's saved zone: that is `initialZone`.
+   */
   deviceZone: string;
+  /**
+   * The zone the times open in: the account's saved zone, else the device's.
+   * Absent: the device's.
+   */
+  initialZone?: string;
   /** Hide "View profile" — the flow was opened from that profile. */
   hideProfileLink?: boolean;
   /**
@@ -214,7 +223,7 @@ export function BookingFlow(p: BookingFlowProps) {
     types,
     session,
     slots: p.slots,
-    deviceZone: p.deviceZone,
+    initialZone: p.initialZone ?? p.deviceZone,
     initialTime: p.initialTime,
     requestDone: p.requestDone,
     onSessionTypeChange: p.onSessionTypeChange,
