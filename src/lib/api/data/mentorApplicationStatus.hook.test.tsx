@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { renderHook, waitFor } from '@testing-library/react';
-import type { Viewer } from '@/types/mentor';
 import { keys } from './keys';
+import type { UserRead } from './me';
+import { cachedViewer, meEntry, seedMe } from './_test/meEntry';
 import { useMarkApprovedSeen, type MentorApplication } from './mentorApplicationStatus';
 import { previewStore, resetPreviewStoreForTests } from './previewStore';
 
@@ -95,23 +96,23 @@ describe('useMarkApprovedSeen: the viewer follows', () => {
   it('marks the cached viewer seen, so Home goes back to the dashboard (no repeat toast)', async () => {
     POST.mockResolvedValue({ response: new Response(null, { status: 200 }) });
     const { qc, result } = setup();
-    const ME = keys.viewer.me('u1');
-    qc.setQueryData(ME, {
-      kind: 'member',
-      id: 'u1',
-      firstName: 'Gbenga',
-      initials: 'G',
-      isMentee: false,
-      isApprovedMentor: true,
-      isMentor: true,
-      completedSessions: 0,
-      credits: null,
-      mentorStage: 'approved',
-      mentorApprovedSeen: false,
-    } as Viewer);
-    expect(accessFor(qc.getQueryData<Viewer>(ME)!).homeHref).toBe('/mentor-application');
+    // An approved mentor who hasn't seen the approval yet, in the one /me.
+    seedMe(
+      qc,
+      'auth-1',
+      meEntry({
+        id: 'u1',
+        first_name: 'Gbenga',
+        mentor_profile: {
+          approval_status: 'approved',
+          approved_seen_at: null,
+        } as UserRead['mentor_profile'],
+      }),
+    );
+    const viewer = () => cachedViewer(qc, 'auth-1')!;
+    expect(accessFor(viewer()).homeHref).toBe('/mentor-application');
     result.current.markSeen();
-    await waitFor(() => expect(qc.getQueryData(ME)).toMatchObject({ mentorApprovedSeen: true }));
-    expect(accessFor(qc.getQueryData<Viewer>(ME)!).homeHref).toBeNull();
+    await waitFor(() => expect(viewer()).toMatchObject({ mentorApprovedSeen: true }));
+    expect(accessFor(viewer()).homeHref).toBeNull();
   });
 });

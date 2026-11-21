@@ -2,14 +2,21 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { SAVE_COPY } from '@/lib/copy/settings';
-import { keys } from './keys';
+import { meEntry, seedMe, userRead } from './_test/meEntry';
+import type { UserRead } from './me';
 import {
   ProfileSaveError,
   profileBody,
   toMenteeProfile,
+  useMenteeProfile,
   useSaveMenteeProfile,
-  type MenteeProfile,
 } from './settings';
+
+// The one /me is keyed by the session's user id (me.ts).
+vi.mock('./session', () => ({
+  useSession: () => ({ status: 'present', userId: 'auth-1' }),
+  sessionKey: () => 'auth-1',
+}));
 
 const PUT = vi.fn();
 const GET = vi.fn();
@@ -104,25 +111,71 @@ describe('toMenteeProfile', () => {
 
 describe('useMenteeProfile', () => {
   it('a catalog failure doesn’t hide a profile that loaded: the country is just empty', async () => {
-    const { useMenteeProfile } = await import('./settings');
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    vi.spyOn(qc, 'fetchQuery').mockRejectedValue(new Error('catalog down'));
-    GET.mockResolvedValue({
-      data: {
-        email: 'a@b.co',
-        first_name: 'Amaka',
-        last_name: 'Obi',
-        languages: [],
-        profile: { cover_art: 'none', current_country: { code: 'NG', display_name: 'Nigeria' } },
-      },
-      response: { ok: true, status: 200 },
-    });
+    GET.mockImplementation(async (path: string) =>
+      path === '/api/v1/me'
+        ? {
+            data: userRead({
+              email: 'a@b.co',
+              first_name: 'Amaka',
+              last_name: 'Obi',
+              profile: {
+                cover_art: 'none',
+                current_country: { code: 'NG', display_name: 'Nigeria' },
+              } as UserRead['profile'],
+            }),
+            response: { ok: true, status: 200 },
+          }
+        : { response: { ok: false, status: 503 } },
+    );
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={qc}>{children}</QueryClientProvider>
     );
     const { result } = renderHook(() => useMenteeProfile('u1'), { wrapper });
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(result.current.profile).toMatchObject({ name: 'Amaka Obi', countryId: '' });
+  });
+
+  it('the catalog maps the saved country to its id; until it answers, the profile is loading', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    let answerCatalog: (v: unknown) => void = () => {};
+    GET.mockImplementation((path: string) =>
+      path === '/api/v1/me'
+        ? Promise.resolve({
+            data: userRead({
+              profile: {
+                cover_art: 'none',
+                current_country: { code: 'NG', display_name: 'Nigeria' },
+              } as UserRead['profile'],
+            }),
+            response: { ok: true, status: 200 },
+          })
+        : new Promise((r) => (answerCatalog = r)),
+    );
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useMenteeProfile('u1'), { wrapper });
+    await waitFor(() => expect(GET).toHaveBeenCalledTimes(2));
+    expect(result.current.status).toBe('loading');
+    answerCatalog({
+      data: { data: [{ id: 'ng-id', display_name: 'Nigeria', code: 'NG' }] },
+      response: { ok: true, status: 200 },
+    });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(result.current.profile!.countryId).toBe('ng-id');
+  });
+
+  it('a failed /me is an error, never an empty profile', async () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    GET.mockResolvedValue({ response: { ok: false, status: 500 }, error: {} });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useMenteeProfile('u1'), { wrapper });
+    expect(result.current.status).toBe('loading');
+    await waitFor(() => expect(result.current.status).toBe('error'));
+    expect(result.current.profile).toBeNull();
   });
 });
 
@@ -152,22 +205,38 @@ describe('profileBody', () => {
 });
 
 describe('useSaveMenteeProfile', () => {
-  const cached: MenteeProfile = {
-    ...values,
-    photoUrl: null,
-    initials: 'A',
-    email: 'amaka@example.com',
-    emailVerified: true,
-    upcomingCount: 0,
-    requestCount: 0,
-  };
+  // The /me the save starts from; its refetch after the save fails, so what
+  // the readers show is what the save itself wrote over the one /me.
   function setup() {
-    const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-    qc.setQueryData(keys.viewer.settings('u1'), cached);
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    seedMe(
+      qc,
+      'auth-1',
+      meEntry({
+        first_name: 'Amaka',
+        last_name: 'Obi',
+        languages: [{ id: 'en', display_name: 'English', code: 'en' }],
+      }),
+    );
+    GET.mockResolvedValue({ response: { ok: false, status: 500 }, error: {} });
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={qc}>{children}</QueryClientProvider>
     );
-    return { qc, ...renderHook(() => useSaveMenteeProfile('u1'), { wrapper }) };
+    const hook = renderHook(
+      () => ({ save: useSaveMenteeProfile('u1'), read: useMenteeProfile('u1') }),
+      { wrapper },
+    );
+    return {
+      result: {
+        get current() {
+          return hook.result.current.save;
+        },
+      },
+      /** Settings › Profile's read, as the panel shows it. */
+      read: () => hook.result.current.read.profile,
+    };
   }
   const run = async (
     hook: { current: ReturnType<typeof useSaveMenteeProfile> },
@@ -189,14 +258,14 @@ describe('useSaveMenteeProfile', () => {
   it('the profile, then the languages; both land in the cached read at once', async () => {
     PATCH.mockResolvedValue(ok);
     PUT.mockResolvedValue(ok);
-    const { qc, result } = setup();
+    const { read, result } = setup();
     const after = { ...values, name: 'Amaka N. Obi', languages: twoLangs };
     expect(await run(result, after)).toBeNull();
     expect(PATCH.mock.calls[0]![1]).toMatchObject({ body: { full_name: 'Amaka N. Obi' } });
     expect(PUT.mock.calls[0]![1]).toMatchObject({
       body: { languages: [{ language_id: 'en' }, { language_id: 'ig' }] },
     });
-    expect(qc.getQueryData<MenteeProfile>(keys.viewer.settings('u1'))).toMatchObject(after);
+    await waitFor(() => expect(read()).toMatchObject(after));
   });
 
   it('the same languages in another order: no languages write', async () => {
@@ -223,26 +292,27 @@ describe('useSaveMenteeProfile', () => {
 
   it('the profile failed: "We couldn’t save your profile", nothing written to the cache', async () => {
     PATCH.mockResolvedValue(fail(500));
-    const { qc, result } = setup();
+    const { read, result } = setup();
     const e = await run(result, { ...values, name: 'Amaka N. Obi', languages: twoLangs });
     expect(e).toBeInstanceOf(ProfileSaveError);
     expect(e!.copy).toBe(SAVE_COPY.profileFailed);
     expect(e!.profileSaved).toBe(false);
     expect(PUT).not.toHaveBeenCalled();
-    expect(qc.getQueryData<MenteeProfile>(keys.viewer.settings('u1'))!.name).toBe('Amaka Obi');
+    // The save wrote nothing over /me: the refetch (failed here) is all that ran.
+    await waitFor(() => expect(GET).toHaveBeenCalled());
+    expect(read()!.name).toBe('Amaka Obi');
   });
 
   it('the profile landed, the languages didn’t: says which, and caches only what landed', async () => {
     PATCH.mockResolvedValue(ok);
     PUT.mockResolvedValue(fail(500));
-    const { qc, result } = setup();
+    const { read, result } = setup();
     const e = await run(result, { ...values, name: 'Amaka N. Obi', languages: twoLangs });
     expect(e!.copy).toBe(SAVE_COPY.languagesFailed);
     expect(e!.profileSaved).toBe(true);
-    expect(qc.getQueryData<MenteeProfile>(keys.viewer.settings('u1'))).toMatchObject({
-      name: 'Amaka N. Obi',
-      languages: values.languages,
-    });
+    await waitFor(() =>
+      expect(read()).toMatchObject({ name: 'Amaka N. Obi', languages: values.languages }),
+    );
   });
 
   it('offline: says so', async () => {

@@ -10,6 +10,7 @@ import type { MentorProfile } from '@/types/mentor';
 import { apiError, normaliseError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { useMeSlice, type MeRead } from './me';
 import { useMentorProfile } from './profile';
 import { aboutBody } from './profileEdit';
 
@@ -39,22 +40,19 @@ export function toMentorProfileValues(p: MentorProfile, gender: string): MentorP
   };
 }
 
+const handleOf = ({ me }: MeRead) => ({
+  slug: me.slug ?? null,
+  gender: me.profile?.gender ?? '',
+});
+
 /**
  * Settings › Profile for a mentor: the handle and gender from /me, then the
  * owner's own profile read (names, headline, About, background, cover, photo
  * and the preview's proof line), the same one the profile page edits.
  */
 export function useMentorSettings(userId: string | null) {
-  const me = useQuery({
-    queryKey: keys.viewer.mentorSettings(userId ?? 'none'),
-    enabled: userId !== null,
-    retry: retryOnce,
-    queryFn: async ({ signal }) => {
-      const { data, error, response } = await api.GET('/api/v1/me', { signal });
-      if (!data) throw apiError(response.status, error);
-      return { slug: data.slug ?? null, gender: data.profile?.gender ?? '' };
-    },
-  });
+  // A slice of the one /me (me.ts), not a request of its own.
+  const me = useMeSlice(userId !== null, handleOf);
   // `/mentors/{handle}` takes a slug or the user's id. Accounts made in this
   // app have no slug (only the old platform's import set one), so the id stands in.
   const handle = me.data ? me.data.slug || userId : null;
@@ -62,8 +60,7 @@ export function useMentorSettings(userId: string | null) {
   const values =
     profile.data && me.data ? toMentorProfileValues(profile.data, me.data.gender) : null;
   // Error before content: a failed first read says so; a failed refetch keeps what's shown.
-  const failed =
-    (!me.data && !!me.error) || (!profile.data && (!!profile.error || profile.notFound));
+  const failed = me.status === 'error' || (!profile.data && (!!profile.error || profile.notFound));
   const status: 'loading' | 'error' | 'ready' = values ? 'ready' : failed ? 'error' : 'loading';
   return {
     status,
@@ -74,7 +71,7 @@ export function useMentorSettings(userId: string | null) {
     /** Moves each time either read lands, even with the same data. */
     version: `${me.dataUpdatedAt}:${profile.updatedAt}`,
     retry: () => {
-      if (me.error) void me.refetch();
+      if (me.status === 'error') me.retry();
       // Only with a handle: a disabled query's refetch would ask for /mentors/null.
       if (handle) profile.retry();
     },

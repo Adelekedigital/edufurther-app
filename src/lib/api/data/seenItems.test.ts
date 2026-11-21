@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { clearSeenHere, seenHere, SEEN_HERE_KEY } from '@/lib/utils/seenHere';
-import { keys } from './keys';
+import { cachedViewer, meEntry, seedMe } from './_test/meEntry';
 
 const h = vi.hoisted(() => ({ put: vi.fn(), previewing: false }));
 vi.mock('./previewStore', () => ({ isPreviewing: () => h.previewing }));
@@ -9,15 +9,17 @@ const { markSeen } = await import('./seenItems');
 
 const KEY = 'whats-new:2026-11-migration';
 const ME = 'u-1';
+/** The session's user id, which keys the one /me (me.ts). */
+const AUTH = 'auth-1';
 const res = (status: number) => ({ response: new Response(null, { status }) });
 
 function cacheWith(seenItems: string[]) {
   const qc = new QueryClient();
-  qc.setQueryData(keys.viewer.me(ME), { kind: 'member', id: ME, seenItems });
+  seedMe(qc, AUTH, meEntry({ id: ME, seen_items: seenItems }));
   return qc;
 }
-const cached = (qc: QueryClient) =>
-  (qc.getQueryData(keys.viewer.me(ME)) as { seenItems: string[] }).seenItems;
+/** The seen list as the shell (and so the tour) reads it from the one /me. */
+const cached = (qc: QueryClient) => (cachedViewer(qc, AUTH) as { seenItems: string[] }).seenItems;
 
 beforeEach(() => {
   h.put.mockReset();

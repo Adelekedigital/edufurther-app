@@ -27,18 +27,17 @@ export const keys = {
   },
   viewer: {
     all: ['viewer'] as const,
+    /**
+     * The one GET /me (me.ts), keyed by the session's user id: the shell, and
+     * Settings' and Home's goal, profile and mentor-profile reads select from it.
+     */
     me: (userId: string) => ['viewer', 'me', userId] as const,
+    meAll: ['viewer', 'me'] as const,
     /** The raw /me mentor application (mentorApplicationStatus.ts), under the viewer prefix. */
     mentorApplication: (userId: string) => ['viewer', 'mentorApplication', userId] as const,
     mentorApplicationAll: ['viewer', 'mentorApplication'] as const,
-    /** Settings' read of /me (settings.ts), under the viewer prefix so a viewer refresh reaches it. */
-    settings: (userId: string) => ['viewer', 'settings', userId] as const,
     /** How the session logged in (Supabase identities), for Login and security. */
     loginProvider: (userId: string) => ['viewer', 'loginProvider', userId] as const,
-    /** Settings › Goals' read of /me (goals.ts): the goal, origin and current country. */
-    goals: (userId: string) => ['viewer', 'goals', userId] as const,
-    /** Mentor Settings' read of /me (mentorSettings.ts): the handle and gender. */
-    mentorSettings: (userId: string) => ['viewer', 'mentorSettings', userId] as const,
     /** Settings › Expertise's guide-to countries (mentorSettings.ts), from the owner's mentor profile. */
     guideCountries: (userId: string) => ['viewer', 'guideCountries', userId] as const,
     /** Settings › Social links: LinkedIn and the user's links, from /me. */

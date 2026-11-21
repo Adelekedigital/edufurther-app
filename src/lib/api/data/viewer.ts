@@ -2,8 +2,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { usePathname } from 'next/navigation';
-import { useQuery, type QueryClient } from '@tanstack/react-query';
-import type { components } from '@/lib/api/generated/schema';
+import type { QueryClient } from '@tanstack/react-query';
 import { authConfigured } from '@/lib/vendor/supabase/config';
 import type { Viewer } from '@/types/mentor';
 import { isUnder, mentorStageOf, routeRole } from '@/lib/utils/access';
@@ -12,14 +11,18 @@ import { readMockParam } from '@/lib/utils/mockViewerParam';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { clampFocus, personInitials } from '@/lib/utils/person';
 import { toCredits } from './credits';
-import { ApiError } from './errors';
-import { api } from './http';
+import {
+  ACCOUNT_EXISTS,
+  UNLINKED,
+  updateMe,
+  useMeQuery,
+  type MeEntry,
+  type UserRead,
+  type ViewerPatch,
+} from './me';
 import { menteeByChoice } from './roles';
-import { keys } from './keys';
 import { useSession } from './session';
 import { previewStore } from './previewStore';
-
-type UserRead = components['schemas']['UserRead'];
 
 /**
  * GET /api/v1/me → Viewer (backend auth reply #3). Roles come from rows, never
@@ -344,28 +347,19 @@ function useMockViewer(): Viewer | null {
   return Object.hasOwn(MOCK_VIEWERS, key) ? MOCK_VIEWERS[key]! : null;
 }
 
-const UNLINKED = Symbol('unlinked');
-const ACCOUNT_EXISTS = Symbol('accountExists');
+/** The viewer from a cached /me: the reply mapped, with the viewer's own writes over it. */
+export function viewerOf(entry: MeEntry): Viewer {
+  if (entry === UNLINKED) return { kind: 'unlinked' };
+  if (entry === ACCOUNT_EXISTS) return { kind: 'accountExists' };
+  return entry.viewer ? { ...toViewer(entry.me), ...entry.viewer } : toViewer(entry.me);
+}
 
 export function useViewer(): Viewer {
   const mock = useMockViewer();
   const session = useSession();
   const userId = session.status === 'present' ? session.userId : null;
-  const query = useQuery({
-    queryKey: keys.viewer.me(userId ?? 'none'),
-    queryFn: async ({ signal }) => {
-      const { data, response } = await api.GET('/api/v1/me', { signal });
-      // No backend account for this identity (no self-signup yet): a state, not
-      // an error, and not worth retrying.
-      if (response.status === 404) return UNLINKED;
-      // The email belongs to an existing account that isn't linked to this sign-in.
-      if (response.status === 409) return ACCOUNT_EXISTS;
-      if (!data) throw new ApiError(response.status);
-      return toViewer(data);
-    },
-    enabled: !mock && authConfigured && userId !== null,
-    staleTime: 60_000,
-  });
+  // The one /me (me.ts): Settings' and Home's reads share this request.
+  const query = useMeQuery(!mock && authConfigured && userId !== null, viewerOf);
 
   if (mock) return mock;
   if (!authConfigured || session.status === 'none') return { kind: 'guest' };
@@ -374,37 +368,22 @@ export function useViewer(): Viewer {
   if (query.isError && !query.data)
     return { kind: 'error', retry: () => void query.refetch(), retrying: query.isFetching };
   if (!query.data) return { kind: 'loading', signedIn: true };
-  if (query.data === UNLINKED) return { kind: 'unlinked' };
-  if (query.data === ACCOUNT_EXISTS) return { kind: 'accountExists' };
   return query.data;
 }
 
 type Member = Extract<Viewer, { kind: 'member' }>;
 
 /**
- * A write the viewer just made (photo, cover colour), copied into the cached
- * /me at once, so the sidebar matches the profile even if the refetch fails.
+ * A write the viewer just made (photo, cover colour, a seen key), put over the
+ * cached /me at once, so the sidebar matches the profile even if the refetch
+ * fails. Every reader of the one /me sees it; the next read replaces it. A
+ * function patch reads the cached member, for a change that builds on it (a
+ * seen key appended).
  */
-type ViewerPatch = Partial<
-  Pick<
-    Member,
-    | 'avatarUrl'
-    | 'avatarFocus'
-    | 'coverKey'
-    | 'onboardingComplete'
-    | 'mentorApprovedSeen'
-    | 'signedUpAsMentor'
-    | 'isMentor'
-    | 'mentorStage'
-    | 'seenItems'
-  >
->;
-
-/** A function patch reads the cached member, for a change that builds on it (a seen key appended). */
 export function patchViewer(qc: QueryClient, patch: ViewerPatch | ((m: Member) => ViewerPatch)) {
-  qc.setQueriesData<unknown>({ queryKey: keys.viewer.all }, (v: unknown) =>
-    typeof v === 'object' && v !== null && (v as Viewer).kind === 'member'
-      ? { ...(v as Member), ...(typeof patch === 'function' ? patch(v as Member) : patch) }
-      : v,
-  );
+  updateMe(qc, (r) => {
+    const member = viewerOf(r) as Member;
+    const next = typeof patch === 'function' ? patch(member) : patch;
+    return { ...r, viewer: { ...r.viewer, ...next } };
+  });
 }

@@ -12,6 +12,8 @@ import {
   useCoverEdit,
 } from './cover';
 import { keys } from './keys';
+import type { UserRead } from './me';
+import { cachedViewer, meEntry, seedMe } from './_test/meEntry';
 
 const PATCH = vi.fn();
 const POST = vi.fn();
@@ -94,7 +96,11 @@ describe('useCoverEdit', () => {
     );
     const { qc, wrapper, read } = setup();
     const spy = vi.spyOn(qc, 'invalidateQueries');
-    qc.setQueryData(keys.viewer.me('u1'), { kind: 'member', id: 'u1', coverKey: 'sky' });
+    seedMe(
+      qc,
+      'auth-1',
+      meEntry({ id: 'u1', profile: { cover_color: 'sky' } as UserRead['profile'] }),
+    );
     const { result } = renderHook(() => useCoverEdit('ada', 'u1'), { wrapper });
     act(() => result.current.save({ color: 'lilac' }));
     await waitFor(() => expect(read().cover.color).toBe('lilac'));
@@ -109,7 +115,7 @@ describe('useCoverEdit', () => {
     await waitFor(() => expect(result.current.saveState).toBe('saved'));
     expect(result.current.savedStamp).toBeGreaterThan(0);
     expect(spy).toHaveBeenCalledWith({ queryKey: keys.viewer.all });
-    expect(qc.getQueryData(keys.viewer.me('u1'))).toMatchObject({ coverKey: 'lilac' });
+    expect(cachedViewer(qc, 'auth-1')).toMatchObject({ coverKey: 'lilac' });
   });
 
   it('the same profile cached under its other handle (id vs slug) is refreshed once saved', async () => {

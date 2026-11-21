@@ -1,13 +1,14 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { GOALS_COPY } from '@/lib/copy/settings';
 import type { components } from '@/lib/api/generated/schema';
 import type { GoalSchool, MenteeGoalValues } from '@/types/settings';
 import type { CatalogOption } from './catalog';
-import { apiError, retryOnce } from './errors';
+import { apiError } from './errors';
 import { api } from './http';
 import { keys } from './keys';
+import { useMeSlice, type MeRead } from './me';
 import { degreeValue, degreeWrite, putGoal } from './onboarding';
 
 type GoalRead = components['schemas']['GoalRead'];
@@ -54,35 +55,20 @@ export function toGoalValues(read: GoalsRead, countries: CatalogOption[]): Mente
 export const savedOriginId = (read: GoalsRead, countries: CatalogOption[]) =>
   idByCode(countries, read.originCode);
 
-/** The signed-in mentee's goal, where they're from and where they live. */
+const goalsOf = ({ me }: MeRead): GoalsRead => ({
+  goal: me.goal ?? null,
+  originCode: me.profile?.origin_country?.code ?? null,
+  currentCode: me.profile?.current_country?.code ?? null,
+});
+
+/**
+ * The signed-in mentee's goal, where they're from and where they live: a
+ * slice of the one /me (me.ts), never a request of its own. Error before
+ * content: a failed refetch of a loaded goal keeps it.
+ */
 export function useMenteeGoals(userId: string | null) {
-  const query = useQuery({
-    queryKey: keys.viewer.goals(userId ?? 'none'),
-    enabled: userId !== null,
-    // Once: a failed load shows its error promptly (as Settings › Profile).
-    retry: retryOnce,
-    queryFn: async ({ signal }): Promise<GoalsRead> => {
-      const { data, error, response } = await api.GET('/api/v1/me', { signal });
-      if (!data) throw apiError(response.status, error);
-      return {
-        goal: data.goal ?? null,
-        originCode: data.profile?.origin_country?.code ?? null,
-        currentCode: data.profile?.current_country?.code ?? null,
-      };
-    },
-  });
-  // Error before content: a failed refetch of a loaded goal keeps it.
-  const status: 'loading' | 'error' | 'ready' = query.data
-    ? 'ready'
-    : query.error
-      ? 'error'
-      : 'loading';
-  return {
-    read: query.data ?? null,
-    status,
-    retry: () => void query.refetch(),
-    retrying: query.isFetching,
-  };
+  const { data, status, retry, retrying } = useMeSlice(userId !== null, goalsOf);
+  return { read: data, status, retry, retrying };
 }
 
 /** A failed save, in our words. */
@@ -151,16 +137,17 @@ export function useSaveGoals(userId: string | null) {
         throw new GoalsSaveError(GOALS_COPY.saveFailed, originSaved);
       }
     },
-    // Saving lasts until this tab's own read is back; the rest refresh behind it.
+    // Saving lasts until /me (the goal's one source) is read again; the rest
+    // refresh behind it.
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: keys.onboarding.all });
       void qc.invalidateQueries({ queryKey: keys.mentors.listAll });
       void qc.invalidateQueries({ queryKey: keys.menteeHome.all });
       void qc.invalidateQueries({
         queryKey: keys.viewer.all,
-        predicate: (q) => q.queryKey[1] !== 'goals',
+        predicate: (q) => q.queryKey[1] !== 'me',
       });
-      return qc.invalidateQueries({ queryKey: keys.viewer.goals(userId ?? 'none') });
+      return qc.invalidateQueries({ queryKey: keys.viewer.meAll });
     },
   });
 }
