@@ -16,6 +16,15 @@ export const LOBBY_COPY = {
   /** Under Join in the installed iPhone app, for Google Meet (ADR 0013). */
   meetInSafariHint: 'Opens Google Meet in Safari, where you’re signed in.',
   /**
+   * Under Join for Google Meet, naming the address the invite went to: Meet
+   * lets a guest straight in only when their Google account matches it, and
+   * otherwise they wait for the host to admit them (owner, 21 Nov 2026).
+   */
+  meetAccountHint: (email: string) => `Join with the Google account ${email}.`,
+  /** The same, in the installed iPhone app, where Join hands the call to Safari. */
+  meetInSafariAccountHint: (email: string) =>
+    `Opens in Safari. Join with the Google account ${email}.`,
+  /**
    * Under Join on a phone, for EduFurther video: a phone pauses a web page's
    * camera and mic once it is off screen (owner, 19 Nov 2026).
    */

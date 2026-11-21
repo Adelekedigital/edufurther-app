@@ -406,6 +406,10 @@ export function SessionJoinScreen({ id }: { id: string }) {
       enterHref: enterPath(id, { inSafari }),
       inSafari,
       onPhone,
+      // Stand-in: the viewer's own account email. The backend is adding the
+      // exact invited address on the viewer's party (likely `meet_invite_email`);
+      // read that here once it's in the generated schema.
+      meetEmail: member?.email,
       onFollow: () => {
         setProblem(null);
         track('session_join_clicked', {
