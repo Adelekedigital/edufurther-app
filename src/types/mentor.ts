@@ -256,7 +256,10 @@ export type Viewer =
        * person property only (PRD 30): never a permission, never the nav.
        */
       primaryRole?: 'mentee' | 'mentor';
-      /** Carried over from the old app (`/me` is_migrated). Analytics only; absent when not known. */
+      /**
+       * Carried over from the old app (`/me` is_migrated): analytics and the
+       * What's new audience. Absent when not known.
+       */
       isMigrated?: boolean;
       /**
        * What the account has already seen, oldest first (`/me` seen_items): a

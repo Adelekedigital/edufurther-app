@@ -7,6 +7,7 @@ import {
   useQuery,
 } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
+import { addSeenHere, seenHere, SEEN_HERE_KEY } from '@/lib/utils/seenHere';
 
 const order: string[] = [];
 const endSessionHere = vi.fn();
@@ -87,6 +88,14 @@ describe('useSignOut (Logout)', () => {
       'signOut',
       'go /login?deleted=1',
     ]);
+  });
+
+  it('forgets what this account saw in the tab (What’s new): the next person starts empty', async () => {
+    addSeenHere('u-1', 'whats-new:2026-11-migration');
+    const { result } = renderSignOut();
+    await act(() => result.current());
+    expect(seenHere('u-1').size).toBe(0);
+    expect(sessionStorage.getItem(SEEN_HERE_KEY)).toBeNull();
   });
 
   it('runs the caller’s last step right before the page leaves', async () => {

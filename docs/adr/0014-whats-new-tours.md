@@ -44,30 +44,35 @@ Option 3, with the content in one typed file.
 - **Content**: `lib/copy/whatsNew.ts`, `TOUR_RELEASES`: each release has an id (its seen
   key), an audience (`migrated` today), `enabled`, and per role a welcome, steps (target id,
   badge, title, body, optional phone body, optional `required`) and a done card.
-- **Selection** (pure, `lib/utils/whatsNew.ts`): `releaseFor` (live, audience, role, not
-  seen), `tourMayStart` (the role's Home, not previewing, not in setup, no consent banner),
-  `tourSteps` (drop a step whose target is missing; a missing `required` one holds the tour).
-- **Targets by id**: AppShell nav items and CreditsPill carry `data-tour`; the More button
+- **Selection** (pure, `lib/utils/whatsNew.ts`): `tourViewerOf` (null while /me loads and for
+  admins; the routing role, `viewerRole`), `releaseFor` (enabled, released from `liveFrom` with
+  no end so a late first visit still gets it, audience, role, not seen), `tourMayStart` (the role's Home, not previewing, not in setup, no consent banner),
+  `tourSteps` (drop a step whose target is missing; a missing `required` one, or none at all,
+  holds the tour), `tourText` (the welcome hint and done card lose their replay line once the
+  replay window has ended).
+- **Targets by id** (UI: follow-up PR): AppShell nav items and CreditsPill carry `data-tour`; the More button
   lists the ids its sheet holds (`data-tour-holds`), and AppShell's `tourMore` holds the sheet
   open for such a step on phones.
-- **UI**: `templates/WhatsNewTour` (welcome on ModalShell, step card on useFocusTrap with a
+- **UI** (follow-up PR): `templates/WhatsNewTour` (welcome on ModalShell, step card on useFocusTrap with a
   cut-out scrim, done card as `role="status"`), loaded only when it opens; the host is
   `app/_shell/useWhatsNew` in the (app) layout.
-- **Replay**: "What's new" in the account menu (desktop) and More sheet (phones), and
+- **Replay** (entries: follow-up PR): "What's new" in the account menu (desktop) and More sheet (phones), and
   Settings' "Replay tour", link to the role's Home with `?tour=replay`, which opens the
   welcome whether seen or not (replay never un-sees). Offered per release from `liveFrom` for
   `replayDays` (default 30), same audience rules. Per-user windows (30 days from when each
   person saw it) would need `seen_at` from the backend; deliberately not done.
-- **Get the app**: a step marked `install` shows only where the device can install the app
+- **Get the app** (its button: follow-up PR): a step marked `install` shows only where the device can install the app
   (`installPlatform`, so never in the installed app or on desktop today), points at the phone's
   More tab, and its Install app button opens the install nudge's own sheet (trigger `tour`).
   The tour and the automatic nudge still never share a visit; the nudge's dismissals stay
   per device in browser storage, never in `seen_items`.
 - **Done card**: an optional `doneAction` (label, href) per role leads on (mentors: "Check my
   hours" to Calendar) beside "Got it"; `tour_completed` says which (`cta` or `dismiss`).
-- **Seen**: on Not now, Skip, Escape and Finish. Optimistic: this visit's list and the cached
-  `/me` take it at once, the PUT retries quietly.
-- **Other asks**: the tour claims the visit from the install nudge (`claimVisitForTour`) and
+- **Seen**: on Not now, Skip, Escape and Finish. Optimistic: the cached `/me` and this tab's
+  list for the signed-in viewer (`lib/utils/seenHere`; another viewer starts empty, sign-out
+  and an ended session clear it) take it at once, the PUT retries quietly. Nothing in Preview
+  as user.
+- **Other asks** (UI: follow-up PR): the tour claims the visit from the install nudge (`claimVisitForTour`) and
   holds the mentor push ask while it is due; an ask that already had the visit makes the tour
   wait for the next one.
 

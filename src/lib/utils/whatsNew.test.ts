@@ -16,7 +16,16 @@ import {
   TOUR_HOME,
   tourMayStart,
   tourSteps,
+  tourText,
+  tourViewerOf,
 } from './whatsNew';
+import type { Viewer } from '@/types/mentor';
+
+// After the release day, inside its replay window, unless a test says otherwise.
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ['Date'], now: Date.parse('2026-11-25T12:00:00Z') });
+});
+afterAll(() => vi.useRealTimers());
 
 const live: TourRelease = { ...MIGRATION_2026_11, enabled: true };
 const ID = live.id;
@@ -65,7 +74,9 @@ describe('releaseFor', () => {
   });
 
   it('a release with an id the backend would refuse never shows', () => {
-    expect(releaseFor(migrated('mentee'), [{ ...live, id: 'Whats New!' }])).toBeNull();
+    expect(
+      releaseFor(migrated('mentee'), [{ ...live, id: 'Whats New!' as TourRelease['id'] }]),
+    ).toBeNull();
   });
 
   it('a role the release has no content for gets nothing', () => {
@@ -74,7 +85,7 @@ describe('releaseFor', () => {
   });
 
   it('the first unseen release wins', () => {
-    const next = { ...live, id: 'whats-new:2027-01' };
+    const next = { ...live, id: 'whats-new:2027-01' as const };
     expect(releaseFor(migrated('mentee', [ID]), [live, next])?.id).toBe('whats-new:2027-01');
   });
 });
@@ -134,6 +145,10 @@ describe('tourSteps', () => {
     expect(tourSteps(req, (t) => (t === 'credits-pill' ? null : 'shown'), false)).toBeNull();
   });
 
+  it('no step on the page at all: null, not an empty tour', () => {
+    expect(tourSteps(mentee, () => null, false)).toBeNull();
+  });
+
   it('a mentor’s Sessions on a phone lives in More, and says so', () => {
     const steps = tourSteps(mentor, (t) => (t === 'nav-sessions' ? 'more' : 'shown'), true)!;
     expect(steps[1]).toMatchObject({ target: 'nav-sessions', place: 'more' });
@@ -174,6 +189,82 @@ describe('tourSteps', () => {
   });
 });
 
+describe('the release day', () => {
+  const at = (iso: string) => Date.parse(iso);
+
+  it('the tour shows from liveFrom (UTC midnight), not a moment before', () => {
+    const v = migrated('mentee');
+    expect(releaseFor(v, [live], undefined, false, at('2026-11-22T23:59:59.999Z'))).toBeNull();
+    expect(releaseFor(v, [live], undefined, false, at('2026-11-23T00:00:00Z'))?.id).toBe(ID);
+  });
+
+  it('with no end: a first visit long after the replay window still gets it', () => {
+    expect(releaseFor(migrated('mentor'), [live], undefined, false, at('2027-06-01'))?.id).toBe(ID);
+  });
+
+  it('an unreadable liveFrom never shows', () => {
+    expect(releaseFor(migrated('mentee'), [{ ...live, liveFrom: 'soon' }])).toBeNull();
+  });
+});
+
+describe('tourText: the replay line goes when the replay does', () => {
+  const mentee = live.roles.mentee!;
+
+  it('inside the window: the hint and done card say it can be replayed', () => {
+    expect(tourText(mentee, inReplayWindow(live, Date.parse('2026-12-22T23:59:59Z')))).toEqual({
+      hint: 'Takes about a minute. You can replay it from Settings.',
+      doneBody:
+        'Book your next session from Home or Explore. You can replay this tour from Settings.',
+    });
+  });
+
+  it('after it: neither mentions a replay', () => {
+    expect(tourText(mentee, inReplayWindow(live, Date.parse('2026-12-23T00:00:00Z')))).toEqual({
+      hint: 'Takes about a minute.',
+      doneBody: 'Book your next session from Home or Explore.',
+    });
+  });
+});
+
+describe('tourViewerOf', () => {
+  const base = {
+    kind: 'member',
+    id: 'u-1',
+    firstName: 'Ada',
+    initials: 'AO',
+    isMentee: true,
+    isApprovedMentor: false,
+    isMentor: false,
+    completedSessions: 0,
+    credits: null,
+    isMigrated: true,
+    seenItems: [],
+  } as Extract<Viewer, { kind: 'member' }>;
+
+  it('none while /me loads, for a guest, or for an admin', () => {
+    expect(tourViewerOf({ kind: 'loading', signedIn: true })).toBeNull();
+    expect(tourViewerOf({ kind: 'guest' })).toBeNull();
+    expect(tourViewerOf({ ...base, isAdmin: true })).toBeNull();
+  });
+
+  it('a mentee, and a mentor, with their seen list', () => {
+    expect(tourViewerOf(base)).toEqual({
+      id: 'u-1',
+      role: 'mentee',
+      isMigrated: true,
+      seenItems: [],
+    });
+    expect(tourViewerOf({ ...base, isMentor: true })?.role).toBe('mentor');
+  });
+
+  it('a mentor sign-up counts as a mentor only while mentor onboarding is on (viewerRole)', () => {
+    const signup = { ...base, isMentee: false, signedUpAsMentor: true };
+    expect(tourViewerOf(signup)?.role).toBe(
+      process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED === 'true' ? 'mentor' : 'mentee',
+    );
+  });
+});
+
 describe('the off switches', () => {
   const now = Date.parse('2026-11-25T00:00:00Z');
 
@@ -184,7 +275,7 @@ describe('the off switches', () => {
   });
 
   it('a release switched off goes alone; the others still show', () => {
-    const next = { ...live, id: 'whats-new:2027-01' };
+    const next = { ...live, id: 'whats-new:2027-01' as const };
     const active = activeReleases(true, [{ ...live, enabled: false }, next]);
     expect(active.map((r) => r.id)).toEqual(['whats-new:2027-01']);
     expect(releaseFor(migrated('mentee'), active)?.id).toBe('whats-new:2027-01');

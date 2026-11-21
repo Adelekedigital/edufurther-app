@@ -1,4 +1,5 @@
 import type { components } from '@/lib/api/generated/schema';
+import type { TourTarget } from '@/lib/copy/whatsNew';
 
 type Schemas = components['schemas'];
 
@@ -37,6 +38,8 @@ export type InstallTrigger = 'booking' | 'message' | 'onboarding' | 'menu' | 'to
 export type InstallPlatform = 'android' | 'ios';
 /** Whose version of a "What's new" tour. */
 export type TourRole = 'mentee' | 'mentor';
+/** A What's new release's id, which is also its seen key (lib/copy/whatsNew). */
+export type TourReleaseId = `whats-new:${string}`;
 
 export type AnalyticsEvents = {
   /** One per navigation, from the router (track.ts), never from a screen. */
@@ -132,13 +135,13 @@ export type AnalyticsEvents = {
 
   // "What's new" tours (ADR 0014): who opens one, where they leave, who finishes.
   /** "Show me around" pressed (a replay from Settings included: `replay`). */
-  tour_started: { release: string; role: TourRole; replay: boolean };
+  tour_started: { release: TourReleaseId; role: TourRole; replay: boolean };
   /** A step shown: `step` counts from 1 among the steps this viewer got. */
-  tour_step_viewed: { release: string; role: TourRole; step: number; target: string };
+  tour_step_viewed: { release: TourReleaseId; role: TourRole; step: number; target: TourTarget };
   /** Not now, Skip, Escape or the close: `step` 0 is the welcome. */
-  tour_skipped: { release: string; role: TourRole; step: number };
+  tour_skipped: { release: TourReleaseId; role: TourRole; step: number };
   /** The done card closed: its button that leads on (`cta`), or Got it / Escape (`dismiss`). */
-  tour_completed: { release: string; role: TourRole; action: 'cta' | 'dismiss' };
+  tour_completed: { release: TourReleaseId; role: TourRole; action: 'cta' | 'dismiss' };
 
   /** Error rate by screen: the rate, never the message. */
   request_failed: { route: string; status_bucket: '4xx' | '5xx' | 'network'; kind: string };

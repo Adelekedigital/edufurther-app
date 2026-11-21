@@ -1,4 +1,6 @@
 import { WHATS_NEW_LIVE } from '@/lib/config/whatsNew';
+import { viewerRole } from '@/lib/utils/access';
+import type { Viewer } from '@/types/mentor';
 import type { InstallPlatform } from '@/lib/analytics/events';
 import {
   TOUR_COPY,
@@ -45,15 +47,39 @@ export type TourViewer = {
 };
 
 /**
- * The release this viewer should see: enabled, for their audience and role, with
- * a valid id, and not seen (on the account, or here this visit). The first
- * such release in `releases` wins. Replays ignore the seen list (`replay`).
+ * The tour's view of the signed-in viewer, or null when no tour can be for
+ * them yet: /me still loading (or a guest), or a platform admin. The role is
+ * the routing one (`viewerRole`, as accessFor and memberHome read it): a
+ * mentor, a mentor sign-up while mentor onboarding is on, else a mentee.
+ */
+export function tourViewerOf(viewer: Viewer): (TourViewer & { id: string }) | null {
+  if (viewer.kind !== 'member' || viewer.isAdmin) return null;
+  return {
+    id: viewer.id,
+    role: viewerRole(viewer),
+    isMigrated: viewer.isMigrated,
+    seenItems: viewer.seenItems,
+  };
+}
+
+/** Released: its day (UTC midnight) has come. An unreadable date never has. */
+export function isReleased(r: TourRelease, now: number): boolean {
+  const from = Date.parse(r.liveFrom);
+  return !Number.isNaN(from) && now >= from;
+}
+
+/**
+ * The release this viewer should see: enabled, released (from `liveFrom`,
+ * with no end: a late first visit still gets it), for their audience and
+ * role, with a valid id, and not seen (on the account, or here this visit).
+ * The first such release in `releases` wins. Replays ignore the seen list.
  */
 export function releaseFor(
   viewer: TourViewer,
   releases: readonly TourRelease[],
   seenHere: ReadonlySet<string> = new Set(),
   replay = false,
+  now = Date.now(),
 ): TourRelease | null {
   const { role } = viewer;
   if (!role) return null;
@@ -64,6 +90,7 @@ export function releaseFor(
     releases.find(
       (r) =>
         r.enabled &&
+        isReleased(r, now) &&
         SEEN_KEY.test(r.id) &&
         !!r.roles[role] &&
         inAudience(r, viewer) &&
@@ -98,9 +125,21 @@ export function replayHref(
   releases: readonly TourRelease[],
   now: number,
 ): string | undefined {
-  const r = releaseFor(viewer, releases, undefined, true);
+  const r = releaseFor(viewer, releases, undefined, true, now);
   if (!r || !viewer.role || !inReplayWindow(r, now)) return undefined;
   return `${TOUR_HOME[viewer.role]}?${REPLAY_PARAM}=${REPLAY_VALUE}`;
+}
+
+/**
+ * The words that point at the replay go once it is no longer offered: the
+ * welcome's hint and the done card's body, with or without their replay line.
+ */
+export function tourText(content: TourRoleContent, replayable: boolean) {
+  const add = (text: string, line: string) => (replayable ? `${text} ${line}` : text);
+  return {
+    hint: add(TOUR_COPY.hint, TOUR_COPY.welcomeReplay),
+    doneBody: add(content.done.body, TOUR_COPY.doneReplay),
+  };
 }
 
 function inAudience(r: TourRelease, v: TourViewer): boolean {
@@ -151,7 +190,7 @@ export type ResolvedStep = TourStep & {
 /**
  * The steps this viewer can follow, in order. A missing optional step is
  * dropped (the count then reads "of N" without it); a missing required step
- * holds the whole tour back (null). Phones read `phoneBody` when there is one.
+ * holds the whole tour back (null), as does no step at all. Phones read `phoneBody` when there is one.
  * An install step shows only where the app can be installed (`install`, from
  * lib/pwa/installPrompt's installPlatform); on iPhone it adds Safari's steps.
  */
@@ -176,5 +215,6 @@ export function tourSteps(
       body: s.install && install === 'ios' ? `${body} ${TOUR_COPY.iosInstallHint}` : body,
     });
   }
-  return out;
+  // Nothing to point at: no guided steps (the welcome goes straight to done).
+  return out.length > 0 ? out : null;
 }

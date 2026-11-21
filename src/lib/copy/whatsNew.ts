@@ -1,10 +1,10 @@
 import type { IconName } from '@/components/atoms/Icon/iconNames';
-import type { TourRole } from '@/lib/analytics/events';
+import type { TourReleaseId, TourRole } from '@/lib/analytics/events';
 import { INSTALL_COPY } from './install';
 
 const S = INSTALL_COPY.steps;
 
-export type { TourRole };
+export type { TourReleaseId, TourRole };
 
 /**
  * "What's new" tours (ADR 0014): one entry per release, keyed by its id, which
@@ -58,6 +58,7 @@ export type TourRoleContent = {
     rows: { icon: IconName; title: string; meta: string }[];
   };
   steps: TourStep[];
+  /** `body` without the replay line: TOUR_COPY.doneReplay follows while the replay is offered. */
   done: { title: string; body: string };
   /** The done card's main button, when it should lead somewhere; "Got it" then sits beside it. */
   doneAction?: { label: string; href: string };
@@ -68,7 +69,7 @@ export type TourAudience = 'migrated';
 
 export type TourRelease = {
   /** The seen key: ^[a-z0-9][a-z0-9:._-]{0,79}$ (the backend refuses anything else). */
-  id: string;
+  id: TourReleaseId;
   audience: TourAudience;
   /**
    * This release's own switch: false turns it off (no tour, no replay) and
@@ -92,7 +93,10 @@ export const TOUR_COPY = {
     first ? `Welcome to the new EduFurther, ${first}` : 'Welcome to the new EduFurther',
   showMe: 'Show me around',
   notNow: 'Not now',
-  hint: 'Takes about a minute. You can replay it from Settings.',
+  hint: 'Takes about a minute.',
+  /** After the hint and the done card's body, only while the replay is offered (replayDays). */
+  welcomeReplay: 'You can replay it from Settings.',
+  doneReplay: 'You can replay this tour from Settings.',
   stepOf: (n: number, total: number) => `Step ${n} of ${total}`,
   skip: 'Skip',
   back: 'Back',
@@ -174,7 +178,7 @@ export const MIGRATION_2026_11: TourRelease = {
       ],
       done: {
         title: DONE_TITLE,
-        body: 'Book your next session from Home or Explore. You can replay this tour from Settings.',
+        body: 'Book your next session from Home or Explore.',
       },
     },
     mentor: {
@@ -223,7 +227,7 @@ export const MIGRATION_2026_11: TourRelease = {
       ],
       done: {
         title: DONE_TITLE,
-        body: 'Check your hours in Calendar so mentees can book you. You can replay this tour from Settings.',
+        body: 'Check your hours in Calendar so mentees can book you.',
       },
       doneAction: { label: 'Check my hours', href: '/calendar' },
     },

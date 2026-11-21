@@ -106,6 +106,15 @@ function sumSides(a: number | null | undefined, b: number | null | undefined): n
 }
 
 /**
+ * Opt-in (NEXT_PUBLIC_MOCK_TOUR=1, default off): the mock mentee and mentor
+ * come from the old app with nothing seen, so the What's new tour opens on
+ * /home and /dashboard. Off, page review, e2e and screenshots of those pages
+ * aren't covered by its welcome.
+ */
+const MOCK_TOUR_STATE: { isMigrated?: boolean; seenItems?: string[] } =
+  process.env.NEXT_PUBLIC_MOCK_TOUR === '1' ? { isMigrated: true, seenItems: [] } : {};
+
+/**
  * Local dev / CI page review without auth (NEXT_PUBLIC_MOCK_VIEWER).
  *
  * **`bookingCounts` here is not derived from the sessions fixture, and does not
@@ -140,10 +149,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     onboardingComplete: true,
     completedSessions: 0,
     primaryRole: 'mentee',
-    // Carried over from the old app, nothing seen yet: the What's new tour
-    // shows in dev and CI review (behind NEXT_PUBLIC_WHATS_NEW_ENABLED).
-    isMigrated: true,
-    seenItems: [],
+    ...MOCK_TOUR_STATE,
     credits: {
       balance: 4,
       state: 'on_track',
@@ -179,8 +185,7 @@ const MOCK_VIEWERS: Record<string, Viewer> = {
     onboardingComplete: true,
     completedSessions: 0,
     primaryRole: 'mentor',
-    isMigrated: true,
-    seenItems: [],
+    ...MOCK_TOUR_STATE,
     credits: null,
     // No photo, like the mock profile it owns: the initials on its cover tone.
     avatarUrl: null,
