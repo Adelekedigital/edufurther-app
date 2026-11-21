@@ -12,19 +12,29 @@ const remote = <T,>(data: T | null, over: Partial<Remote<T>> = {}): Remote<T> =>
 });
 
 let pending: Remote<Booking[]>;
-let history: { bookings: Booking[]; isLoading: boolean };
-const historyArgs = vi.fn();
+const pendingArgs = vi.fn();
 vi.mock('@/lib/api/data/bookings', () => ({
-  usePendingBookings: () => pending,
-  useBookingHistory: (...a: unknown[]) => {
-    historyArgs(...a);
-    return history;
+  usePendingBookings: (...a: unknown[]) => {
+    pendingArgs(...a);
+    return pending;
   },
 }));
 let education: { entries: unknown[]; status: string; retry: () => void };
-vi.mock('@/lib/api/data/profileEntries', () => ({ useOwnEducation: () => education }));
+const educationArgs = vi.fn();
+vi.mock('@/lib/api/data/profileEntries', () => ({
+  useOwnEducation: (...a: unknown[]) => {
+    educationArgs(...a);
+    return education;
+  },
+}));
 let profile: { profile: unknown; status: string; retry: () => void };
-vi.mock('@/lib/api/data/settings', () => ({ useMenteeProfile: () => profile }));
+const profileArgs = vi.fn();
+vi.mock('@/lib/api/data/settings', () => ({
+  useMenteeProfile: (...a: unknown[]) => {
+    profileArgs(...a);
+    return profile;
+  },
+}));
 
 const row = (id: string, name: string, startsAt: string, side: 'mentee' | 'mentor' = 'mentee') =>
   ({ id, side, startsAt, other: { name } }) as unknown as Booking;
@@ -40,7 +50,7 @@ const goals = (status: 'ready' | 'loading' | 'error' = 'ready') =>
 const args = (over: Record<string, unknown> = {}) => ({
   userId: 'me',
   active: true,
-  hasCompleted: false,
+  readProfile: false,
   goals: goals(),
   topics: [],
   upcoming: remote<Booking[]>([]),
@@ -49,10 +59,11 @@ const args = (over: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   pending = remote<Booking[]>([]);
-  history = { bookings: [], isLoading: false };
   education = { entries: [], status: 'ready', retry: vi.fn() };
   profile = { profile: { bio: '', bioDrafted: false }, status: 'ready', retry: vi.fn() };
-  historyArgs.mockClear();
+  pendingArgs.mockClear();
+  educationArgs.mockClear();
+  profileArgs.mockClear();
 });
 
 describe('useNewMentee', () => {
@@ -70,23 +81,29 @@ describe('useNewMentee', () => {
     });
   });
 
-  it('a first session done comes from /me; history only names it, and is read only then', () => {
-    const { result, rerender } = renderHook((p: Record<string, unknown>) => useNewMentee(args(p)), {
-      initialProps: {},
-    });
-    expect(result.current.firstDone).toBeNull();
-    expect(historyArgs).toHaveBeenLastCalledWith('me', ['completed'], false);
-    rerender({ hasCompleted: true });
-    expect(result.current.firstDone).toEqual({ mentorFirst: null, startsAt: null });
-    history = {
-      bookings: [row('h1', 'Olajuwon Samuel', '2026-10-08T10:00:00Z')],
-      isLoading: false,
-    };
-    rerender({ hasCompleted: true });
-    expect(result.current.firstDone).toEqual({
-      mentorFirst: 'Olajuwon',
-      startsAt: '2026-10-08T10:00:00Z',
-    });
+  it('the full Home reads the four details only (no requests list)', () => {
+    const { result } = renderHook(() => useNewMentee(args({ active: false, readProfile: true })));
+    expect(pendingArgs).toHaveBeenLastCalledWith('me', false);
+    expect(educationArgs).toHaveBeenLastCalledWith('me', true);
+    expect(profileArgs).toHaveBeenLastCalledWith('me');
+    expect(result.current.detailsStatus).toBe('ready');
+    // Nothing saved: 0 of 4, not done.
+    expect(result.current.profileDone).toBe(false);
+  });
+
+  it('neither view: no reads at all', () => {
+    renderHook(() => useNewMentee(args({ active: false, readProfile: false })));
+    expect(educationArgs).toHaveBeenLastCalledWith('me', false);
+    expect(profileArgs).toHaveBeenLastCalledWith(null);
+  });
+
+  it('the details are loading, then error, before they say done or not', () => {
+    education = { entries: [], status: 'loading', retry: vi.fn() };
+    const { result, rerender } = renderHook(() => useNewMentee(args({ readProfile: true })));
+    expect(result.current.detailsStatus).toBe('loading');
+    profile = { profile: null, status: 'error', retry: vi.fn() };
+    rerender();
+    expect(result.current.detailsStatus).toBe('error');
   });
 
   it('loading until every read the stage needs has answered', () => {

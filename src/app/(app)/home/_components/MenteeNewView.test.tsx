@@ -18,7 +18,6 @@ const fields = (done: number): ProfileField[] =>
 const props = (over: Partial<Parameters<typeof MenteeNewView>[0]> = {}) => ({
   profileDone: false,
   booked: null,
-  firstDone: null,
   invited: false,
   friendJoined: false,
   fields: fields(3),
@@ -105,14 +104,8 @@ describe('MenteeNewView', () => {
   });
 
   it('a note that already says done is not doubled', () => {
-    render(
-      <MenteeNewView
-        {...props({ firstDone: { mentorFirst: 'Mariam', startsAt: '2026-10-08T10:00:00Z' } })}
-      />,
-    );
-    expect(
-      screen.getByRole('link', { name: 'Book your first session, Done with Mariam on Thu, Oct 8' }),
-    ).toBeInTheDocument();
+    render(<MenteeNewView {...props()} />);
+    expect(screen.getByRole('link', { name: 'Create your account, Done' })).toBeInTheDocument();
   });
 
   it('the current step is marked as the current one, and the book step leads to Explore', () => {

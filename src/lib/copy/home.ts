@@ -9,7 +9,6 @@ export const NEW_SUBLINE = {
   ready: 'You’re all set. Let’s book your first session.',
   requested: 'Your first session is requested.',
   booked: 'Your first session is booked.',
-  firstDone: 'Nice work on your first session. Here’s what’s next.',
 } as const;
 
 /** "Requested with Mariam · Thu, Oct 15, 6:00 pm", or "Booked with …" once confirmed. */
@@ -43,7 +42,6 @@ export const NEXT_STEP = {
         : 'Your profile is complete. Pick a mentor who has already done what you’re aiming for.',
     action: 'Choose your mentor',
   },
-  firstDone: { kicker: 'First session done' },
 } as const;
 
 /** Why the profile matters: the profile sheet's subtitle, and the next step's note on Home. */
@@ -63,12 +61,10 @@ export const GETTING_STARTED = {
   details: (n: number) => `${n} of 4 details done`,
   // HomeAfterSkip.dc.html (owner 2026-11-18): the picked-out next step says why.
   detailsWhy: (n: number) => `${n} of 4 details done · ${PROFILE_WHY}`,
-  doneWith: (first: string, date: string) => `Done with ${first} on ${date}`,
   starter: 'Free with your starter credit',
   invitedNote: {
     unlocked: 'Friend joined ✓ · First session ✓ · 3 free sessions a month are on',
     friendJoined: 'Friend joined ✓ · Next: attend your first session',
-    sharedAfterFirst: 'Link shared · Starts when a friend joins',
     shared: 'Link shared · Starts when a friend joins and you attend your first session',
     none: 'Get 3 free sessions every month',
   },
@@ -80,6 +76,8 @@ export const PROFILE_SHEET = {
   count: (n: number) => `${n} of 4 done`,
   next: (field: string) => `Next: ${field}`,
   ready: 'Ready for your first session',
+  /** After a first completed session, "first session" no longer fits. */
+  complete: 'Your profile is complete',
   addEducation: 'Add your most recent education',
   notAdded: 'Not added yet',
   drafted: 'Short bio · drafted for you, review it',
@@ -90,6 +88,14 @@ export const PROFILE_SHEET = {
   cancel: 'Cancel',
   saveFailed: 'We couldn’t save your bio. Your text is still here, so try again.',
   choose: 'Choose your mentor',
+} as const;
+
+/** The full Home's Profile strength tips: one per missing detail, as an action. */
+export const PROFILE_TIPS = {
+  target: 'Add what you’re applying for',
+  help: 'Add what you need help with',
+  education: 'Add your education',
+  bio: 'Add a short bio',
 } as const;
 
 export const MENTORS_FOR_GOAL = 'Mentors for your goal';

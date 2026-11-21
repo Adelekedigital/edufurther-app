@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useBookingHistory, usePendingBookings } from '@/lib/api/data/bookings';
+import { usePendingBookings } from '@/lib/api/data/bookings';
 import { degreeValue } from '@/lib/api/data/onboarding';
 import type { useMenteeGoals } from '@/lib/api/data/goals';
 import { useOwnEducation } from '@/lib/api/data/profileEntries';
@@ -9,22 +9,17 @@ import { useMenteeProfile } from '@/lib/api/data/settings';
 import { DEGREE_OPTIONS } from '@/lib/copy/onboarding';
 import type { Booking } from '@/types/booking';
 import type { Remote, Topic } from '@/types/mentor';
-import {
-  doneCount,
-  profileFields,
-  type FirstBooking,
-  type FirstSession,
-  type ProfileField,
-} from './newMentee';
-
-const COMPLETED = ['completed'] as const;
+import { doneCount, profileFields, type FirstBooking, type ProfileField } from './newMentee';
 
 type Args = {
   userId: string | null;
   /** Read only while the new view can show. */
   active: boolean;
-  /** Has a completed session (read from /me): the first one is then looked up. */
-  hasCompleted: boolean;
+  /**
+   * The four profile details are read for the full Home too (its Profile
+   * strength card), so the education and profile reads follow this as well.
+   */
+  readProfile: boolean;
   goals: ReturnType<typeof useMenteeGoals>;
   topics: Topic[];
   /** Confirmed upcoming rows (the screen already reads them). */
@@ -45,14 +40,15 @@ function firstAhead(pending: Booking[], upcoming: Booking[]): FirstBooking | nul
 
 /**
  * What the new mentee's Home reads (Mentee Dashboard v2.dc.html, newHome
- * nextStep): the four profile details, the first request or booking, the first
- * completed session, and whether all of that has loaded.
+ * nextStep): the four profile details, the first request or booking, and
+ * whether all of that has loaded. The details alone (`profile`) also feed the
+ * full Home's Profile strength card.
  */
-export function useNewMentee({ userId, active, hasCompleted, goals, topics, upcoming }: Args) {
+export function useNewMentee({ userId, active, readProfile, goals, topics, upcoming }: Args) {
   const pending = usePendingBookings(userId, active);
-  const history = useBookingHistory(userId, COMPLETED, active && hasCompleted);
-  const education = useOwnEducation(userId, active);
-  const profile = useMenteeProfile(active ? userId : null);
+  const details = active || readProfile;
+  const education = useOwnEducation(userId, details);
+  const profile = useMenteeProfile(details ? userId : null);
 
   const goalParts = useMemo(() => {
     const g = goals.read?.goal ?? null;
@@ -79,15 +75,18 @@ export function useNewMentee({ userId, active, hasCompleted, goals, topics, upco
   }, [goals.read, goalParts, topics, education.entries, profile.profile]);
 
   const booked = firstAhead(pending.data ?? [], upcoming.data ?? []);
-  // That a first session is done is /me's count; history only names it (newest
-  // first: with one completed session, the newest is the first).
-  const done = history.bookings.find((b) => b.side === 'mentee');
-  const firstDone: FirstSession | null = hasCompleted
-    ? { mentorFirst: done?.other.name.split(' ')[0] ?? null, startsAt: done?.startsAt ?? null }
-    : null;
+
+  // The four details alone: a failed or pending read never claims the profile
+  // is complete or incomplete (the strength card hides instead).
+  const detailsStatus: 'loading' | 'error' | 'ready' =
+    goals.status === 'error' || education.status === 'error' || profile.status === 'error'
+      ? 'error'
+      : goals.status === 'loading' || education.status === 'loading' || profile.status === 'loading'
+        ? 'loading'
+        : 'ready';
 
   // A failed read would read as "not done" and show a wrong stage: the view
-  // says it couldn't load instead. History is only a name, so it never blocks.
+  // says it couldn't load instead.
   const error =
     goals.status === 'error' ||
     education.status === 'error' ||
@@ -116,7 +115,8 @@ export function useNewMentee({ userId, active, hasCompleted, goals, topics, upco
     education: education.entries,
     profileDone: doneCount(fields) === 4,
     booked,
-    firstDone,
+    /** The four details' own state, for the full Home's Profile strength card. */
+    detailsStatus,
     loading,
     error,
     retry,
