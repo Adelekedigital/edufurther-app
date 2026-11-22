@@ -24,7 +24,7 @@ const STATUS_TONE = {
   notApproved: 'pending',
 } as const;
 
-export type DrawerAction = 'approve' | 'decline' | 'pause' | 'resume';
+export type DrawerAction = 'approve' | 'reapprove' | 'decline' | 'pause' | 'resume';
 
 type Props = {
   /** The row it was opened from: the header shows while the detail loads. */
@@ -94,7 +94,10 @@ export function MentorDrawer(p: Props) {
               ...(p.canDecide && !selfPaused ? [act('resume', D.resume, 'primary')] : []),
               email('secondary-outlined'),
             ]
-          : [email('text')];
+          : // Not approved: approve after all (one mentor at a time; bulk skips them).
+            p.canDecide
+            ? [act('reapprove', D.reapprove, 'primary'), email('secondary-outlined')]
+            : [email('text')];
 
   return (
     <SideDrawer

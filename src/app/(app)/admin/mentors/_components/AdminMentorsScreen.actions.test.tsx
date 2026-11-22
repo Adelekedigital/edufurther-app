@@ -157,6 +157,38 @@ describe('the confirms', () => {
     });
   });
 
+  it('re-approve a declined mentor: its own confirm, the same decision call, toast (owner 2026-11-21)', async () => {
+    const user = userEvent.setup();
+    h.POST.mockResolvedValue(res({ decided: true }));
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('tab', { name: 'Not approved' }));
+    await user.click(await screen.findByRole('button', { name: 'Open Okechukwu Let' }));
+    const d = await drawer('Okechukwu Let');
+    expect(within(d).getByRole('link', { name: 'Email Okechukwu' })).toBeInTheDocument();
+    await user.click(within(d).getByRole('button', { name: 'Re-approve' }));
+    expect(within(confirmBox()).getByText('Re-approve Okechukwu Let?')).toBeInTheDocument();
+    expect(within(confirmBox()).getByText(/were marked not approved/)).toBeInTheDocument();
+    await user.click(within(confirmBox()).getByRole('button', { name: 'Re-approve' }));
+    expect(
+      await screen.findByText('Okechukwu Let re-approved and listed on Explore'),
+    ).toBeInTheDocument();
+    expect(h.POST).toHaveBeenCalledWith('/api/v1/admin/mentors/{user_id}/decision', {
+      params: { path: { user_id: 'm-ol' }, query: { approve: true } },
+      body: {},
+    });
+  });
+
+  it('re-approve is only for admins who can decide: limited access sees Email alone', async () => {
+    const user = userEvent.setup();
+    h.viewer = admin({ adminRole: 'limited_access' });
+    renderScreen(<AdminMentorsScreen />);
+    await user.click(await screen.findByRole('tab', { name: 'Not approved' }));
+    await user.click(await screen.findByRole('button', { name: 'Open Okechukwu Let' }));
+    const d = await drawer('Okechukwu Let');
+    expect(within(d).queryByRole('button', { name: 'Re-approve' })).toBeNull();
+    expect(within(d).getByRole('link', { name: 'Email Okechukwu' })).toBeInTheDocument();
+  });
+
   it('approve takes an optional note for the approval email, sent as `message`', async () => {
     const user = userEvent.setup();
     h.POST.mockResolvedValue(res({ decided: true }));

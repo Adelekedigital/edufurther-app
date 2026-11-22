@@ -10,7 +10,7 @@ import { MENTOR_DIALOGS as M } from '@/lib/copy/adminMentors';
 import styles from './MentorDialogs.module.css';
 
 export type MentorDialog =
-  | { kind: 'approve' | 'decline' | 'pause' | 'resume'; mentor: AdminPerson }
+  | { kind: 'approve' | 'reapprove' | 'decline' | 'pause' | 'resume'; mentor: AdminPerson }
   | { kind: 'bulk'; mentors: AdminPerson[] };
 
 /** Suspend's admins-only reason (the listing call); decision notes go to the mentor. */
@@ -51,11 +51,11 @@ export function MentorDialogs({ dialog, pending, onCancel, onConfirm }: Props) {
             max: DECISION_NOTE_MAX,
           },
         }
-      : dialog.kind === 'approve'
+      : dialog.kind === 'approve' || dialog.kind === 'reapprove'
         ? {
-            title: M.approve.title(dialog.mentor.name),
-            body: M.approve.body,
-            ok: M.approve.ok,
+            title: M[dialog.kind].title(dialog.mentor.name),
+            body: M[dialog.kind].body,
+            ok: M[dialog.kind].ok,
             field: {
               label: M.approve.label(dialog.mentor.firstName),
               help: M.note.help,
