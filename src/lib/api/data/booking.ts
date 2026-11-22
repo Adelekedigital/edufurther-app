@@ -159,12 +159,22 @@ export function useSessionTypes(
  * (UTC) of one offering between two days (`end` exclusive, mentor's days).
  * Shared by the booking picker and the dashboard's open-times count.
  */
-export async function fetchSlotStarts(
+/**
+ * With nothing free inside the booking window: the offering's next free start
+ * past it, and when that becomes bookable (UTC instants). Null when the window
+ * has a time, nothing is free within 28 days after it, or the mentor's calendar
+ * couldn't be read just then (backend, owner 2026-11-21). The window stays a
+ * hard limit: this is never offered as a time to book.
+ */
+export type NextAfterWindow = { at: string; bookableFrom: string };
+
+/** One offering's slots: their UTC starts, and the next time past the window. */
+export async function fetchSlots(
   mentorId: string,
   sessionTypeId: string,
   window: { start: string; end: string },
   signal?: AbortSignal,
-): Promise<string[]> {
+): Promise<{ starts: string[]; nextAfterWindow: NextAfterWindow | null }> {
   const { data, error, response } = await api.GET('/api/v1/users/{user_id}/availability/slots', {
     params: {
       path: { user_id: mentorId },
@@ -173,8 +183,26 @@ export async function fetchSlotStarts(
     signal,
   });
   if (!data) throw apiError(response.status, error);
-  return data.data.map((s) => s.start);
+  const at = data.next_after_window_at ?? null;
+  const from = data.bookable_from ?? null;
+  return {
+    starts: data.data.map((s) => s.start),
+    nextAfterWindow: at && from ? { at, bookableFrom: from } : null,
+  };
 }
+
+/** The starts alone (the profile's open-times summary). */
+export async function fetchSlotStarts(
+  mentorId: string,
+  sessionTypeId: string,
+  window: { start: string; end: string },
+  signal?: AbortSignal,
+): Promise<string[]> {
+  return (await fetchSlots(mentorId, sessionTypeId, window, signal)).starts;
+}
+
+/** What useSlots gives the booking flow. */
+export type SlotsRead = Remote<string[]> & { nextAfterWindow?: NextAfterWindow | null };
 
 /**
  * GET /users/{id}/availability/slots for one offering: UTC instants. The UI
@@ -185,7 +213,7 @@ export function useSlots(
   sessionTypeId: string | null,
   /** The viewer's zone: the window is their days (utils/slots.ts slotWindow). */
   timeZone: string,
-): Remote<string[]> {
+): SlotsRead {
   // The type's own booking window, from the same types query the picker uses
   // (subscribed, so it's never stale): no request until the window is known.
   const qc = useQueryClient();
@@ -226,7 +254,7 @@ export function useSlots(
     enabled,
     queryFn: async ({ signal }) => {
       try {
-        return await fetchSlotStarts(mentorId!, sessionTypeId!, window, signal);
+        return await fetchSlots(mentorId!, sessionTypeId!, window, signal);
       } catch (e) {
         // A range the backend refuses: its maximum may have been lowered since
         // the types were cached. Reload them; the new window makes a new request.
@@ -242,7 +270,8 @@ export function useSlots(
   // Until the window is known the grid is loading, never "no open times".
   const waiting = opened && horizon === null && !types.error;
   return {
-    data: horizon === null ? null : (query.data ?? null),
+    data: horizon === null ? null : (query.data?.starts ?? null),
+    nextAfterWindow: horizon === null ? null : (query.data?.nextAfterWindow ?? null),
     isLoading: waiting || (query.isPending && enabled),
     error: query.error ? normaliseError(query.error) : null,
     retry: () => void query.refetch(),

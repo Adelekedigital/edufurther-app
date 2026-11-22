@@ -35,6 +35,7 @@ import { useTimeChoice } from './useTimeChoice';
 import type { FirstReason, GuestSignIn } from './types';
 import styles from './BookingFlow.module.css';
 import { DEFAULT_HORIZON_DAYS } from '@/lib/utils/slots';
+import type { SlotsRead } from '@/lib/api/data/booking';
 
 export type { FirstReason, GuestSignIn };
 
@@ -70,7 +71,8 @@ export type BookingFlowProps = {
   sessionTypeId: string | null;
   onSessionTypeChange: (id: string) => void;
   /** Bookable UTC instants for that offering (GET …/availability/slots). */
-  slots: Remote<string[]>;
+  /** The offering's open starts, and the next time past its window when it has none. */
+  slots: SlotsRead;
   /** Guests sign in or create an account after choosing a time (signupAt=afterTime). */
   isGuest: boolean;
   /** The guest step's sign-in, run by the page. Required while `isGuest`. */
@@ -485,7 +487,12 @@ export function BookingFlow(p: BookingFlowProps) {
           missed={timeChoice.initialMissed}
           missedNote={p.missedNote}
           noOpenDays={timeChoice.days.length === 0}
-          noTimes={{ ...noTimes, windowDays: session.windowDays ?? DEFAULT_HORIZON_DAYS }}
+          noTimes={{
+            ...noTimes,
+            windowDays: session.windowDays ?? DEFAULT_HORIZON_DAYS,
+            next: p.slots.nextAfterWindow ?? null,
+            timeZone: zone,
+          }}
           picker={{
             days: timeChoice.days,
             dayIndex: timeChoice.dayAt,
