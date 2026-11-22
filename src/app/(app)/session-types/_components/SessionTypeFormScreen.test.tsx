@@ -552,7 +552,7 @@ describe('SessionTypeFormScreen — review of #60', () => {
     await toStep3(user);
     await user.click(screen.getByRole('radio', { name: /Customize for this session/ }));
     const own = screen.getByRole('combobox', { name: 'Booking window' });
-    expect(await optionLabels(user, own)).toEqual(['1 week', '2 weeks']);
+    expect(await optionLabels(user, own)).toEqual(['1 week', '2 weeks', 'Custom…']);
   });
 
   it('defaults that arrive late don’t swallow what the mentor typed (review r2 of #60)', async () => {

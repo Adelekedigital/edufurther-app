@@ -1,0 +1,6 @@
+/* The custom window's field, on its own line under the window row's select. */
+.custom {
+  flex-basis: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
