@@ -6,6 +6,7 @@
 import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import type { ApplicationStage, SessionIcon } from '@/types/sessionType';
 import type { SessionTemplate } from './sessionTemplates';
+import { windowLabel } from './windowLabel';
 
 export type Stage = ApplicationStage;
 
@@ -480,8 +481,7 @@ export function resolveDefaults(d: BookingDefaults) {
 
 /** Hours as shown: a stored 2000 min is "33.3", not 33.333333333333336 (review r3 of #60). */
 export const hoursLabel = (h: number) => String(Number(h.toFixed(1)));
-export const windowLabel = (days: number) =>
-  days % 7 === 0 ? `${days / 7} week${days === 7 ? '' : 's'}` : `${days} days`;
+export { windowLabel };
 export const breakLabel = (m: number) => (m ? `${m} min` : 'None');
 
 /**

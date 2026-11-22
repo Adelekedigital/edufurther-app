@@ -2,7 +2,7 @@ import { Button } from '@/components/atoms/Button/Button';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import styles from './BookingFlow.module.css';
-import { windowLabel } from '@/lib/utils/sessionTypeDraft';
+import { windowLabel } from '@/lib/utils/windowLabel';
 
 // The flow's non-content states: the whole flow's (the offerings, the request
 // once sent) and the time step's (its slots).
