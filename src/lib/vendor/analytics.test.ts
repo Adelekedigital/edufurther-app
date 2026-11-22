@@ -62,7 +62,11 @@ describe('the PostHog seam', () => {
       advanced_disable_feature_flags_on_first_load: true,
       cross_subdomain_cookie: false,
       enable_recording_console_log: false,
-      session_recording: { maskAllInputs: true, blockSelector: `[${NO_REPLAY_ATTR}]` },
+      session_recording: {
+        maskTextSelector: '*',
+        maskAllInputs: true,
+        blockSelector: `[${NO_REPLAY_ATTR}]`,
+      },
     });
   });
 

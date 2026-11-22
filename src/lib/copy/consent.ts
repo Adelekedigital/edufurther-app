@@ -17,8 +17,9 @@
  * button says what you keep: "Essential only".
  *
  * Replay across the app (owner, 2026-11-22): no longer limited to profile
- * setup and booking, so the words drop "On these pages" and name what stays
- * hidden (typing, messages, answers to mentors). That is a change in
+ * setup and booking, so the words drop "On these pages" and say what stays
+ * hidden: every word on screen and anything typed (all text is masked, since
+ * screens show names, emails and booking details). That is a change in
  * substance: CONSENT_VERSION moved to 2026-11-22 and everyone is asked again.
  *
  * Compact + close (owner, 2026-11-13): on a phone the full card covered
@@ -36,7 +37,7 @@ export const CONSENT_COPY = {
   /** The corner X: closing counts as "Essential only", so its name says that. */
   close: 'Close, essential only',
   /** The approved explanation, shown when "Learn more" is open. */
-  body: 'If you allow analytics cookies, we can see where people get stuck, for example while setting up a profile or booking a session. We may keep a replay of clicks and scrolling to understand how people use EduFurther. Anything you type, your messages and your answers to mentors stay hidden. If you choose essential only, we only count visits and steps anonymously, without cookies.',
+  body: 'If you allow analytics cookies, we can see where people get stuck, for example while setting up a profile or booking a session. We may keep a replay of clicks and scrolling to understand how people use EduFurther, with the words on screen and anything you type hidden. If you choose essential only, we only count visits and steps anonymously, without cookies.',
   /** Members only: a guest has no Settings to change it in. */
   change: 'You can change this anytime in Settings › Login and security.',
   privacy: 'Privacy policy',
@@ -44,5 +45,5 @@ export const CONSENT_COPY = {
   decline: 'Essential only',
   settingsTitle: 'Analytics cookies',
   settingsHint:
-    'Shows us where people get stuck, for example while setting up a profile or booking a session. We may keep a replay of clicks and scrolling. Anything you type, your messages and your answers to mentors stay hidden. When this is off, we only count visits and steps anonymously, without cookies.',
+    'Shows us where people get stuck, for example while setting up a profile or booking a session. We may keep a replay of clicks and scrolling, with the words on screen and anything you type hidden. When this is off, we only count visits and steps anonymously, without cookies.',
 } as const;

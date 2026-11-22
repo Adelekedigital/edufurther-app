@@ -156,6 +156,10 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
     disable_session_recording: true,
     enable_recording_console_log: false,
     session_recording: {
+      // Replay runs on every screen (owner, 2026-11-22), and screens show
+      // names, emails and booking details as text: all text is masked, not
+      // only inputs. A replay shows layout, clicks and scrolling, never words.
+      maskTextSelector: '*',
       maskAllInputs: true,
       blockSelector: `[${NO_REPLAY_ATTR}]`,
       recordHeaders: false,
