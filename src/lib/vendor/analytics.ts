@@ -140,8 +140,13 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
     disable_product_tours: true,
     disable_conversations: true,
     disable_web_experiments: true,
-    // No feature flags are used: no /flags call on every page.
-    advanced_disable_flags: true,
+    // The project's remote config (/array/<key>/config, through /ingest) must
+    // load: replay only records once it says recording is on, so with it
+    // disabled replay never started. No feature flags are used, so /flags is
+    // still never called.
+    advanced_disable_flags: false,
+    advanced_disable_feature_flags: true,
+    advanced_disable_feature_flags_on_first_load: true,
     // PostHog never injects a script of its own: the recorder is our own
     // dynamic import (loadRecorder), bundled and served by this app.
     disable_external_dependency_loading: true,
