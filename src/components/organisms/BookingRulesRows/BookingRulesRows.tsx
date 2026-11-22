@@ -137,8 +137,18 @@ export function BookingRulesRows({
   };
   const type = (text: string) => {
     setDraft(text);
+    // The error shows as soon as what's typed can't be saved, not only on blur.
+    setTouched(true);
     const days = parseWindowDays(text, maxWindowDays);
     if (days !== null) onChange({ ...rules, windowDays: days });
+  };
+  // Leaving the field (or Enter) on a number that can't be saved puts back the
+  // saved one, so the field never shows a window Save won't write (review of PR 697).
+  const settle = () => {
+    if (parseWindowDays(draft, maxWindowDays) === null) {
+      setDraft(String(value.windowDays));
+      setTouched(false);
+    }
   };
   return (
     <>
@@ -194,7 +204,10 @@ export function BookingRulesRows({
                       value={draft}
                       disabled={disabled}
                       onChange={(e) => type(e.target.value)}
-                      onBlur={() => setTouched(true)}
+                      onBlur={settle}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') settle();
+                      }}
                     />
                   )}
                 </FormField>
