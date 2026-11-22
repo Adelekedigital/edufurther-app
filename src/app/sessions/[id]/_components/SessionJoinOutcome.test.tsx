@@ -11,7 +11,9 @@ import {
   reasonHook,
   reasons,
   remote,
+  replaceQuery,
   sessionRoom,
+  setSearch,
   setupSessionJoinHarness,
 } from './sessionJoin.harness';
 import { SessionJoinScreen } from './SessionJoinScreen';
@@ -61,6 +63,9 @@ vi.mock('@/lib/api/data/privateFiles', async () =>
 );
 vi.mock('@/lib/api/data/missedReason', async () =>
   (await import('./sessionJoin.harness')).mocks.missedReason(),
+);
+vi.mock('@/lib/utils/replaceQuery', async () =>
+  (await import('./sessionJoin.harness')).mocks.replaceQuery(),
 );
 
 setupSessionJoinHarness();
@@ -286,5 +291,58 @@ describe('the missed-reason form (internal only)', () => {
     h.room = settled('mentor', 'noShow', 'noShow', 'attended');
     renderAt('18:30:00');
     expect(screen.getByRole('form', { name: 'What happened?' })).toBeVisible();
+  });
+});
+
+describe('back from the call (?from=call): the review opens by itself', () => {
+  const review = () => screen.queryByRole('dialog', { name: 'Review Amara' });
+
+  it('opens once the session can be reviewed, and the parameter goes', () => {
+    h.room = settled('mentee', 'completed');
+    setSearch('from=call');
+    renderAt('18:30:00');
+    expect(review()).toBeVisible();
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
+  });
+
+  it('closed, it stays closed: the parameter is gone, so nothing reopens it', async () => {
+    h.room = settled('mentee', 'completed');
+    setSearch('from=call');
+    const { rerender } = renderAt('18:30:00');
+    await userEvent.click(within(review()!).getByRole('button', { name: /close/i }));
+    rerender(<SessionJoinScreen id="b1" />);
+    expect(review()).toBeNull();
+  });
+
+  it('never without the parameter: the card offers it instead', () => {
+    h.room = settled('mentee', 'completed');
+    renderAt('18:30:00');
+    expect(review()).toBeNull();
+    expect(screen.getByRole('button', { name: 'Leave a review' })).toBeVisible();
+  });
+
+  it('nothing to review (outside the window): no dialog, the parameter still goes', () => {
+    h.room = settled('mentee', 'completed');
+    h.reviewables = remote([]);
+    setSearch('from=call');
+    renderAt('18:30:00');
+    expect(review()).toBeNull();
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
+  });
+
+  it('never for a mentor', () => {
+    h.room = settled('mentor', 'completed');
+    setSearch('from=call');
+    renderAt('18:30:00');
+    expect(review()).toBeNull();
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
+  });
+
+  it('a missed session: no review, the parameter goes', () => {
+    h.room = settled('mentee', 'noShow', 'attended', 'noShow');
+    setSearch('from=call');
+    renderAt('18:30:00');
+    expect(review()).toBeNull();
+    expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
   });
 });

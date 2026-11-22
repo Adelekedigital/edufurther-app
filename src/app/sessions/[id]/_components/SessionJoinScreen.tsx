@@ -56,6 +56,8 @@ import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZo
 import { presenceOf } from '@/lib/utils/presence';
 import {
   ENTER_PARAM,
+  FROM_CALL,
+  FROM_PARAM,
   enterPath,
   isEnterProblem,
   type EnterProblem,
@@ -228,6 +230,25 @@ export function SessionJoinScreen({ id }: { id: string }) {
     timeZone,
     live: (bookingId) => (data?.booking.id === bookingId ? data.booking : undefined),
   });
+  const params = useSearchParams();
+  // Back from the call (`?from=call`, owner 2026-11-22): the review opens by
+  // itself once the session can be reviewed, once. While it is still running
+  // the page waits; settled with nothing to review, the parameter just goes.
+  const fromCall = params.get(FROM_PARAM) === FROM_CALL;
+  const reviewOnArrival =
+    fromCall && reviewAsked && !!data && !!reviewSession && !rr.reviewedHere(id);
+  const fromCallSpent =
+    fromCall &&
+    !!live &&
+    (reviewOnArrival ||
+      (isSettled(live) && (!reviewAsked || (!reviewables.isLoading && !reviewSession))));
+  const reviewOpened = useRef(false);
+  const arrivalBooking = data?.booking;
+  useEffect(() => {
+    if (!reviewOnArrival || reviewOpened.current || !arrivalBooking || !reviewSession) return;
+    reviewOpened.current = true;
+    rr.openReview(arrivalBooking, reviewSession);
+  }, [reviewOnArrival, arrivalBooking, reviewSession, rr]);
   const [viewing, setViewing] = useState<AnswerFile | null>(null);
   // SendMessage's recipient while it is open (PRD Messages, Message buttons).
   const [messaging, setMessaging] = useState<MessageRecipient | null>(null);
@@ -238,7 +259,6 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // Join and Rejoin are a link to our entry route, which records the arrival
   // and redirects to the call (#207, ADR 0009). When it can't, it sends the
   // browser back here with `?enter=` saying why.
-  const params = useSearchParams();
   const entered = params.get(ENTER_PARAM);
   // The line under Join, with the lobby state it was said in (`phase:entry`):
   // once the phase or the way in changes, it no longer describes the Join on
@@ -273,14 +293,17 @@ export function SessionJoinScreen({ id }: { id: string }) {
   // two replaces racing can leave the page on its skeleton.
   const settledEnter =
     entered !== null && !leaving && (!!data || !!room.error || !isEnterProblem(entered));
+  // `?from=call` goes in the same replace, once used: a reload never reopens the review.
+  const dropFrom = fromCallSpent && !leaving;
   useEffect(() => {
-    if (!settledEnter) return;
+    if (!settledEnter && !dropFrom) return;
     const rest = new URLSearchParams(params.toString());
-    rest.delete(ENTER_PARAM);
+    if (settledEnter) rest.delete(ENTER_PARAM);
+    if (dropFrom) rest.delete(FROM_PARAM);
     const qs = rest.toString();
     const path = `/sessions/${encodeURIComponent(id)}`;
     replaceQuery(qs ? `${path}?${qs}` : path);
-  }, [settledEnter, params, id]);
+  }, [settledEnter, dropFrom, params, id]);
 
   const cancel = useBookingAction('cancel');
   // Why the viewer missed it, for EduFurther only (founder, Oct 21).
