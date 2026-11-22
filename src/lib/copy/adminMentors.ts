@@ -230,6 +230,8 @@ export const MENTOR_DRAWER = {
   },
   email: (first: string) => `Email ${first}`,
   approve: 'Approve',
+  /** A declined mentor, decided again (backend: a decided mentor may be decided again). */
+  reapprove: 'Re-approve',
   decline: 'Not approved',
   pause: 'Suspend',
   resume: 'Resume',
@@ -248,6 +250,13 @@ export const MENTOR_DIALOGS = {
     ok: 'Approve',
     label: (first: string) => `Note to ${first} (optional)`,
     done: (name: string) => `${name} approved and listed on Explore`,
+  },
+  /** Owner 2026-11-21: a declined mentor approved after all; the same call and email. */
+  reapprove: {
+    title: (name: string) => `Re-approve ${name}?`,
+    body: 'They were marked not approved. They’ll be listed on Explore right away and we’ll email them that they’re approved.',
+    ok: 'Re-approve',
+    done: (name: string) => `${name} re-approved and listed on Explore`,
   },
   /** The optional note on approval (backend 350): it goes in the approval email. */
   note: {
