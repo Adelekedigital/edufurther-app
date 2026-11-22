@@ -103,6 +103,18 @@ export function windowPresets(max = PLATFORM_WINDOW_DAYS): number[] {
   const fit = WINDOW_DAYS.filter((d) => d <= max);
   return fit.includes(max) ? fit : [...fit, max];
 }
+/** The shortest window a mentor may set (backend floor, owner 2026-11-21). */
+export const WINDOW_MIN_DAYS = 7;
+/** The longest custom window: the platform's cap, never above 56 days. */
+export const customWindowMax = (max?: number) =>
+  Math.min(PLATFORM_WINDOW_DAYS, max ?? PLATFORM_WINDOW_DAYS);
+/** A typed custom window: a whole number of days from 7 to the cap, else null. */
+export function parseWindowDays(text: string, max?: number): number | null {
+  const s = text.trim();
+  if (!/^\d+$/.test(s)) return null;
+  const n = Number(s);
+  return n >= WINDOW_MIN_DAYS && n <= customWindowMax(max) ? n : null;
+}
 export const PLATFORM_BREAK_MIN = 0;
 
 const DEFAULT_SLOT: Slot = [540, 600];

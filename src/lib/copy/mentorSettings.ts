@@ -26,6 +26,16 @@ export const BOOKING_COPY = {
     windowDays: { label: 'Booking window', hint: 'How far in advance mentees can book you.' },
     breakMin: { label: 'Buffer between sessions', hint: 'Time kept free after each booking.' },
   },
+  /** The booking window's own number, past the presets (owner, 2026-11-21). */
+  customWindow: {
+    option: 'Custom…',
+    label: 'Days ahead',
+    hint: (min: number, max: number) => `${min} to ${max} days.`,
+    error: (min: number, max: number) => `Enter ${min} to ${max} days.`,
+    /** Said when an unsavable number is put back on leaving the field. */
+    kept: (min: number, max: number, saved: string) =>
+      `Enter ${min} to ${max} days. Kept ${saved}.`,
+  },
   loadError: 'We couldn’t load your booking rules. Check your connection and try again.',
   retry: 'Try again',
   saveBar: 'Unsaved changes to booking rules',

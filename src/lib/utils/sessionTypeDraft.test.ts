@@ -18,6 +18,9 @@ import {
   weeklySummary,
   type Draft,
   windowPresets,
+  windowOptions,
+  parseWindowDays,
+  customWindowMax,
   endOptions as endTimes,
   startOptions,
   fitSlot,
@@ -352,6 +355,50 @@ describe('windowPresets', () => {
     expect(windowPresets(14)).toEqual([7, 14]);
     expect(windowPresets(21)).toEqual([7, 14, 21]);
     expect(windowPresets(90)).toEqual([7, 14, 28, 56, 90]);
+  });
+});
+
+describe('windowOptions', () => {
+  it('lists the presets as weeks, in order', () => {
+    expect(windowOptions(28).map((o) => o.label)).toEqual([
+      '1 week',
+      '2 weeks',
+      '4 weeks',
+      '8 weeks',
+    ]);
+  });
+
+  it('keeps a stored custom value as its own choice', () => {
+    expect(windowOptions(35).map((o) => o.label)).toEqual([
+      '1 week',
+      '2 weeks',
+      '4 weeks',
+      '5 weeks',
+      '8 weeks',
+    ]);
+    expect(windowOptions(10).find((o) => o.value === '10')?.label).toBe('10 days');
+  });
+});
+
+describe('custom booking window (owner, 2026-11-21)', () => {
+  it('takes a whole number from 7 to 56 days', () => {
+    expect(parseWindowDays('7')).toBe(7);
+    expect(parseWindowDays(' 10 ')).toBe(10);
+    expect(parseWindowDays('56')).toBe(56);
+  });
+
+  it('refuses anything else', () => {
+    for (const t of ['', '5', '6', '57', '60', '10.5', '-10', 'ten', '1e1']) {
+      expect(parseWindowDays(t)).toBeNull();
+    }
+  });
+
+  it('a platform cap below 56 narrows the range; one above it does not widen it', () => {
+    expect(customWindowMax(21)).toBe(21);
+    expect(parseWindowDays('21', 21)).toBe(21);
+    expect(parseWindowDays('22', 21)).toBeNull();
+    expect(customWindowMax(90)).toBe(56);
+    expect(parseWindowDays('60', 90)).toBeNull();
   });
 });
 
