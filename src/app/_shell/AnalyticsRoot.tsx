@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { ConsentBanner } from '@/components/organisms/ConsentBanner/ConsentBanner';
@@ -15,21 +15,9 @@ import {
 import { effectiveConsent } from '@/lib/analytics/consent';
 import { consentStore } from '@/lib/analytics/consentStore';
 import { personProperties, rememberMigrated } from '@/lib/analytics/identity';
-import {
-  analyticsMode,
-  bannerShown,
-  replayAllowed,
-  type AnalyticsMode,
-} from '@/lib/analytics/mode';
+import { analyticsMode, bannerShown, type AnalyticsMode } from '@/lib/analytics/mode';
 import { routeTemplate } from '@/lib/analytics/route';
-import {
-  identify,
-  onReplayScope,
-  replayScopeActive,
-  setBlocked,
-  setConsent,
-  track,
-} from '@/lib/analytics/track';
+import { identify, setBlocked, setConsent, track } from '@/lib/analytics/track';
 import {
   recordAcquisition,
   saveConsent,
@@ -183,14 +171,12 @@ export function AnalyticsRoot() {
     track('$pageview', { route: routeTemplate(pathname) });
   }, [pathname, mode]);
 
-  // Replay only identified: on the onboarding routes, and while booking is open.
-  const scoped = useSyncExternalStore(onReplayScope, replayScopeActive, () => false);
+  // Replay across the app, only after Accept (owner, 2026-11-22). Private
+  // parts stay blocked inside a recording ([data-no-replay]); inputs are masked.
   useEffect(() => {
-    if (!vendor || !pathname) return;
-    const on =
-      mode === 'identified' && vendor.mode === 'identified' && (replayAllowed(pathname) || scoped);
-    vendor.v.setReplay(on);
-  }, [vendor, mode, pathname, scoped]);
+    if (!vendor) return;
+    vendor.v.setReplay(mode === 'identified' && vendor.mode === 'identified');
+  }, [vendor, mode]);
 
   // Where this visit came from, held until sign-in (never in a preview).
   useEffect(() => {

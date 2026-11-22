@@ -147,7 +147,7 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
     disable_external_dependency_loading: true,
     // Host-only until the landing site reads PostHog's cookie too.
     cross_subdomain_cookie: false,
-    // Off until the app starts it on an allowed route or scope, after Accept.
+    // Off until the app starts it, after Accept (replay runs across the app).
     disable_session_recording: true,
     enable_recording_console_log: false,
     session_recording: {

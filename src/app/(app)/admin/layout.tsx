@@ -15,5 +15,10 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const viewer = useViewer();
   if (viewer.kind === 'loading') return <RoleLoading />;
   if (viewer.kind !== 'member' || !viewer.isAdmin) notFound();
-  return <div className={styles.page}>{children}</div>;
+  // Other members' details: never in a session replay.
+  return (
+    <div className={styles.page} data-no-replay="">
+      {children}
+    </div>
+  );
 }

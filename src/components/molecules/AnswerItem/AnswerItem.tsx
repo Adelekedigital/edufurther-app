@@ -18,7 +18,8 @@ type AnswerItemProps = {
  */
 export function AnswerItem({ answer: a, onOpenFile }: AnswerItemProps) {
   return (
-    <div className={styles.item}>
+    // A mentee's own words: blocked inside a session replay.
+    <div className={styles.item} data-no-replay="">
       <span className={cx(styles.question, a.retired && styles.retired)}>
         {a.question}
         {/* PROVISIONAL copy — the design has no state for a dropped question. */}

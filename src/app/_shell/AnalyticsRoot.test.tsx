@@ -5,7 +5,6 @@ import { CONSENT_COOKIE, CONSENT_VERSION, readConsentCookie } from '@/lib/analyt
 import { resetConsentStoreForTests } from '@/lib/analytics/consentStore';
 import { resetAcquisitionForTests } from '@/lib/analytics/acquisition';
 import { resetIdentity, resetIdentityForTests } from '@/lib/analytics/identity';
-import { setReplayScope } from '@/lib/analytics/track';
 import { SIGNED_OUT_COOKIE } from '@/lib/analytics/consent';
 
 const env = vi.hoisted(() => ({
@@ -57,16 +56,7 @@ const tracker = vi.hoisted(() => ({
   setBlocked: vi.fn(),
   reset: vi.fn(),
 }));
-vi.mock('@/lib/analytics/track', async (orig) => {
-  // The real replay scopes (setReplayScope is what BookingFlow will call).
-  const real = await orig<typeof import('@/lib/analytics/track')>();
-  return {
-    ...tracker,
-    setReplayScope: real.setReplayScope,
-    replayScopeActive: real.replayScopeActive,
-    onReplayScope: real.onReplayScope,
-  };
-});
+vi.mock('@/lib/analytics/track', () => tracker);
 
 const vendor = vi.hoisted(() => ({
   sink: { capture: vi.fn(), identify: vi.fn(), reset: vi.fn() },
@@ -143,7 +133,6 @@ beforeEach(() => {
   resetConsentStoreForTests();
   resetAcquisitionForTests();
   resetIdentityForTests();
-  setReplayScope('booking', false);
 });
 
 describe('the flags', () => {
@@ -286,14 +275,22 @@ describe('page views and replay', () => {
     expect(tracker.track).toHaveBeenCalledTimes(2);
   });
 
-  it('replay only identified, and only on an allowed route', async () => {
+  it('replay across the app once accepted, and it stays on through navigation', async () => {
     accepted();
-    env.path = '/onboarding';
+    env.path = '/explore';
     const { rerender } = render(<AnalyticsRoot />);
     await waitFor(() => expect(vendor.setReplay).toHaveBeenLastCalledWith(true));
     env.path = '/messages';
     rerender(<AnalyticsRoot />);
-    expect(vendor.setReplay).toHaveBeenLastCalledWith(false);
+    expect(vendor.setReplay).toHaveBeenLastCalledWith(true);
+    expect(vendor.setReplay).not.toHaveBeenCalledWith(false);
+  });
+
+  it('never while cookieless', async () => {
+    env.path = '/onboarding';
+    render(<AnalyticsRoot />);
+    await waitFor(() => expect(vendor.setMode).toHaveBeenCalled());
+    expect(vendor.setReplay).not.toHaveBeenCalledWith(true);
   });
 });
 
@@ -578,27 +575,6 @@ describe('a withdrawal always wins in the session', () => {
     rerender(<AnalyticsRoot />);
     await waitFor(() => expect(vendor.setMode).toHaveBeenCalledWith('cookieless'));
     expect(vendor.setMode).not.toHaveBeenCalledWith('identified');
-  });
-});
-
-describe('replay scope: booking', () => {
-  it('records off the onboarding routes only while the booking modal is open', async () => {
-    accepted();
-    env.path = '/explore';
-    render(<AnalyticsRoot />);
-    await waitFor(() => expect(vendor.setReplay).toHaveBeenLastCalledWith(false));
-    act(() => setReplayScope('booking', true));
-    await waitFor(() => expect(vendor.setReplay).toHaveBeenLastCalledWith(true));
-    act(() => setReplayScope('booking', false));
-    await waitFor(() => expect(vendor.setReplay).toHaveBeenLastCalledWith(false));
-  });
-
-  it('never while cookieless, scope or not', async () => {
-    env.path = '/onboarding';
-    render(<AnalyticsRoot />);
-    act(() => setReplayScope('booking', true));
-    await waitFor(() => expect(vendor.setMode).toHaveBeenCalled());
-    expect(vendor.setReplay).not.toHaveBeenCalledWith(true);
   });
 });
 

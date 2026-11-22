@@ -19,7 +19,7 @@
  */
 
 /** The consent text in force. Change it when the banner's words change in substance. */
-export const CONSENT_VERSION = '2026-11-10';
+export const CONSENT_VERSION = '2026-11-22';
 
 export const CONSENT_COOKIE = 'ef_consent';
 
