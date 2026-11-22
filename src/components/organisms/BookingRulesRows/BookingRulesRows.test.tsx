@@ -87,29 +87,49 @@ describe('BookingRulesRows', () => {
       expect(onChange).toHaveBeenLastCalledWith({ ...base, windowDays: 10 });
     });
 
-    it.each(['5', '60'])(
-      '%s days is refused: the error shows as typed, nothing is sent, and leaving puts the saved window back',
+    it('typing a valid two-digit window shows no error on the way (1 → 14)', async () => {
+      const { onChange, select } = setup();
+      const input = await openCustom(select);
+      await userEvent.clear(input);
+      await userEvent.type(input, '1');
+      // "1" can still become 14: no error, nothing announced (review of PR 697).
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(input).not.toHaveAttribute('aria-invalid', 'true');
+      await userEvent.type(input, '4');
+      expect(onChange).toHaveBeenLastCalledWith({ ...base, windowDays: 14 });
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it.each(['6', '60'])(
+      '%s can never be saved: the error shows as typed, nothing is sent',
       async (typed) => {
         const { onChange, select } = setup();
         const input = await openCustom(select);
         await userEvent.clear(input);
         await userEvent.type(input, typed);
-        // While it can't be saved, it says so, before any blur (review of PR 697).
         expect(onChange).not.toHaveBeenCalled();
         expect(screen.getByRole('alert')).toHaveTextContent('Enter 7 to 56 days.');
         expect(input).toHaveAttribute('aria-invalid', 'true');
         expect(input.getAttribute('aria-describedby')).toContain(
           screen.getByRole('alert').getAttribute('id'),
         );
-        // Leaving (e.g. to press Save) shows what will be saved: the stored 28.
-        await userEvent.tab();
-        expect(input).toHaveValue(28);
-        expect(screen.queryByRole('alert')).toBeNull();
-        expect(onChange).not.toHaveBeenCalled();
       },
     );
 
-    it('Enter on an invalid number puts the saved window back too', async () => {
+    it('leaving on an unsavable number puts the saved window back and says so', async () => {
+      const { onChange, select } = setup();
+      const input = await openCustom(select);
+      await userEvent.clear(input);
+      await userEvent.type(input, '5');
+      // "5" could still become 50: no error yet.
+      expect(screen.queryByRole('alert')).toBeNull();
+      await userEvent.tab();
+      expect(input).toHaveValue(28);
+      expect(onChange).not.toHaveBeenCalled();
+      expect(screen.getByRole('status')).toHaveTextContent('Enter 7 to 56 days. Kept 4 weeks.');
+    });
+
+    it('Enter on an unsavable number puts the saved window back too', async () => {
       const { onChange, select } = setup();
       const input = await openCustom(select);
       await userEvent.clear(input);

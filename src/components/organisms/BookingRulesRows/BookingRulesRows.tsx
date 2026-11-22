@@ -2,6 +2,7 @@
 
 import { useId, useState } from 'react';
 import { Input } from '@/components/atoms/Input/Input';
+import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Select } from '@/components/atoms/Select/Select';
 import { FormField } from '@/components/molecules/FormField/FormField';
 import { SwitchRow } from '@/components/molecules/SwitchRow/SwitchRow';
@@ -74,6 +75,18 @@ const noticeHoursOptions = (current: number) =>
 const CUSTOM = 'custom';
 const CW = BOOKING_COPY.customWindow;
 
+/**
+ * Typed so far and already past saving, whatever digit comes next: not a whole
+ * number, or over the cap, or under 7 with no room for another digit ("6" can
+ * only grow to 60+). "1" on the way to 14 is not an error (review of PR 697).
+ */
+function cannotBecomeValid(draft: string, max: number): boolean {
+  if (draft === '') return false;
+  if (!/^\d+$/.test(draft)) return true;
+  const n = Number(draft);
+  return n > max || (n < WINDOW_MIN_DAYS && n * 10 > max);
+}
+
 const ORDER: BookingRuleKey[] = ['durationMin', 'noticeHours', 'windowDays', 'breakMin'];
 
 /**
@@ -103,9 +116,7 @@ export function BookingRulesRows({
   // "Custom…" opens a number field (owner, 2026-11-21): 7 to the platform's cap.
   const [custom, setCustom] = useState(false);
   const [draft, setDraft] = useState('');
-  const [touched, setTouched] = useState(false);
   const maxCustom = customWindowMax(maxWindowDays);
-  const draftInvalid = parseWindowDays(draft, maxWindowDays) === null;
   // A window set from outside (a discard, a reload) closes the field, so it
   // never shows a number that isn't the rule.
   const [seen, setSeen] = useState(value.windowDays);
@@ -129,7 +140,6 @@ export function BookingRulesRows({
       setCustom(opening);
       if (opening) {
         setDraft(String(value.windowDays));
-        setTouched(false);
         return;
       }
     }
@@ -137,18 +147,20 @@ export function BookingRulesRows({
   };
   const type = (text: string) => {
     setDraft(text);
-    // The error shows as soon as what's typed can't be saved, not only on blur.
-    setTouched(true);
     const days = parseWindowDays(text, maxWindowDays);
     if (days !== null) onChange({ ...rules, windowDays: days });
   };
   // Leaving the field (or Enter) on a number that can't be saved puts back the
-  // saved one, so the field never shows a window Save won't write (review of PR 697).
+  // saved one, so the field never shows a window Save won't write, and says so
+  // (review of PR 697).
+  const [kept, setKept] = useState<{ text: string; id: number } | null>(null);
   const settle = () => {
-    if (parseWindowDays(draft, maxWindowDays) === null) {
-      setDraft(String(value.windowDays));
-      setTouched(false);
-    }
+    if (parseWindowDays(draft, maxWindowDays) !== null) return;
+    setDraft(String(value.windowDays));
+    setKept({
+      text: CW.kept(WINDOW_MIN_DAYS, maxCustom, windowLabel(value.windowDays)),
+      id: Date.now(),
+    });
   };
   return (
     <>
@@ -192,7 +204,11 @@ export function BookingRulesRows({
                   compact
                   label={CW.label}
                   hint={CW.hint(WINDOW_MIN_DAYS, maxCustom)}
-                  error={touched && draftInvalid ? CW.error(WINDOW_MIN_DAYS, maxCustom) : undefined}
+                  error={
+                    cannotBecomeValid(draft, maxCustom)
+                      ? CW.error(WINDOW_MIN_DAYS, maxCustom)
+                      : undefined
+                  }
                 >
                   {(field) => (
                     <Input
@@ -216,6 +232,8 @@ export function BookingRulesRows({
           )}
         </div>
       ))}
+      {/* Says the put-back value out loud: the field changed without a keystroke. */}
+      <LiveRegion message={kept} />
     </>
   );
 }

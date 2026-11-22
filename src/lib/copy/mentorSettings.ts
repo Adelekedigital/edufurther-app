@@ -27,6 +27,9 @@ export const BOOKING_COPY = {
     label: 'Days ahead',
     hint: (min: number, max: number) => `${min} to ${max} days.`,
     error: (min: number, max: number) => `Enter ${min} to ${max} days.`,
+    /** Said when an unsavable number is put back on leaving the field. */
+    kept: (min: number, max: number, saved: string) =>
+      `Enter ${min} to ${max} days. Kept ${saved}.`,
   },
   loadError: 'We couldn’t load your booking rules. Check your connection and try again.',
   retry: 'Try again',
