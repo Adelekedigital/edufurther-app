@@ -1,3 +1,4 @@
+import { DEFAULT_WINDOW_DAYS } from './bookingPrefs';
 import {
   effectiveWindow,
   mockCreateSessionType,
@@ -13,8 +14,8 @@ describe('effectiveWindow (mock of the backend rule)', () => {
   it('inherits the mentor’s default when the offering has none', () => {
     expect(effectiveWindow(null, 28)).toBe(28);
   });
-  it('falls back to the platform window when neither is set', () => {
-    expect(effectiveWindow(null, null)).toBe(PLATFORM_WINDOW);
+  it('falls back to the platform default (14 days) when neither is set', () => {
+    expect(effectiveWindow(null, null)).toBe(DEFAULT_WINDOW_DAYS);
   });
   it('never goes past the platform cap, own or inherited', () => {
     expect(effectiveWindow(90, null)).toBe(PLATFORM_WINDOW);

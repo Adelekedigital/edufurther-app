@@ -214,22 +214,12 @@
   border: var(--border-hairline) solid var(--border-subtle);
   border-radius: var(--radius-lg);
 }
-.summaryToggle {
+.summaryHead {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3);
-  border: none;
-  border-radius: var(--radius-lg);
-  background: none;
-  cursor: pointer;
-  font-family: var(--font-ui);
   color: var(--text-primary);
-  text-align: left;
-}
-.summaryToggle:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: 0;
 }
 .summaryText {
   flex: 1;
@@ -246,9 +236,6 @@
   font-size: var(--text-p-xs);
   color: var(--text-tertiary);
 }
-.summaryChevron {
-  color: var(--ink-500);
-}
 .summaryBody {
   display: flex;
   flex-direction: column;
@@ -256,8 +243,7 @@
   padding: var(--space-3);
   border-top: var(--border-hairline) solid var(--border-muted);
 }
-/* "View profile" — always visible under the summary toggle, not inside the
-   collapsible body, so a mobile user can reach it without expanding. */
+/* "View profile": under the summary, where the description and mentor details now live. */
 .summaryProfile {
   padding: var(--space-3);
   border-top: var(--border-hairline) solid var(--border-muted);

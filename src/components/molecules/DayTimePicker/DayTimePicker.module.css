@@ -1,5 +1,5 @@
-/* The booking card's day picker: a scrolling row of the open days, then the
-   chosen day's time grid (owner 2026-11-21, from the legacy booking card). */
+/* The booking card's day picker: the open days five at a time (‹ › switch
+   pages), then the chosen day's time grid (owner 2026-11-21). */
 .picker {
   display: flex;
   flex-direction: column;
@@ -48,20 +48,9 @@
   outline-offset: var(--focus-ring-offset);
 }
 .days {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--space-2);
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  /* Room for the chosen tile's focus ring inside the scroll box. */
-  padding: var(--space-1) 2px;
-}
-.days::-webkit-scrollbar {
-  display: none;
-}
-.days > .option {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
 }
 .times {
   display: grid;
@@ -90,8 +79,7 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  min-width: 76px;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) 0;
 }
 .timeTile {
   height: var(--menu-item-h);
@@ -124,8 +112,8 @@ input:focus-visible + .tile {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
-/* Day heading: the phone sheet shows it ("Mon, Sep 28 · 4 times"); on wider
-   screens it stays the time group's accessible name only. */
+/* Day heading: the time group's accessible name only, on every screen (owner
+   2026-11-21: the highlighted tile already shows the date). */
 .heading {
   position: absolute;
   width: 1px;
@@ -139,18 +127,6 @@ input:focus-visible + .tile {
   .arrow {
     width: var(--touch-target-min);
     height: var(--touch-target-min);
-  }
-  .heading {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip: auto;
-    margin-bottom: var(--space-2);
-    padding: 0;
-    font-size: var(--text-p-xs);
-    font-weight: var(--weight-semibold);
-    color: var(--text-secondary);
   }
   .timeTile {
     height: var(--touch-target-min);

@@ -6,6 +6,7 @@
 import { DETAILS_COPY } from '@/lib/copy/sessionTypes';
 import type { ApplicationStage, SessionIcon } from '@/types/sessionType';
 import type { SessionTemplate } from './sessionTemplates';
+import { windowLabel } from './windowLabel';
 
 export type Stage = ApplicationStage;
 
@@ -101,6 +102,18 @@ export const PLATFORM_WINDOW_DAYS = 56;
 export function windowPresets(max = PLATFORM_WINDOW_DAYS): number[] {
   const fit = WINDOW_DAYS.filter((d) => d <= max);
   return fit.includes(max) ? fit : [...fit, max];
+}
+/** The shortest window a mentor may set (backend floor, owner 2026-11-21). */
+export const WINDOW_MIN_DAYS = 7;
+/** The longest custom window: the platform's cap, never above 56 days. */
+export const customWindowMax = (max?: number) =>
+  Math.min(PLATFORM_WINDOW_DAYS, max ?? PLATFORM_WINDOW_DAYS);
+/** A typed custom window: a whole number of days from 7 to the cap, else null. */
+export function parseWindowDays(text: string, max?: number): number | null {
+  const s = text.trim();
+  if (!/^\d+$/.test(s)) return null;
+  const n = Number(s);
+  return n >= WINDOW_MIN_DAYS && n <= customWindowMax(max) ? n : null;
 }
 export const PLATFORM_BREAK_MIN = 0;
 
@@ -232,9 +245,24 @@ export function shortestLength(
  * slot still shows; its error says why. No minimum: every time, as before.
  */
 export function endOptions(start: number, minLength: number, current: number) {
-  if (minLength <= 0) return TIME_OPTIONS;
+  if (minLength <= 0) return withSaved(TIME_OPTIONS, current);
   const from = toStep(start + minLength);
-  return TIME_OPTIONS.filter((o) => Number(o.value) >= from || Number(o.value) === current);
+  return withSaved(
+    TIME_OPTIONS.filter((o) => Number(o.value) >= from || Number(o.value) === current),
+    current,
+  );
+}
+
+/**
+ * A saved time off the half-hour grid (a legacy window ending 5:15 pm) is
+ * added to the choices, in order, so its select shows it instead of a blank;
+ * new picks stay on the half hour (owner report 2026-11-21, Ujunwa).
+ */
+function withSaved(list: { value: string; label: string }[], current: number) {
+  if (current < 0 || current > 1440 || list.some((o) => Number(o.value) === current)) return list;
+  return [...list, { value: String(current), label: timeLabel(current) }].sort(
+    (x, y) => Number(x.value) - Number(y.value),
+  );
 }
 
 /**
@@ -242,9 +270,12 @@ export function endOptions(start: number, minLength: number, current: number) {
  * stays listed. No minimum: every time, as before.
  */
 export function startOptions(minLength: number, current: number) {
-  if (minLength <= 0) return TIME_OPTIONS;
+  if (minLength <= 0) return withSaved(TIME_OPTIONS, current);
   const last = 1440 - toStep(minLength);
-  return TIME_OPTIONS.filter((o) => Number(o.value) <= last || Number(o.value) === current);
+  return withSaved(
+    TIME_OPTIONS.filter((o) => Number(o.value) <= last || Number(o.value) === current),
+    current,
+  );
 }
 
 /**
@@ -480,8 +511,7 @@ export function resolveDefaults(d: BookingDefaults) {
 
 /** Hours as shown: a stored 2000 min is "33.3", not 33.333333333333336 (review r3 of #60). */
 export const hoursLabel = (h: number) => String(Number(h.toFixed(1)));
-export const windowLabel = (days: number) =>
-  days % 7 === 0 ? `${days / 7} week${days === 7 ? '' : 's'}` : `${days} days`;
+export { windowLabel };
 export const breakLabel = (m: number) => (m ? `${m} min` : 'None');
 
 /**

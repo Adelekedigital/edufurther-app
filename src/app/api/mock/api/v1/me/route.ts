@@ -51,7 +51,7 @@ function mentorProfile(req: Request) {
     paused_by_mentor: false,
     requires_booking_confirmation: false,
     max_booking_window_days: 56,
-    default_booking_window_days: 56,
+    default_booking_window_days: 14,
     primary_study_program: null,
     primary_study_country: null,
     offerings: OFFERINGS.filter((o) =>
