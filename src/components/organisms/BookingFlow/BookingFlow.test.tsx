@@ -82,26 +82,21 @@ describe('BookingFlow on phones (sheet)', () => {
     expect(screen.queryByRole('button', { name: /^Change/ })).not.toBeInTheDocument();
   });
 
-  it('opens on the given session type and can hide the profile link', async () => {
-    const user = userEvent.setup();
+  it('opens on the given session type and can hide the profile link', () => {
     render(<BookingFlow {...props({ sessionTypeId: 'st2', hideProfileLink: true })} />);
-    expect(screen.getByText('CV review')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /CV review/ }));
+    expect(screen.getByRole('combobox', { name: 'Session type' })).toHaveValue('st2');
     expect(screen.queryByRole('link', { name: 'View profile' })).not.toBeInTheDocument();
   });
 
-  it('the summary offers the session-type choice on step 1 only, and only with several types', async () => {
+  it('the summary is static: no chevron, the type choice open on step 1 only, and only with several types (owner 2026-11-21)', async () => {
     const user = userEvent.setup();
     const { unmount } = render(<BookingFlow {...props()} />);
-    await user.click(screen.getByRole('button', { name: /General mentorship/ }));
+    // Nothing to expand: the card isn't a button, and the picker is already there.
+    expect(screen.queryByRole('button', { name: /General mentorship/ })).toBeNull();
     expect(screen.getByRole('combobox', { name: 'Session type' })).toBeInTheDocument();
     // Past the time step the answers belong to this type: no switching there.
     await user.click(screen.getByRole('radio', { name: '9:00 am' }));
     await user.click(screen.getByRole('button', { name: 'Continue to questions' }));
-    expect(screen.getByRole('button', { name: /General mentorship/ })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
     expect(screen.queryByRole('combobox', { name: 'Session type' })).not.toBeInTheDocument();
     unmount();
 
@@ -110,8 +105,14 @@ describe('BookingFlow on phones (sheet)', () => {
         {...props({ sessionTypes: remote([sessionTypes[1]!]), sessionTypeId: 'st2' })}
       />,
     );
-    await user.click(screen.getByRole('button', { name: /CV review/ }));
+    expect(screen.getByText('CV review')).toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: 'Session type' })).not.toBeInTheDocument();
+  });
+
+  it('shows no day heading above the times: the chosen tile already has the date', () => {
+    render(<BookingFlow {...props()} />);
+    // Kept as the time group's name for screen readers, hidden on screen (class, not display:none).
+    expect(screen.getByRole('group', { name: 'Mon, Sep 28' })).toBeInTheDocument();
   });
 });
 
@@ -430,7 +431,7 @@ describe('BookingFlow on real slots', () => {
 
   it('says so when the offering has no open times', () => {
     render(<BookingFlow {...props({ slots: remote([]) })} />);
-    expect(screen.getByText('No open times at the moment')).toBeInTheDocument();
+    expect(screen.getByText('No open times in the next 2 weeks')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Pick a time' })).toBeDisabled();
   });
 

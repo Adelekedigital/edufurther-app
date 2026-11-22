@@ -34,6 +34,7 @@ import { isAnswered, useIntakeAnswers } from './useIntakeAnswers';
 import { useTimeChoice } from './useTimeChoice';
 import type { FirstReason, GuestSignIn } from './types';
 import styles from './BookingFlow.module.css';
+import { DEFAULT_HORIZON_DAYS } from '@/lib/utils/slots';
 
 export type { FirstReason, GuestSignIn };
 
@@ -208,7 +209,6 @@ export function BookingFlow(p: BookingFlowProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [stepIndex, setStepIndex] = useState(p.startAfterTime ? 1 : 0);
-  const [summaryOpen, setSummaryOpen] = useState(false);
   const isPhone = useMediaQuery(PHONE);
   const intake = useIntakeAnswers({
     onUpload: p.onUpload,
@@ -485,7 +485,7 @@ export function BookingFlow(p: BookingFlowProps) {
           missed={timeChoice.initialMissed}
           missedNote={p.missedNote}
           noOpenDays={timeChoice.days.length === 0}
-          noTimes={noTimes}
+          noTimes={{ ...noTimes, windowDays: session.windowDays ?? DEFAULT_HORIZON_DAYS }}
           picker={{
             days: timeChoice.days,
             dayIndex: timeChoice.dayAt,
@@ -612,10 +612,7 @@ export function BookingFlow(p: BookingFlowProps) {
           ready
             ? {
                 session,
-                open: summaryOpen,
-                onToggle: () => setSummaryOpen((o) => !o),
                 typeSelect: types.length > 1 && at === 0 && typeSelect,
-                mentorMeta,
                 profileLink,
               }
             : null

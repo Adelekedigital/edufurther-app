@@ -21,9 +21,11 @@ describe('BookingFlow day row (open days only, owner 2026-11-21)', () => {
   beforeEach(() => setPhone(false));
 
   it('says no open times when the window has none, even if the fetch had some beyond', () => {
-    // Today is Sep 27; Oct 25 is today+28, fetched as margin but never shown.
+    // Today is Sep 27; Oct 25 is past the 14-day window, fetched as margin but never shown.
     render(<BookingFlow {...props({ slots: remote(['2026-10-25T12:00:00Z']) })} />);
-    expect(screen.getByText('No open times at the moment')).toBeInTheDocument();
+    // The mentor has hours, just none free in the window: never "hasn't opened any" (owner 2026-11-21).
+    expect(screen.getByText('No open times in the next 2 weeks')).toBeInTheDocument();
+    expect(screen.queryByText(/hasn’t opened any times/)).toBeNull();
   });
 
   it('clears the chosen time when another day is picked', async () => {
@@ -57,12 +59,12 @@ describe('BookingFlow day row (open days only, owner 2026-11-21)', () => {
   });
 
   it('shows only the days with times, soonest first, the first one chosen', () => {
-    render(<BookingFlow {...props({ slots: remote([...slots, '2026-10-20T09:00:00Z']) })} />);
+    render(<BookingFlow {...props({ slots: remote([...slots, '2026-10-08T09:00:00Z']) })} />);
     const days = screen.getAllByRole('radio', { name: /^\w{3}, \w{3} \d+$/ });
     expect(days.map((d) => d.getAttribute('aria-label'))).toEqual([
       'Mon, Sep 28',
       'Tue, Sep 29',
-      'Tue, Oct 20',
+      'Thu, Oct 8',
     ]);
     expect(days[0]).toBeChecked();
     // No empty days and no week pages.
@@ -218,9 +220,9 @@ describe('BookingFlow day row (open days only, owner 2026-11-21)', () => {
 
   it('a first time weeks away is the first day shown: no empty week to page past', () => {
     render(
-      <BookingFlow {...props({ sessionTypeId: 'st2', slots: remote(['2026-10-13T09:00:00Z']) })} />,
+      <BookingFlow {...props({ sessionTypeId: 'st2', slots: remote(['2026-10-08T09:00:00Z']) })} />,
     );
-    expect(screen.getByRole('radio', { name: 'Tue, Oct 13' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Thu, Oct 8' })).toBeChecked();
     expect(screen.queryByText(/No open times this week/)).toBeNull();
     expect(screen.getByRole('radio', { name: '9:00 am' })).toBeInTheDocument();
   });

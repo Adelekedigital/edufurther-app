@@ -7,7 +7,7 @@ import { pickOption } from '@/test-utils/select';
 const initial: BookingDefaults = {
   durationMin: 60,
   noticeHours: 24,
-  windowDays: 28,
+  windowDays: 14,
   breakMin: 15,
   requiresApproval: false,
   maxWindowDays: 56,
