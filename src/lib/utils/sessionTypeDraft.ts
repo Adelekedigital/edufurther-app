@@ -233,9 +233,24 @@ export function shortestLength(
  * slot still shows; its error says why. No minimum: every time, as before.
  */
 export function endOptions(start: number, minLength: number, current: number) {
-  if (minLength <= 0) return TIME_OPTIONS;
+  if (minLength <= 0) return withSaved(TIME_OPTIONS, current);
   const from = toStep(start + minLength);
-  return TIME_OPTIONS.filter((o) => Number(o.value) >= from || Number(o.value) === current);
+  return withSaved(
+    TIME_OPTIONS.filter((o) => Number(o.value) >= from || Number(o.value) === current),
+    current,
+  );
+}
+
+/**
+ * A saved time off the half-hour grid (a legacy window ending 5:15 pm) is
+ * added to the choices, in order, so its select shows it instead of a blank;
+ * new picks stay on the half hour (owner report 2026-11-21, Ujunwa).
+ */
+function withSaved(list: { value: string; label: string }[], current: number) {
+  if (current < 0 || current > 1440 || list.some((o) => Number(o.value) === current)) return list;
+  return [...list, { value: String(current), label: timeLabel(current) }].sort(
+    (x, y) => Number(x.value) - Number(y.value),
+  );
 }
 
 /**
@@ -243,9 +258,12 @@ export function endOptions(start: number, minLength: number, current: number) {
  * stays listed. No minimum: every time, as before.
  */
 export function startOptions(minLength: number, current: number) {
-  if (minLength <= 0) return TIME_OPTIONS;
+  if (minLength <= 0) return withSaved(TIME_OPTIONS, current);
   const last = 1440 - toStep(minLength);
-  return TIME_OPTIONS.filter((o) => Number(o.value) <= last || Number(o.value) === current);
+  return withSaved(
+    TIME_OPTIONS.filter((o) => Number(o.value) <= last || Number(o.value) === current),
+    current,
+  );
 }
 
 /**
