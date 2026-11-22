@@ -208,6 +208,48 @@ describe('useSlots: the request follows the session type’s window (backend #30
     await waitFor(() => expect(range()).toBe(12));
   });
 
+  it('passes on the next time past the window, and null when the backend gives none (owner 2026-11-21)', async () => {
+    let next: { at: string | null; from: string | null } = {
+      at: '2026-12-06T18:00:00Z',
+      from: '2026-11-22T18:00:00Z',
+    };
+    GET.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.endsWith('/session-types')
+          ? {
+              data: { data: [typeRow('t', 14)], next_cursor: null },
+              error: undefined,
+              response: new Response(null, { status: 200 }),
+            }
+          : {
+              data: {
+                data: [],
+                next_cursor: null,
+                next_after_window_at: next.at,
+                bookable_from: next.from,
+              },
+              error: undefined,
+              response: new Response(null, { status: 200 }),
+            },
+      ),
+    );
+    const { result, unmount } = renderHook(() => useSlots('m1', 't', 'Africa/Lagos'), { wrapper });
+    await waitFor(() =>
+      expect(result.current.nextAfterWindow).toEqual({
+        at: '2026-12-06T18:00:00Z',
+        bookableFrom: '2026-11-22T18:00:00Z',
+      }),
+    );
+    expect(result.current.data).toEqual([]);
+    unmount();
+    // The calendar couldn't be read, or nothing within 28 days: no next time.
+    qc.clear();
+    next = { at: null, from: null };
+    const again = renderHook(() => useSlots('m1', 't', 'Africa/Lagos'), { wrapper });
+    await waitFor(() => expect(again.result.current.data).toEqual([]));
+    expect(again.result.current.nextAfterWindow).toBeNull();
+  });
+
   it('a range the backend refuses reloads the types, and the new window asks again', async () => {
     let window = 56;
     let slotCalls = 0;

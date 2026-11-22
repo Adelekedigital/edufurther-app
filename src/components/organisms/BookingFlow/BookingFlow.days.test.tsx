@@ -28,6 +28,36 @@ describe('BookingFlow day row (open days only, owner 2026-11-21)', () => {
     expect(screen.queryByText(/hasn’t opened any times/)).toBeNull();
   });
 
+  it('nothing in the window: names the next time past it and when it opens, never as a time to pick (owner 2026-11-21)', () => {
+    render(
+      <BookingFlow
+        {...props({
+          slots: {
+            ...remote<string[]>([]),
+            nextAfterWindow: { at: '2026-12-06T18:00:00Z', bookableFrom: '2026-11-22T18:00:00Z' },
+          },
+          deviceZone: 'UTC',
+          initialZone: 'UTC',
+        })}
+      />,
+    );
+    expect(screen.getByText('No open times in the next 2 weeks')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Olajuwon’s next open time is Sun, Dec 6 at 6:00 pm. You can book it from Sun, Nov 22. Or try another session type.',
+      ),
+    ).toBeInTheDocument();
+    // A hard limit: it's never a tile to pick.
+    expect(screen.queryByRole('radio', { name: /Dec 6/ })).toBeNull();
+  });
+
+  it('without a next time (none in 28 days, or the calendar unreadable) it keeps "check back soon"', () => {
+    render(
+      <BookingFlow {...props({ slots: { ...remote<string[]>([]), nextAfterWindow: null } })} />,
+    );
+    expect(screen.getByText('Try another session type, or check back soon.')).toBeInTheDocument();
+  });
+
   it('clears the chosen time when another day is picked', async () => {
     const user = userEvent.setup();
     render(
