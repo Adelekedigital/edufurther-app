@@ -19,6 +19,7 @@ import {
   type Draft,
   windowPresets,
   endOptions as endTimes,
+  startOptions,
   fitSlot,
   moveStart,
   newSlotLength,
@@ -465,5 +466,30 @@ describe('a question synced to the help areas (backend PR 540)', () => {
     expect(questionError(synced)).toBeNull();
     expect(questionError({ ...synced, options: [] })).toBeNull();
     expect(questionError({ ...synced, text: ' ' })).toBe('Write the question.');
+  });
+});
+
+describe('saved times off the half hour (owner report 2026-11-21: legacy 4:30–5:15 pm)', () => {
+  const values = (o: { value: string }[]) => o.map((x) => Number(x.value));
+
+  it('a saved 5:15 pm end is listed, in order, labelled, so its select shows it', () => {
+    const ends = endTimes(990, 45, 1035);
+    const at = ends.findIndex((o) => o.value === '1035');
+    expect(ends[at]).toEqual({ value: '1035', label: '5:15 pm' });
+    // The earliest end a 45-minute session allows, then the half hours.
+    expect(values(ends.slice(at, at + 2))).toEqual([1035, 1050]);
+    expect(values(ends)).toEqual([...values(ends)].sort((x, y) => x - y));
+  });
+
+  it('with no minimum too, and a saved 6:45 pm start', () => {
+    expect(endTimes(1080, 0, 1125).some((o) => o.value === '1125' && o.label === '6:45 pm')).toBe(
+      true,
+    );
+    expect(startOptions(45, 1125).some((o) => o.value === '1125')).toBe(true);
+  });
+
+  it('new picks stay on the half hour: nothing is added for an on-grid time', () => {
+    expect(endTimes(990, 45, 1050)).toHaveLength(new Set(values(endTimes(990, 45, 1050))).size);
+    expect(values(endTimes(990, 45, 1050)).every((v) => v % 30 === 0)).toBe(true);
   });
 });
