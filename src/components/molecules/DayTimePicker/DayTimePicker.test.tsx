@@ -43,20 +43,36 @@ describe('DayTimePicker (open days only, owner 2026-11-21)', () => {
     expect(onTimeChange).toHaveBeenCalledWith('2026-11-25T10:00:00Z');
   });
 
-  it('‹ › scroll the row; at either end they are off', async () => {
-    const { user } = setup();
-    const back = screen.getByRole('button', { name: 'Earlier dates' });
-    const on = screen.getByRole('button', { name: 'Later dates' });
-    // jsdom has no layout: the row fits, so both ends are reached.
-    expect(back).toBeDisabled();
-    expect(on).toBeDisabled();
-    const row = screen.getByRole('radio', { name: 'Wed, Nov 25' }).closest('div')!;
-    Object.defineProperty(row, 'scrollWidth', { configurable: true, value: 600 });
-    Object.defineProperty(row, 'clientWidth', { configurable: true, value: 300 });
-    row.scrollBy = vi.fn();
-    row.dispatchEvent(new Event('scroll'));
-    expect(await screen.findByRole('button', { name: 'Later dates' })).toBeEnabled();
-    await user.click(on);
-    expect(row.scrollBy).toHaveBeenCalledWith({ left: 240, behavior: 'smooth' });
+  it('five open days a page: › shows the next five and chooses the first; no scrolling', async () => {
+    const many = Array.from({ length: 7 }, (_, i) => {
+      const date = `2026-11-${String(21 + i).padStart(2, '0')}`;
+      return { date, slots: [{ startsAt: `${date}T10:00:00Z` }] };
+    });
+    const { user, onDayChange } = setup({ days: many });
+    const names = () =>
+      screen
+        .getAllByRole('radio', { name: /^\w{3}, \w{3} \d+$/ })
+        .map((r) => r.getAttribute('aria-label'));
+    expect(names()).toHaveLength(5);
+    expect(screen.getByRole('button', { name: 'Earlier dates' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Later dates' }));
+    // The page's first day (index 5) is chosen; the parent re-renders on it.
+    expect(onDayChange).toHaveBeenCalledWith(5);
+  });
+
+  it('the page holds the chosen day: its days only, › off on the last page', () => {
+    const many = Array.from({ length: 7 }, (_, i) => {
+      const date = `2026-11-${String(21 + i).padStart(2, '0')}`;
+      return { date, slots: [{ startsAt: `${date}T10:00:00Z` }] };
+    });
+    setup({ days: many, dayIndex: 6 });
+    expect(
+      screen
+        .getAllByRole('radio', { name: /^\w{3}, \w{3} \d+$/ })
+        .map((r) => r.getAttribute('aria-label')),
+    ).toEqual(['Thu, Nov 26', 'Fri, Nov 27']);
+    expect(screen.getByRole('radio', { name: 'Fri, Nov 27' })).toBeChecked();
+    expect(screen.getByRole('button', { name: 'Later dates' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Earlier dates' })).toBeEnabled();
   });
 });

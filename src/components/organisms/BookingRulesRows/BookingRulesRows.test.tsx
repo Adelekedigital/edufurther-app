@@ -35,3 +35,28 @@ describe('BookingRulesRows', () => {
     });
   });
 });
+
+describe('BookingRulesRows: the booking window past two weeks (owner 2026-11-21)', () => {
+  const rows = (windowDays: number) =>
+    render(
+      <BookingRulesRows
+        value={{ durationMin: 60, noticeHours: 24, windowDays, breakMin: 15 }}
+        copy={BOOKING_COPY.rules}
+        onChange={vi.fn()}
+        classes={{}}
+        selectWidth={150}
+      />,
+    );
+
+  it('says what it costs over 14 days, as part of the field’s description', () => {
+    rows(28);
+    expect(screen.getByRole('combobox', { name: 'Booking window' })).toHaveAccessibleDescription(
+      `${BOOKING_COPY.rules.windowDays.hint} ${BOOKING_COPY.longWindow}`,
+    );
+  });
+
+  it('says nothing more at 14 days or less', () => {
+    rows(14);
+    expect(screen.queryByText(new RegExp(BOOKING_COPY.longWindow))).toBeNull();
+  });
+});

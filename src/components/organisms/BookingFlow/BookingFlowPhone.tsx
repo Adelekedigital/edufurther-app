@@ -8,7 +8,7 @@ import type { SheetChrome } from '@/types/ui';
 import styles from './BookingFlow.module.css';
 
 // Under 768px: the design's `mobileView=sheet` — back and close in the header,
-// a collapsible session summary, and one full-width action pinned to the bottom.
+// a static session summary, and one full-width action pinned to the bottom.
 
 export function phoneChrome(p: {
   done: boolean;
@@ -76,10 +76,8 @@ export function PhoneBody(p: {
   /** The session summary shows only once there's a session and it isn't done. */
   summary: {
     session: SessionType;
-    open: boolean;
-    onToggle: () => void;
+    /** The session type picker, only when the mentor offers more than one. */
     typeSelect: ReactNode;
-    mentorMeta: string;
     profileLink: ReactNode;
   } | null;
   /** A whole-flow state (loading, error, none, sent), shown instead of the step. */
@@ -92,13 +90,11 @@ export function PhoneBody(p: {
   return (
     <>
       {s && (
+        // Static (owner 2026-11-21): no chevron hiding the picker. The session
+        // type picker shows openly when there's a choice; the description and
+        // mentor details live on the profile, one tap away.
         <div className={styles.summary}>
-          <button
-            type="button"
-            className={styles.summaryToggle}
-            aria-expanded={s.open}
-            onClick={s.onToggle}
-          >
+          <div className={styles.summaryHead}>
             <Avatar
               size="md"
               initials={m.initials}
@@ -115,22 +111,9 @@ export function PhoneBody(p: {
                 {m.name} · {s.session.durationMin}&nbsp;min · Free · 1&nbsp;credit
               </span>
             </span>
-            <Icon
-              name={s.open ? 'expand_less' : 'expand_more'}
-              size={22}
-              className={styles.summaryChevron}
-            />
-          </button>
-          {/* Always visible, not inside the collapsed body — otherwise a mobile
-              user never sees it (the summary is collapsed by default). */}
+          </div>
+          {s.typeSelect && <div className={styles.summaryBody}>{s.typeSelect}</div>}
           {s.profileLink && <div className={styles.summaryProfile}>{s.profileLink}</div>}
-          {s.open && (
-            <div className={styles.summaryBody}>
-              {s.typeSelect}
-              <p className={styles.desc}>{s.session.description}</p>
-              <span className={styles.mentorMeta}>{s.mentorMeta}</span>
-            </div>
-          )}
         </div>
       )}
       {/* Same gate as the desktop columns: not over loading, error or done. */}

@@ -20,7 +20,8 @@ const ZONE = 'Africa/Lagos';
  */
 // A missing or malformed value keeps the shipped 56.
 export const MAX_WINDOW_DAYS = Number(process.env.MOCK_MAX_BOOKING_WINDOW_DAYS) || 56;
-export const DEFAULT_WINDOW_DAYS = Math.min(56, MAX_WINDOW_DAYS);
+// The platform default (owner 2026-11-21: 14 days, mentors may choose longer).
+export const DEFAULT_WINDOW_DAYS = Math.min(14, MAX_WINDOW_DAYS);
 /** The shortest window: longer than the longest notice (72 h), so a type stays bookable. */
 export const MIN_WINDOW_DAYS = 4;
 /** A window write the backend accepts: 4 to the cap, or the value already stored. */
