@@ -1,11 +1,11 @@
 import type { BookingDay } from '@/types/mentor';
 
 /**
- * How far ahead booking looks when a session type doesn't say: four weeks.
- * Otherwise it's the type's own window (its effective booking window), shown a
- * week at a time in one /slots request.
+ * How far ahead booking looks when a session type doesn't say: two weeks, the
+ * platform default (owner 2026-11-21). Otherwise it's the type's own window
+ * (its effective booking window), fetched in one /slots request.
  */
-export const DEFAULT_HORIZON_DAYS = 28;
+export const DEFAULT_HORIZON_DAYS = 14;
 /** The calendar date (YYYY-MM-DD) an instant falls on in `timeZone`. */
 export function dayKey(isoInstant: string, timeZone: string): string {
   // en-CA formats as YYYY-MM-DD.

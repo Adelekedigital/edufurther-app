@@ -97,14 +97,14 @@ describe('slotWindow / visibleDays (review of #20)', () => {
     ]);
   });
 
-  it('keeps only today … today+27 in the viewer’s zone', () => {
-    const days = ['2026-09-26', '2026-09-27', '2026-10-24', '2026-10-25'].map((date) => ({
+  it('by default keeps only today … today+13 in the viewer’s zone (14 days, owner 2026-11-21)', () => {
+    const days = ['2026-09-26', '2026-09-27', '2026-10-10', '2026-10-11'].map((date) => ({
       date,
       slots: [{ startsAt: `${date}T18:00:00Z` }],
     }));
     expect(visibleDays(days, 'America/Los_Angeles', la).map((d) => d.date)).toEqual([
       '2026-09-27',
-      '2026-10-24',
+      '2026-10-10',
     ]);
   });
 });

@@ -63,6 +63,8 @@ const noticeHoursOptions = (current: number) =>
   ).map((h) => ({ value: String(h), label: noticeLabel(h) }));
 
 const ORDER: BookingRuleKey[] = ['durationMin', 'noticeHours', 'windowDays', 'breakMin'];
+/** Past this, the window row says what it costs (owner 2026-11-21). */
+export const LONG_WINDOW_DAYS = 14;
 
 /**
  * Approve bookings, then length, notice, window and buffer as label-and-select
@@ -117,6 +119,9 @@ export function BookingRulesRows({
             <span className={classes.label}>{copy[k].label}</span>
             <span id={`${id}-${k}`} className={classes.hint}>
               {copy[k].hint}
+              {k === 'windowDays' && value.windowDays > LONG_WINDOW_DAYS && (
+                <> {BOOKING_COPY.longWindow}</>
+              )}
             </span>
           </span>
           <Select

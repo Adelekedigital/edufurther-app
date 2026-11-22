@@ -9,6 +9,11 @@ export const MENTOR_SETTINGS_SUB = 'Manage how mentees book you and what they se
 
 export const BOOKING_COPY = {
   approveTitle: 'Approve bookings',
+  /**
+   * Under a booking window past two weeks (owner 2026-11-21): the mentor's
+   * choice, with its cost said plainly. 14 days is the platform default.
+   */
+  longWindow: 'Sessions booked more than 2 weeks ahead are missed more often.',
   rulesTitle: 'Booking rules',
   rulesSub:
     'You control when mentees can book you. Change these for any single session in Sessions.',
