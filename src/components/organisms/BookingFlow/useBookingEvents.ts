@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { clearHandOff, peekHandOff, registerBookingFlow } from '@/lib/analytics/bookingHandOff';
 import type { BookingStep, EntryPoint } from '@/lib/analytics/events';
-import { setReplayScope, track } from '@/lib/analytics/track';
+import { track } from '@/lib/analytics/track';
 import { useOnLeave } from '@/lib/analytics/useOnLeave';
 import { useLatest } from '@/lib/utils/useLatest';
 
@@ -48,8 +48,7 @@ export function useBookingEvents({ mentorId, entryPoint, isGuest, requestDone }:
       st.started = true;
       track('booking_started', { entry_point: entryRef.current, is_guest: isGuest });
     }
-    // Open: session replay may record it, and the page may hand it off.
-    setReplayScope('booking', true);
+    // Open: the page may hand it off.
     const unregister = registerBookingFlow({
       funnel: () => ({
         mentorId,
@@ -63,7 +62,6 @@ export function useBookingEvents({ mentorId, entryPoint, isGuest, requestDone }:
     });
     return () => {
       unregister();
-      setReplayScope('booking', false);
     };
     // Once, on open: the guest flag and the mentor are the opening ones.
     // eslint-disable-next-line react-hooks/exhaustive-deps

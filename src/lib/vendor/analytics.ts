@@ -140,17 +140,26 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
     disable_product_tours: true,
     disable_conversations: true,
     disable_web_experiments: true,
-    // No feature flags are used: no /flags call on every page.
-    advanced_disable_flags: true,
+    // The project's remote config (/array/<key>/config, through /ingest) must
+    // load: replay only records once it says recording is on, so with it
+    // disabled replay never started. No feature flags are used, so /flags is
+    // still never called.
+    advanced_disable_flags: false,
+    advanced_disable_feature_flags: true,
+    advanced_disable_feature_flags_on_first_load: true,
     // PostHog never injects a script of its own: the recorder is our own
     // dynamic import (loadRecorder), bundled and served by this app.
     disable_external_dependency_loading: true,
     // Host-only until the landing site reads PostHog's cookie too.
     cross_subdomain_cookie: false,
-    // Off until the app starts it on an allowed route or scope, after Accept.
+    // Off until the app starts it, after Accept (replay runs across the app).
     disable_session_recording: true,
     enable_recording_console_log: false,
     session_recording: {
+      // Replay runs on every screen (owner, 2026-11-22), and screens show
+      // names, emails and booking details as text: all text is masked, not
+      // only inputs. A replay shows layout, clicks and scrolling, never words.
+      maskTextSelector: '*',
       maskAllInputs: true,
       blockSelector: `[${NO_REPLAY_ATTR}]`,
       recordHeaders: false,

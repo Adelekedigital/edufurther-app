@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { cancelHandOff, handOffBooking } from '@/lib/analytics/bookingHandOff';
-import { onReplayScope, replayScopeActive, track } from '@/lib/analytics/track';
+import { track } from '@/lib/analytics/track';
 import { BookingFlow } from './BookingFlow';
 import { pinToday, props, setPhone } from './BookingFlow.testkit';
 
@@ -243,15 +243,5 @@ describe('BookingFlow: the booking funnel (PRD 30)', () => {
       'booking_started',
       { entry_point: 'home', is_guest: false },
     ]);
-  });
-
-  it('turns the booking replay scope on while open and off when it closes', () => {
-    const heard: boolean[] = [];
-    const stop = onReplayScope(() => heard.push(replayScopeActive()));
-    const { unmount } = render(<BookingFlow {...props()} />);
-    expect(heard.at(-1)).toBe(true);
-    unmount();
-    expect(heard.at(-1)).toBe(false);
-    stop();
   });
 });
