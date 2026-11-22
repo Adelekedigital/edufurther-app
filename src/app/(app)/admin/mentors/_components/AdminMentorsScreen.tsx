@@ -188,7 +188,8 @@ export function AdminMentorsScreen() {
         return;
       }
       const m = dialog.mentor;
-      if (dialog.kind === 'approve') await approve.mutateAsync({ id: m.id, message: text });
+      if (dialog.kind === 'approve' || dialog.kind === 'reapprove')
+        await approve.mutateAsync({ id: m.id, message: text });
       if (dialog.kind === 'decline') await decline.mutateAsync({ id: m.id, message: text });
       if (dialog.kind === 'pause') await pause.mutateAsync({ id: m.id, reason: text });
       if (dialog.kind === 'resume') await resume.mutateAsync(m.id);
