@@ -159,7 +159,8 @@ export function BookingRulesRows({
     setDraft(String(value.windowDays));
     setKept({
       text: CW.kept(WINDOW_MIN_DAYS, maxCustom, windowLabel(value.windowDays)),
-      id: Date.now(),
+      // A new id each time, so a repeat is heard again.
+      id: (kept?.id ?? 0) + 1,
     });
   };
   return (
