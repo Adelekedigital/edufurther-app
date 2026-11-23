@@ -8,14 +8,14 @@ export async function GET(req: Request) {
   await new Promise((r) => setTimeout(r, 250));
   const data = mockOwnSessionTypes();
   // The approved mentor application (`?mockApplication=`, via the Referer) has
-  // the Intro chat mentor onboarding creates: the first type plays it, so its
+  // the 1:1 mentorship session mentor onboarding creates: the first type plays it, so its
   // Edit link opens a type that exists.
   let asked: string | null = null;
   try {
     const referer = req.headers.get('referer');
     if (referer) asked = new URL(referer).searchParams.get('mockApplication');
   } catch {}
-  if (asked === 'approved' && data[0]) data[0] = { ...data[0], name: 'Intro chat' };
+  if (asked === 'approved' && data[0]) data[0] = { ...data[0], name: '1:1 mentorship session' };
   return ok('/api/v1/me/session-types', 'get', { data, next_cursor: null });
 }
 

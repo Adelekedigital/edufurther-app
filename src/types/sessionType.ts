@@ -48,7 +48,7 @@ export type OwnSessionType = {
   usesDefaultRules?: boolean;
   /** The stages it's aimed at, in the mentor's order; empty = any stage. */
   stages: ApplicationStage[];
-  /** The Intro chat onboarding made ("Created for you", backend #540). */
+  /** The 1:1 mentorship session onboarding made ("Created for you", backend #540). */
   isStarter?: boolean;
   /** Catalog offerings, in the mentor's order, at most 3 (backend #9). */
   topics: { code: string; label: string }[];

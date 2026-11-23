@@ -24,7 +24,7 @@ function booking(over: Partial<Booking> = {}): Booking {
   return sampleBookingFor({
     id: 's1',
     other: sampleParty({ name: 'Ada Okafor' }),
-    title: 'Intro chat',
+    title: '1:1 mentorship session',
     startsAt: iso(start),
     endsAt: iso(start + 18e5),
     durationMin: 30,

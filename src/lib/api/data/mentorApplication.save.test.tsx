@@ -9,7 +9,7 @@ import type { MentorAnswers, MentorApplicationState, SchoolDraft } from '@/types
 import {
   DECIDED,
   INCOMPLETE,
-  introChatKey,
+  starterSessionKey,
   useSaveMentorStep,
   useSubmitMentorApplication,
 } from './mentorApplication';
@@ -85,7 +85,7 @@ const answers = (a: Partial<MentorAnswers> = {}): MentorAnswers => ({
   ...a,
 });
 
-const state = { hasProfile: true, hasIntroChat: false } as MentorApplicationState;
+const state = { hasProfile: true, hasStarterSession: false } as MentorApplicationState;
 
 let saved: Record<string, unknown>[];
 const savedEntry = (id: string) => ({
@@ -181,31 +181,38 @@ describe('useSaveMentorStep: education', () => {
 });
 
 describe('useSaveMentorStep: hours', () => {
-  it('makes the Intro chat as the starter, with its two questions, one synced to the help areas (backend PR 540)', async () => {
+  it('makes the 1:1 mentorship session as the starter: help area first, then the topic, both required (owner, 2026-11-23)', async () => {
     const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
     await result.current.save('hours', answers(), state);
     const call = POST.mock.calls.find(([p]) => p === '/api/v1/me/session-types');
-    expect((call?.[1] as { body: unknown }).body).toMatchObject({
-      name: 'Intro chat',
+    const body = (call?.[1] as { body: { description: string; questions: object[] } }).body;
+    expect(body).toMatchObject({
+      name: '1:1 mentorship session',
+      duration_minutes: 30,
       is_starter: true,
       application_stages: ['exploring'],
       questions: [
-        {
-          question_text: 'What would you like to talk about?',
-          question_type: 'free_text',
-          is_required: false,
-        },
         {
           question_text: 'Which area do you need help with most?',
           question_type: 'multi_choice',
           allows_multiple: false,
           is_required: true,
+          display_order: 0,
           options_source: 'help_areas',
+        },
+        {
+          question_text: 'What would you like to talk about?',
+          question_type: 'free_text',
+          is_required: true,
+          display_order: 1,
         },
       ],
     });
-    const second = (call?.[1] as { body: { questions: object[] } }).body.questions[1]!;
-    expect(second).not.toHaveProperty('options');
+    expect(body.questions).toHaveLength(2);
+    expect(body.description).toMatch(/^A 1:1 session about .+\. We’ll talk through your goals/);
+    expect(body.description).not.toMatch(/free/i);
+    // The help-area question's options come from the server (options_source), never sent.
+    expect(body.questions[0]).not.toHaveProperty('options');
   });
 
   it('the time zone saved with the hours is in the one /me at once, and /me is read again', async () => {
@@ -226,7 +233,7 @@ describe('useSaveMentorStep: hours', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: keys.viewer.meAll });
   });
 
-  it('a mentor helping in more than 3 areas: the Intro chat covers the first 3 (the API refuses more)', async () => {
+  it('a mentor helping in more than 3 areas: the starter session covers the first 3 (the API refuses more)', async () => {
     const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
     const six = ['o-1', 'o-2', 'o-3', 'o-4', 'o-5', 'o-6'];
     await result.current.save('hours', answers({ helpIds: six }), state);
@@ -235,42 +242,54 @@ describe('useSaveMentorStep: hours', () => {
     expect(body.service_offering_ids).toEqual(['o-1', 'o-2', 'o-3']);
   });
 
-  const introKey = () => {
+  const starterKey = () => {
     const call = POST.mock.calls.find(([p]) => p === '/api/v1/me/session-types');
     return (call?.[1] as { params: { header: Record<string, string> } }).params.header[
       'Idempotency-Key'
     ];
   };
 
-  it('uses one Intro chat key per attempt: the same on a retry, new after the help areas change', async () => {
+  it('uses one starter session key per attempt: the same on a retry, new after the help areas change', async () => {
     const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
     PUT.mockImplementationOnce(() => fail(503));
     await expect(result.current.save('hours', answers(), state)).rejects.toBeTruthy();
-    const first = introKey();
-    expect(first).toMatch(/^intro-chat-u1-/);
+    const first = starterKey();
+    expect(first).toMatch(/^starter-session-u1-/);
 
     POST.mockClear();
     await result.current.save('hours', answers(), state);
-    expect(introKey()).toBe(first);
+    expect(starterKey()).toBe(first);
 
     POST.mockClear();
     await result.current.save('hours', answers({ helpIds: ['o-docs', 'o-school'] }), state);
-    expect(introKey()).not.toBe(first);
-    expect(introKey()).toMatch(/^intro-chat-u1-/);
+    expect(starterKey()).not.toBe(first);
+    expect(starterKey()).toMatch(/^starter-session-u1-/);
   });
 
-  it('checks for an existing Intro chat itself, and makes none when there is one', async () => {
+  it.each(['1:1 mentorship session', ' 1:1 Mentorship Session ', 'Intro chat', 'intro chat'])(
+    'checks for an existing starter by name itself (%s, the legacy name included), and makes none',
+    async (name) => {
+      GET.mockImplementation((path: string) =>
+        path === '/api/v1/me/session-types' ? ok(200, { data: [{ name }] }) : ok(200, {}),
+      );
+      const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
+      await result.current.save('hours', answers(), state);
+      expect(POST.mock.calls.some(([p]) => p === '/api/v1/me/session-types')).toBe(false);
+    },
+  );
+
+  it('another type by any other name doesn’t count: the starter is made', async () => {
     GET.mockImplementation((path: string) =>
       path === '/api/v1/me/session-types'
-        ? ok(200, { data: [{ name: 'Intro chat' }] })
+        ? ok(200, { data: [{ name: 'SOP review', is_starter: false }] })
         : ok(200, {}),
     );
     const { result } = renderHook(() => useSaveMentorStep('u1'), { wrapper });
     await result.current.save('hours', answers(), state);
-    expect(POST.mock.calls.some(([p]) => p === '/api/v1/me/session-types')).toBe(false);
+    expect(POST.mock.calls.some(([p]) => p === '/api/v1/me/session-types')).toBe(true);
   });
 
-  it('a renamed starter still counts as the Intro chat: none is made (local review)', async () => {
+  it('a renamed starter still counts as the starter: none is made (local review)', async () => {
     GET.mockImplementation((path: string) =>
       path === '/api/v1/me/session-types'
         ? ok(200, { data: [{ name: 'First chat', is_starter: true }] })
@@ -290,7 +309,7 @@ describe('useSaveMentorStep: hours', () => {
   });
 
   it('builds the key from the user and the attempt', () => {
-    expect(introChatKey('u1', 'a1')).toBe('intro-chat-u1-a1');
+    expect(starterSessionKey('u1', 'a1')).toBe('starter-session-u1-a1');
   });
 });
 

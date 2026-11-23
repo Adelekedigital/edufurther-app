@@ -234,7 +234,7 @@ describe('refreshLimitsOnRefusal: past the limit, the limit and the list reload'
 });
 
 describe('toOwnSessionType: the starter (backend PR 540)', () => {
-  it('the Intro chat onboarding made is the starter; absent is not', () => {
+  it('the 1:1 mentorship session onboarding made is the starter; absent is not', () => {
     expect(toOwnSessionType(own({ is_starter: true })).isStarter).toBe(true);
     expect(toOwnSessionType(own({ is_starter: false })).isStarter).toBe(false);
   });

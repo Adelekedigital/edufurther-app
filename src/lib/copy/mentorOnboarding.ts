@@ -4,6 +4,7 @@
  * lives with the status page (lib/copy/mentorApplication.ts).
  */
 import type { MentorGap, MentorStep } from '@/types/mentorOnboarding';
+import { STARTER_NAME } from '@/lib/utils/starterSession';
 import { EDUCATION_FIELD_COPY } from './education';
 
 export const STEP_ORDER: MentorStep[] = ['help', 'education', 'about', 'hours'];
@@ -108,8 +109,9 @@ export const HOURS_COPY = {
   firstSession: 'Your first session',
   firstSessionSub:
     'We create this for you so mentees can book you once you’re approved. Add more sessions later from Sessions page.',
-  introName: 'Intro chat',
-  introMeta: '30 min · Free · 1:1 video call',
+  /** The session onboarding makes for every new mentor (owner, 2026-11-23). */
+  starterName: STARTER_NAME,
+  starterMeta: '30 min · Free · 1:1 video call',
 } as const;
 
 /** Monday first, as the design draws the day buttons. */
@@ -131,16 +133,16 @@ export function hoursSummary(days: number[], from: string, to: string): string {
 }
 
 /**
- * The Intro chat's description from the help areas: lower-case, commas and a
+ * The starter session's description from the help areas: lower-case, commas and a
  * final "or" (PRD F1, design `introDesc`).
  */
-export function introDescription(areas: string[]): string {
+export function starterDescription(areas: string[]): string {
   const l = areas.map((a) => a.charAt(0).toLowerCase() + a.slice(1));
   const list =
     l.length > 1
       ? `${l.slice(0, -1).join(', ')} or ${l[l.length - 1]}`
       : (l[0] ?? 'your application');
-  return `A free first chat about ${list}. We’ll talk through your goals and plan your next steps.`;
+  return `A 1:1 session about ${list}. We’ll talk through your goals and plan your next steps.`;
 }
 
 /** The inline error under each missing field (fieldGuide=marked). */

@@ -148,7 +148,7 @@ export type MentorApplicationStatusProps =
   | {
       state: 'approved';
       firstName: string;
-      /** Hours, Intro chat and Explore rows; a row with nothing real to say is left out. */
+      /** Hours, starter session and Explore rows; a row with nothing real to say is left out. */
       summary: readonly SummaryRow[];
       /** The Google Calendar row, connecting in place. */
       calendar: CalendarConnect;

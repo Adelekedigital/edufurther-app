@@ -30,7 +30,7 @@ const summary: SummaryRow[] = [
   },
   {
     icon: 'video_chat',
-    title: 'Intro chat is ready to book',
+    title: 'Your 1:1 mentorship session is ready to book',
     body: 'Free, 30 min, 1:1 video. Add more sessions later.',
     link: { label: 'Edit', href: '/session-types/1/edit' },
   },
@@ -70,7 +70,7 @@ export const CalendarOffline: Story = { args: withCalendar('offline') };
 export const CalendarFailed: Story = { args: withCalendar('failed') };
 export const CalendarUnavailable: Story = { args: withCalendar('unavailable') };
 
-/** Hours and Intro chat couldn't be read: only what's true is said. */
+/** Hours and the starter session couldn't be read: only what's true is said. */
 export const ApprovedListedOnly: Story = { args: { ...approved, summary: summary.slice(2) } };
 
 export const ApprovedLongName: Story = {

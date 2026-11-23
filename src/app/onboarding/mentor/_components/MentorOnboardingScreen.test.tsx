@@ -148,7 +148,7 @@ const stateWith = (s: Partial<MentorApplicationState> = {}): MentorApplicationSt
   submitted: false,
   approvalStatus: null,
   approvedSeen: false,
-  hasIntroChat: false,
+  hasStarterSession: false,
   firstName: 'Gbenga',
   email: 'gbenga@example.com',
   handle: null,
@@ -249,7 +249,7 @@ describe('MentorOnboardingScreen', () => {
     expect(screen.getByText('Mon, Tue, Wed, Thu, Fri · 7:00 pm – 10:00 pm')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'A free first chat about document preparation. We’ll talk through your goals and plan your next steps.',
+        'A 1:1 session about document preparation. We’ll talk through your goals and plan your next steps.',
       ),
     ).toBeInTheDocument();
   });
