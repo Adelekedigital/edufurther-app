@@ -199,7 +199,10 @@ export function SessionJoinScreen({ id }: { id: string }) {
   const [final, setFinal] = useState(false);
   const now = useNow(!!data && !final);
   const phase = data ? sessionPhase(data.booking, now) : null;
-  const isNowFinal = !!phase && isFinal(phase);
+  // Not final while this person can still get back in (the grace after the end).
+  const doorOpen =
+    !!data && !!phase && entryFor(data.booking, data.me.joinedAt, phase, now) === 'door';
+  const isNowFinal = !!phase && isFinal(phase) && !doorOpen;
   if (isNowFinal !== final) setFinal(isNowFinal);
   const live = phase && isDrawnPhase(phase) ? phase : null;
 

@@ -346,3 +346,37 @@ describe('back from the call (?from=call): the review opens by itself', () => {
     expect(replaceQuery).toHaveBeenCalledWith('/sessions/b1');
   });
 });
+
+describe('a grace after the end (door_closes_at past ends_at)', () => {
+  const graced = (status: 'completed' | 'confirmed', joinedAt: string | null) =>
+    remote(
+      sessionRoom(
+        {
+          status,
+          side: 'mentee',
+          myAttendance: 'attended',
+          doorClosesAt: '2026-10-04T18:15:00Z',
+          other: sampleParty({ id: 'amara', name: 'Amara Okafor', firstName: 'Amara' }),
+        },
+        { attendance: 'attended', joinedAt },
+      ),
+    );
+
+  it('someone who was in can still Rejoin after the end, beside the outcome', () => {
+    h.room = graced('completed', '2026-10-04T17:00:40Z');
+    renderAt('17:45:00');
+    expect(screen.getByRole('link', { name: /Rejoin call/ })).toBeVisible();
+  });
+
+  it('never a first arrival after the end', () => {
+    h.room = graced('confirmed', null);
+    renderAt('17:45:00');
+    expect(screen.queryByRole('link', { name: /Join|Rejoin/ })).toBeNull();
+  });
+
+  it('once the door closes, no Rejoin', () => {
+    h.room = graced('completed', '2026-10-04T17:00:40Z');
+    renderAt('18:15:00');
+    expect(screen.queryByRole('link', { name: /Rejoin call/ })).toBeNull();
+  });
+});
