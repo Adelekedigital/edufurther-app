@@ -111,6 +111,19 @@ describe('entryFor', () => {
     expect(entry('17:10:00', joined, short)).toBeNull();
     expect(entry('17:10:00', null, short)).toBeNull();
   });
+
+  it('a grace after the end (CALL_GRACE_AFTER_END_MINUTES): Rejoin until the door, settled or not', () => {
+    const grace = { ...b, doorClosesAt: '2026-10-04T18:15:00Z' };
+    expect(entry('17:45:00', joined, grace)).toBe('door');
+    expect(entry('17:45:00', joined, { ...grace, status: 'completed' })).toBe('door');
+    expect(entry('17:45:00', joined, { ...grace, status: 'noShow' })).toBe('door');
+    expect(entry('18:15:00', joined, { ...grace, status: 'completed' })).toBeNull();
+    // Never a late first arrival, grace or not.
+    expect(entry('17:45:00', null, grace)).toBeNull();
+    expect(entry('17:45:00', null, { ...grace, status: 'completed' })).toBeNull();
+    // Called off or foreign: no way in.
+    expect(entry('17:45:00', joined, { ...grace, status: 'cancelled' })).toBeNull();
+  });
 });
 
 describe('phase predicates', () => {

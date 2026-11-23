@@ -70,6 +70,10 @@ export function sessionPhase(b: Booking, now: Date): SessionPhase {
  * `join_closes_at` and `door_closes_at` are compared as instants, never by an
  * assumed order: the backend publishes both, and their relation has changed
  * once already (backend #388).
+ *
+ * Rejoin outlives the scheduled end: the backend lets a party back in for a
+ * grace after it (CALL_GRACE_AFTER_END_MINUTES, owner: 45 in production), so
+ * `door_closes_at` can be past `ends_at`, settled or not.
  */
 export function entryFor(
   b: Booking,
@@ -77,11 +81,11 @@ export function entryFor(
   phase: SessionPhase,
   now: Date,
 ): 'join' | 'door' | null {
-  if (phase !== 'soon' && phase !== 'ongoing' && phase !== 'closed') return null;
+  if (phase === 'upcoming' || phase === 'elsewhere') return null;
   const w = windowOf(b);
   const t = now.getTime();
   if (meJoinedAt) return t < w.door ? 'door' : null;
-  return phase === 'closed' ? null : 'join';
+  return phase === 'soon' || phase === 'ongoing' ? 'join' : null;
 }
 
 /** The phase will not change again on its own: no clock, no polling. */
