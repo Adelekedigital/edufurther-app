@@ -19,6 +19,7 @@ const ph = vi.hoisted(() => ({
   get_explicit_consent_status: () => 'pending',
 }));
 vi.mock('posthog-js', () => ({ default: ph }));
+vi.mock('posthog-js/dist/web-vitals', () => ({}));
 const exceptionsLoaded = vi.hoisted(() => vi.fn());
 vi.mock('posthog-js/dist/exception-autocapture', () => {
   exceptionsLoaded();
