@@ -4,6 +4,7 @@
  * lives with the status page (lib/copy/mentorApplication.ts).
  */
 import type { MentorGap, MentorStep } from '@/types/mentorOnboarding';
+import { STARTER_NAME } from '@/lib/utils/starterSession';
 import { EDUCATION_FIELD_COPY } from './education';
 
 export const STEP_ORDER: MentorStep[] = ['help', 'education', 'about', 'hours'];
@@ -109,7 +110,7 @@ export const HOURS_COPY = {
   firstSessionSub:
     'We create this for you so mentees can book you once you’re approved. Add more sessions later from Sessions page.',
   /** The session onboarding makes for every new mentor (owner, 2026-11-23). */
-  starterName: '1:1 mentorship session',
+  starterName: STARTER_NAME,
   starterMeta: '30 min · Free · 1:1 video call',
 } as const;
 

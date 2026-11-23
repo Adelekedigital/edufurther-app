@@ -10,7 +10,6 @@ import {
   type MentorApplicationStatusProps,
 } from '@/components/organisms/MentorApplicationStatus/MentorApplicationStatus';
 import { useCalendarConnection } from '@/lib/api/data/calendarConnection';
-import { isStarterName } from '@/lib/api/data/mentorApplication';
 import {
   useContinueAsMentee,
   useMarkApprovedSeen,
@@ -21,6 +20,7 @@ import { useOwnSessionTypes } from '@/lib/api/data/sessionTypes';
 import { useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { APPROVED_COPY, CALENDAR_ROW_COPY, reapplyMailto } from '@/lib/copy/mentorApplication';
 import { NEW_MENTEE_HOME, ONBOARDING_LIVE } from '@/lib/config/auth';
+import { isStarterName } from '@/lib/utils/starterSession';
 import { weeklyHoursSummary } from '@/lib/utils/weeklyHoursSummary';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useCalendarConnect } from '@/app/_shell/useCalendarConnect';

@@ -3,7 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import type { components } from '@/lib/api/generated/schema';
-import { HOURS_COPY, starterDescription } from '@/lib/copy/mentorOnboarding';
+import { starterDescription } from '@/lib/copy/mentorOnboarding';
 import {
   MENTOR_DEGREES,
   currentSchool,
@@ -36,6 +36,7 @@ import { aboutBody } from './profileEdit';
 import type { SessionTypeWriteBody } from './sessionTypes';
 import { STARTER_COPY } from '@/lib/copy/sessionTypes';
 import { MAX_TOPICS } from '@/lib/utils/sessionTypeDraft';
+import { isStarterName, STARTER_NAME } from '@/lib/utils/starterSession';
 import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
 import { toWeeklyHours, useSaveWeeklyHours, useWeeklyHours, type WeeklyHours } from './weeklyHours';
 
@@ -58,16 +59,6 @@ export const STEP_NAMES: Record<MentorStep, MentorStepName> = {
 
 const stepFromName = (s: unknown): MentorStep | null =>
   (Object.keys(STEP_NAMES) as MentorStep[]).find((k) => STEP_NAMES[k] === s) ?? null;
-
-export const STARTER_NAME = HOURS_COPY.starterName;
-/** What the starter was called before 2026-11-23; dev accounts still have one. */
-const LEGACY_STARTER_NAME = 'Intro chat';
-
-/** A session type named as the starter, today's name or the old one (case and spaces ignored). */
-export const isStarterName = (name: string) => {
-  const n = name.trim().toLowerCase();
-  return n === STARTER_NAME.toLowerCase() || n === LEGACY_STARTER_NAME.toLowerCase();
-};
 
 /** The device's zone, or null when it can't be read (the UTC fallback note). */
 function readZone(): string | null {
