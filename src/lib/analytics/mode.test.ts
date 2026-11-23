@@ -1,5 +1,5 @@
 import { CONSENT_VERSION } from './consent';
-import { analyticsMode, bannerShown, replayAllowed } from './mode';
+import { analyticsMode, bannerShown } from './mode';
 
 const yes = { granted: true, version: CONSENT_VERSION, answeredAt: 1 };
 const no = { ...yes, granted: false };
@@ -30,24 +30,4 @@ describe('the flag and consent matrix', () => {
       expect(bannerShown(i)).toBe(shown);
     },
   );
-});
-
-describe('replayAllowed', () => {
-  it.each(['/onboarding', '/onboarding/mentee', '/onboarding/mentor'])('records %s', (p) =>
-    expect(replayAllowed(p)).toBe(true),
-  );
-
-  it.each([
-    '/messages',
-    '/explore',
-    '/mentors/ada-o',
-    '/onboardingx',
-    '/settings',
-    '/bookings',
-    '/sessions/1',
-    '/mentors',
-    '/explorer',
-    '/home',
-    '/',
-  ])('never records %s', (p) => expect(replayAllowed(p)).toBe(false));
 });

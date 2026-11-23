@@ -31,13 +31,3 @@ export function analyticsMode(i: ModeInputs): AnalyticsMode {
 export function bannerShown(i: Omit<ModeInputs, 'keySet'>): boolean {
   return i.analyticsOn && i.bannerOn && !i.previewing && !isCurrent(i.answer);
 }
-
-/**
- * Replay by route only on the onboarding flows (PRD 30); booking records only
- * while its modal is open (`setReplayScope('booking')`, lib/analytics/track).
- * Never Messages. Intake answers, message dialogs, private files, photos and
- * the account menu are blocked inside a recording (`data-no-replay`).
- */
-export function replayAllowed(path: string): boolean {
-  return path === '/onboarding' || path.startsWith('/onboarding/');
-}

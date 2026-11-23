@@ -69,7 +69,8 @@ export function AnswerPreview({
   if (linkOnly) return more || null;
 
   return (
-    <div className={styles.box}>
+    // A mentee's own words: blocked inside a session replay.
+    <div className={styles.box} data-no-replay="">
       {/* The question as asked, not a fixed "What X wants to cover": the first
           question is whatever the mentor put first, and a generic label
           misattributes the answer under it. Divergence recorded. */}

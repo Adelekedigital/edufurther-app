@@ -202,7 +202,8 @@ export function MessagesScreen() {
 
   const chatOpen = !!url.withId;
   return (
-    <div className={styles.pane} data-chat-open={chatOpen}>
+    // Chats are private: blocked whole inside a session replay.
+    <div className={styles.pane} data-chat-open={chatOpen} data-no-replay="">
       <ChatList
         className={styles.list}
         rows={shown}

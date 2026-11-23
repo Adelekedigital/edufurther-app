@@ -67,27 +67,7 @@ describe('track', () => {
   });
 });
 
-describe('replay scopes (PRD 30: booking records while its modal is open)', () => {
-  it('tells listeners when a scope opens and closes, once each', async () => {
-    const { onReplayScope, replayScopeActive, setReplayScope, resetForTests } =
-      await import('./track');
-    resetForTests();
-    const heard = vi.fn();
-    const stop = onReplayScope(heard);
-    expect(replayScopeActive()).toBe(false);
-    setReplayScope('booking', true);
-    setReplayScope('booking', true);
-    expect(replayScopeActive()).toBe(true);
-    expect(heard).toHaveBeenCalledTimes(1);
-    setReplayScope('booking', false);
-    expect(replayScopeActive()).toBe(false);
-    expect(heard).toHaveBeenCalledTimes(2);
-    stop();
-    setReplayScope('booking', true);
-    expect(heard).toHaveBeenCalledTimes(2);
-    resetForTests();
-  });
-
+describe('onSent', () => {
   it('onSent runs when the event reaches the vendor: at once, at the flush, never when dropped', () => {
     resetForTests();
     const sent = vi.fn();

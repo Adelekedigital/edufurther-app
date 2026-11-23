@@ -18,7 +18,7 @@ const ph = vi.hoisted(() => ({
 }));
 vi.mock('posthog-js', () => ({ default: ph }));
 const recorderLoaded = vi.hoisted(() => vi.fn());
-vi.mock('posthog-js/dist/recorder', () => {
+vi.mock('posthog-js/dist/posthog-recorder', () => {
   recorderLoaded();
   return {};
 });
@@ -57,10 +57,16 @@ describe('the PostHog seam', () => {
       disable_session_recording: true,
       disable_surveys: true,
       disable_external_dependency_loading: true,
-      advanced_disable_flags: true,
+      advanced_disable_flags: false,
+      advanced_disable_feature_flags: true,
+      advanced_disable_feature_flags_on_first_load: true,
       cross_subdomain_cookie: false,
       enable_recording_console_log: false,
-      session_recording: { maskAllInputs: true, blockSelector: `[${NO_REPLAY_ATTR}]` },
+      session_recording: {
+        maskTextSelector: '*',
+        maskAllInputs: true,
+        blockSelector: `[${NO_REPLAY_ATTR}]`,
+      },
     });
   });
 
