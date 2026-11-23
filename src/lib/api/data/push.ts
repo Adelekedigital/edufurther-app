@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   currentSubscription,
@@ -11,11 +11,36 @@ import {
 } from '@/lib/utils/push';
 import { track } from '@/lib/analytics/track';
 import { within } from '@/lib/utils/within';
+import { sessionUserId } from '@/lib/vendor/supabase/browser';
 import { apiError, retryOnce } from './errors';
 import { api } from './http';
 import { keys } from './keys';
 import { isPreviewing } from './previewStore';
 import { usePreview } from './preview';
+
+/**
+ * Whose notifications this device had when they logged out (owner,
+ * 2026-11-22): that account, signing in here again with the permission still
+ * granted, gets them back without a tap. Anyone else signing in clears it and
+ * starts with notifications off. Holds the sign-in account id, nothing else.
+ */
+const RESUME_KEY = 'ef-push-resume';
+
+function readResume(): string | null {
+  try {
+    return localStorage.getItem(RESUME_KEY);
+  } catch {
+    return null;
+  }
+}
+function writeResume(id: string | null): void {
+  try {
+    if (id) localStorage.setItem(RESUME_KEY, id);
+    else localStorage.removeItem(RESUME_KEY);
+  } catch {
+    // Storage off: notifications stay off after the next sign-in, as before.
+  }
+}
 
 /**
  * Push notifications on this device (decision 312, backend #386):
@@ -200,6 +225,25 @@ export function usePushNotifications(userId: string | null) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enable, disable]);
 
+  // Back on this device after a log-out: the same account, permission still
+  // granted, is subscribed again with no prompt (the browser asks nothing
+  // once granted). Read once per sign-in; a different account clears it.
+  const resumeTried = useRef(false);
+  useEffect(() => {
+    if (!usable || !vapidKey || status.data !== false || resumeTried.current) return;
+    const owner = readResume();
+    if (!owner) return;
+    resumeTried.current = true;
+    void sessionUserId().then((me) => {
+      if (readResume() !== owner) return; // another instance took it
+      writeResume(null);
+      if (me !== owner || Notification.permission !== 'granted' || inFlight.current) return;
+      begin();
+      enable.mutate({ permission: Promise.resolve('granted'), before: 'granted' }, settle);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usable, vapidKey, status.data]);
+
   let state: PushState;
   if (!usable || config.isError || (config.isSuccess && vapidKey === null)) state = 'hidden';
   else if (!config.isSuccess) state = 'loading';
@@ -242,6 +286,8 @@ export async function forgetPushForSignOut(): Promise<void> {
   const work = (async () => {
     const sub = await currentSubscription();
     if (!sub) return;
+    // Remembered for this account's next sign-in here (see RESUME_KEY).
+    if (!isPreviewing()) writeResume(await sessionUserId());
     await Promise.all([
       isPreviewing()
         ? undefined
