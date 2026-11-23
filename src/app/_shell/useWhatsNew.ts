@@ -95,16 +95,11 @@ export function useWhatsNew({
   const consentBanner = useConsentBannerShown();
   const markSeen = useMarkSeen(viewer?.id ?? null);
   const release = viewer ? releaseFor(viewer, activeReleases(), seenHere, replay) : null;
-  const may =
-    !!release &&
-    tourMayStart({
-      pathname,
-      role,
-      previewing,
-      inSetup: inSetup(access),
-      consentBanner,
-      otherAsk: false,
-    });
+  const moment = { pathname, role, previewing, inSetup: inSetup(access), otherAsk: false };
+  const may = !!release && tourMayStart({ ...moment, consentBanner });
+  // Due here but for the consent banner: the tour still has Home first, so the
+  // push ask doesn't take this visit while the banner waits for an answer.
+  const dueHere = !!release && tourMayStart({ ...moment, consentBanner: false });
 
   const [active, setActive] = useState<Active | null>(null);
   // A replay asked for on Home ends when they leave it unopened (seen stays seen).
@@ -113,6 +108,7 @@ export function useWhatsNew({
   const [heldOff, setHeldOff] = useState(false);
   const [more, setMore] = useState(false);
   const waiting = may && !active && (!heldOff || replay);
+  const holdsHome = dueHere && !active && (!heldOff || replay);
 
   useEffect(() => {
     if (!waiting || !release || !role) return;
@@ -211,8 +207,11 @@ export function useWhatsNew({
     },
     /** The shell holds its More sheet open for this step (AppShell `tourMore`). */
     more,
-    /** Due on this page, or open: other asks (the push ask) hold back. */
-    holding: waiting || !!active,
+    /**
+     * Due on this page (also while the consent banner waits), or open: other
+     * asks (the push ask) hold back.
+     */
+    holding: holdsHome || !!active,
   };
 }
 
