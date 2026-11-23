@@ -135,7 +135,10 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
           capture_console_errors: false,
         }
       : false,
-    capture_performance: false,
+    // Core Web Vitals (LCP, INP, CLS) for Web Analytics. The web-vitals code is
+    // our own bundled chunk (loadAnalytics), never PostHog's external script.
+    // Network timing stays off: request URLs can carry ids.
+    capture_performance: { web_vitals: true, network_timing: false },
     disable_surveys: true,
     disable_product_tours: true,
     disable_conversations: true,
@@ -262,10 +265,12 @@ let loading: Promise<VendorAnalytics> | null = null;
 
 /** Loads and starts PostHog once per page; later calls get the same instance. */
 export function loadAnalytics(key: string, apiHost: string): Promise<VendorAnalytics> {
-  // The exception capture is our own bundled chunk too (no external script),
-  // fetched only when PostHog errors are on, and registered before init.
+  // The exception capture and web vitals are our own bundled chunks too (no
+  // external script), registered before init; exceptions only when PostHog
+  // errors are on.
   loading ??= Promise.all([
     import('posthog-js'),
+    import('posthog-js/dist/web-vitals'),
     POSTHOG_ERRORS_LIVE ? import('posthog-js/dist/exception-autocapture') : null,
   ]).then(([{ default: posthog }]) => {
     posthog.init(key, vendorConfig(apiHost));
