@@ -31,6 +31,26 @@ import type { Viewer } from '@/types/mentor';
  */
 export const MATCH_CALL_URL = process.env.NEXT_PUBLIC_MATCH_CALL_URL ?? '';
 
+/**
+ * The team call's link for this member, with Cal.com's booking form filled in
+ * (owner, 2026-11-23, as the legacy app does): `name` (first and last) and
+ * `email`, which Cal.com prefills by field identifier. URL-encoded here; set,
+ * not appended, so a value already in the configured URL is replaced. Without
+ * a member (or a URL that won't parse), the configured link as it is.
+ */
+export function teamCallUrl(member: Pick<Member, 'fullName' | 'email'> | null): string {
+  if (!MATCH_CALL_URL || !member) return MATCH_CALL_URL;
+  let url: URL;
+  try {
+    url = new URL(MATCH_CALL_URL);
+  } catch {
+    return MATCH_CALL_URL;
+  }
+  if (member.fullName) url.searchParams.set('name', member.fullName);
+  if (member.email) url.searchParams.set('email', member.email);
+  return url.toString();
+}
+
 export type ShellChrome = 'guest' | 'member' | 'pending';
 
 /** Which AppShell chrome a viewer gets: nothing is promised before /me answers. */
@@ -93,7 +113,7 @@ export function accountItems(
             key: 'matches',
             label: 'Talk to our team',
             icon: 'support_agent' as const,
-            href: MATCH_CALL_URL,
+            href: teamCallUrl(member),
             external: true,
           },
         ]

@@ -68,6 +68,15 @@ describe('toViewer (backend auth reply #3)', () => {
     expect(toViewer(me({ slug: 'esther-a' })).slug).toBe('esther-a');
   });
 
+  it('fullName is first and last as held, never the email (the team call fills it in)', () => {
+    expect(toViewer(me({ first_name: ' Esther ', last_name: 'Adeyemi' })).fullName).toBe(
+      'Esther Adeyemi',
+    );
+    expect(toViewer(me({ last_name: null })).fullName).toBe('Esther');
+    expect(toViewer(me({ first_name: null, last_name: 'Adeyemi' })).fullName).toBe('Adeyemi');
+    expect(toViewer(me({ first_name: null, last_name: null }))).not.toHaveProperty('fullName');
+  });
+
   it('falls back to the email name when there is no first name', () => {
     expect(toViewer(me({ first_name: null }))).toMatchObject({
       firstName: 'esther.a',

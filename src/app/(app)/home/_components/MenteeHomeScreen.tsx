@@ -11,7 +11,7 @@ import { FloatingHelp } from '@/components/organisms/FloatingHelp/FloatingHelp';
 import { BookingLauncher } from '@/app/_shell/BookingLauncher/BookingLauncher';
 import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
-import { MATCH_CALL_URL, useAppShell } from '@/app/_shell/useAppShell';
+import { MATCH_CALL_URL, teamCallUrl, useAppShell } from '@/app/_shell/useAppShell';
 import { useUpcomingBookings } from '@/lib/api/data/bookings';
 import { useDegreeLevels } from '@/lib/api/data/catalog';
 import { useMenteeGoals } from '@/lib/api/data/goals';
@@ -322,7 +322,7 @@ export function MenteeHomeScreen() {
   // set, and while Mentors you've met is open (design helpOn: !mentorsOpen).
   const showHelp = !!MATCH_CALL_URL && completed === 0 && !metShown;
   const openCall = () => {
-    if (MATCH_CALL_URL) window.open(MATCH_CALL_URL, '_blank', 'noopener,noreferrer');
+    if (MATCH_CALL_URL) window.open(teamCallUrl(member), '_blank', 'noopener,noreferrer');
   };
 
   // Returning sublines read the upcoming list, the same source as the card, so
