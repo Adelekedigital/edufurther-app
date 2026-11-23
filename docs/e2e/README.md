@@ -225,7 +225,7 @@ the step if not, reporting it as blocked.
   assertions): `book_ui` stops at **Request …**, `decline_ui` at **Decline
   request**, `delete_ui` at **Delete my account**. MENTOR-001's
   `complete_application` is the exception: it presses **Submit application**,
-  because saving the hours is what creates the Intro chat type.
+  because saving the hours is what creates the 1:1 mentorship session type.
 - **Names to know:** Select comboboxes need a click and then the option. Help
   areas, cancel reasons and intake chips are toggle buttons, not radios. Copy
   uses ’ (U+2019). The phone booking sheet is named "Pick a date and time", not

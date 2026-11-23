@@ -19,7 +19,7 @@ const start = Date.now() + 6 * 864e5;
 const first = sampleBookingFor({
   id: 's1',
   other: sampleParty({ name: 'Ada Okafor' }),
-  title: 'Intro chat',
+  title: '1:1 mentorship session',
   startsAt: new Date(start).toISOString(),
   endsAt: new Date(start + 18e5).toISOString(),
   durationMin: 30,

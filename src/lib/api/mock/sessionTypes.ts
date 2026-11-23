@@ -123,28 +123,27 @@ function seed(): Stored[] {
     // Backend round 4 (#300): one featured per mentor; none scheduled for deletion.
     is_featured: false,
     pending_deletion: null,
-    // Backend #540: the Intro chat onboarding makes is the one starter.
+    // Backend #540: the 1:1 mentorship session onboarding makes is the one starter.
     is_starter: false,
   };
   return [
     {
       ...base,
       id: 'mst-intro',
-      name: 'Intro chat',
+      name: '1:1 mentorship session',
       description:
-        'A first conversation about where you are and what to do next: choosing a school, funding or your documents.',
+        'A 1:1 session about school selection. We’ll talk through your goals and plan your next steps.',
       duration_minutes: 30,
       is_active: true,
       is_starter: true,
       ...topics('school-selection'),
       application_stages: ['exploring'],
       questions: [
-        q('qi1', 'What would you like to talk about?', 'free_text', false),
         {
-          ...q('qi2', 'Which area do you need help with most?', 'multi_choice', true),
-          display_order: 1,
+          ...q('qi1', 'Which area do you need help with most?', 'multi_choice', true),
           options_source: 'help_areas',
         } as QuestionRead,
+        { ...q('qi2', 'What would you like to talk about?', 'free_text', true), display_order: 1 },
       ],
       bookedCount: 0,
     },

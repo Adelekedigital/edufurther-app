@@ -10,7 +10,7 @@ import {
   GAP_COPY,
   HOURS_COPY as C,
   hoursSummary,
-  introDescription,
+  starterDescription,
 } from '@/lib/copy/mentorOnboarding';
 import { formatTime, fromOptions, toOptions } from '@/lib/utils/mentorOnboarding';
 import { cx } from '@/lib/utils/cx';
@@ -39,13 +39,13 @@ type HoursStepProps = {
   onTimeZone: (zone: string) => void;
   /** The zone couldn't be read: UTC, with the note to check it. */
   timeZoneFallback: boolean;
-  /** The picked help areas' names, for the Intro chat's description. */
+  /** The picked help areas' names, for the starter session's description. */
   helpLabels: string[];
   error: boolean;
   headingRef: Ref<HTMLHeadingElement>;
 };
 
-/** Step 4 (design `showHours`, `hoursInput=days`): days, one range, the zone, and the Intro chat. */
+/** Step 4 (design `showHours`, `hoursInput=days`): days, one range, the zone, and the 1:1 mentorship session. */
 export function HoursStep({
   days,
   onDays,
@@ -158,10 +158,10 @@ export function HoursStep({
         </span>
         <div className={styles.intro}>
           <span className={styles.introHead}>
-            <span className={styles.introName}>{C.introName}</span>
-            <span className={styles.introMeta}>{C.introMeta}</span>
+            <span className={styles.introName}>{C.starterName}</span>
+            <span className={styles.introMeta}>{C.starterMeta}</span>
           </span>
-          <p className={styles.introDesc}>{introDescription(helpLabels)}</p>
+          <p className={styles.introDesc}>{starterDescription(helpLabels)}</p>
         </div>
       </div>
     </section>

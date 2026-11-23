@@ -79,7 +79,7 @@ export const DETAILS_COPY = {
   topicsLabel: 'What does this session help with?',
   topicsHint: (max: number) =>
     `Pick up to ${max} of your help areas. Mentees filter by these on Explore.`,
-  /** After the hint while the Intro chat's topics are still the ones it was made with. */
+  /** After the hint while the starter session's topics are still the ones it was made with. */
   topicsPreselected: 'Preselected from your areas of expertise.',
   stagesHint: 'Choose the stages this session is most useful for.',
   anyStage: 'All stages',
@@ -173,8 +173,9 @@ export const REVIEW_COPY = {
 export const PUBLISHED_TITLE = 'Session published';
 
 /**
- * The Intro chat onboarding makes (PRD "Intro chat"), and a question whose
- * options are the mentor's help areas, kept in sync by the backend (#540).
+ * The starter session onboarding makes (PRD "Intro chat", renamed "1:1 mentorship
+ * session" by the owner, 2026-11-23), and a question whose options are the
+ * mentor's help areas, kept in sync by the backend (#540).
  */
 export const STARTER_COPY = {
   createdForYou: 'Created for you',
@@ -187,7 +188,7 @@ export const STARTER_COPY = {
   syncedReview: ' · options from your areas of expertise',
   settings: 'Settings',
   settingsHref: '/settings/expertise',
-  /** The two questions the Intro chat starts with (PRD). */
+  /** The two questions the starter session asks, both required, help area first (owner, 2026-11-23). */
   talkAbout: 'What would you like to talk about?',
   helpArea: 'Which area do you need help with most?',
 } as const;

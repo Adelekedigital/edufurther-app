@@ -33,7 +33,7 @@ describe('CoreDetailsStep: "Best for mentees who are…"', () => {
   });
 });
 
-describe('CoreDetailsStep: the Intro chat’s topics', () => {
+describe('CoreDetailsStep: the starter session’s topics', () => {
   it('while they are the ones it was made with, the hint says they were preselected', () => {
     const { rerender } = render(
       <CoreDetailsStep

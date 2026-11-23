@@ -62,8 +62,8 @@ export type MentorApplicationState = {
   approvalStatus: 'pending' | 'approved' | 'declined' | null;
   /** The one-time approved screen was seen (`mentor_profile.approved_seen_at`, from the published spec). */
   approvedSeen: boolean;
-  /** An "Intro chat" session type already exists: step 4 never makes a second. */
-  hasIntroChat: boolean;
+  /** A starter session already exists (by flag or name): step 4 never makes a second. */
+  hasStarterSession: boolean;
   firstName: string;
   email: string;
   /** The member's handle (`slug`), which the avatar upload is keyed by. */

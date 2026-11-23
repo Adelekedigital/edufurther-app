@@ -24,7 +24,7 @@ type CoreDetailsStepProps = {
   update: (patch: Partial<Draft>) => void;
   errors: FieldErrors;
   topics: Topic[];
-  /** The Intro chat with the topics it was made with: the hint says they were preselected. */
+  /** The starter session with the topics it was made with: the hint says they were preselected. */
   topicsPreselected?: boolean;
 };
 
