@@ -54,6 +54,13 @@ export function safariHandoff(callUrl: string): string | null {
   return `x-safari-${url.href}`;
 }
 
+/**
+ * Where the video call sends a mentee when they leave it (Daily's exit
+ * redirect, set by the backend): `?from=call`, so the review can open by itself.
+ */
+export const FROM_PARAM = 'from';
+export const FROM_CALL = 'call';
+
 /** The query parameter the route sends the page back with when it couldn't open the call. */
 export const ENTER_PARAM = 'enter';
 
