@@ -18,7 +18,7 @@ const ph = vi.hoisted(() => ({
 }));
 vi.mock('posthog-js', () => ({ default: ph }));
 const recorderLoaded = vi.hoisted(() => vi.fn());
-vi.mock('posthog-js/dist/recorder', () => {
+vi.mock('posthog-js/dist/posthog-recorder', () => {
   recorderLoaded();
   return {};
 });

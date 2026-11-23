@@ -169,9 +169,16 @@ export function vendorConfig(apiHost: string): Partial<PostHogConfig> {
   };
 }
 
-/** The session recorder, fetched the first time replay starts (it registers itself with PostHog). */
+/**
+ * The session recorder, fetched the first time replay starts. It must be
+ * `posthog-recorder`: it registers `initSessionRecording` as well as rrweb.
+ * `dist/recorder` registers only rrweb, so PostHog went on to fetch its own
+ * recorder script, which disable_external_dependency_loading refuses, and
+ * nothing was ever recorded. The project's remote config names this script
+ * (scriptConfig.script) too.
+ */
 export function loadRecorder(): Promise<unknown> {
-  return import('posthog-js/dist/recorder');
+  return import('posthog-js/dist/posthog-recorder');
 }
 
 /** Wraps a started PostHog in our interface: the app never calls the SDK itself. */
