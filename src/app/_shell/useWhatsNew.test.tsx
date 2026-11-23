@@ -153,11 +153,14 @@ describe('useWhatsNew: when it opens', () => {
     expect(result.current.tour?.replayable).toBe(true);
   });
 
-  it('waits for the consent banner to be answered', async () => {
+  it('waits for the consent banner to be answered, holding Home so the push ask waits too', async () => {
     h.banner = true;
     const { result, rerender } = host();
     await settle();
     expect(result.current.tour).toBeNull();
+    // Held while the banner is up, so the push ask can't take this visit first.
+    expect(result.current.holding).toBe(true);
+    expect(h.free).not.toHaveBeenCalled();
     h.banner = false;
     rerender({
       member: member(),
