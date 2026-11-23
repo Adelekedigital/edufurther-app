@@ -255,7 +255,7 @@ describe('shared device: the last log-out', () => {
     expect(stillValid(answer, readSignedOut(1_800_000_000_000))).toEqual(answer);
   });
 
-  it('a device answer from before it is unanswered for the next person', () => {
+  it('an Allow from before it never carries to an account that has no answer', () => {
     expect(stillValid(yes(100), at(200))).toBeNull();
     expect(stillValid(yes(300), at(200))).toEqual(yes(300));
     expect(stillValid(yes(100), null)).toEqual(yes(100));
@@ -269,11 +269,39 @@ describe('shared device: the last log-out', () => {
         member: true,
       }),
     ).toEqual({ answer: null, push: false, write: false });
-    // A guest after the log-out: asked again too.
+  });
+
+  it('an "Essential only" from before it carries over, and is not pushed', () => {
+    const no = { ...yes(100), granted: false };
+    expect(
+      effectiveConsent({
+        stored: no,
+        here: false,
+        signedOutAt: at(200),
+        server: null,
+        member: true,
+      }),
+    ).toEqual({ answer: no, push: false, write: false });
+  });
+
+  it('signed out, the browser keeps its answer: no asking again after a log-out (owner, 2026-11-22)', () => {
     expect(
       effectiveConsent({ stored: yes(100), here: false, signedOutAt: at(200), member: false })
         .answer,
-    ).toBeNull();
+    ).toEqual(yes(100));
+  });
+
+  it("an account's answer wins over a device answer from before the log-out", () => {
+    const r = effectiveConsent({
+      stored: yes(100),
+      here: false,
+      signedOutAt: at(200),
+      server: { granted: false, version: CONSENT_VERSION, answeredAt: new Date(50).toISOString() },
+      member: true,
+    });
+    expect(r.answer?.granted).toBe(false);
+    expect(r.write).toBe(true);
+    expect(r.push).toBe(false);
   });
 
   it('the same person signing back in keeps the answer on their account', () => {
