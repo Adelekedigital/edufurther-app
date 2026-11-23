@@ -3,7 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import type { components } from '@/lib/api/generated/schema';
-import { HOURS_COPY, introDescription } from '@/lib/copy/mentorOnboarding';
+import { starterDescription } from '@/lib/copy/mentorOnboarding';
 import {
   MENTOR_DEGREES,
   currentSchool,
@@ -36,6 +36,7 @@ import { aboutBody } from './profileEdit';
 import type { SessionTypeWriteBody } from './sessionTypes';
 import { STARTER_COPY } from '@/lib/copy/sessionTypes';
 import { MAX_TOPICS } from '@/lib/utils/sessionTypeDraft';
+import { isStarterName, STARTER_NAME } from '@/lib/utils/starterSession';
 import { useDebouncedValue } from '@/lib/utils/useDebouncedValue';
 import { toWeeklyHours, useSaveWeeklyHours, useWeeklyHours, type WeeklyHours } from './weeklyHours';
 
@@ -58,8 +59,6 @@ export const STEP_NAMES: Record<MentorStep, MentorStepName> = {
 
 const stepFromName = (s: unknown): MentorStep | null =>
   (Object.keys(STEP_NAMES) as MentorStep[]).find((k) => STEP_NAMES[k] === s) ?? null;
-
-export const INTRO_CHAT = HOURS_COPY.introName;
 
 /** The device's zone, or null when it can't be read (the UTC fallback note). */
 function readZone(): string | null {
@@ -148,9 +147,7 @@ export function toApplicationState(me: Me, ctx: ApplicationContext): MentorAppli
     submitted: mp ? stamped(mp, 'submitted_at') : false,
     approvalStatus: toStatus(mp?.approval_status),
     approvedSeen: mp ? stamped(mp, 'approved_seen_at') : false,
-    hasIntroChat: (ctx.sessionTypeNames ?? []).some(
-      (n) => n.trim().toLowerCase() === INTRO_CHAT.toLowerCase(),
-    ),
+    hasStarterSession: (ctx.sessionTypeNames ?? []).some(isStarterName),
     firstName: me.first_name ?? '',
     email: me.email,
     handle: me.slug ?? null,
@@ -369,8 +366,9 @@ export type StepSaveError = AppError & {
   decided?: boolean;
 };
 
-/** One Intro chat create per attempt (backend keeps keys 24 h per user and key). */
-export const introChatKey = (userId: string, attempt: string) => `intro-chat-${userId}-${attempt}`;
+/** One starter session create per attempt (backend keeps keys 24 h per user and key). */
+export const starterSessionKey = (userId: string, attempt: string) =>
+  `starter-session-${userId}-${attempt}`;
 
 const newAttempt = () =>
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -378,16 +376,15 @@ const newAttempt = () =>
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 /**
- * Whether the mentor already has an Intro chat: the starter (it may have been
- * renamed), or one by its name. No profile yet (404) means none.
+ * Whether the mentor already has a starter session: the starter (it may have
+ * been renamed), or one by its name, today's or the legacy "Intro chat". No
+ * profile yet (404) means none.
  */
-async function hasIntroChat(): Promise<boolean> {
+async function hasStarterSession(): Promise<boolean> {
   const { data, error, response } = await api.GET('/api/v1/me/session-types');
   if (response.status === 404) return false;
   if (!data) throw apiError(response.status, error, response);
-  return data.data.some(
-    (t) => t.is_starter || t.name.trim().toLowerCase() === INTRO_CHAT.toLowerCase(),
-  );
+  return data.data.some((t) => t.is_starter || isStarterName(t.name));
 }
 
 /** The owner's saved degrees, fresh: a stale cache would re-add or delete what a retry just made. */
@@ -402,7 +399,7 @@ async function readEducation(userId: string): Promise<EducationRead[]> {
 /**
  * Each step's Continue: its answers, then `last_step` (PRD F1). Every write is
  * a replace or a diff against what the server holds, so a retried Continue
- * never adds a second degree, rule or Intro chat.
+ * never adds a second degree, rule or starter session.
  */
 export function useSaveMentorStep(userId: string | null) {
   const qc = useQueryClient();
@@ -512,8 +509,8 @@ export function useSaveMentorStep(userId: string | null) {
         patchMe(qc, (m) => ({ ...m, timezone: answers.timeZone }));
         const help = [...answers.helpIds].sort().join(',');
         if (attempt.current?.help !== help) attempt.current = { help, id: newAttempt() };
-        const key = introChatKey(userId, attempt.current.id);
-        if (!(await hasIntroChat())) {
+        const key = starterSessionKey(userId, attempt.current.id);
+        if (!(await hasStarterSession())) {
           // A session type covers at most 3 offerings (the API refuses more: a
           // mentor helping in 6 areas couldn't submit). The first 3 picked;
           // its help-area question still offers every area (options_source).
@@ -526,27 +523,29 @@ export function useSaveMentorStep(userId: string | null) {
               // One per account: a retry after a lost reply returns the first.
               params: { header: { 'Idempotency-Key': key } },
               body: {
-                name: INTRO_CHAT,
+                name: STARTER_NAME,
                 duration_minutes: 30,
-                description: introDescription(labels),
+                description: starterDescription(labels),
                 service_offering_ids: offeringIds,
                 // "Created for you", and its help-area question in sync (backend #540).
                 is_starter: true,
                 application_stages: ['exploring'],
+                // Every booking says what it's about: the area first, then the
+                // topic, both required (owner, 2026-11-23).
                 questions: [
-                  {
-                    question_text: STARTER_COPY.talkAbout,
-                    question_type: 'free_text',
-                    is_required: false,
-                    display_order: 0,
-                  },
                   {
                     question_text: STARTER_COPY.helpArea,
                     question_type: 'multi_choice',
                     allows_multiple: false,
                     is_required: true,
-                    display_order: 1,
+                    display_order: 0,
                     options_source: 'help_areas',
+                  },
+                  {
+                    question_text: STARTER_COPY.talkAbout,
+                    question_type: 'free_text',
+                    is_required: true,
+                    display_order: 1,
                   },
                 ],
               } as SessionTypeWriteBody,

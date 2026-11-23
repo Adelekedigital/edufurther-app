@@ -20,6 +20,7 @@ import { useOwnSessionTypes } from '@/lib/api/data/sessionTypes';
 import { useWeeklyHours } from '@/lib/api/data/weeklyHours';
 import { APPROVED_COPY, CALENDAR_ROW_COPY, reapplyMailto } from '@/lib/copy/mentorApplication';
 import { NEW_MENTEE_HOME, ONBOARDING_LIVE } from '@/lib/config/auth';
+import { isStarterName } from '@/lib/utils/starterSession';
 import { weeklyHoursSummary } from '@/lib/utils/weeklyHoursSummary';
 import { useAppShell } from '@/app/_shell/useAppShell';
 import { useCalendarConnect } from '@/app/_shell/useCalendarConnect';
@@ -31,8 +32,6 @@ const APPLY = '/onboarding/mentor';
 export const SEEN_HREF = '/dashboard?toast=approved';
 /** Mentee onboarding when it's on (its own flag), else the mentee's Home. */
 const MENTEE_HREF = ONBOARDING_LIVE ? '/onboarding/mentee' : NEW_MENTEE_HOME;
-/** The type step 4 creates (PRD F1); its Edit opens it in Session types. */
-const INTRO_CHAT = 'Intro chat';
 
 /** "Oct 14, 2026", in the viewer's zone. */
 const reviewDate = (iso: string | null) =>
@@ -248,7 +247,9 @@ function summaryRows(
       body: APPROVED_COPY.hoursBody(line, hours.timeZone),
       link: { label: APPROVED_COPY.hoursLink, href: '/calendar' },
     });
-  const intro = types?.find((t) => t.name.trim() === INTRO_CHAT);
+  // The type step 4 creates (PRD F1): the starter, or one by its name (today's
+  // or the legacy "Intro chat"). Its Edit opens it in Session types.
+  const intro = types?.find((t) => t.isStarter || isStarterName(t.name));
   if (intro)
     rows.push({
       icon: 'video_chat',

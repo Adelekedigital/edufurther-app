@@ -44,7 +44,7 @@ export const APPROVED_COPY = {
   hoursTitle: 'Weekly hours drafted',
   hoursBody: (hours: string, zone: string) => `${hours} (${zone}). Change them any time.`,
   hoursLink: 'Check hours',
-  introTitle: 'Intro chat is ready to book',
+  introTitle: 'Your 1:1 mentorship session is ready to book',
   introBody: 'Free, 30 min, 1:1 video. Add more sessions later.',
   introLink: 'Edit',
   listedTitle: 'You’re listed on Explore',

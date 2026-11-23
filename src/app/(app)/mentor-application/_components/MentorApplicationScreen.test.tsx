@@ -51,9 +51,10 @@ vi.mock('@/lib/api/data/weeklyHours', () => ({
     error: hoursFail ? { kind: 'server' } : null,
   }),
 }));
+let ownTypes: { id: string; name: string; isStarter?: boolean }[] = [];
 vi.mock('@/lib/api/data/sessionTypes', () => ({
   useOwnSessionTypes: () => ({
-    data: [{ id: 'st 1', name: 'Intro chat' }],
+    data: ownTypes,
     isLoading: false,
     error: null,
   }),
@@ -98,6 +99,7 @@ beforeEach(() => {
   viewer = { kind: 'member', id: 'u1' };
   search = '';
   hoursFail = false;
+  ownTypes = [{ id: 'st 1', name: '1:1 mentorship session' }];
   calendar = { data: null, isLoading: false, error: null, retry: vi.fn(), retrying: false };
   connectState = { kind: 'idle' };
   connectFn.mockReset();
@@ -135,7 +137,7 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
     expect(replaceQuery).not.toHaveBeenCalled();
   });
 
-  it('approved, not seen: the real hours and Intro chat, marked seen once', async () => {
+  it('approved, not seen: the real hours and the 1:1 mentorship session, marked seen once', async () => {
     app = remote({ stage: 'approved', seen: false, ...person });
     const { rerender } = render(<MentorApplicationScreen />);
     expect(
@@ -148,6 +150,20 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
     rerender(<MentorApplicationScreen />);
     await waitFor(() => expect(markSeen).toHaveBeenCalledOnce());
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a legacy Intro chat', [{ id: 'old', name: 'Intro chat' }]],
+    ['a renamed starter', [{ id: 'old', name: 'My first call', isStarter: true }]],
+  ])('the starter row links %s', (_, types) => {
+    ownTypes = types;
+    app = remote({ stage: 'approved', seen: false, ...person });
+    render(<MentorApplicationScreen />);
+    expect(screen.getByText('Your 1:1 mentorship session is ready to book')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Edit' })).toHaveAttribute(
+      'href',
+      '/session-types/old/edit',
+    );
   });
 
   it('keeps the approved screen after /me says seen (what it shows is decided once)', () => {
@@ -181,7 +197,7 @@ describe('MentorApplicationScreen (PRD F3, "Where people land")', () => {
     app = remote({ stage: 'approved', seen: false, ...person });
     render(<MentorApplicationScreen />);
     expect(screen.queryByText('Weekly hours drafted')).toBeNull();
-    expect(screen.getByText('Intro chat is ready to book')).toBeInTheDocument();
+    expect(screen.getByText('Your 1:1 mentorship session is ready to book')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull();
   });
 

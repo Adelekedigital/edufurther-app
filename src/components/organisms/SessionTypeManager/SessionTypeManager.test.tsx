@@ -291,11 +291,15 @@ describe('SessionTypeManager — the session limit (PRD list)', () => {
   });
 });
 
-describe('SessionTypeManager — the Intro chat (backend PR 540)', () => {
+describe('SessionTypeManager: the starter session (backend PR 540)', () => {
   it('"Created for you" after the badges on the starter only', () => {
-    setup(remote({ data: [{ ...T, id: 'i', name: 'Intro chat', isStarter: true }, T] }));
+    setup(
+      remote({ data: [{ ...T, id: 'i', name: '1:1 mentorship session', isStarter: true }, T] }),
+    );
     expect(
-      within(screen.getByRole('article', { name: 'Intro chat' })).getByText('Created for you'),
+      within(screen.getByRole('article', { name: '1:1 mentorship session' })).getByText(
+        'Created for you',
+      ),
     ).toBeInTheDocument();
     expect(
       within(screen.getByRole('article', { name: 'SOP draft review' })).queryByText(

@@ -118,7 +118,7 @@ describe('toApplicationState', () => {
     );
     expect(s.lastStep).toBe('about');
     expect(s.hasProfile).toBe(true);
-    expect(s.hasIntroChat).toBe(true);
+    expect(s.hasStarterSession).toBe(true);
     expect(s.approvalStatus).toBe('pending');
     expect(s.answers).toMatchObject({
       helpIds: ['o1'],
