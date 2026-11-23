@@ -214,8 +214,15 @@ export function reconcile(
 
 /**
  * The answer in force, for the analytics root and Settings alike: one given
- * on this page wins; otherwise the device's (unless it predates the last
- * log-out here) and, for a member, the account's, newest first.
+ * on this page wins.
+ * - Signed out: the browser's answer stands, log-out or not (owner,
+ *   2026-11-22; per-browser, as consent platforms keep it). Asking again
+ *   after every log-out and refresh was the nag the owner reported.
+ * - Signed in: the device's and the account's, newest first, while the
+ *   device's was given since the last log-out here. One from before it may
+ *   be someone else's (shared device): the account's answer wins; with none,
+ *   only an "Essential only" carries over (it can never track anyone who
+ *   didn't agree), and an "Allow" means this person is asked themselves.
  */
 export function effectiveConsent(i: {
   stored: ConsentAnswer | null;
@@ -226,7 +233,11 @@ export function effectiveConsent(i: {
   member: boolean;
 }): { answer: ConsentAnswer | null; push: boolean; write: boolean } {
   if (i.here) return { answer: i.stored, push: false, write: false };
+  if (!i.member) return { answer: i.stored, push: false, write: false };
   const device = stillValid(i.stored, i.signedOutAt);
-  if (!i.member) return { answer: device, push: false, write: false };
-  return reconcile(device, fromServer(i.server));
+  if (device || !i.stored) return reconcile(device, fromServer(i.server));
+  // The device's answer predates the last log-out here.
+  const account = fromServer(i.server);
+  if (isCurrent(account)) return reconcile(null, account);
+  return { answer: i.stored.granted ? null : i.stored, push: false, write: false };
 }

@@ -35,6 +35,8 @@ vi.mock('./preview', () => ({
   usePreview: () => ({ sessionId: device.previewing ? 's1' : null }),
 }));
 vi.mock('./previewStore', () => ({ isPreviewing: () => device.previewing }));
+const auth = vi.hoisted(() => ({ userId: 'auth-1' as string | null }));
+vi.mock('@/lib/vendor/supabase/browser', () => ({ sessionUserId: async () => auth.userId }));
 
 const ok = (data: unknown, status = 200) => ({ data, response: { ok: true, status } });
 const fail = (status: number) => ({ data: undefined, error: {}, response: { ok: false, status } });
@@ -66,6 +68,8 @@ beforeEach(() => {
   requestPermission.mockReset();
   track.mockClear();
   Object.assign(device, { supported: true, permission: 'default', sub: null, previewing: false });
+  auth.userId = 'auth-1';
+  localStorage.clear();
   vi.stubGlobal('Notification', { requestPermission, permission: 'default' });
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -314,5 +318,73 @@ describe('forgetPushForSignOut', () => {
     device.supported = false;
     await forgetPushForSignOut();
     expect(DELETE).not.toHaveBeenCalled();
+  });
+});
+
+describe('back after a log-out on this device (owner, 2026-11-22)', () => {
+  const subscribes = () => {
+    subscribeDevice.mockImplementation(async () => {
+      device.sub = { endpoint: ENDPOINT, unsubscribe: vi.fn() };
+      return {
+        toJSON: () => ({
+          endpoint: ENDPOINT,
+          expirationTime: null,
+          keys: { p256dh: 'p', auth: 'a' },
+        }),
+      };
+    });
+    POST.mockImplementation(async () => {
+      srv.subscribed = true;
+      return ok({ subscribed: true }, 201);
+    });
+  };
+
+  it('log-out remembers whose notifications these were', async () => {
+    device.sub = { endpoint: ENDPOINT, unsubscribe: vi.fn().mockResolvedValue(true) };
+    DELETE.mockResolvedValue({ response: { ok: true, status: 204 } });
+    await forgetPushForSignOut();
+    expect(localStorage.getItem('ef-push-resume')).toBe('auth-1');
+  });
+
+  it('nothing to remember when notifications were off', async () => {
+    await forgetPushForSignOut();
+    expect(localStorage.getItem('ef-push-resume')).toBeNull();
+  });
+
+  it('the same account, permission still granted: on again with no prompt, and no new grant counted', async () => {
+    localStorage.setItem('ef-push-resume', 'auth-1');
+    device.permission = 'granted';
+    vi.stubGlobal('Notification', { requestPermission, permission: 'granted' });
+    server(ok({ vapid_public_key: 'k' }));
+    subscribes();
+    const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(result.current.state).toBe('on'));
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(track).not.toHaveBeenCalled();
+    expect(localStorage.getItem('ef-push-resume')).toBeNull();
+  });
+
+  it('another account signing in: stays off, and the note is cleared', async () => {
+    localStorage.setItem('ef-push-resume', 'auth-1');
+    auth.userId = 'auth-2';
+    device.permission = 'granted';
+    vi.stubGlobal('Notification', { requestPermission, permission: 'granted' });
+    server(ok({ vapid_public_key: 'k' }));
+    subscribes();
+    const { result } = renderHook(() => usePushNotifications('u2'), { wrapper: wrap() });
+    await waitFor(() => expect(localStorage.getItem('ef-push-resume')).toBeNull());
+    expect(result.current.state).toBe('off');
+    expect(subscribeDevice).not.toHaveBeenCalled();
+  });
+
+  it('permission no longer granted: stays off, never prompts', async () => {
+    localStorage.setItem('ef-push-resume', 'auth-1');
+    server(ok({ vapid_public_key: 'k' }));
+    subscribes();
+    const { result } = renderHook(() => usePushNotifications('u1'), { wrapper: wrap() });
+    await waitFor(() => expect(localStorage.getItem('ef-push-resume')).toBeNull());
+    expect(result.current.state).toBe('off');
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(subscribeDevice).not.toHaveBeenCalled();
   });
 });

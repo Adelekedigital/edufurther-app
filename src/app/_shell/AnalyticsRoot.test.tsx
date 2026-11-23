@@ -188,15 +188,15 @@ describe('the flags', () => {
     expect(vendor.setMode).not.toHaveBeenCalledWith('cookieless');
   });
 
-  it('a session ending mid-page asks again at once and drops to cookieless', async () => {
+  it('a session ending mid-page keeps the browser’s answer: no banner again (owner, 2026-11-22)', async () => {
     render(<AnalyticsRoot />);
     await userEvent.click(screen.getByRole('button', { name: 'Allow analytics' }));
     await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('identified'));
-    expect(screen.queryByRole('region')).toBeNull();
     // An expired session or a log-out in this tab (lib/api/data/http onExpired, useSignOut).
     act(() => resetIdentity());
-    await waitFor(() => expect(vendor.setMode).toHaveBeenLastCalledWith('cookieless'));
-    expect(screen.getByRole('region', { name: CONSENT_COPY.short })).toBeVisible();
+    expect(tracker.reset).toHaveBeenCalled();
+    expect(screen.queryByRole('region', { name: CONSENT_COPY.short })).toBeNull();
+    expect(vendor.setMode).not.toHaveBeenLastCalledWith('cookieless');
   });
 
   it('answering on a page without #main puts focus on its first heading', async () => {
