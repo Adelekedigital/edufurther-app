@@ -17,6 +17,7 @@ const ph = vi.hoisted(() => ({
   },
 }));
 vi.mock('posthog-js', () => ({ default: ph }));
+vi.mock('posthog-js/dist/web-vitals', () => ({}));
 const recorderLoaded = vi.hoisted(() => vi.fn());
 vi.mock('posthog-js/dist/posthog-recorder', () => {
   recorderLoaded();
@@ -53,7 +54,7 @@ describe('the PostHog seam', () => {
       capture_pageview: false,
       capture_pageleave: true,
       capture_exceptions: false,
-      capture_performance: false,
+      capture_performance: { web_vitals: true, network_timing: false },
       disable_session_recording: true,
       disable_surveys: true,
       disable_external_dependency_loading: true,
