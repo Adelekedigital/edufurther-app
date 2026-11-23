@@ -77,6 +77,33 @@ describe('accountItems (AppShell.dc.html account menu)', () => {
     );
   });
 
+  it("the team call's link fills in Cal.com's name and email (owner, 2026-11-23)", async () => {
+    vi.stubEnv('NEXT_PUBLIC_MATCH_CALL_URL', 'https://cal.example/edufurther/welcome?name=g&email');
+    vi.resetModules();
+    const { teamCallUrl, accountItems: fresh } = await import('./useAppShell');
+    // Set, not appended: the configured placeholders are replaced, and both are encoded.
+    expect(teamCallUrl({ fullName: 'Ada Obi-Eze', email: 'ada+test@example.com' })).toBe(
+      'https://cal.example/edufurther/welcome?name=Ada+Obi-Eze&email=ada%2Btest%40example.com',
+    );
+    // No name on the account: only the email is filled in.
+    expect(teamCallUrl({ email: 'ada@example.com' })).toBe(
+      'https://cal.example/edufurther/welcome?name=g&email=ada%40example.com',
+    );
+    // No member: the configured link as it is.
+    expect(teamCallUrl(null)).toBe('https://cal.example/edufurther/welcome?name=g&email');
+    // The menu item uses it.
+    const mentee = member({
+      isMentor: false,
+      isApprovedMentor: false,
+      isMentee: true,
+      fullName: 'Ada Obi',
+      email: 'ada@example.com',
+    });
+    expect(fresh(mentee, vi.fn())[0]!.href).toBe(
+      'https://cal.example/edufurther/welcome?name=Ada+Obi&email=ada%40example.com',
+    );
+  });
+
   it('no member (loading, or not signed in as a member): Logout only', () => {
     expect(accountItems(null, vi.fn()).map((i) => i.label)).toEqual(['Logout']);
   });
@@ -141,7 +168,13 @@ describe('credits in the shell: mentees only', () => {
     balance: 4,
     state: 'on_track' as const,
     nextResetAt: '2026-11-01T00:00:00Z',
-    monthly: { balance: 3, ceiling: 3, level: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
+    monthly: {
+      balance: 3,
+      ceiling: 3,
+      level: 3,
+      expiresAt: '2026-11-01T00:00:00Z',
+      unlocked: true,
+    },
     bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
   };
   it('a mentee (or a new member) with credits gets them; a mentor never does', () => {

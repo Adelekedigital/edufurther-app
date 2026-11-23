@@ -30,6 +30,10 @@ import { previewStore } from './previewStore';
  */
 export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
   const name = me.first_name?.trim() || me.email.split('@')[0] || '';
+  const fullName = [me.first_name, me.last_name]
+    .map((p) => p?.trim())
+    .filter(Boolean)
+    .join(' ');
   // A declined applicant who chose mentee is mentee-side: no mentor nav, badge or home.
   const mentor = me.mentor_profile && !menteeByChoice(me) ? me.mentor_profile : null;
   return {
@@ -37,6 +41,7 @@ export function toViewer(me: UserRead): Extract<Viewer, { kind: 'member' }> {
     id: me.id,
     slug: me.slug,
     firstName: name,
+    ...(fullName ? { fullName } : {}),
     email: me.email,
     initials: personInitials(me.first_name, me.last_name, me.email),
     isMentee: me.goal != null,

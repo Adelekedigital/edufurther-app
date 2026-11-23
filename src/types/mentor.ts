@@ -212,6 +212,12 @@ export type Viewer =
       /** The profile's readable address (`/me` slug); absent or null: the id stands in. */
       slug?: string | null;
       firstName: string;
+      /**
+       * First and last name as the account holds them (`/me` first_name and
+       * last_name), for forms that ask for a full name. Absent when neither is
+       * set: unlike `firstName`, never stood in for by the email.
+       */
+      fullName?: string;
       /** The account's sign-in address (`/me` email). Absent: not known (the mock viewers). */
       email?: string;
       /** Two letters, first and last name (`personInitials`); the email's first letter with neither. */

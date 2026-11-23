@@ -34,7 +34,7 @@ import type { Mentor } from '@/types/mentor';
 import { firstReasonsFor } from './firstReasons';
 import styles from './ExploreScreen.module.css';
 import { bookBlockedFor } from '@/app/_shell/bookBlocked';
-import { MATCH_CALL_URL, isMenteeSide, useAppShell } from '@/app/_shell/useAppShell';
+import { MATCH_CALL_URL, isMenteeSide, teamCallUrl, useAppShell } from '@/app/_shell/useAppShell';
 import { pillLayout, useFloatingPrompt } from './useFloatingPrompt';
 import { useSearchEvent } from './useSearchEvent';
 
@@ -117,7 +117,7 @@ export function ExploreScreen() {
     isMenteeSide(member) &&
     member.completedSessions <= MATCH_PROMPT_MAX_SESSIONS;
   const matchPrompt = showMatchPrompt ? (
-    <MatchPrompt href={MATCH_CALL_URL} external body={MATCH_PROMPT_BODY} />
+    <MatchPrompt href={teamCallUrl(member)} external body={MATCH_PROMPT_BODY} />
   ) : null;
 
   // Floating pill once the in-page prompt scrolls away (design promptSticky=on).
@@ -265,7 +265,7 @@ export function ExploreScreen() {
 
       {showPill && (
         <MatchPill
-          href={MATCH_CALL_URL}
+          href={teamCallUrl(member)}
           external
           size={pill.size}
           dock={pill.dock}
