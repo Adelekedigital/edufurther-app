@@ -483,3 +483,30 @@ describe('MentorProfileScreen on phones: more of the pill', () => {
     expect(screen.queryByRole('complementary')).toBeNull();
   });
 });
+
+describe('MentorProfileScreen on phones: Reviews shows only reviews (owner, 25 Nov)', () => {
+  it('no track record and no Similar mentors under the reviews on a phone', () => {
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.queryByRole('heading', { name: 'Similar mentors' })).not.toBeInTheDocument();
+    for (const aside of screen.queryAllByRole('complementary'))
+      expect(aside).not.toHaveAccessibleName(/track record/);
+  });
+
+  it('Overview on a phone keeps them', () => {
+    h.search = new URLSearchParams('');
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('heading', { name: 'Similar mentors' })).toBeInTheDocument();
+  });
+
+  it('desktop Reviews keeps them beside the reviews', () => {
+    phone(false);
+    h.search = new URLSearchParams('tab=reviews');
+    h.profile = state({ data: profile });
+    render(<MentorProfileScreen handle="gbenga" />);
+    expect(screen.getByRole('heading', { name: 'Similar mentors' })).toBeInTheDocument();
+    expect(screen.getByRole('complementary')).toHaveAccessibleName(/track record/);
+  });
+});
