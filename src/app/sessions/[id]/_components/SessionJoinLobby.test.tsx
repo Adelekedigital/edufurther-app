@@ -496,7 +496,9 @@ describe('back from the entry route (?enter=)', () => {
 describe('during the call', () => {
   it('shows no timer, since the call may run elsewhere, and asks a newcomer to join now', () => {
     renderAt('17:12:00');
-    expect(screen.getByText('In progress')).toBeVisible();
+    // The same words as the Next session pill (one LIVE_NOW constant).
+    expect(screen.getByText('Live now')).toBeVisible();
+    expect(screen.queryByText('In progress')).not.toBeInTheDocument();
     expect(screen.queryByText('In session')).not.toBeInTheDocument();
     expect(screen.queryByText(/min left/)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Join session (opens in a new tab)' })).toBeVisible();

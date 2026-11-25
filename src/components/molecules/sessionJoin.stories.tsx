@@ -16,7 +16,7 @@ export const StatusPills: Story = {
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       <SessionStatusPill tone="blue" label="Upcoming" />
       <SessionStatusPill tone="blue" label="Starting soon" />
-      <SessionStatusPill tone="green" label="In progress" live />
+      <SessionStatusPill tone="green" label="Live now" live />
       <SessionStatusPill tone="neutral" label="Ended" />
       <SessionStatusPill tone="red" label="Missed" />
     </div>

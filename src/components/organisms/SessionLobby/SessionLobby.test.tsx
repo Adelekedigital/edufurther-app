@@ -11,7 +11,7 @@ const person = (id: string, tone: LobbyPerson['tone']): LobbyPerson => ({
 
 const base = {
   ground: 'green' as const,
-  status: { tone: 'green' as const, label: 'In progress', live: true },
+  status: { tone: 'green' as const, label: 'Live now', live: true },
   title: '1:1 call with Amara Okafor',
   meta: 'Sun, Oct 4 · 6:00 – 6:30 pm · EduFurther video',
   clock: null,

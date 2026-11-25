@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { DEFAULT_HORIZON_DAYS, dayKey, groupSlotsByDay, visibleDays } from '@/lib/utils/slots';
+import { useMinuteClock } from '@/lib/utils/useMinuteClock';
 import type { Remote, SessionType } from '@/types/mentor';
 
 type Args = {
@@ -28,15 +29,11 @@ export function useTimeChoice(a: Args) {
   const horizon = session?.windowDays ?? DEFAULT_HORIZON_DAYS;
   // Grouped in the zone the viewer picked, so changing it regroups the days.
   // "Today" moves on at midnight even if nothing else re-renders the modal.
-  const [clock, setClock] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setClock(Date.now()), 60 * 1000);
-    return () => clearInterval(t);
-  }, []);
-  const today = dayKey(new Date(clock).toISOString(), zone);
+  const clock = useMinuteClock();
+  const today = dayKey(clock.toISOString(), zone);
   // Only the window's days on screen: the fetch has a margin either side (slotWindow).
   const days = useMemo(
-    () => visibleDays(groupSlotsByDay(a.slots.data ?? [], zone), zone, new Date(clock), horizon),
+    () => visibleDays(groupSlotsByDay(a.slots.data ?? [], zone), zone, clock, horizon),
     // `today` stands in for the clock: the result only changes when the date does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [a.slots.data, zone, today, horizon],

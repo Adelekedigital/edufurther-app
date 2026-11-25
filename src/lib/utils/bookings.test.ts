@@ -13,6 +13,8 @@ import {
   canCancel,
   canDecline,
   canWithdraw,
+  canRejoin,
+  upcomingOnClock,
   refundOnCancel,
   showedUp,
   bookingHeading,
@@ -175,7 +177,8 @@ describe('isUpcoming', () => {
     expect(isUpcoming(running, NOW)).toBe(true);
     expect(isUpcoming({ ...running, endsAt: at(-0.01) }, NOW)).toBe(false);
   });
-  it('keeps a settled session only while the viewer can still get back in', () => {
+  it('ends at the scheduled end for everyone, even with the door still open', () => {
+    // Joined, settled, past its end, door open: History's Rejoin, not Upcoming.
     const settled = booking({
       status: 'completed',
       startsAt: at(-1),
@@ -185,8 +188,12 @@ describe('isUpcoming', () => {
       doorClosesAt: at(0.2),
       myJoinedAt: at(-0.9),
     });
-    expect(isUpcoming(settled, NOW)).toBe(true);
-    expect(isUpcoming({ ...settled, myJoinedAt: null }, NOW)).toBe(false);
+    expect(isUpcoming(settled, NOW)).toBe(false);
+  });
+  it('keys off time, not the outcome: settled 15 min in, it stays until its end', () => {
+    const running = { startsAt: at(-0.5), endsAt: at(0.5) };
+    expect(isUpcoming(booking({ ...running, status: 'completed' }), NOW)).toBe(true);
+    expect(isUpcoming(booking({ ...running, status: 'noShow' }), NOW)).toBe(true);
   });
   it('is never a request or a called-off session', () => {
     expect(isUpcoming(booking({ status: 'pending' }), NOW)).toBe(false);
@@ -194,13 +201,71 @@ describe('isUpcoming', () => {
   });
 });
 
+describe('upcomingOnClock', () => {
+  // 11:30 to 12:30, then 12:30 to 13:30 with its door opening at 12:25.
+  const first = booking({
+    id: 'first',
+    startsAt: at(-0.5),
+    endsAt: at(0.5),
+    joinOpensAt: at(-0.6),
+    joinClosesAt: at(-0.25),
+  });
+  const second = booking({
+    id: 'second',
+    startsAt: at(0.5),
+    endsAt: at(1.5),
+    joinOpensAt: at(0.5 - 5 / 60),
+    joinClosesAt: at(0.75),
+  });
+  const ids = (rows: Booking[]) => rows.map((b) => b.id);
+
+  it('keeps the running session first until the next one opens its door', () => {
+    expect(ids(upcomingOnClock([second, first], NOW))).toEqual(['first', 'second']);
+  });
+  it('hands the card to the next session at its joinOpensAt, before the first ends', () => {
+    const opens = new Date(second.joinOpensAt!);
+    expect(ids(upcomingOnClock([first, second], opens))).toEqual(['second']);
+    expect(ids(upcomingOnClock([first, second], new Date(opens.getTime() - 1)))).toEqual([
+      'first',
+      'second',
+    ]);
+  });
+  it('drops a session at its scheduled end', () => {
+    expect(ids(upcomingOnClock([first], new Date(first.endsAt)))).toEqual([]);
+  });
+});
+
+describe('canRejoin', () => {
+  const joined = booking({
+    status: 'completed',
+    startsAt: at(-1),
+    endsAt: at(-0.1),
+    joinOpensAt: at(-1.1),
+    joinClosesAt: at(-0.75),
+    doorClosesAt: at(0.2),
+    myJoinedAt: at(-0.9),
+  });
+  it('is a joined session past its end with the door open', () => {
+    expect(canRejoin(joined, NOW)).toBe(true);
+  });
+  it('goes when the door closes, and is never for someone who did not join', () => {
+    expect(canRejoin(joined, new Date(joined.doorClosesAt!))).toBe(false);
+    expect(canRejoin({ ...joined, myJoinedAt: null }, NOW)).toBe(false);
+  });
+  it('is not offered before the scheduled end: Upcoming has it then', () => {
+    expect(canRejoin({ ...joined, endsAt: at(0.1) }, NOW)).toBe(false);
+  });
+});
+
 describe('nextSessionWhen', () => {
-  it('counts up once it has started', () => {
+  it('says Live now from the start, never minutes counting up', () => {
     expect(nextSessionWhen(booking({ startsAt: at(-0.1) }), NOW)).toMatchObject({
-      label: 'Started 6 min ago',
+      label: 'Live now',
       icon: 'radio_button_checked',
       live: true,
     });
+    expect(nextSessionWhen(booking({ startsAt: at(-1.25) }), NOW).label).toBe('Live now');
+    expect(nextSessionWhen(booking({ startsAt: NOW.toISOString() }), NOW).label).toBe('Live now');
   });
   it('minutes, hours, tomorrow, then days', () => {
     expect(nextSessionWhen(booking({ startsAt: at(0.5) }), NOW).label).toBe('Starts in 30 min');
