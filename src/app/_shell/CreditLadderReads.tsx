@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { useReferrals } from '@/lib/api/data/invite';
 import { useMenteeStats, type MenteeStats } from '@/lib/api/data/menteeHome';
-import { LADDER_UNKNOWN, type LadderProgress } from '@/lib/utils/credits';
+import type { LadderProgress } from '@/lib/utils/credits';
 
 /**
  * What ticks the ladder's session and friend steps (decision 370): attended
@@ -23,20 +23,23 @@ export function ladderProgress(
 }
 
 /**
- * The credits card's ladder reads, for a mentee (`userId`, null otherwise):
- * nothing until the card first opens (`onOpen`), never on every page load.
- * The same queries as Home, so a visit there has usually filled them.
+ * The credits card's two reads, drawn nothing. Loaded only once a mentee
+ * opens the card (`useCreditLadder`), so neither hook is in any page's
+ * first-load JS (350kB budget). The same queries as Home, so a visit there has
+ * usually filled them.
  */
-export function useCreditLadder(userId: string | null): {
-  progress: LadderProgress;
-  onOpen: () => void;
-} {
-  const [wanted, setWanted] = useState(false);
-  const active = wanted && !!userId;
-  const stats = useMenteeStats(userId, active);
-  const referrals = useReferrals(userId, active);
-  return {
-    progress: active ? ladderProgress(stats.data, referrals) : LADDER_UNKNOWN,
-    onOpen: () => setWanted(true),
-  };
+export function CreditLadderReads({
+  userId,
+  onProgress,
+}: {
+  userId: string;
+  onProgress: (p: LadderProgress) => void;
+}) {
+  const stats = useMenteeStats(userId);
+  const referrals = useReferrals(userId);
+  const { attended, friendJoined } = ladderProgress(stats.data, referrals);
+  useEffect(() => {
+    onProgress({ attended, friendJoined });
+  }, [attended, friendJoined, onProgress]);
+  return null;
 }

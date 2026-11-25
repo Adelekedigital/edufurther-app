@@ -1,26 +1,21 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, render, renderHook } from '@testing-library/react';
 import { EMPTY_STATS, type MenteeStats } from '@/lib/api/data/menteeHome';
-import { ladderProgress, useCreditLadder } from './useCreditLadder';
+import { CreditLadderReads, ladderProgress } from './CreditLadderReads';
+import { useCreditLadder } from './useCreditLadder';
 
 const h = vi.hoisted(() => ({
-  statsActive: [] as boolean[],
-  refsActive: [] as boolean[],
   stats: null as MenteeStats | null,
   refs: null as { qualifiedAt: string | null }[] | null,
 }));
 vi.mock('@/lib/api/data/menteeHome', async (orig) => ({
   ...(await orig<typeof import('@/lib/api/data/menteeHome')>()),
-  useMenteeStats: (_id: string | null, active: boolean) => {
-    h.statsActive.push(active);
-    return { data: active ? h.stats : null };
-  },
+  useMenteeStats: () => ({ data: h.stats }),
 }));
 vi.mock('@/lib/api/data/invite', () => ({
-  useReferrals: (_id: string | null, active: boolean) => {
-    h.refsActive.push(active);
-    const data = active ? h.refs : null;
-    return { data, friendJoined: !!data?.some((r) => r.qualifiedAt) };
-  },
+  useReferrals: () => ({
+    data: h.refs,
+    friendJoined: !!h.refs?.some((r) => r.qualifiedAt),
+  }),
 }));
 
 const stats = (sessionsAttended: number | null): MenteeStats => ({
@@ -30,8 +25,6 @@ const stats = (sessionsAttended: number | null): MenteeStats => ({
 });
 
 beforeEach(() => {
-  h.statsActive = [];
-  h.refsActive = [];
   h.stats = null;
   h.refs = null;
 });
@@ -54,23 +47,29 @@ describe('ladderProgress (decision 370)', () => {
   });
 });
 
-describe('useCreditLadder', () => {
-  it('reads nothing until the card opens, then both', () => {
+describe('CreditLadderReads', () => {
+  it('reports unknown while loading, then what the reads say', () => {
+    const onProgress = vi.fn();
+    const { rerender } = render(<CreditLadderReads userId="u1" onProgress={onProgress} />);
+    expect(onProgress).toHaveBeenLastCalledWith({ attended: null, friendJoined: null });
     h.stats = stats(1);
     h.refs = [{ qualifiedAt: null }];
+    rerender(<CreditLadderReads userId="u1" onProgress={onProgress} />);
+    expect(onProgress).toHaveBeenLastCalledWith({ attended: true, friendJoined: false });
+  });
+});
+
+describe('useCreditLadder', () => {
+  it('nothing reads until the card opens', () => {
     const { result } = renderHook(() => useCreditLadder('u1'));
-    expect(h.statsActive.every((a) => !a)).toBe(true);
-    expect(h.refsActive.every((a) => !a)).toBe(true);
+    expect(result.current.host).toBeNull();
     expect(result.current.progress).toEqual({ attended: null, friendJoined: null });
     act(() => result.current.onOpen());
-    expect(h.statsActive.at(-1)).toBe(true);
-    expect(h.refsActive.at(-1)).toBe(true);
-    expect(result.current.progress).toEqual({ attended: true, friendJoined: false });
+    expect(result.current.host).not.toBeNull();
   });
   it('never for a viewer who is not a mentee (no user id)', () => {
     const { result } = renderHook(() => useCreditLadder(null));
     act(() => result.current.onOpen());
-    expect(h.statsActive.some(Boolean)).toBe(false);
-    expect(result.current.progress).toEqual({ attended: null, friendJoined: null });
+    expect(result.current.host).toBeNull();
   });
 });

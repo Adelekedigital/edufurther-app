@@ -228,6 +228,8 @@ export function useAppShell(
     onPreview: member?.canPreviewAsUser && !previewing ? previewStore.open : undefined,
     /** An admin is previewing as someone (writes blocked): pages hold back nudges to act. */
     previewing,
+    /** Reads what ticks the credits card's ladder once it opens; the layout renders it. */
+    creditLadderHost: ladder.host,
     /** Messages is on: the nav shows its item (AppShell `messages`). */
     messages: MESSAGES_LIVE,
     /** Admin Emails is on: the admin nav shows its item (AppShell `adminEmails`). */

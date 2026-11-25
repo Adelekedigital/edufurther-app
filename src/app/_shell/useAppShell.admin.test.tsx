@@ -9,7 +9,11 @@ const h = vi.hoisted(() => ({
 }));
 vi.mock('next/navigation', () => ({ usePathname: () => h.path }));
 vi.mock('./useCreditLadder', () => ({
-  useCreditLadder: () => ({ progress: { attended: null, friendJoined: null }, onOpen: () => {} }),
+  useCreditLadder: () => ({
+    progress: { attended: null, friendJoined: null },
+    onOpen: () => {},
+    host: null,
+  }),
 }));
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/messages', () => ({ useUnreadTotal: () => null }));
