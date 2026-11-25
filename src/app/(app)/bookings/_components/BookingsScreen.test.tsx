@@ -420,6 +420,52 @@ describe('History', () => {
     expect(screen.queryByRole('link', { name: /^Rejoin/ })).not.toBeInTheDocument();
   });
 
+  it('a joined session still confirmed past its end is listed, with Rejoin, until it settles', () => {
+    // The settle at join_closes_at was lost: History's own read has no such row.
+    h.unsettled = [
+      booking({
+        id: 'unsettled',
+        startsAt: at(-1),
+        endsAt: at(-0.1),
+        joinOpensAt: at(-1.1),
+        joinClosesAt: at(-0.75),
+        doorClosesAt: at(0.2),
+        myJoinedAt: at(-0.9),
+      }),
+    ];
+    render(<BookingsScreen />);
+    expect(
+      screen.getByRole('link', { name: 'Rejoin School shortlist session with Amara Okafor' }),
+    ).toHaveAttribute('href', '/sessions/unsettled');
+  });
+
+  it('a focused Rejoin that goes when the door closes hands focus to the row and says why', () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW);
+    h.history = hist({
+      bookings: [
+        booking({
+          id: 'rj',
+          status: 'completed',
+          startsAt: at(-1),
+          endsAt: at(-0.1),
+          joinOpensAt: at(-1.1),
+          joinClosesAt: at(-0.75),
+          doorClosesAt: at(0.2),
+          myJoinedAt: at(-0.9),
+        }),
+      ],
+    });
+    render(<BookingsScreen />);
+    act(() => screen.getByRole('link', { name: /^Rejoin/ }).focus());
+    act(() => {
+      vi.advanceTimersByTime(13 * 60_000);
+    });
+    expect(screen.queryByRole('link', { name: /^Rejoin/ })).not.toBeInTheDocument();
+    expect(document.activeElement).toHaveAccessibleName(/School shortlist session with Amara/);
+    expect(screen.getByText(/The session room has closed/)).toBeInTheDocument();
+  });
+
   it('asks the server for another page when the reveal runs past what is loaded', async () => {
     const loadMore = vi.fn();
     h.history = hist({

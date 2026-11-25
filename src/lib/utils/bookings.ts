@@ -221,6 +221,23 @@ export function canRejoin(b: Booking, now = new Date()): boolean {
 }
 
 /**
+ * History with the joined, past-end sessions whose outcome has not landed yet
+ * (`useUnsettledRejoins`), so their Rejoin is still reachable. Only when no
+ * filter is on, or Completed is: what they will most likely become. A row
+ * History already has is not added twice.
+ */
+export function withUnsettled(
+  history: Booking[],
+  unsettled: readonly Booking[],
+  filters: readonly BookingStatus[],
+): Booking[] {
+  if (!unsettled.length || (filters.length > 0 && !filters.includes('completed'))) return history;
+  const have = new Set(history.map((b) => b.id));
+  const extra = unsettled.filter((b) => !have.has(b.id));
+  return extra.length ? [...extra, ...history].sort(byNewestFirst) : history;
+}
+
+/**
  * The hero's when-pill: how far off the next session is, in the design's own
  * vocabulary (Bookings.dc.html `nextIn`), but computed rather than picked from
  * a tweak. Green and a filled dot once it is running: the one state where the

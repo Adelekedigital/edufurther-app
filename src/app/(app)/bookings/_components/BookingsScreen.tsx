@@ -14,6 +14,7 @@ import {
   useBooking,
   useBookingHistory,
   usePendingBookings,
+  useUnsettledRejoins,
   useUpcomingBookings,
 } from '@/lib/api/data/bookings';
 import { intakeSharer, intakeViewedFile } from '@/lib/api/data/privateFiles';
@@ -51,6 +52,7 @@ import {
   fullDate,
   HISTORY_FILTERS,
   overlapping,
+  withUnsettled,
 } from '@/lib/utils/bookings';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
@@ -59,6 +61,7 @@ import { useBookingsTab } from './useBookingsTab';
 import { useRevealed } from './useRevealed';
 import { useRouter } from 'next/navigation';
 import { noteProfileSource, profileLinkSource } from '@/lib/analytics/profileSource';
+import { useRejoinFocus } from './useRejoinFocus';
 import { useReminders } from './useReminders';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';
@@ -121,7 +124,13 @@ export function BookingsScreen() {
     now,
   );
   const pending = usePendingBookings(fetchAs, tab === 'pending');
-  const history = useBookingHistory(fetchAs, filters, tab === 'history');
+  const historyRead = useBookingHistory(fetchAs, filters, tab === 'history');
+  // Joined, past the end, outcome not landed: History lists them too, for Rejoin.
+  const unsettled = useUnsettledRejoins(fetchAs, accountZone, tab === 'history', now);
+  const history = {
+    ...historyRead,
+    bookings: withUnsettled(historyRead.bookings, unsettled, filters),
+  };
 
   const { selected, select, toggle } = useSelectedBooking();
   const router = useRouter();
@@ -179,6 +188,10 @@ export function BookingsScreen() {
   // A repeated message must be heard again, so each carries a new id.
   const [announcement, setAnnouncement] = useState<{ text: string; id: number } | null>(null);
   const say = useCallback((text: string) => setAnnouncement({ text, id: Date.now() }), []);
+  const rejoinFocus = useRejoinFocus((id) => {
+    const b = history.bookings.find((x) => x.id === id);
+    return !!b && canRejoin(b, now);
+  }, say);
 
   const reveal = {
     upcoming: useRevealed(),
@@ -671,6 +684,8 @@ export function BookingsScreen() {
                         variant="secondary-outlined"
                         size="small"
                         aria-label={REJOIN_COPY.named(bookingHeading(b))}
+                        onFocus={rejoinFocus.onFocus(b.id)}
+                        onBlur={rejoinFocus.onBlur}
                       >
                         {REJOIN_COPY.label}
                       </ButtonLink>

@@ -5,6 +5,7 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import type { components } from '@/lib/api/generated/schema';
 import {
   byNewestFirst,
+  canRejoin,
   HISTORY_STATUSES,
   isLapsed,
   respondDeadline,
@@ -224,6 +225,52 @@ export function useUpcomingBookings(
   as?: 'mentor' | 'mentee',
   now?: Date,
 ): Remote<Booking[]> {
+  const { query, enabled } = useUpcomingRows(userId, accountZone, active, as);
+  // Selected on the screen's minute clock, not at fetch time: a session leaves
+  // at its scheduled end, and a back-to-back one takes over, with no refetch.
+  const at = now?.getTime();
+  const data = useMemo(
+    () =>
+      query.data ? upcomingOnClock(query.data, at == null ? undefined : new Date(at)) : undefined,
+    [query.data, at],
+  );
+  // Named fields, not a spread: spreading reads every tracked property of the
+  // query result and re-renders on all of them.
+  return remote(
+    { data, isPending: query.isPending, isError: query.isError, error: query.error },
+    () => void query.refetch(),
+    enabled,
+  );
+}
+
+/**
+ * Joined sessions past their scheduled end that the server still calls
+ * `confirmed`: the settle at `join_closes_at` was lost. Upcoming has let them
+ * go and History asks only for settled statuses, so History's Rejoin reads
+ * them from here (GitHub review, PR 723). The Upcoming page's own entry: no
+ * request of its own once that is warm.
+ */
+export function useUnsettledRejoins(
+  userId: string | null,
+  accountZone: string,
+  active: boolean,
+  now: Date,
+): Booking[] {
+  const { query } = useUpcomingRows(userId, accountZone, active);
+  const at = now.getTime();
+  return useMemo(
+    () => (query.data ?? []).filter((b) => b.status === 'confirmed' && canRejoin(b, new Date(at))),
+    [query.data, at],
+  );
+}
+
+/** The Upcoming page as fetched, from today on, before the clock chooses. */
+function useUpcomingRows(
+  userId: string | null,
+  accountZone: string,
+  active: boolean,
+  as?: 'mentor' | 'mentee',
+) {
   const session = useSession();
   const enabled = active && !!userId && session.status !== 'unknown';
   // Today, not now: a session that started an hour ago is still joinable for
@@ -246,28 +293,14 @@ export function useUpcomingBookings(
         { status: ['confirmed', 'completed', 'no_show'], limit: PAGE, order: 'asc', from, as },
         signal,
       );
-      // Kept whole: the screen's clock decides what shows (below).
+      // Kept whole: the screen's clock decides what shows.
       return rows;
     },
     staleTime: 30_000,
     networkMode: 'always',
     retry: retryOnce,
   });
-  // Selected on the screen's minute clock, not at fetch time: a session leaves
-  // at its scheduled end, and a back-to-back one takes over, with no refetch.
-  const at = now?.getTime();
-  const data = useMemo(
-    () =>
-      query.data ? upcomingOnClock(query.data, at == null ? undefined : new Date(at)) : undefined,
-    [query.data, at],
-  );
-  // Named fields, not a spread: spreading reads every tracked property of the
-  // query result and re-renders on all of them.
-  return remote(
-    { data, isPending: query.isPending, isError: query.isError, error: query.error },
-    () => void query.refetch(),
-    enabled,
-  );
+  return { query, enabled };
 }
 
 /**

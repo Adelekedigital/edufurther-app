@@ -131,6 +131,8 @@ export const h = {
   filter: null as string | null,
   viewer: null as unknown as Viewer,
   upcoming: null as unknown as Remote<Booking[]>,
+  /** Joined, past-end rows the server still calls confirmed (History's Rejoin). */
+  unsettled: [] as Booking[],
   pending: null as unknown as Remote<Booking[]>,
   history: null as unknown as BookingHistoryResult,
   answers: null as unknown as Answers,
@@ -169,6 +171,7 @@ export const mocks = {
   }),
   bookings: () => ({
     useUpcomingBookings: () => h.upcoming,
+    useUnsettledRejoins: () => h.unsettled,
     usePendingBookings: () => h.pending,
     useBookingHistory: () => h.history,
     useBooking: (_id: string | null, _userId: string | null, active: boolean) => {
@@ -249,6 +252,7 @@ export function resetHarness() {
   h.bookingActive = false;
   h.viewer = MEMBER;
   h.upcoming = remote<Booking[]>([]);
+  h.unsettled = [];
   h.pending = remote<Booking[]>([]);
   h.history = hist();
   h.answers = { data: [], isLoading: false, error: null, retry: vi.fn() };

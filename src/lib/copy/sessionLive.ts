@@ -16,4 +16,6 @@ export const LIVE_NOW = 'Live now';
 export const REJOIN_COPY = {
   label: 'Rejoin',
   named: (session: string) => `Rejoin ${session}`,
+  /** Said when the Rejoin someone was on goes, because the room closed. */
+  closed: 'The session room has closed, so Rejoin is no longer there.',
 };

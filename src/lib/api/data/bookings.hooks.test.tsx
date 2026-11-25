@@ -5,7 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import type { BookingStatus } from '@/types/booking';
 import { useMinuteClock } from '@/lib/utils/useMinuteClock';
-import { toBooking, useBookingHistory, usePendingBookings, useUpcomingBookings } from './bookings';
+import {
+  toBooking,
+  useBookingHistory,
+  usePendingBookings,
+  useUnsettledRejoins,
+  useUpcomingBookings,
+} from './bookings';
 
 type SessionRead = components['schemas']['SessionRead'];
 
@@ -172,6 +178,29 @@ describe('useUpcomingBookings', () => {
     const { result } = renderHook(() => useUpcomingBookings('me', 'Africa/Lagos'), { wrapper });
     await waitFor(() => expect(result.current.data).not.toBeNull());
     expect(result.current.data!.map((b) => b.id)).toEqual(['running', 'later']);
+  });
+
+  it('useUnsettledRejoins: a joined, past-end row still confirmed, with its door open', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date('2026-10-04T17:40:00Z')); // past the 17:30 end
+    get.mockResolvedValueOnce(
+      ok({
+        data: [
+          row({ id: 'unsettled', door_closes_at: '2026-10-04T18:15:00Z' }, '2026-10-04T17:01:00Z'),
+          row(
+            { id: 'settled', status: 'completed', door_closes_at: '2026-10-04T18:15:00Z' },
+            '2026-10-04T17:01:00Z',
+          ),
+          row({ id: 'never-joined', door_closes_at: '2026-10-04T18:15:00Z' }),
+        ],
+        next_cursor: null,
+      }),
+    );
+    const { result } = renderHook(
+      () => useUnsettledRejoins('me', 'Africa/Lagos', true, new Date()),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.map((b) => b.id)).toEqual(['unsettled']));
   });
 
   it('forwards `as` to the sessions query so one side is fetched server-side', async () => {
