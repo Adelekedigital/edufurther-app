@@ -27,6 +27,7 @@ const ROUTES = [
   '/onboarding',
   '/onboarding/mentee',
   '/onboarding/mentor',
+  '/profile',
   '/profile/[id]',
   '/session-types',
   '/session-types/[id]/edit',
