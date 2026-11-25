@@ -8,6 +8,19 @@
 import type { MissedReasonCode } from '@/lib/api/data/missedReason';
 import type { SupportPerson } from '@/lib/utils/mailto';
 
+/**
+ * A session between its start and its scheduled end: the Next session pill and
+ * the Session Join badge both say this (owner, 25 Nov 2026), never a count of
+ * minutes since the start.
+ */
+export const LIVE_NOW = 'Live now';
+
+/** A History row's way back into a session past its scheduled end, named for screen readers. */
+export const REJOIN_COPY = {
+  label: 'Rejoin',
+  named: (session: string) => `Rejoin ${session}`,
+};
+
 export const LOBBY_COPY = {
   /** Under the locked Join button. */
   joinLockedHint: (min: number) => `The button becomes active ${min} minutes before the start.`,

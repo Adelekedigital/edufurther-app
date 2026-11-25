@@ -7,8 +7,8 @@ import {
   byNewestFirst,
   HISTORY_STATUSES,
   isLapsed,
-  isUpcoming,
   respondDeadline,
+  upcomingOnClock,
   wantsLapsed,
 } from '@/lib/utils/bookings';
 import { coverKey } from '@/lib/utils/cover';
@@ -212,12 +212,17 @@ export function remote<T>(
  * query key as well, because `from` is an input to the result — without it,
  * crossing midnight (or changing the account zone) would serve yesterday's
  * page for ever.
+ *
+ * `now` is the screen's minute clock (`useMinuteClock`): the rows shown are
+ * chosen against it by `upcomingOnClock`, the one rule for every Next session
+ * card.
  */
 export function useUpcomingBookings(
   userId: string | null,
   accountZone: string,
   active = true,
   as?: 'mentor' | 'mentee',
+  now?: Date,
 ): Remote<Booking[]> {
   const session = useSession();
   const enabled = active && !!userId && session.status !== 'unknown';
@@ -233,30 +238,36 @@ export function useUpcomingBookings(
       // page by the other side's rows (and `as` is in the query key so the sides
       // don't share a cache entry).
       //
-      // Settled sessions too: the backend can rule a session completed or a
-      // no-show while people are still in the call, and someone who drops out
-      // then needs this row's Join to get back (backend #380). Only those whose
-      // door is still open for the viewer stay; the rest are History's.
+      // Settled sessions too: the backend rules a session completed or a
+      // no-show 15 minutes in, while the call can still be going, and it stays
+      // upcoming until its scheduled end (`isUpcoming`).
       const { rows } = await fetchPage(
         userId!,
         { status: ['confirmed', 'completed', 'no_show'], limit: PAGE, order: 'asc', from, as },
         signal,
       );
-      const now = new Date();
-      // A session leaves "upcoming" at its scheduled end: a confirmed session is
-      // kept only while it is still before `endsAt`, so a just-ended one settling
-      // into completed/no-show vanishes here rather than lingering with no action.
-      // Evaluated per read, not on a wall-clock tick, so the drop lands on the next
-      // fetch — on the dashboard that is the focus/navigation refetch
-      // (refetchOnWindowFocus), which is the common way the hero is seen again.
-      // A still-open door keeps a mid-session row for re-entry regardless.
-      return rows.filter((r) => isUpcoming(r, now));
+      // Kept whole: the screen's clock decides what shows (below).
+      return rows;
     },
     staleTime: 30_000,
     networkMode: 'always',
     retry: retryOnce,
   });
-  return remote(query, () => void query.refetch(), enabled);
+  // Selected on the screen's minute clock, not at fetch time: a session leaves
+  // at its scheduled end, and a back-to-back one takes over, with no refetch.
+  const at = now?.getTime();
+  const data = useMemo(
+    () =>
+      query.data ? upcomingOnClock(query.data, at == null ? undefined : new Date(at)) : undefined,
+    [query.data, at],
+  );
+  // Named fields, not a spread: spreading reads every tracked property of the
+  // query result and re-renders on all of them.
+  return remote(
+    { data, isPending: query.isPending, isError: query.isError, error: query.error },
+    () => void query.refetch(),
+    enabled,
+  );
 }
 
 /**

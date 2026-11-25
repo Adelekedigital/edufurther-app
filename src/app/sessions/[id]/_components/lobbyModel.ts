@@ -16,7 +16,7 @@ import {
   type SessionPhase,
 } from '@/lib/utils/sessionPhase';
 import { refundWindowFor } from '@/lib/utils/bookings';
-import { LOBBY_COPY, PREP_COPY } from '@/lib/copy/session';
+import { LIVE_NOW, LOBBY_COPY, PREP_COPY } from '@/lib/copy/session';
 import { joinedTime, presenceOf } from '@/lib/utils/presence';
 import { missedTone, missedWaitMin } from '@/lib/utils/sessionOutcome';
 import type { BookingParty, SessionRoom } from '@/types/booking';
@@ -48,8 +48,8 @@ export function isSettled(p: DrawnPhase): p is 'completed' | 'missed' {
 const STATUS: Record<DrawnPhase, LobbyProps['status']> = {
   upcoming: { tone: 'blue', label: 'Upcoming' },
   soon: { tone: 'blue', label: 'Starting soon' },
-  ongoing: { tone: 'green', label: 'In progress', live: true },
-  closed: { tone: 'green', label: 'In progress', live: true },
+  ongoing: { tone: 'green', label: LIVE_NOW, live: true },
+  closed: { tone: 'green', label: LIVE_NOW, live: true },
   // PROVISIONAL: the design has no state between the end and the attendance sweep.
   settling: { tone: 'neutral', label: 'Ended' },
   completed: { tone: 'neutral', label: 'Completed' },

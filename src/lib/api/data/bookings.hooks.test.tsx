@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import type { BookingStatus } from '@/types/booking';
+import { useMinuteClock } from '@/lib/utils/useMinuteClock';
 import { toBooking, useBookingHistory, usePendingBookings, useUpcomingBookings } from './bookings';
 
 type SessionRead = components['schemas']['SessionRead'];
@@ -85,21 +86,24 @@ describe('toBooking', () => {
 });
 
 describe('useUpcomingBookings', () => {
-  it('keeps a session settled mid-call while its room is open for someone who joined', async () => {
+  it('keeps a session settled mid-call until its scheduled end', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(NOW);
     get.mockResolvedValueOnce(
       ok({
         data: [
           row({ id: 'joined-settled', status: 'completed' }, '2026-10-04T17:01:00Z'),
-          row({ id: 'never-joined-settled', status: 'completed' }),
           row({
             id: 'ended',
             status: 'completed',
             starts_at: '2026-10-04T09:00:00Z',
             door_closes_at: '2026-10-04T09:30:00Z',
           }),
-          row({ id: 'next', starts_at: '2026-10-04T19:00:00Z' }),
+          row({
+            id: 'next',
+            starts_at: '2026-10-04T19:00:00Z',
+            join_opens_at: '2026-10-04T18:55:00Z',
+          }),
         ],
         next_cursor: null,
       }),
@@ -114,6 +118,37 @@ describe('useUpcomingBookings', () => {
     ]);
   });
 
+  it('drops a session at its scheduled end on the clock, with no refetch', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW); // 17:20, inside the 17:00 to 17:30 call
+    get.mockResolvedValueOnce(
+      ok({
+        // Joined, so its door stays open until 17:30 + 45 min: no longer Upcoming's.
+        data: [
+          row({ id: 'running', door_closes_at: '2026-10-04T18:15:00Z' }, '2026-10-04T17:01:00Z'),
+          row({
+            id: 'later',
+            starts_at: '2026-10-04T19:00:00Z',
+            join_opens_at: '2026-10-04T18:55:00Z',
+          }),
+        ],
+        next_cursor: null,
+      }),
+    );
+    // The screens' own minute clock drives it, as on Bookings and both Homes.
+    const { result } = renderHook(
+      () => useUpcomingBookings('me', 'Africa/Lagos', true, undefined, useMinuteClock()),
+      { wrapper },
+    );
+    await waitFor(() => expect(result.current.data).not.toBeNull());
+    expect(result.current.data![0]!.id).toBe('running');
+    act(() => {
+      vi.advanceTimersByTime(10 * 60_000);
+    });
+    expect(result.current.data!.map((b) => b.id)).toEqual(['later']);
+    expect(get).toHaveBeenCalledTimes(1);
+  });
+
   it('drops a confirmed session past its scheduled end, keeps one still running', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(NOW); // 17:20 — the 17:00–17:30 session is still running
@@ -125,7 +160,11 @@ describe('useUpcomingBookings', () => {
           // Confirmed and still inside its scheduled time (17:00–17:30) — kept.
           row({ id: 'running' }),
           // Confirmed and upcoming — kept.
-          row({ id: 'later', starts_at: '2026-10-04T19:00:00Z' }),
+          row({
+            id: 'later',
+            starts_at: '2026-10-04T19:00:00Z',
+            join_opens_at: '2026-10-04T18:55:00Z',
+          }),
         ],
         next_cursor: null,
       }),

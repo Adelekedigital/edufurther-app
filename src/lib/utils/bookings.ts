@@ -7,6 +7,7 @@ import { formatTime } from '@/lib/utils/format';
 import { dayKey, hourIn } from '@/lib/utils/slots';
 import type { Booking, BookingStatus, BookingParty } from '@/types/booking';
 import { REMINDER_SENT } from '@/lib/copy/reminder';
+import { LIVE_NOW } from '@/lib/copy/session';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -173,25 +174,57 @@ export function joinState(b: Booking, now = new Date()): JoinState {
 }
 
 /**
- * Whether a session is still upcoming for the viewer, and so offers Join:
- * confirmed and before its scheduled end, or settled while still running with
- * the viewer's door open (Rejoin, backend #380). Join is never greyed out
- * (owner, 26 Oct): it opens the session's own page, which shows the
- * countdown, the lobby or the outcome for every phase. One rule for the
- * Upcoming list, the Bookings hero and panel, and both Home cards.
+ * Whether a session is still upcoming for the viewer: agreed to and before its
+ * scheduled end. Time only (owner, 25 Nov 2026): the backend rules a session
+ * completed or a no-show at `join_closes_at`, 15 minutes in, while the call can
+ * still be going, so the outcome must not end it early. At the scheduled end it
+ * leaves for everyone, people who joined too; their way back after that is the
+ * History row's Rejoin (`canRejoin`) and the session page.
+ *
+ * Join is never greyed out (owner, 26 Oct): it opens the session's own page,
+ * which shows the countdown, the lobby or the outcome for every phase.
  */
 export function isUpcoming(b: Booking, now = new Date()): boolean {
-  return (
-    (b.status === 'confirmed' && new Date(b.endsAt).getTime() > now.getTime()) ||
-    joinState(b, now) === 'open'
-  );
+  const agreed = b.status === 'confirmed' || b.status === 'completed' || b.status === 'noShow';
+  return agreed && new Date(b.endsAt).getTime() > now.getTime();
+}
+
+/**
+ * The Upcoming list on the page's clock, soonest first: its first row is the
+ * Next session card. The one selection rule for Bookings, Mentee Home and
+ * Mentor Home, applied to the fetched rows on every tick, so a session leaves
+ * at its scheduled end without a refetch.
+ *
+ * Back to back, the later session takes over once its join window opens, even
+ * before the earlier one's scheduled end: a person can only be in one call, and
+ * nothing tracks which one they joined (owner, 25 Nov 2026).
+ */
+export function upcomingOnClock(rows: readonly Booking[], now = new Date()): Booking[] {
+  const t = now.getTime();
+  const live = rows
+    .filter((b) => isUpcoming(b, now))
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+  let from = 0;
+  live.forEach((b, i) => {
+    if (b.joinOpensAt && new Date(b.joinOpensAt).getTime() <= t) from = i;
+  });
+  return live.slice(from);
+}
+
+/**
+ * A History row's Rejoin: past its scheduled end, with the viewer's door still
+ * open (they joined, and `door_closes_at` is ahead). Read on the page's clock,
+ * so the button goes when the door closes.
+ */
+export function canRejoin(b: Booking, now = new Date()): boolean {
+  return new Date(b.endsAt).getTime() <= now.getTime() && joinState(b, now) === 'open';
 }
 
 /**
  * The hero's when-pill: how far off the next session is, in the design's own
  * vocabulary (Bookings.dc.html `nextIn`), but computed rather than picked from
- * a tweak. Green and a filled dot once it is running — that is the one state
- * where the person should already be somewhere else.
+ * a tweak. Green and a filled dot once it is running: the one state where the
+ * person should already be somewhere else.
  */
 export function nextSessionWhen(
   b: Booking,
@@ -199,10 +232,9 @@ export function nextSessionWhen(
   timeZone = 'UTC',
 ): { label: string; icon: 'event' | 'schedule' | 'radio_button_checked'; live: boolean } {
   const ms = new Date(b.startsAt).getTime() - now.getTime();
-  if (ms <= 0) {
-    const mins = Math.max(1, Math.round(-ms / MINUTE));
-    return { label: `Started ${mins} min ago`, icon: 'radio_button_checked', live: true };
-  }
+  // From the start to the scheduled end, never minutes counting up: "Started
+  // 75 min ago" read as a session long over (owner, 25 Nov 2026).
+  if (ms <= 0) return { label: LIVE_NOW, icon: 'radio_button_checked', live: true };
   if (ms < HOUR)
     return {
       label: `Starts in ${Math.max(1, Math.round(ms / MINUTE))} min`,

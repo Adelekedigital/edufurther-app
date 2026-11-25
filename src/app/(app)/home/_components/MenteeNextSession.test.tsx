@@ -159,7 +159,19 @@ describe('MenteeNextSession', () => {
       '/sessions/b1',
     );
     expect(screen.queryByText('View details')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Started 30 min ago/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Live now')).not.toBeInTheDocument();
+  });
+
+  it('says Live now from the start, never minutes counting up', () => {
+    const b = booking({
+      startsAt: at(-10),
+      endsAt: at(35),
+      joinOpensAt: at(-15),
+      joinClosesAt: at(5),
+    });
+    render(<MenteeNextSession booking={b} timeZone="Africa/Lagos" now={NOW} />);
+    expect(screen.getByText('Live now')).toBeInTheDocument();
+    expect(screen.queryByText(/min ago/)).not.toBeInTheDocument();
   });
 
   it('gives the full date to assistive tech (the chip is decorative)', () => {

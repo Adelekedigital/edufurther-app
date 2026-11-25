@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
@@ -17,6 +17,7 @@ import { DASHBOARD_SUBLINE, HERO_COPY } from '@/lib/copy/dashboard';
 import { MENTOR_SHARE_COPY } from '@/lib/copy/mentorShare';
 import { inSentence, viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
+import { useMinuteClock } from '@/lib/utils/useMinuteClock';
 import { useCopyText } from '@/lib/utils/useCopyText';
 import type { Viewer } from '@/types/mentor';
 import { ApprovedToast } from './ApprovedToast';
@@ -128,18 +129,13 @@ function MentorHome({ member }: { member: Member }) {
   // A broken Google grant is costing them bookings right now, so Home says so
   // too rather than leaving it on Integrations, a page they rarely open.
   const reconnect = useCalendarReconnect(member.id, say);
-  const dash = useMentorDashboard(member, accountZone, shared);
+  // A minute tick, as on the mentee Home: the next session is chosen on it, so
+  // one past its scheduled end leaves the card without a refetch.
+  const now = useMinuteClock();
+  const dash = useMentorDashboard(member, accountZone, shared, now);
   // Paused or unlisted, for a not-ready mentor with nothing left to set up
   // (the reconnect banner reads the same query, so no second request).
   const status = useMentorStatus(member.id);
-  // A minute tick, as on the mentee Home: without it `now` is frozen at the
-  // last render, so the next-session card never turns to Join on its own.
-  const [clock, setClock] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setClock(Date.now()), 60_000);
-    return () => clearInterval(t);
-  }, []);
-  const now = useMemo(() => new Date(clock), [clock]);
   const weekMoves = useWeekMoves(member.id, accountZone, now);
 
   // A copy or share from anywhere (the share modal, the setup banner, the Share

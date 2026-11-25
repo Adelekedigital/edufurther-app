@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ApiError } from '@/lib/api/data/errors';
 import type { Booking } from '@/types/booking';
@@ -209,6 +209,10 @@ describe('Upcoming', () => {
       'href',
       '/sessions/live',
     );
+    // Started 3 min ago: the pill says Live now, never a count of minutes.
+    const hero = screen.getByRole('region', { name: 'Next session' });
+    expect(within(hero).getByText('Live now')).toBeVisible();
+    expect(within(hero).queryByText(/min ago/)).not.toBeInTheDocument();
   });
 
   it('a session past its end offers no Join at all', () => {
@@ -381,6 +385,39 @@ describe('History', () => {
     h.viewer = MEMBER;
     render(<BookingsScreen />);
     expect(screen.queryByRole('button', { name: 'Book again' })).not.toBeInTheDocument();
+  });
+
+  it('Rejoin shows on a joined session past its end while the door is open, then goes on the clock', () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW);
+    const ended = {
+      status: 'completed' as const,
+      startsAt: at(-1),
+      endsAt: at(-0.1),
+      joinOpensAt: at(-1.1),
+      joinClosesAt: at(-0.75),
+      doorClosesAt: at(0.2),
+    };
+    h.history = hist({
+      bookings: [
+        booking({ id: 'rj', ...ended, myJoinedAt: at(-0.9) }),
+        booking({ id: 'never', ...ended, title: 'Visa practice', myJoinedAt: null }),
+      ],
+    });
+    render(<BookingsScreen />);
+    const rejoin = screen.getByRole('link', {
+      name: 'Rejoin School shortlist session with Amara Okafor',
+    });
+    expect(rejoin).toHaveAttribute('href', '/sessions/rj');
+    expect(rejoin).toHaveTextContent('Rejoin');
+    // The row keeps its outcome; no second Rejoin for the one never joined.
+    expect(screen.getAllByText('Completed').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: /^Rejoin/ })).toHaveLength(1);
+    // The door closes at +12 min: the page's minute clock takes Rejoin away.
+    act(() => {
+      vi.advanceTimersByTime(13 * 60_000);
+    });
+    expect(screen.queryByRole('link', { name: /^Rejoin/ })).not.toBeInTheDocument();
   });
 
   it('asks the server for another page when the reveal runs past what is loaded', async () => {

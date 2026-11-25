@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Chip } from '@/components/atoms/Chip/Chip';
 import { LiveRegion } from '@/components/atoms/LiveRegion/LiveRegion';
 import { Tabs, type TabItem } from '@/components/atoms/Tabs/Tabs';
@@ -21,11 +21,12 @@ import { useBookingAnswers } from '@/lib/api/data/sessionAnswers';
 import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
 import { BOOKINGS_COPY } from '@/lib/copy/bookings';
-import { MOVE_COPY } from '@/lib/copy/session';
+import { MOVE_COPY, REJOIN_COPY } from '@/lib/copy/session';
 import { formatTime, viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useHydrated } from '@/lib/utils/useHydrated';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
+import { useMinuteClock } from '@/lib/utils/useMinuteClock';
 import { FOCUSABLE } from '@/lib/utils/useFocusTrap';
 import type { AnswerFile, Booking, BookingStatus } from '@/types/booking';
 import { canBookFor } from '@/app/_shell/bookBlocked';
@@ -33,7 +34,7 @@ import { BOOKINGS_GATE, lockedPageGate, memberGate } from '@/app/_shell/MentorGa
 import { cx } from '@/lib/utils/cx';
 import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { useAppShell } from '@/app/_shell/useAppShell';
-import { Button } from '@/components/atoms/Button/Button';
+import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { SendMessageLauncher } from '@/app/_shell/SendMessageLauncher';
 import { MESSAGES_LIVE } from '@/lib/config/messages';
 import { MESSAGE_BUTTON_COPY } from '@/lib/copy/messages';
@@ -44,6 +45,7 @@ import { useCancelMove } from '@/app/_sessions/useCancelMove';
 import {
   bookingHeading,
   canAccept,
+  canRejoin,
   canWithdraw,
   fullDate,
   HISTORY_FILTERS,
@@ -90,14 +92,9 @@ export function BookingsScreen() {
 
   // A minute is enough for every deadline on this page, and keeps "Starts in
   // 8 min" honest. Without it, Join never enables for someone already looking
-  // at the page, and a lapsing request keeps its countdown (BookingFlow's
-  // useTimeChoice does the same).
-  const [clock, setClock] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setClock(Date.now()), 60_000);
-    return () => clearInterval(t);
-  }, []);
-  const now = useMemo(() => new Date(clock), [clock]);
+  // at the page, and a lapsing request keeps its countdown. The Upcoming list
+  // and its card are chosen on it too, so a session leaves at its end.
+  const now = useMinuteClock();
 
   // Read after hydration: the server renders in UTC (E2E issue 574).
   const deviceZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
@@ -119,6 +116,8 @@ export function BookingsScreen() {
     fetchAs,
     accountZone,
     tab === 'upcoming' || tab === 'pending',
+    undefined,
+    now,
   );
   const pending = usePendingBookings(fetchAs, tab === 'pending');
   const history = useBookingHistory(fetchAs, filters, tab === 'history');
@@ -494,6 +493,45 @@ export function BookingsScreen() {
   // countdown, who is here and the join call itself live.
   const joinHref = (sessionId: string) => `/sessions/${encodeURIComponent(sessionId)}`;
 
+  /** A History row's own controls, besides Rejoin. */
+  const pastActions = (b: Booking) => {
+    // A mentor's past sessions: "Message". A mentee's carry
+    // Leave a review or Book again instead (PRD Q13).
+    if (b.side === 'mentor') return messageButton(b);
+    // Only a completed session this viewer booked. While it's
+    // unknown whether it can be reviewed, offer neither (see
+    // `reviewUnknown`).
+    if (b.side !== 'mentee' || b.status !== 'completed' || reviewUnknown) return null;
+    const session = reviewableFor(b);
+    if (!session && !rr.canRebook(b)) return null;
+    // Beside Leave a review until reviewed, so a mentee who
+    // never reviews still has it (founder, Oct 25); then alone.
+    // The same element either way, so it keeps focus.
+    return (
+      <>
+        {session && (
+          <Button
+            variant="secondary-outlined"
+            size="small"
+            onClick={() => rr.openReview(b, session)}
+          >
+            Leave a review
+          </Button>
+        )}
+        {rr.canRebook(b) && (
+          <Button
+            id={bookAgainId(b.id)}
+            variant={session ? 'text' : 'secondary-outlined'}
+            size="small"
+            onClick={() => rr.bookAgain(b)}
+          >
+            Book again
+          </Button>
+        )}
+      </>
+    );
+  };
+
   // The shared gates first, then the setup lock (accessFor decides).
   const gate = memberGate(viewer, '/bookings', BOOKINGS_GATE) ?? lockedPageGate(access, 'Bookings');
   // Upcoming's first row is the hero; the list holds the rest.
@@ -622,42 +660,27 @@ export function BookingsScreen() {
                   loadMoreError={history.loadMoreError}
                   isLoadingMore={history.isLoadingMore}
                   actionsFor={(b) => {
-                    // A mentor's past sessions: "Message". A mentee's carry
-                    // Leave a review or Book again instead (PRD Q13).
-                    if (b.side === 'mentor') return messageButton(b);
-                    // Only a completed session this viewer booked. While it's
-                    // unknown whether it can be reviewed, offer neither (see
-                    // `reviewUnknown`).
-                    if (b.side !== 'mentee' || b.status !== 'completed' || reviewUnknown)
-                      return null;
-                    const session = reviewableFor(b);
-                    if (!session && !rr.canRebook(b)) return null;
-                    // Beside Leave a review until reviewed, so a mentee who
-                    // never reviews still has it (founder, Oct 25); then alone.
-                    // The same element either way, so it keeps focus.
-                    return (
-                      <>
-                        {session && (
-                          <Button
-                            variant="secondary-outlined"
-                            size="small"
-                            onClick={() => rr.openReview(b, session)}
-                          >
-                            Leave a review
-                          </Button>
-                        )}
-                        {rr.canRebook(b) && (
-                          <Button
-                            id={bookAgainId(b.id)}
-                            variant={session ? 'text' : 'secondary-outlined'}
-                            size="small"
-                            onClick={() => rr.bookAgain(b)}
-                          >
-                            Book again
-                          </Button>
-                        )}
-                      </>
+                    // First in the rail while the viewer's door is open after
+                    // the scheduled end: the session left Upcoming, and this
+                    // is their way back (owner, 25 Nov 2026).
+                    const rejoin = canRejoin(b, now) && (
+                      <ButtonLink
+                        href={joinHref(b.id)}
+                        prefetch={false}
+                        variant="secondary-outlined"
+                        size="small"
+                        aria-label={REJOIN_COPY.named(bookingHeading(b))}
+                      >
+                        {REJOIN_COPY.label}
+                      </ButtonLink>
                     );
+                    const rest = pastActions(b);
+                    return rejoin || rest ? (
+                      <>
+                        {rejoin}
+                        {rest}
+                      </>
+                    ) : null;
                   }}
                 />
               </TabPanel>
