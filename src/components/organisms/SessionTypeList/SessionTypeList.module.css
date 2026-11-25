@@ -132,3 +132,13 @@
     flex: none;
   }
 }
+
+/* Phones: the cards stack in one column, so they fill it like every other
+   tab's content (the 360px cap left a gap on wide phones, 400–430px). Two
+   columns never reach the cap below 768px, so lifting it changes only that. */
+@media (max-width: 767px) {
+  .card,
+  .newItem {
+    max-width: none;
+  }
+}
