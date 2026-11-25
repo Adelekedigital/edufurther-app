@@ -55,3 +55,15 @@ describe('LegacySessionRedirect', () => {
     expect(retry).toHaveBeenCalled();
   });
 });
+
+describe('LegacySessionRedirect signed out', () => {
+  it('the session lapsed after the proxy: to log in, then back to this link', () => {
+    h.found = remote({ error: err('unauthorized') });
+    render(<LegacySessionRedirect legacyId="1794911874439x785277113719766700" />);
+    expect(h.replace).toHaveBeenCalledWith(
+      '/login?next=%2Fprofile%3FsessId%3D1794911874439x785277113719766700',
+    );
+    // Never the retry error page, and never stuck on "opening" with no way out.
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+  });
+});

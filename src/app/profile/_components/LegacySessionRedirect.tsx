@@ -6,6 +6,7 @@ import { Button, ButtonLink } from '@/components/atoms/Button/Button';
 import { EmptyState } from '@/components/molecules/EmptyState/EmptyState';
 import { Skeleton } from '@/components/atoms/Skeleton/Skeleton';
 import { useLegacySession } from '@/lib/api/data/legacySession';
+import { loginPathFor } from '@/lib/utils/loginRequired';
 import styles from './LegacySessionRedirect.module.css';
 
 /** Looks an old app session id up and opens this app's session page. */
@@ -14,9 +15,13 @@ export function LegacySessionRedirect({ legacyId }: { legacyId: string }) {
   const found = useLegacySession(legacyId);
   const id = found.data;
 
+  const signedOut = found.error?.kind === 'unauthorized';
   useEffect(() => {
     if (id) router.replace(`/sessions/${encodeURIComponent(id)}`);
-  }, [id, router]);
+    // Log in, then back to this link, which looks the session up again.
+    else if (signedOut)
+      router.replace(loginPathFor('/profile', `?sessId=${encodeURIComponent(legacyId)}`));
+  }, [id, signedOut, legacyId, router]);
 
   // A 404 is the same for an unknown id and for someone else's session.
   if (found.error?.kind === 'notFound')
@@ -31,7 +36,7 @@ export function LegacySessionRedirect({ legacyId }: { legacyId: string }) {
         />
       </main>
     );
-  if (found.error)
+  if (found.error && !signedOut)
     return (
       <main className={styles.page}>
         <EmptyState

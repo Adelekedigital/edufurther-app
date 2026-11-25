@@ -30,10 +30,17 @@ export function useLegacySession(legacyId: string | null): Remote<string> {
     staleTime: Infinity,
     retry: false,
   });
+  // Signed out here (the session lapsed after the proxy let the page through):
+  // say so, so the page can send them to log in rather than wait forever.
+  const signedOut = session.status === 'none';
   return {
     data: query.data ?? null,
     isLoading: enabled ? query.isPending : session.status === 'unknown',
-    error: query.error ? normaliseError(query.error) : null,
+    error: signedOut
+      ? { kind: 'unauthorized', message: 'Log in to open this session.' }
+      : query.error
+        ? normaliseError(query.error)
+        : null,
     retry: () => void query.refetch(),
   };
 }
