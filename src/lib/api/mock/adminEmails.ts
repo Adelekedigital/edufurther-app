@@ -270,9 +270,27 @@ export const MOCK_EMAILS: MockEmail[] = [
       trigger: 'An admin adds credits',
       recipients: ['mentee'],
       values: ['recipientName', 'recipientFirstName'],
-      variants: one(
-        L('Your session credits are here', 'You have credits to book a session', 'Find a mentor'),
-      ),
+      // The API names the default variant after the email; invite_next is PR 742 (decision 370).
+      variants: [
+        {
+          id: 'default',
+          label: 'Credits granted',
+          lines: L(
+            'Your session credits are here',
+            'You have credits to book a session',
+            'Find a mentor',
+          ),
+        },
+        {
+          id: 'invite_next',
+          label: 'An invite would add a credit',
+          lines: L(
+            'You earned more session credits',
+            'Invite a friend to earn more credits every month',
+            'Invite a friend',
+          ),
+        },
+      ],
       last_edited: { admin_name: 'Chidi Eze', at: daysAgo(12) },
     },
     {
@@ -281,13 +299,26 @@ export const MOCK_EMAILS: MockEmail[] = [
       trigger: 'Monthly credits renew on the 1st',
       recipients: ['mentee'],
       values: ['recipientName', 'recipientFirstName', 'creditCount'],
-      variants: one(
-        L(
-          'Your credits for this month are ready',
-          'You have new credits this month',
-          'Find a mentor',
-        ),
-      ),
+      variants: [
+        {
+          id: 'default',
+          label: 'Credits renewed',
+          lines: L(
+            'Your credits for this month are ready',
+            'You have new credits this month',
+            'Find a mentor',
+          ),
+        },
+        {
+          id: 'invite_next',
+          label: 'An invite would add a credit',
+          lines: L(
+            'Your credits for this month are ready',
+            'Invite a friend to earn more credits every month',
+            'Invite a friend',
+          ),
+        },
+      ],
     },
     {
       key: 'credits_expiring',
