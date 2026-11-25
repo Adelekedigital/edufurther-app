@@ -16,7 +16,8 @@ import {
   type SessionPhase,
 } from '@/lib/utils/sessionPhase';
 import { refundWindowFor } from '@/lib/utils/bookings';
-import { LIVE_NOW, LOBBY_COPY, PREP_COPY } from '@/lib/copy/session';
+import { LOBBY_COPY, PREP_COPY } from '@/lib/copy/session';
+import { LIVE_NOW } from '@/lib/copy/sessionLive';
 import { joinedTime, presenceOf } from '@/lib/utils/presence';
 import { missedTone, missedWaitMin } from '@/lib/utils/sessionOutcome';
 import type { BookingParty, SessionRoom } from '@/types/booking';

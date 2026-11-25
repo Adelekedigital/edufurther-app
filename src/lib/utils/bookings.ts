@@ -7,7 +7,7 @@ import { formatTime } from '@/lib/utils/format';
 import { dayKey, hourIn } from '@/lib/utils/slots';
 import type { Booking, BookingStatus, BookingParty } from '@/types/booking';
 import { REMINDER_SENT } from '@/lib/copy/reminder';
-import { LIVE_NOW } from '@/lib/copy/session';
+import { LIVE_NOW } from '@/lib/copy/sessionLive';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
