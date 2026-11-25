@@ -190,6 +190,8 @@ export const SHARED_ROUTES: readonly string[] = [
   '/login',
   '/signup',
   '/invite',
+  // Old app profile links: they only redirect to /mentors.
+  '/profile',
   // Any role may be a platform admin; the admin layout lets only admins in.
   '/admin',
 ];

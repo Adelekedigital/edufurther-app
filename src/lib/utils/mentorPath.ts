@@ -43,3 +43,21 @@ export function withProfileVia(url: string, via: ProfileVia): string {
     return url;
   }
 }
+
+/**
+ * A legacy Bubble id (`1726837410805x205680694778626500`), a User's or a
+ * mentor record's. Old app links carry it (`/profile/{id}`); the API resolves
+ * it as a mentor handle (backend, 2026-11-25), and never mints a slug of this
+ * shape, so the two can't collide.
+ */
+const LEGACY_ID = /^\d{6,20}x\d{6,24}$/;
+export const isLegacyId = (handle: string) => LEGACY_ID.test(handle);
+
+/** A request's own query (?book=, ?tab=, …) as `?a=1&b=2`, repeated keys kept; '' when empty. */
+export function queryString(q: Record<string, string | string[] | undefined>): string {
+  const out = new URLSearchParams();
+  for (const [k, v] of Object.entries(q))
+    for (const one of Array.isArray(v) ? v : v === undefined ? [] : [v]) out.append(k, one);
+  const s = out.toString();
+  return s ? `?${s}` : '';
+}

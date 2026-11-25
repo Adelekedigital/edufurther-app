@@ -9,6 +9,8 @@ const PUBLIC_PAGES = new Set([
   '/',
   '/explore',
   '/mentors/[handle]',
+  // Old app profile links: they only redirect to /mentors.
+  '/profile/[id]',
   '/invite/[code]',
   '/login',
   '/signup',

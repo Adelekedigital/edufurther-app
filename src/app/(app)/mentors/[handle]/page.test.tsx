@@ -54,6 +54,21 @@ describe('/mentors/[handle]', () => {
     await expect(open(ID)).rejects.toMatchObject({ to: '/mentors/gbenga-e' });
   });
 
+  it('a legacy app id (old /profile links): looked up and 308 to the slug link', async () => {
+    const legacy = '1726837410805x205680694778626500';
+    h.lookup.mockResolvedValue(MENTOR);
+    await expect(open(legacy, { via: 'copy' })).rejects.toMatchObject({
+      to: '/mentors/gbenga-e?via=copy',
+    });
+    expect(h.lookup).toHaveBeenCalledWith(legacy, '');
+  });
+
+  it('a legacy id the API does not know renders the screen (it says the profile is unavailable)', async () => {
+    h.lookup.mockResolvedValue(null);
+    expect(await open('1726837410805x205680694778626500')).toBeTruthy();
+    expect(h.permanentRedirect).not.toHaveBeenCalled();
+  });
+
   it('a slug link renders and is never looked up again (no loop)', async () => {
     expect(await open('gbenga-e', { book: 't-1' })).toBeTruthy();
     expect(h.lookup).not.toHaveBeenCalled();
