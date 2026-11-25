@@ -3,6 +3,7 @@ import { withSentryConfig } from '@sentry/nextjs/config';
 import { backendOrigin, proxySecret } from './src/lib/backend';
 import { posthogHosts } from './src/lib/posthogHost';
 import { PWA_HEADERS, SECURITY_HEADERS } from './src/lib/securityHeaders';
+import { LEGACY_REDIRECTS } from './src/lib/config/legacyRedirects';
 
 /**
  * Same-origin API proxy (product, 2026-09-27; ADR 0003). The browser calls
@@ -42,6 +43,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [...SECURITY_HEADERS, ...PWA_HEADERS];
+  },
+  // The old app's addresses (sign-up buttons on the marketing site among them).
+  async redirects() {
+    return LEGACY_REDIRECTS;
   },
   // PostHog's endpoints end in a slash (`/ingest/e/`); Next's redirect would
   // drop it. src/proxy.ts makes that redirect itself for every other page.
