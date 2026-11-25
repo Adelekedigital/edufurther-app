@@ -1,9 +1,10 @@
 /**
  * A mentee's credits as the shell shows them (AppShell.dc.html "Credits
  * (mentee)", creditStyle=green), on the credit levels (backend decision 308,
- * edufurtherbe #571, #574, #575): a month pays the mentee's level (1 for a
- * finished profile, 2 once their first invited friend finishes theirs, 3 once
- * they have also attended a session), and the 1st resets the balance to it.
+ * edufurtherbe #571, #574, #575; amended by decision 370): a month pays the
+ * mentee's level (1 for a finished profile, +1 for a session attended, +1 once
+ * an invited friend finishes theirs, in any order), and the 1st resets the
+ * balance to it.
  * Pure: no data fetching here.
  *
  * The pill, titles and low/out states read the total (`left`): it's what can
@@ -43,12 +44,14 @@ export type CreditsView = {
    */
   resetsOn: string | null;
   /**
-   * The step reached (decision 308, `monthly.level`, edufurtherbe #576): 0
-   * not onboarded, 1 profile, 2 + first friend, 3 + a session. Ticks the
-   * card's ladder. Not `ceiling`: that is what the month pays, which only
-   * matches the step on the default 1/2/3 ladder.
+   * The step reached (`monthly.level`, edufurtherbe #576): 0 not onboarded,
+   * then +1 each for the profile, a session and a friend (decision 370). The
+   * card ticks the profile from it and reads 3 as all three. Not `ceiling`:
+   * that is what the month pays, which only matches on the default ladder.
    */
   level: number;
+  /** What the month pays (`monthly.ceiling`): "You get 2 credits a month". */
+  ceiling?: number;
 };
 
 /** `expires` with no `expiresOn`: a date that couldn't be read. Never "never". */
@@ -97,6 +100,7 @@ export function creditsView(
     showMonthly,
     resetsOn: showMonthly ? resetsOnFor(c.nextResetAt, now) : null,
     level,
+    ceiling: c.monthly.ceiling,
   };
 }
 
@@ -239,10 +243,10 @@ export function summarySub(v: CreditsView): string | null {
 
 /**
  * "How credits work" in the explainer (design howList). The credit levels,
- * backend decision 308 (edufurtherbe #571, #574, #575; owner 2026-11-05): a month
- * pays the mentee's level (1 for a finished profile, 2 once their first
- * invited friend finishes theirs, 3 once they have also attended a session),
- * the 1st resets every balance to it and nothing carries over, and a level
+ * backend decision 308 (edufurtherbe #571, #574, #575; owner 2026-11-05), as
+ * amended by 370: a month pays the mentee's level (1 for a finished profile,
+ * +1 for a session attended, +1 once their first invited friend finishes
+ * theirs, in any order), the 1st resets every balance to it and nothing carries over, and a level
  * reached mid-month tops up the difference. The terms are the card's own row
  * names, Monthly and Bonus (support grants only), so a mentee can match the
  * rules to what they see. No credit "never expires".
@@ -254,22 +258,6 @@ export const HOW_CREDITS_WORK = [
   'Finish a step during the month and we add the extra credits right away.',
   'Bonus credits are ones our team adds. They also end on the 1st.',
 ] as const;
-
-/**
- * "Your monthly credits" in the card (owner, 2026-11-06: one pattern for
- * every mentee, whatever their step): the three steps of decision 308, each
- * with what it pays, ticked up to the mentee's level. Same list in setup
- * (nothing ticked) and at 3 (all ticked), so it always says why.
- */
-export const CREDIT_STEPS_LABEL = 'Your monthly credits';
-export type CreditStep = { key: string; label: string; value: string; done: boolean };
-export function creditSteps(v: CreditsView): CreditStep[] {
-  return [
-    { key: 'profile', label: 'Finish your profile', value: '1 a month' },
-    { key: 'friend', label: 'A friend you invited finishes their profile', value: '2 a month' },
-    { key: 'session', label: 'Attend a session too', value: '3 a month' },
-  ].map((s, i) => ({ ...s, done: v.level >= i + 1 }));
-}
 
 /**
  * The pill's name. It starts with the words the pill shows ("4 credits"), so a

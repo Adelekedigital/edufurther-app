@@ -4,6 +4,13 @@ import type { Viewer } from '@/types/mentor';
 
 const h = vi.hoisted(() => ({ viewer: { kind: 'guest' } as Viewer }));
 vi.mock('next/navigation', () => ({ usePathname: () => '/admin/mentors' }));
+vi.mock('./useCreditLadder', () => ({
+  useCreditLadder: () => ({
+    progress: { attended: null, friendJoined: null },
+    onOpen: () => {},
+    host: null,
+  }),
+}));
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/messages', () => ({ useUnreadTotal: () => null }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => h.viewer }));

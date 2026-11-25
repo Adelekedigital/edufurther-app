@@ -13,9 +13,9 @@ import {
   resetDay,
   summarySub,
   HOW_CREDITS_WORK,
-  creditSteps,
   type CreditsView,
 } from './credits';
+import { creditSteps, CREDIT_STEPS_LABEL, ladderComplete, ladderStatus } from './creditLadder';
 
 const api = (o: {
   balance?: number;
@@ -52,6 +52,7 @@ describe('creditsView (decision 308: the level, and support credits as bonus)', 
       bonus: [{ count: 1, expires: false, expiresOn: null }],
       showMonthly: true,
       level: 3,
+      ceiling: 3,
       resetsOn: 'Nov 1',
     });
     expect(creditsView(null)).toBeNull();
@@ -285,21 +286,111 @@ describe('the account menu line and "How credits work"', () => {
   });
 });
 
-describe('"Your monthly credits" (decision 308 steps)', () => {
-  const at = (level: number) =>
-    creditSteps({
-      ...creditsView({
-        balance: 0,
-        monthly: { balance: 0, ceiling: level, expiresAt: null, unlocked: level === 3 },
-        bonus: { balance: 0, groups: [] },
-      })!,
+describe('the monthly ladder (decision 370: each step +1, any order)', () => {
+  const lv = (level: number, ceiling = level) =>
+    creditsView({
+      balance: 0,
+      monthly: { balance: 0, ceiling, level, expiresAt: null, unlocked: level === 3 },
+      bonus: { balance: 0, groups: [] },
+    })!;
+  const p = (attended: boolean | null, friendJoined: boolean | null) => ({
+    attended,
+    friendJoined,
+  });
+  const ticks = (level: number, a: boolean | null, f: boolean | null) =>
+    creditSteps(lv(level), p(a, f)).map((s) => s.done);
+  const status = (level: number, a: boolean | null, f: boolean | null, ceiling = level) => {
+    const v = lv(level, ceiling);
+    return ladderStatus(v, creditSteps(v, p(a, f)), p(a, f));
+  };
+
+  it('three rows, each +1, in the design’s order', () => {
+    const steps = creditSteps(lv(1), p(false, false));
+    expect(steps.map((s) => [s.label, s.value])).toEqual([
+      ['Finish your profile', '+1'],
+      ['Attend a session', '+1'],
+      ['A friend joins', '+1'],
+    ]);
+    expect(CREDIT_STEPS_LABEL).toBe('Earn up to 3 credits a month');
+  });
+  it('each row ticks on its own: attended without a friend, and the reverse', () => {
+    expect(ticks(1, false, false)).toEqual([true, false, false]);
+    expect(ticks(2, true, false)).toEqual([true, true, false]);
+    expect(ticks(2, false, true)).toEqual([true, false, true]);
+    expect(ticks(3, true, true)).toEqual([true, true, true]);
+    expect(ticks(0, false, false)).toEqual([false, false, false]);
+  });
+  it('the friend’s subtext shows only while that step isn’t done', () => {
+    const sub = (f: boolean | null) => creditSteps(lv(2), p(true, f))[2]!.sub;
+    expect(sub(false)).toBe('Invite a friend. It counts once they finish their profile.');
+    expect(sub(null)).toBe('Invite a friend. It counts once they finish their profile.');
+    expect(sub(true)).toBeUndefined();
+    expect(
+      creditSteps(lv(2), p(true, false))
+        .slice(0, 2)
+        .every((s) => !s.sub),
+    ).toBe(true);
+  });
+  it('unknown reads tick nothing below level 3; level 3 means all three', () => {
+    expect(ticks(2, null, null)).toEqual([true, false, false]);
+    expect(ticks(3, null, null)).toEqual([true, true, true]);
+    expect(ladderComplete(lv(3), creditSteps(lv(3)))).toBe(true);
+  });
+  it('the status line per level and tick combination, worded "invite"', () => {
+    expect(status(1, false, false)).toEqual({
+      head: 'You get 1 credit a month.',
+      next: 'Attend a session or invite a friend to get 2.',
     });
-  it('always three steps with what each pays; ticked up to the level', () => {
-    expect(at(0).map((s) => s.done)).toEqual([false, false, false]);
-    expect(at(1).map((s) => s.done)).toEqual([true, false, false]);
-    expect(at(2).map((s) => s.done)).toEqual([true, true, false]);
-    expect(at(3).map((s) => s.done)).toEqual([true, true, true]);
-    expect(at(3).map((s) => s.value)).toEqual(['1 a month', '2 a month', '3 a month']);
+    expect(status(2, true, false)).toEqual({
+      head: 'You get 2 credits a month.',
+      next: 'Invite a friend to get 3.',
+    });
+    expect(status(2, false, true)).toEqual({
+      head: 'You get 2 credits a month.',
+      next: 'Attend a session to get 3.',
+    });
+    expect(status(3, true, true)).toBeNull();
+    expect(status(0, false, false)).toBeNull();
+    for (const s of [status(1, false, false), status(2, true, false)])
+      expect(s?.next).not.toMatch(/\badd\b/i);
+  });
+  it('while a read is unknown: the number from /me, no next step yet', () => {
+    expect(status(1, null, false)).toEqual({ head: 'You get 1 credit a month.', next: null });
+    expect(status(2, true, null)).toEqual({ head: 'You get 2 credits a month.', next: null });
+  });
+  it('/me disagreeing with the ticks: /me’s number, next step from what isn’t ticked', () => {
+    // The old ladder: attended, no friend, still level 1.
+    expect(status(1, true, false)).toEqual({
+      head: 'You get 1 credit a month.',
+      next: 'Invite a friend to get 2.',
+    });
+    // Everything ticked but /me pays 2: the list stays, no collapsed line, no next step.
+    const v = lv(2);
+    const steps = creditSteps(v, p(true, true));
+    expect(ladderComplete(v, steps)).toBe(false);
+    expect(status(2, true, true)).toEqual({ head: 'You get 2 credits a month.', next: null });
+    // Level 3 with a read saying otherwise: never ticked, never collapsed.
+    expect(ticks(3, false, true)).toEqual([true, false, true]);
+    expect(ladderComplete(lv(3), creditSteps(lv(3), p(false, true)))).toBe(false);
+    expect(status(3, false, true)).toEqual({ head: 'You get 3 credits a month.', next: null });
+  });
+  it('"You get" is what the month pays (the ceiling), not the step', () => {
+    expect(status(1, false, false, 2)?.head).toBe('You get 2 credits a month.');
+  });
+  it('no Bonus row at 0 bonus credits; one when there are some', () => {
+    expect(creditRows(lv(1)).map((r) => r.kind)).toEqual(['monthly']);
+    const zero = creditsView({
+      balance: 1,
+      monthly: { balance: 1, ceiling: 1, level: 1, expiresAt: null, unlocked: false },
+      bonus: { balance: 0, groups: [{ count: 0, expiresAt: null }] },
+    })!;
+    expect(creditRows(zero).map((r) => r.kind)).toEqual(['monthly']);
+    const some = creditsView({
+      balance: 3,
+      monthly: { balance: 1, ceiling: 1, level: 1, expiresAt: null, unlocked: false },
+      bonus: { balance: 2, groups: [{ count: 2, expiresAt: null }] },
+    })!;
+    expect(creditRows(some).map((r) => r.kind)).toEqual(['monthly', 'bonus']);
   });
   it('the level is the ceiling, 0 only in setup, never above 3', () => {
     const v = (ceiling: number) =>

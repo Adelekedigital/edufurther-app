@@ -3,6 +3,13 @@ import type { AccountMenuItem } from '@/components/molecules/AccountMenu/Account
 
 const signOut = vi.fn();
 let unsaved = false;
+vi.mock('./useCreditLadder', () => ({
+  useCreditLadder: () => ({
+    progress: { attended: null, friendJoined: null },
+    onOpen: () => {},
+    host: null,
+  }),
+}));
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => signOut }));
 vi.mock('@/lib/api/data/messages', () => ({ useUnreadTotal: () => null }));
 vi.mock('@/lib/utils/leaveGuard', () => ({ hasUnsavedChanges: () => unsaved }));

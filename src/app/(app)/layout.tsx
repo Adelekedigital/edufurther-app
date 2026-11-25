@@ -99,6 +99,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
     onPreview,
     member,
     previewing,
+    creditLadderHost,
   } = useAppShell(whatsNew.menuItem);
   const online = useOnline();
   // A phone browser that can install (lib/pwa/installPrompt): More's last item.
@@ -120,6 +121,7 @@ export default function AppGroupLayout({ children }: { children: ReactNode }) {
       offline={!online}
     >
       <RoleRedirect>{children}</RoleRedirect>
+      {creditLadderHost}
       {WHATS_NEW_LIVE && chrome === 'member' && (
         <WhatsNewHost
           member={member}
