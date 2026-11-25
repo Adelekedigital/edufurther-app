@@ -22,12 +22,17 @@ describe('loginRequired: which pages a signed-out visitor is sent to log in for'
     expect(loginRequired(path)).toBe(true);
   });
 
-  it.each(['/', '/explore', '/mentors/ada-l', '/invite/damilola-7k2x', '/login', '/signup'])(
-    '%s: open to guests (owner, 2026-11-12)',
-    (path) => {
-      expect(loginRequired(path)).toBe(false);
-    },
-  );
+  it.each([
+    '/',
+    '/explore',
+    '/mentors/ada-l',
+    '/profile/1726837410805x205680694778626500',
+    '/invite/damilola-7k2x',
+    '/login',
+    '/signup',
+  ])('%s: open to guests (owner, 2026-11-12)', (path) => {
+    expect(loginRequired(path)).toBe(false);
+  });
 
   it('an unknown path is not a page: the 404, never a login', () => {
     expect(loginRequired('/no-such-page')).toBe(false);
