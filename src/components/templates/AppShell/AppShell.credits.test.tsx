@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { CreditsView, LadderProgress } from '@/lib/utils/credits';
+import type { CreditsView } from '@/lib/utils/credits';
+import type { LadderProgress } from '@/lib/utils/creditLadder';
 import { AppShell } from './AppShell';
 
 const AV = { initials: 'A', cover: 'sky' as const };

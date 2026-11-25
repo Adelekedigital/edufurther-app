@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useReferrals } from '@/lib/api/data/invite';
 import { useMenteeStats, type MenteeStats } from '@/lib/api/data/menteeHome';
-import type { LadderProgress } from '@/lib/utils/credits';
+import type { LadderProgress } from '@/lib/utils/creditLadder';
 
 /**
  * What ticks the ladder's session and friend steps (decision 370): attended

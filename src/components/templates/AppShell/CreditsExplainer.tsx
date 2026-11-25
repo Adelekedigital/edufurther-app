@@ -12,11 +12,10 @@ import {
   creditsTitle,
   HOW_CREDITS_WORK,
   isLow,
-  LADDER_UNKNOWN,
   refundPolicy,
   type CreditsView,
-  type LadderProgress,
 } from '@/lib/utils/credits';
+import { LADDER_UNKNOWN, type LadderProgress } from '@/lib/utils/creditLadder';
 import { CreditLadder } from './CreditLadder';
 import styles from './CreditsExplainer.module.css';
 

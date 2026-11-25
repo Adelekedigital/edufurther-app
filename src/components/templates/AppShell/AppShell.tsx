@@ -17,7 +17,8 @@ import { hasUnsavedChanges, heldLink, discardUnsaved, unsavedLabel } from '@/lib
 import { fullNavigate } from '@/lib/utils/hardNavigate';
 import { CreditsPill } from '@/components/molecules/CreditsPill/CreditsPill';
 import { CreditsSummary } from '@/components/molecules/CreditsSummary/CreditsSummary';
-import type { CreditsView, LadderProgress } from '@/lib/utils/credits';
+import type { CreditsView } from '@/lib/utils/credits';
+import type { LadderProgress } from '@/lib/utils/creditLadder';
 import type { Access, NavKey } from '@/lib/utils/access';
 import { cx } from '@/lib/utils/cx';
 import { INSTALL_MENU_COPY } from '@/lib/copy/installMenu';

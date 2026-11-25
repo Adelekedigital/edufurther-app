@@ -2,7 +2,10 @@
 
 import { useCallback, useState, type ReactNode } from 'react';
 import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
-import { LADDER_UNKNOWN, type LadderProgress } from '@/lib/utils/credits';
+import type { LadderProgress } from '@/lib/utils/creditLadder';
+
+// Not LADDER_UNKNOWN: importing creditLadder would pull it into first-load JS.
+const UNKNOWN: LadderProgress = { attended: null, friendJoined: null };
 
 // The reads load with the card, never in a page's first-load JS (350kB
 // budget). Quiet: a failed load leaves the rows on the level alone.
@@ -32,7 +35,7 @@ export function useCreditLadder(userId: string | null): {
   );
   const active = wanted && !!userId;
   return {
-    progress: active && read?.userId === userId ? read.progress : LADDER_UNKNOWN,
+    progress: active && read?.userId === userId ? read.progress : UNKNOWN,
     onOpen: () => setWanted(true),
     host: active ? <CreditLadderReads userId={userId} onProgress={onProgress} /> : null,
   };

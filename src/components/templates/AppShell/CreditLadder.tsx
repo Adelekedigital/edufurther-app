@@ -9,9 +9,9 @@ import {
   LADDER_COPY,
   ladderComplete,
   ladderStatus,
-  type CreditsView,
   type LadderProgress,
-} from '@/lib/utils/credits';
+} from '@/lib/utils/creditLadder';
+import type { CreditsView } from '@/lib/utils/credits';
 import styles from './CreditsExplainer.module.css';
 
 /**

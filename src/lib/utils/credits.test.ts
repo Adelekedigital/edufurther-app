@@ -13,12 +13,9 @@ import {
   resetDay,
   summarySub,
   HOW_CREDITS_WORK,
-  creditSteps,
-  CREDIT_STEPS_LABEL,
-  ladderComplete,
-  ladderStatus,
   type CreditsView,
 } from './credits';
+import { creditSteps, CREDIT_STEPS_LABEL, ladderComplete, ladderStatus } from './creditLadder';
 
 const api = (o: {
   balance?: number;
