@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { lazyPart } from '@/components/molecules/LazyPart/lazyPart';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/atoms/Button/Button';
@@ -35,6 +35,7 @@ import { useDeviceFlag } from '@/lib/utils/deviceFlag';
 import { viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
+import { useMinuteClock } from '@/lib/utils/useMinuteClock';
 import { useOnline } from '@/lib/utils/useOnline';
 import type { Mentor } from '@/types/mentor';
 import type { MessageRecipient } from '@/types/messages';
@@ -89,14 +90,9 @@ export function MenteeHomeScreen() {
   const browserZone = useDeviceTimeZone() ?? FIRST_PAINT_ZONE;
   const phone = useMediaQuery('(max-width: 767px)');
 
-  // A minute tick so the next-session card's join state advances while the tab
-  // stays open (as BookingsScreen does).
-  const [clock, setClock] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setClock(Date.now()), 60_000);
-    return () => clearInterval(t);
-  }, []);
-  const now = useMemo(() => new Date(clock), [clock]);
+  // A minute tick so the next-session card's pill and choice advance while the
+  // tab stays open (as on Bookings).
+  const now = useMinuteClock();
 
   // Mentee-side = any member who isn't a mentor (mirrors isMenteeSide in useAppShell).
   const menteeSide = !!member && !member.isMentor;
@@ -118,7 +114,7 @@ export function MenteeHomeScreen() {
 
   const zone = viewerZone(member?.timeZone, browserZone);
   const stats = useMenteeStats(userId, menteeSide);
-  const upcoming = useUpcomingBookings(userId, zone, menteeSide);
+  const upcoming = useUpcomingBookings(userId, zone, menteeSide, undefined, now);
   const metMentors = useMetMentors(menteeSide);
   const topics = useTopics();
   const levels = useDegreeLevels(menteeSide);

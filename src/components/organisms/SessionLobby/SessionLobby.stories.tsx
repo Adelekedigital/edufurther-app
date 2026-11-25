@@ -129,7 +129,7 @@ export const StartingSoon: Story = {
 export const InProgress: Story = {
   args: {
     ground: 'green',
-    status: { tone: 'green', label: 'In progress', live: true },
+    status: { tone: 'green', label: 'Live now', live: true },
     // No timer once started: the call may run on another platform.
     clock: null,
     people: [you('Not in the call yet'), her('Here now', 'here')],
@@ -157,7 +157,7 @@ export const EnterFailed: Story = {
 export const Rejoin: Story = {
   args: {
     ground: 'green',
-    status: { tone: 'green', label: 'In progress', live: true },
+    status: { tone: 'green', label: 'Live now', live: true },
     clock: null,
     people: [you('Joined', 'joined'), her('Joined', 'joined')],
     join: {
@@ -173,7 +173,7 @@ export const Rejoin: Story = {
 export const WindowClosed: Story = {
   args: {
     ground: 'green',
-    status: { tone: 'green', label: 'In progress', live: true },
+    status: { tone: 'green', label: 'Live now', live: true },
     clock: null,
     people: [you('Not in the call yet'), her('Here now', 'here')],
     note: 'Joining closed at 6:15 pm, 15 minutes after the start.',

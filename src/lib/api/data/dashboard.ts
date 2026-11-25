@@ -252,7 +252,6 @@ export function deriveKpis(i: KpiInputs): Kpi[] {
   ];
 }
 
-
 /**
  * A signed count or duration delta as a KPI trend line. `unit` is placed before
  * the period ("+120 min this month"); omit it for a bare count ("+1 this
@@ -345,10 +344,12 @@ export function useMentorDashboard(
   member: DashboardMember,
   accountZone: string,
   shared: boolean,
+  /** The screen's minute clock: the next session is chosen on it. */
+  now?: Date,
 ): MentorDashboard {
   const profile = useMentorProfile(member.id);
   const calendar = useCalendarConnection(member.id);
-  const upcoming = useUpcomingBookings(member.id, accountZone, true, 'mentor');
+  const upcoming = useUpcomingBookings(member.id, accountZone, true, 'mentor', now);
 
   const p = profile.data;
   const owner = p?.owner ?? null;
@@ -362,15 +363,12 @@ export function useMentorDashboard(
   const monthly = useMentorStats(activeMentorId, { windowDays: 30 });
   const quarterly = useMentorStats(activeMentorId, { windowDays: 90 });
 
-  // The hero row: the soonest confirmed session the mentor hosts that hasn't ended
-  // yet. `as=mentor` fetches only their mentor side (so a dual-role mentor's next
-  // session is never pushed off the page by mentee-side rows). The hook also keeps
-  // just-settled rows whose door is still open, but those serve the Bookings tab's
-  // re-entry — a finished session is deliberately not the dashboard hero, so the
-  // hero stays `status === 'confirmed'`.
-  const hosted = (upcoming.data ?? []).filter(
-    (b) => b.side === 'mentor' && b.status === 'confirmed',
-  );
+  // The hero row: the session the mentor hosts that the hook chose on the clock
+  // (`upcomingOnClock`), the same rule as Bookings and Mentee Home. `as=mentor`
+  // fetches only their mentor side, so a dual-role mentor's next session is
+  // never pushed off the page by mentee-side rows. Time decides, never the
+  // status: the backend settles a session 15 minutes in, while it still runs.
+  const hosted = (upcoming.data ?? []).filter((b) => b.side === 'mentor');
   const nextBooking = hosted[0] ?? null;
   const nextSession: Remote<Booking | null> = {
     data: upcoming.data ? nextBooking : null,

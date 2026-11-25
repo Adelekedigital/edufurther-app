@@ -139,6 +139,25 @@ describe('useMentorDashboard', () => {
     expect(r.nextSession.data?.id).toBe('s1');
   });
 
+  it('takes the clock-chosen session as is: settled mid-call, it stays the next session', () => {
+    // The backend settles at join_closes_at while the call runs; time decides.
+    const running = { id: 's3', side: 'mentor', status: 'completed' };
+    const now = new Date('2026-10-04T17:20:00Z');
+    vi.mocked(useMentorProfile).mockReturnValue(profile());
+    vi.mocked(useCalendarConnection).mockReturnValue(cal());
+    vi.mocked(useUpcomingBookings).mockReturnValue(upc({ data: [running] }));
+    vi.mocked(useMentorStats).mockReturnValue(noStats);
+    const r = renderHook(() => useMentorDashboard(member, 'Africa/Lagos', false, now)).result;
+    expect(r.current.nextSession.data?.id).toBe('s3');
+    expect(vi.mocked(useUpcomingBookings)).toHaveBeenLastCalledWith(
+      'm1',
+      'Africa/Lagos',
+      true,
+      'mentor',
+      now,
+    );
+  });
+
   it('a new mentor surfaces a calendar FETCH error (with retry), not a silent regression', () => {
     const r = run(profile(), cal({ error: { kind: 'server' } }), upc()).current;
     expect(r.error).toBeTruthy();

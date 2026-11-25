@@ -5,7 +5,7 @@ export type SessionStatusTone = 'blue' | 'green' | 'neutral' | 'red';
 
 type SessionStatusPillProps = {
   tone: SessionStatusTone;
-  /** "Upcoming", "Starting soon", "In progress". */
+  /** "Upcoming", "Starting soon", "Live now". */
   label: string;
   /** The pulsing dot: the call is running now. */
   live?: boolean;
