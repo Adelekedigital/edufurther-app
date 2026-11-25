@@ -6,6 +6,9 @@ vi.hoisted(() => {
   process.env.NEXT_PUBLIC_MENTOR_ONBOARDING_ENABLED = 'true';
 });
 let viewer: Viewer = { kind: 'guest' };
+vi.mock('./useCreditLadder', () => ({
+  useCreditLadder: () => ({ progress: { attended: null, friendJoined: null }, onOpen: () => {} }),
+}));
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/messages', () => ({ useUnreadTotal: () => null }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => viewer }));
@@ -26,7 +29,13 @@ const mentee = (over: Partial<Member>): Member => ({
     balance: 4,
     state: 'on_track',
     nextResetAt: '2026-11-01T00:00:00Z',
-    monthly: { balance: 3, ceiling: 3, level: 3, expiresAt: '2026-11-01T00:00:00Z', unlocked: true },
+    monthly: {
+      balance: 3,
+      ceiling: 3,
+      level: 3,
+      expiresAt: '2026-11-01T00:00:00Z',
+      unlocked: true,
+    },
     bonus: { balance: 1, groups: [{ count: 1, expiresAt: null }] },
   },
   ...over,

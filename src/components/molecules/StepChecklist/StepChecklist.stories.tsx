@@ -9,20 +9,22 @@ const meta: Meta<typeof StepChecklist> = {
 export default meta;
 type Story = StoryObj<typeof StepChecklist>;
 
-/** The credits card: what each step pays, ticked by level. */
+/** The credits card (decision 370): each step +1, ticked on its own. */
 export const CreditLevels: Story = {
   args: {
-    label: 'Your monthly credits',
+    label: 'Earn up to 3 credits a month',
     doneLabel: 'done',
+    size: 'sm',
     steps: [
-      { key: '1', label: 'Finish your profile', value: '1 a month', done: true },
+      { key: 'profile', label: 'Finish your profile', value: '+1', done: true },
+      { key: 'session', label: 'Attend a session', value: '+1', done: true },
       {
-        key: '2',
-        label: 'A friend you invited finishes their profile',
-        value: '2 a month',
-        done: true,
+        key: 'friend',
+        label: 'A friend joins',
+        value: '+1',
+        done: false,
+        sub: 'Invite a friend. It counts once they finish their profile.',
       },
-      { key: '3', label: 'Attend a session too', value: '3 a month', done: false },
     ],
   },
 };

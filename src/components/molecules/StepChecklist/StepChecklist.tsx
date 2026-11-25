@@ -6,8 +6,10 @@ export type ChecklistStep = {
   key: string;
   label: string;
   done: boolean;
-  /** On the right, e.g. what the step pays ("2 a month"). */
+  /** On the right, e.g. what the step pays ("+1"); green once done. */
   value?: string;
+  /** A line under the label, e.g. how to do the step. */
+  sub?: string;
 };
 
 type StepChecklistProps = {
@@ -19,26 +21,29 @@ type StepChecklistProps = {
    * tense already says it ("You attended your first session").
    */
   doneLabel?: string;
+  /** `sm`: 20px rings (the credits card); `md`: 24px (InviteModal). */
+  size?: 'sm' | 'md';
 };
 
 /**
  * Steps with a tick ring each, done ones green (InviteModal.dc.html steps;
- * the credits card's "Your monthly credits"). One list for both, so a ticked
- * step looks the same wherever it appears. The ring is decorative.
+ * the credits card's ladder). One list for both, so a ticked step looks the
+ * same wherever it appears. The ring is decorative.
  */
-export function StepChecklist({ steps, label, doneLabel }: StepChecklistProps) {
+export function StepChecklist({ steps, label, doneLabel, size = 'md' }: StepChecklistProps) {
   return (
-    <ul className={styles.steps} aria-label={label}>
+    <ul className={cx(styles.steps, size === 'sm' && styles.sm)} aria-label={label}>
       {steps.map((s) => (
         <li key={s.key} className={cx(styles.step, s.done && styles.done)}>
           <span className={styles.ring} aria-hidden>
-            {s.done && <Icon name="check" size={16} />}
+            {s.done && <Icon name="check" size={size === 'sm' ? 14 : 16} />}
           </span>
           <span className={styles.label}>
             {s.label}
             {s.done && doneLabel && <span className="sr-only">, {doneLabel}</span>}
           </span>
           {s.value && <span className={styles.value}>{s.value}</span>}
+          {s.sub && <span className={styles.sub}>{s.sub}</span>}
         </li>
       ))}
     </ul>

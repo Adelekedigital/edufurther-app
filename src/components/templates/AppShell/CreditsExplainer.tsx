@@ -4,20 +4,20 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode 
 import Link from 'next/link';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { CreditsBar, CreditsStatus } from '@/components/molecules/CreditsSummary/CreditsSummary';
-import { StepChecklist } from '@/components/molecules/StepChecklist/StepChecklist';
 import { BottomSheet } from '@/components/templates/BottomSheet/BottomSheet';
 import { cx } from '@/lib/utils/cx';
 import { useMediaQuery } from '@/lib/utils/useMediaQuery';
 import {
-  CREDIT_STEPS_LABEL,
   creditRows,
-  creditSteps,
   creditsTitle,
   HOW_CREDITS_WORK,
   isLow,
+  LADDER_UNKNOWN,
   refundPolicy,
   type CreditsView,
+  type LadderProgress,
 } from '@/lib/utils/credits';
+import { CreditLadder } from './CreditLadder';
 import styles from './CreditsExplainer.module.css';
 
 /**
@@ -28,18 +28,21 @@ import styles from './CreditsExplainer.module.css';
  * Takes focus, keeps Tab inside, closes on Escape or outside; the caller
  * returns focus.
  *
- * Design creditSplit on: the total, a bar, Monthly/Bonus rows, then (ours,
- * owner 2026-11-06, decision 308) "Your monthly credits": the three steps,
- * ticked up to the mentee's level, always shown; then "How credits work" and
- * "Refund policy", both closed by default. The refund text is ours.
+ * Design creditSplit on: the total, a bar, Monthly/Bonus rows (Bonus only
+ * when there are bonus credits), then the monthly ladder (decision 370,
+ * `CreditLadder`), then "How credits work" and "Refund policy", both closed
+ * by default. The refund text is ours.
  */
 export function CreditsExplainer({
   id,
   credits,
+  progress = LADDER_UNKNOWN,
   onClose,
 }: {
   id: string;
   credits: CreditsView;
+  /** What ticks the session and friend steps; unknown while it loads. */
+  progress?: LadderProgress;
   onClose: () => void;
 }) {
   const phone = useMediaQuery(PHONE);
@@ -54,11 +57,13 @@ export function CreditsExplainer({
         label={DIALOG_LABEL}
         onClose={onClose}
       >
-        <CreditsDetails credits={credits} onClose={onClose} />
+        <CreditsDetails credits={credits} progress={progress} onClose={onClose} />
       </BottomSheet>
     );
   }
-  return <CreditsPanel id={id} credits={credits} icon={icon} onClose={onClose} />;
+  return (
+    <CreditsPanel id={id} credits={credits} progress={progress} icon={icon} onClose={onClose} />
+  );
 }
 
 const PHONE = '(max-width: 767px)';
@@ -68,11 +73,13 @@ const DIALOG_LABEL = 'Your credits';
 function CreditsPanel({
   id,
   credits,
+  progress,
   icon,
   onClose,
 }: {
   id: string;
   credits: CreditsView;
+  progress: LadderProgress;
   icon: ReactNode;
   onClose: () => void;
 }) {
@@ -123,14 +130,22 @@ function CreditsPanel({
           {icon}
           <span className={styles.title}>{creditsTitle(credits)}</span>
         </div>
-        <CreditsDetails credits={credits} onClose={onClose} />
+        <CreditsDetails credits={credits} progress={progress} onClose={onClose} />
       </div>
     </>
   );
 }
 
 /** Everything under the title, the same on both: one copy of the content. */
-function CreditsDetails({ credits, onClose }: { credits: CreditsView; onClose: () => void }) {
+function CreditsDetails({
+  credits,
+  progress,
+  onClose,
+}: {
+  credits: CreditsView;
+  progress: LadderProgress;
+  onClose: () => void;
+}) {
   const [howOpen, setHowOpen] = useState(false);
   const [policyOpen, setPolicyOpen] = useState(false);
   // The window is deployment configuration, so the line is built, not written.
@@ -163,10 +178,7 @@ function CreditsDetails({ credits, onClose }: { credits: CreditsView; onClose: (
         </div>
       )}
       <div className={cx(styles.section, styles.steps)}>
-        <span className={styles.stepsTitle} aria-hidden>
-          {CREDIT_STEPS_LABEL}
-        </span>
-        <StepChecklist steps={creditSteps(credits)} label={CREDIT_STEPS_LABEL} doneLabel="done" />
+        <CreditLadder credits={credits} progress={progress} />
       </div>
       <div className={styles.section}>
         <button

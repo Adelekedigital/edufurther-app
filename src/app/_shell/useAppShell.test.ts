@@ -2,6 +2,9 @@ import type { Viewer } from '@/types/mentor';
 import { accountItems, countsFor, isMenteeSide } from './useAppShell';
 import { creditsView } from '@/lib/utils/credits';
 
+vi.mock('./useCreditLadder', () => ({
+  useCreditLadder: () => ({ progress: { attended: null, friendJoined: null }, onOpen: () => {} }),
+}));
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => ({ kind: 'guest' }) }));
 
@@ -187,6 +190,7 @@ describe('credits in the shell: mentees only', () => {
       bonus: [{ count: 1, expires: false, expiresOn: null }],
       showMonthly: true,
       level: 3,
+      ceiling: 3,
       resetsOn: 'Nov 1',
     });
     const mentor = member({ credits: c });

@@ -19,6 +19,7 @@ import { mentorProfilePath } from '@/lib/utils/mentorPath';
 import { personCover } from '@/lib/utils/person';
 import { setAppBadge } from '@/lib/utils/push';
 import { creditsView } from '@/lib/utils/credits';
+import { useCreditLadder } from './useCreditLadder';
 import { hasUnsavedChanges } from '@/lib/utils/leaveGuard';
 import { canBookFor } from './bookBlocked';
 import type { Viewer } from '@/types/mentor';
@@ -199,6 +200,16 @@ export function useAppShell(
     inAdmin,
     whatsNew,
   );
+  // The credits card's ladder (decision 370), read once a mentee opens the
+  // card. Not in setup: there is nothing to tick yet.
+  const ladder = useCreditLadder(
+    !inAdmin &&
+      isMenteeSide(member) &&
+      access.state !== 'mentorSetup' &&
+      access.state !== 'menteeSetup'
+      ? member.id
+      : null,
+  );
   return {
     viewer,
     member,
@@ -251,6 +262,8 @@ export function useAppShell(
                     member.menteeCancelRefundHours,
                   ) ?? undefined)
                 : undefined,
+            creditProgress: ladder.progress,
+            onCreditsOpen: ladder.onOpen,
             /** Bookings badge: requests awaiting a response (product, 2026-09-30). */
             counts: inAdmin
               ? adminCounts(summary.data?.counts.applications)

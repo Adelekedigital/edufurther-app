@@ -8,6 +8,9 @@ const h = vi.hoisted(() => ({
 }));
 const setAppBadge = vi.hoisted(() => vi.fn());
 vi.mock('next/navigation', () => ({ usePathname: () => '/messages' }));
+vi.mock('./useCreditLadder', () => ({
+  useCreditLadder: () => ({ progress: { attended: null, friendJoined: null }, onOpen: () => {} }),
+}));
 vi.mock('@/lib/api/data/auth', () => ({ useSignOut: () => vi.fn() }));
 vi.mock('@/lib/api/data/messages', () => ({ useUnreadTotal: () => h.unread }));
 vi.mock('@/lib/api/data/viewer', () => ({ useViewer: () => h.viewer }));

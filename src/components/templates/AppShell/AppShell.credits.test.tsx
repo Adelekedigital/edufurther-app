@@ -1,6 +1,6 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { CreditsView } from '@/lib/utils/credits';
+import type { CreditsView, LadderProgress } from '@/lib/utils/credits';
 import { AppShell } from './AppShell';
 
 const AV = { initials: 'A', cover: 'sky' as const };
@@ -233,36 +233,146 @@ describe('AppShell: a mentee’s credits', () => {
     expect(out).not.toHaveTextContent('Expiring credits are used first.');
   });
 
-  it('"Your monthly credits": the same three steps for everyone, ticked up to the level', async () => {
-    const user = userEvent.setup();
-    shell({ ...three, level: 2 });
-    await user.click(firstPill());
-    const dialog = screen.getByRole('dialog', { name: 'Your credits' });
-    const ladder = within(dialog).getByRole('list', { name: 'Your monthly credits' });
-    const steps = within(ladder).getAllByRole('listitem');
-    expect(steps.map((li) => li.textContent)).toEqual([
+  describe('the monthly ladder (decision 370)', () => {
+    const LADDER = 'Earn up to 3 credits a month';
+    const SUB = 'Invite a friend. It counts once they finish their profile.';
+    const open = async (credits: CreditsView, progress?: LadderProgress) => {
+      const onCreditsOpen = vi.fn();
+      render(
+        <AppShell
+          active="Explore"
+          nav="mentee"
+          chrome="member"
+          offline={false}
+          account={{ avatar: AV, items: [], credits, creditProgress: progress, onCreditsOpen }}
+        >
+          <p>Page</p>
+        </AppShell>,
+      );
+      await userEvent.click(firstPill());
+      return { dialog: screen.getByRole('dialog', { name: 'Your credits' }), onCreditsOpen };
+    };
+    const rows = (dialog: HTMLElement) =>
+      within(within(dialog).getByRole('list', { name: LADDER }))
+        .getAllByRole('listitem')
+        .map((li) => li.textContent);
+    const two = { ...three, level: 2, ceiling: 2, bonus: [], left: 2, monthlyLeft: 2 };
+
+    it('asks the page for what ticks it when the card opens', async () => {
+      const { onCreditsOpen } = await open(two);
+      expect(onCreditsOpen).toHaveBeenCalledTimes(1);
+    });
+
+    it('level 1: profile ticked, the friend’s subtext, and both next steps', async () => {
+      const { dialog } = await open(
+        { ...two, level: 1, ceiling: 1, left: 1, monthlyLeft: 1 },
+        { attended: false, friendJoined: false },
+      );
+      expect(dialog).toHaveTextContent(LADDER);
       // "check" is the tick's glyph name (the ring is aria-hidden).
-      'checkFinish your profile, done1 a month',
-      'checkA friend you invited finishes their profile, done2 a month',
-      'Attend a session too3 a month',
-    ]);
-    await user.keyboard('{Escape}');
-    cleanup();
-    // Setup (level 0): the same list, nothing ticked, so it says how to start.
-    shell({
-      ...three,
-      left: 0,
-      monthlyLeft: 0,
-      bonus: [],
-      showMonthly: false,
-      resetsOn: null,
-      level: 0,
+      expect(rows(dialog)).toEqual([
+        'checkFinish your profile, done+1',
+        'Attend a session+1',
+        `A friend joins+1${SUB}`,
+      ]);
+      expect(dialog).toHaveTextContent(
+        'You get 1 credit a month.Attend a session or invite a friend to get 2.',
+      );
+      // No Bonus row at 0 bonus credits.
+      expect(within(dialog).queryByText('Bonus')).toBeNull();
     });
-    await user.click(screen.getAllByRole('button', { name: /No credits left/ })[0]!);
-    const setup = within(screen.getByRole('dialog', { name: 'Your credits' })).getByRole('list', {
-      name: 'Your monthly credits',
+
+    it('attended, no friend: ticked on its own; "Invite a friend to get 3."', async () => {
+      const { dialog } = await open(two, { attended: true, friendJoined: false });
+      expect(rows(dialog)).toEqual([
+        'checkFinish your profile, done+1',
+        'checkAttend a session, done+1',
+        `A friend joins+1${SUB}`,
+      ]);
+      expect(dialog).toHaveTextContent('You get 2 credits a month.Invite a friend to get 3.');
     });
-    expect(within(setup).getAllByRole('listitem')).toHaveLength(3);
-    expect(setup).not.toHaveTextContent('done');
+
+    it('a friend, not attended: no subtext; "Attend a session to get 3."', async () => {
+      const { dialog } = await open(two, { attended: false, friendJoined: true });
+      expect(rows(dialog)).toEqual([
+        'checkFinish your profile, done+1',
+        'Attend a session+1',
+        'checkA friend joins, done+1',
+      ]);
+      expect(dialog).not.toHaveTextContent(SUB);
+      expect(dialog).toHaveTextContent('You get 2 credits a month.Attend a session to get 3.');
+    });
+
+    it('while the reads load: rows unticked past the profile, and no next step yet', async () => {
+      const { dialog } = await open(two);
+      expect(rows(dialog)).toEqual([
+        'checkFinish your profile, done+1',
+        'Attend a session+1',
+        `A friend joins+1${SUB}`,
+      ]);
+      expect(dialog).toHaveTextContent('You get 2 credits a month.');
+      expect(dialog).not.toHaveTextContent(/to get \d/);
+    });
+
+    it('/me disagreeing with the ticks: /me’s number, the next step from what isn’t ticked', async () => {
+      // Attended, but the backend still pays 1 (its old ladder needs a friend first).
+      const { dialog } = await open(
+        { ...two, level: 1, ceiling: 1, left: 1, monthlyLeft: 1 },
+        { attended: true, friendJoined: false },
+      );
+      expect(dialog).toHaveTextContent('You get 1 credit a month.Invite a friend to get 2.');
+      expect(within(dialog).queryByRole('button', { name: 'See how' })).toBeNull();
+    });
+
+    it('all three: no heading, one quiet line; "See how" opens the ticked rows, then "Hide"', async () => {
+      const { dialog } = await open(three, { attended: true, friendJoined: true });
+      expect(dialog).not.toHaveTextContent(LADDER);
+      expect(within(dialog).queryByRole('list', { name: LADDER })).toBeNull();
+      expect(dialog).toHaveTextContent('You’ve earned 3 credits a month');
+      expect(dialog).not.toHaveTextContent(/You get \d/);
+      const seeHow = within(dialog).getByRole('button', { name: 'See how' });
+      expect(seeHow).toHaveAttribute('aria-expanded', 'false');
+      expect(seeHow).not.toHaveAttribute('aria-controls');
+      await userEvent.click(seeHow);
+      const hide = within(dialog).getByRole('button', { name: 'Hide' });
+      expect(hide).toHaveAttribute('aria-expanded', 'true');
+      const list = within(dialog).getByRole('list', { name: LADDER });
+      expect(list.parentElement).toHaveAttribute('id', hide.getAttribute('aria-controls'));
+      expect(rows(dialog)).toEqual([
+        'checkFinish your profile, done+1',
+        'checkAttend a session, done+1',
+        'checkA friend joins, done+1',
+      ]);
+      // Still no heading when open: the rows only.
+      expect(screen.queryByText(LADDER)).toBeNull();
+      await userEvent.click(hide);
+      expect(within(dialog).getByRole('button', { name: 'See how' })).toHaveAttribute(
+        'aria-expanded',
+        'false',
+      );
+      expect(within(dialog).queryByRole('list', { name: LADDER })).toBeNull();
+    });
+
+    it('setup (level 0): the heading and three unticked rows, no status line', async () => {
+      const { dialog } = await open(
+        {
+          ...three,
+          left: 0,
+          monthlyLeft: 0,
+          bonus: [],
+          showMonthly: false,
+          resetsOn: null,
+          level: 0,
+        },
+        { attended: null, friendJoined: null },
+      );
+      expect(screen.getByText(LADDER)).toBeInTheDocument();
+      expect(rows(dialog)).toEqual([
+        'Finish your profile+1',
+        'Attend a session+1',
+        `A friend joins+1${SUB}`,
+      ]);
+      expect(dialog).not.toHaveTextContent(/You get \d/);
+    });
   });
 });
