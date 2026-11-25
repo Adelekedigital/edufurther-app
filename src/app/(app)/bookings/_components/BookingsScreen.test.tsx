@@ -469,6 +469,32 @@ describe('History', () => {
     expect(screen.getByText(/The session room has closed/)).toBeInTheDocument();
   });
 
+  it('when an unsettled row leaves with its door, focus goes to the History tab', () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(NOW);
+    h.unsettled = [
+      booking({
+        id: 'unsettled',
+        startsAt: at(-1),
+        endsAt: at(-0.1),
+        joinOpensAt: at(-1.1),
+        joinClosesAt: at(-0.75),
+        doorClosesAt: at(0.2),
+        myJoinedAt: at(-0.9),
+      }),
+    ];
+    render(<BookingsScreen />);
+    act(() => screen.getByRole('link', { name: /^Rejoin/ }).focus());
+    // The hook drops the whole row once its door closes.
+    h.unsettled = [];
+    act(() => {
+      vi.advanceTimersByTime(13 * 60_000);
+    });
+    expect(screen.queryByRole('link', { name: /^Rejoin/ })).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(screen.getByRole('tab', { name: /History/ }));
+    expect(screen.getByText(/The session room has closed/)).toBeInTheDocument();
+  });
+
   it('asks the server for another page when the reveal runs past what is loaded', async () => {
     const loadMore = vi.fn();
     h.history = hist({
