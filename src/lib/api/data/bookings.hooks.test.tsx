@@ -5,13 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '@/lib/api/generated/schema';
 import type { BookingStatus } from '@/types/booking';
 import { useMinuteClock } from '@/lib/utils/useMinuteClock';
-import {
-  toBooking,
-  useBookingHistory,
-  usePendingBookings,
-  useUnsettledRejoins,
-  useUpcomingBookings,
-} from './bookings';
+import { toBooking, useBookingHistory, usePendingBookings, useUpcomingBookings } from './bookings';
+import { useUnsettledRejoins } from './unsettledRejoins';
 
 type SessionRead = components['schemas']['SessionRead'];
 

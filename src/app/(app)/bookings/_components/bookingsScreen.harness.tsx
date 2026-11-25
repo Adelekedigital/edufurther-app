@@ -169,9 +169,9 @@ export const mocks = {
       nav: h.viewer.kind === 'member' && h.viewer.isMentor ? 'mentor' : 'mentee',
     }),
   }),
+  unsettledRejoins: () => ({ useUnsettledRejoins: () => h.unsettled }),
   bookings: () => ({
     useUpcomingBookings: () => h.upcoming,
-    useUnsettledRejoins: () => h.unsettled,
     usePendingBookings: () => h.pending,
     useBookingHistory: () => h.history,
     useBooking: (_id: string | null, _userId: string | null, active: boolean) => {

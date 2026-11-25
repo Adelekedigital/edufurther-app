@@ -21,6 +21,9 @@ vi.mock('next/navigation', async () =>
 vi.mock('@/app/_shell/useAppShell', async () =>
   (await import('./bookingsScreen.harness')).mocks.appShell(),
 );
+vi.mock('@/lib/api/data/unsettledRejoins', async () =>
+  (await import('./bookingsScreen.harness')).mocks.unsettledRejoins(),
+);
 vi.mock('@/lib/api/data/bookings', async () =>
   (await import('./bookingsScreen.harness')).mocks.bookings(),
 );

@@ -5,7 +5,6 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import type { components } from '@/lib/api/generated/schema';
 import {
   byNewestFirst,
-  canRejoin,
   HISTORY_STATUSES,
   isLapsed,
   respondDeadline,
@@ -244,28 +243,11 @@ export function useUpcomingBookings(
 }
 
 /**
- * Joined sessions past their scheduled end that the server still calls
- * `confirmed`: the settle at `join_closes_at` was lost. Upcoming has let them
- * go and History asks only for settled statuses, so History's Rejoin reads
- * them from here (GitHub review, PR 723). The Upcoming page's own entry: no
- * request of its own once that is warm.
+ * The Upcoming page as fetched, from today on, before the clock chooses. Also
+ * read by `useUnsettledRejoins`, which lives in its own module so only
+ * Bookings carries it.
  */
-export function useUnsettledRejoins(
-  userId: string | null,
-  accountZone: string,
-  active: boolean,
-  now: Date,
-): Booking[] {
-  const { query } = useUpcomingRows(userId, accountZone, active);
-  const at = now.getTime();
-  return useMemo(
-    () => (query.data ?? []).filter((b) => b.status === 'confirmed' && canRejoin(b, new Date(at))),
-    [query.data, at],
-  );
-}
-
-/** The Upcoming page as fetched, from today on, before the clock chooses. */
-function useUpcomingRows(
+export function useUpcomingRows(
   userId: string | null,
   accountZone: string,
   active: boolean,

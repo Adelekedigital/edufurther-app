@@ -14,7 +14,6 @@ import {
   useBooking,
   useBookingHistory,
   usePendingBookings,
-  useUnsettledRejoins,
   useUpcomingBookings,
 } from '@/lib/api/data/bookings';
 import { intakeSharer, intakeViewedFile } from '@/lib/api/data/privateFiles';
@@ -23,7 +22,7 @@ import { useBookingOutcome } from '@/lib/api/data/sessionEvents';
 import { normaliseError } from '@/lib/api/data/errors';
 import { BOOKINGS_COPY } from '@/lib/copy/bookings';
 import { MOVE_COPY } from '@/lib/copy/session';
-import { REJOIN_COPY } from '@/lib/copy/sessionLive';
+import { REJOIN_COPY } from '@/lib/copy/rejoin';
 import { formatTime, viewerZone } from '@/lib/utils/format';
 import { FIRST_PAINT_ZONE, useDeviceTimeZone } from '@/lib/utils/useDeviceTimeZone';
 import { useHydrated } from '@/lib/utils/useHydrated';
@@ -52,7 +51,6 @@ import {
   fullDate,
   HISTORY_FILTERS,
   overlapping,
-  withUnsettled,
 } from '@/lib/utils/bookings';
 import { useBookingAction } from '@/lib/api/data/bookingActions';
 import { useMyReviewableSessions } from '@/lib/api/data/reviewableSessions';
@@ -62,6 +60,8 @@ import { useRevealed } from './useRevealed';
 import { useRouter } from 'next/navigation';
 import { noteProfileSource, profileLinkSource } from '@/lib/analytics/profileSource';
 import { useRejoinFocus } from './useRejoinFocus';
+import { withUnsettled } from './withUnsettled';
+import { useUnsettledRejoins } from '@/lib/api/data/unsettledRejoins';
 import { useReminders } from './useReminders';
 import { useSelectedBooking } from './useSelectedBooking';
 import styles from './BookingsScreen.module.css';

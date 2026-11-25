@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, type FocusEvent } from 'react';
-import { REJOIN_COPY } from '@/lib/copy/sessionLive';
+import { REJOIN_COPY } from '@/lib/copy/rejoin';
 
 /**
  * Keeps a keyboard user's place when the History Rejoin they are on goes at
