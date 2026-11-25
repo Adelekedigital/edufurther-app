@@ -18,6 +18,7 @@ import { fullNavigate } from '@/lib/utils/hardNavigate';
 import { CreditsPill } from '@/components/molecules/CreditsPill/CreditsPill';
 import { CreditsSummary } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import type { CreditsView } from '@/lib/utils/credits';
+import type { LadderProgress } from '@/lib/utils/creditLadder';
 import type { Access, NavKey } from '@/lib/utils/access';
 import { cx } from '@/lib/utils/cx';
 import { INSTALL_MENU_COPY } from '@/lib/copy/installMenu';
@@ -177,6 +178,10 @@ type AppShellProps = {
     counts?: Counts;
     /** A mentee's monthly credits (pill, menu block, "Your credits"); none for mentors. */
     credits?: CreditsView;
+    /** What ticks the card's session and friend steps; unknown until read. */
+    creditProgress?: LadderProgress;
+    /** "Your credits" opened: the page may now read what ticks the ladder. */
+    onCreditsOpen?: () => void;
     /** Logout with unsaved changes: the confirm is open (useAppShell). */
     logoutConfirm?: { onKeep: () => void; onLogout: () => void };
   };
@@ -240,6 +245,7 @@ export function AppShell({
     creditsOpener.current = from;
     setMoreOpen(false);
     setCreditsOpenOn(pathname);
+    account?.onCreditsOpen?.();
   };
   const closeCredits = () => {
     setCreditsOpenOn(undefined);
@@ -508,7 +514,12 @@ export function AppShell({
         <LockExplainer item={lock} copy={access.copy} onClose={() => setLock(null)} />
       )}
       {creditsOpen && credits && (
-        <CreditsExplainer id={creditsId} credits={credits} onClose={closeCredits} />
+        <CreditsExplainer
+          id={creditsId}
+          credits={credits}
+          progress={account?.creditProgress}
+          onClose={closeCredits}
+        />
       )}
       {account?.logoutConfirm && (
         <UnsavedChangesDialog

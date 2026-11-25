@@ -14,8 +14,17 @@ export const LINE_LIMITS: Record<LineKey, { min?: number; aim: number; max: numb
   button: { aim: 25, max: 32 },
 };
 
-/** The unread email's variants are cases, not recipients ("Which case", not "Who gets it"). */
-export const VARIANT_CASES: readonly string[] = ['one_message', 'two_from_one', 'two_from_two'];
+/**
+ * Variants that are cases, not recipients ("Which case", not "Who gets it"): the
+ * unread email's, and the credits emails' `invite_next` ("An invite would add a
+ * credit", backend decision 370).
+ */
+export const VARIANT_CASES: readonly string[] = [
+  'one_message',
+  'two_from_one',
+  'two_from_two',
+  'invite_next',
+];
 
 /** Names the lines themselves fill: never allowed inside one (backend LINE_NAMES). */
 export const LINE_NAMES = ['emailSubject', 'emailHeading', 'buttonLabel', 'buttonUrl'];
