@@ -137,6 +137,8 @@ export const keys = {
     // Statuses are sorted so two orders of the same filter share one entry.
     history: (who: string, statuses: readonly string[]) =>
       ['bookings', 'history', who, [...statuses].sort()] as const,
+    /** An old app session id → this app's session (GET /legacy-sessions/{id}). */
+    legacy: (who: string, legacyId: string) => ['bookings', 'legacy', who, legacyId] as const,
     /** One booking, for a ?booking= link opened cold (GET /sessions/{id}). */
     one: (id: string, who: string) => ['bookings', 'one', id, who] as const,
     /** One session as the join page reads it: both parties and the venue (GET /sessions/{id}). */

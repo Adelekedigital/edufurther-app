@@ -5,6 +5,8 @@ describe('loginRequired: which pages a signed-out visitor is sent to log in for'
     '/home',
     '/dashboard',
     '/bookings',
+    // Old app session links log in first, then open the session.
+    '/profile',
     '/sessions/3f2a9c1e-5b7d-4e8a-9c21-7d4e5f6a8b90',
     '/messages',
     '/settings',
