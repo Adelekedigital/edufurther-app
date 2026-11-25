@@ -378,6 +378,9 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     refocusAfterTip();
   }, [itemSaved]);
 
+  // On a phone the aside stacks under the reviews, so Reviews shows only
+  // reviews there; it stays beside them on wider screens (owner, 2026-11-25).
+  const reviewsOnPhone = isPhone && tab === 'reviews';
   // Similar mentors: the aside beside Overview and Reviews (Mentor Profile.dc.html
   // `showSimilar`, its default reviewsLayout=full), for mentees and guests. Not the mentor
   // themselves, and not other mentors (product 2026-09-28: it's a mentee-facing
@@ -385,6 +388,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
   const showSimilar =
     !!p &&
     tab !== 'sessions' &&
+    !reviewsOnPhone &&
     viewer.kind !== 'loading' &&
     (viewing || (!isOwner && !member?.isMentor));
   // The "isn't available" page offers them to everyone (Mentor Profile.dc.html
@@ -406,7 +410,7 @@ export function MentorProfileScreen({ handle }: { handle: string }) {
     editing && tab !== 'sessions' && !!completeness && completeness.percent < 100;
   // The track record beside Overview and Reviews, once there's a session to
   // count (Mentor Profile.dc.html `showStats: done > 0 && !focus`, default full).
-  const track = !!p && tab !== 'sessions' && p.mentor.completedSessions > 0;
+  const track = !!p && tab !== 'sessions' && !reviewsOnPhone && p.mentor.completedSessions > 0;
   // The aside's name lists what it holds for this viewer on this tab; with
   // only the first-mentees card it's "About this mentor".
   const asideLabel =
