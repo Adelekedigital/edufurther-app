@@ -79,6 +79,17 @@ describe('Edit an email', () => {
     expect(saveBar()).toBeNull();
   });
 
+  it('credits emails: the invite reminder is a case, so the tabs read "Which case" (decision 370)', async () => {
+    await open('credits_granted');
+    const tabs = screen.getByRole('tablist', { name: 'Which case' });
+    expect(
+      within(tabs).getByRole('tab', { name: 'Credits granted', selected: true }),
+    ).toBeInTheDocument();
+    expect(
+      within(tabs).getByRole('tab', { name: 'An invite would add a credit' }),
+    ).toBeInTheDocument();
+  });
+
   it('typing updates the preview and shows the save bar; Discard puts it back', async () => {
     await open();
     await replace('Heading', 'See you soon');
