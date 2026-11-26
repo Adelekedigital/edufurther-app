@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import Link from 'next/link';
+import { ButtonLink } from '@/components/atoms/Button/Button';
 import { Icon } from '@/components/atoms/Icon/Icon';
 import { CreditsBar, CreditsStatus } from '@/components/molecules/CreditsSummary/CreditsSummary';
 import { BottomSheet } from '@/components/templates/BottomSheet/BottomSheet';
@@ -235,9 +235,16 @@ function CreditsDetails({
           </div>
         )}
       </div>
-      <Link href="/bookings" className={styles.link} onClick={onClose}>
+      {/* The card's one next step, a button (owner, 2026-11-25; AppShell.dc.html v102). */}
+      <ButtonLink
+        href="/bookings"
+        variant="secondary-outlined"
+        size="medium"
+        fullWidth
+        onClick={onClose}
+      >
         See my bookings
-      </Link>
+      </ButtonLink>
     </div>
   );
 }

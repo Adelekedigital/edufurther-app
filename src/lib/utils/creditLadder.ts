@@ -60,31 +60,3 @@ export function creditSteps(v: CreditsView, p: LadderProgress = LADDER_UNKNOWN):
 export function ladderComplete(v: CreditsView, steps: readonly CreditStep[]): boolean {
   return v.level >= 3 && steps.every((s) => s.done);
 }
-
-/**
- * The status line under the rows: what the month pays now (from /me's
- * ceiling, so it holds before the backend's new ladder is live) and the next
- * step, from what isn't ticked. No next step while a read is unknown, so it
- * never flashes wrong. Null in setup (level 0) and once every step is done.
- */
-export function ladderStatus(
-  v: CreditsView,
-  steps: readonly CreditStep[],
-  p: LadderProgress = LADDER_UNKNOWN,
-): { head: string; next: string | null } | null {
-  if (v.level < 1 || ladderComplete(v, steps)) return null;
-  const n = Math.max(1, v.ceiling ?? v.level);
-  const head = `You get ${n} ${n === 1 ? 'credit' : 'credits'} a month.`;
-  const todo = (k: CreditStep['key']) => !steps.find((s) => s.key === k)?.done;
-  const session = todo('session');
-  const friend = todo('friend');
-  if (p.attended === null || p.friendJoined === null || v.level >= 3 || (!session && !friend))
-    return { head, next: null };
-  const what =
-    session && friend
-      ? 'Attend a session or invite a friend'
-      : friend
-        ? 'Invite a friend'
-        : 'Attend a session';
-  return { head, next: `${what} to get ${n + 1}.` };
-}
