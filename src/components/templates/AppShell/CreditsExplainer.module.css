@@ -184,22 +184,6 @@
   flex-direction: column;
   gap: var(--space-1);
 }
-.link {
-  align-self: flex-start;
-  font-family: var(--font-ui);
-  font-size: var(--text-p-sm);
-  font-weight: var(--weight-semibold);
-  color: var(--text-link);
-  text-decoration: none;
-}
-.link:hover {
-  color: var(--blue-700);
-}
-.link:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: var(--focus-ring-offset);
-  border-radius: var(--radius-xs);
-}
 
 /* Phones: a 44px tap target around the 32px toggles (project rule). */
 @media (max-width: 767px) {
@@ -218,19 +202,6 @@
   color: var(--ink-900);
 }
 /* What the month pays and the next step: a tinted box under the rows. */
-.ladderStatus {
-  margin: 0;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--blue-50);
-  font-size: var(--text-p-sm);
-  line-height: var(--lh-p);
-  color: var(--ink-900);
-}
-.ladderStatus b {
-  display: block;
-  font-weight: var(--weight-semibold);
-}
 /* All three done (5B): one quiet grey line, never wrapping. */
 .ladderDone {
   display: flex;

@@ -8,7 +8,6 @@ import {
   creditSteps,
   LADDER_COPY,
   ladderComplete,
-  ladderStatus,
   type LadderProgress,
 } from '@/lib/utils/creditLadder';
 import type { CreditsView } from '@/lib/utils/credits';
@@ -16,10 +15,10 @@ import styles from './CreditsExplainer.module.css';
 
 /**
  * The card's monthly ladder (decision 370; design "Credits Ladder Direction"):
- * the heading, three rows each worth +1 and ticked on its own, and a status
- * line with what the month pays and the next step. All three done (5B, the
- * owner's pick): one quiet line with no heading, whose "See how" opens the
- * ticked rows.
+ * the heading and three rows, each worth +1 and ticked on its own. No status
+ * box under them (owner, 2026-11-25): the rows and the card's total say it.
+ * All three done (5B, the owner's pick): one quiet line with no heading, whose
+ * "See how" opens the ticked rows.
  */
 export function CreditLadder({
   credits,
@@ -57,7 +56,6 @@ export function CreditLadder({
     );
   }
 
-  const status = ladderStatus(credits, steps, progress);
   return (
     <>
       {/* The list carries the same name, so the heading isn't read twice. */}
@@ -65,12 +63,6 @@ export function CreditLadder({
         {CREDIT_STEPS_LABEL}
       </span>
       {list}
-      {status && (
-        <p className={styles.ladderStatus}>
-          <b>{status.head}</b>
-          {status.next}
-        </p>
-      )}
     </>
   );
 }
