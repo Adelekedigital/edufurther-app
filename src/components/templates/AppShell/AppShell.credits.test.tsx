@@ -276,24 +276,23 @@ describe('AppShell: a mentee’s credits', () => {
         'Attend a session+1',
         `A friend joins+1${SUB}`,
       ]);
-      expect(dialog).toHaveTextContent(
-        'You get 1 credit a month.Attend a session or invite a friend to get 2.',
-      );
+      // No status box under the steps (owner, 2026-11-25).
+      expect(dialog).not.toHaveTextContent(/You get \d|to get \d/);
       // No Bonus row at 0 bonus credits.
       expect(within(dialog).queryByText('Bonus')).toBeNull();
     });
 
-    it('attended, no friend: ticked on its own; "Invite a friend to get 3."', async () => {
+    it('attended, no friend: ticked on its own', async () => {
       const { dialog } = await open(two, { attended: true, friendJoined: false });
       expect(rows(dialog)).toEqual([
         'checkFinish your profile, done+1',
         'checkAttend a session, done+1',
         `A friend joins+1${SUB}`,
       ]);
-      expect(dialog).toHaveTextContent('You get 2 credits a month.Invite a friend to get 3.');
+      expect(dialog).not.toHaveTextContent(/You get \d|to get \d/);
     });
 
-    it('a friend, not attended: no subtext; "Attend a session to get 3."', async () => {
+    it('a friend, not attended: ticked on its own, no subtext', async () => {
       const { dialog } = await open(two, { attended: false, friendJoined: true });
       expect(rows(dialog)).toEqual([
         'checkFinish your profile, done+1',
@@ -301,27 +300,25 @@ describe('AppShell: a mentee’s credits', () => {
         'checkA friend joins, done+1',
       ]);
       expect(dialog).not.toHaveTextContent(SUB);
-      expect(dialog).toHaveTextContent('You get 2 credits a month.Attend a session to get 3.');
+      expect(dialog).not.toHaveTextContent(/You get \d|to get \d/);
     });
 
-    it('while the reads load: rows unticked past the profile, and no next step yet', async () => {
+    it('while the reads load: rows unticked past the profile', async () => {
       const { dialog } = await open(two);
       expect(rows(dialog)).toEqual([
         'checkFinish your profile, done+1',
         'Attend a session+1',
         `A friend joins+1${SUB}`,
       ]);
-      expect(dialog).toHaveTextContent('You get 2 credits a month.');
-      expect(dialog).not.toHaveTextContent(/to get \d/);
+      expect(dialog).not.toHaveTextContent(/You get \d|to get \d/);
     });
 
-    it('/me disagreeing with the ticks: /me’s number, the next step from what isn’t ticked', async () => {
+    it('/me disagreeing with the ticks: the list stays, never the all-done line', async () => {
       // Attended, but the backend still pays 1 (its old ladder needs a friend first).
       const { dialog } = await open(
         { ...two, level: 1, ceiling: 1, left: 1, monthlyLeft: 1 },
         { attended: true, friendJoined: false },
       );
-      expect(dialog).toHaveTextContent('You get 1 credit a month.Invite a friend to get 2.');
       expect(within(dialog).queryByRole('button', { name: 'See how' })).toBeNull();
     });
 
